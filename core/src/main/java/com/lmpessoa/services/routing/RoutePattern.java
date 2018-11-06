@@ -33,16 +33,21 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import com.lmpessoa.utils.parsing.ITemplatePart;
 import com.lmpessoa.utils.parsing.LiteralPart;
+import com.lmpessoa.utils.parsing.TypeMismatchException;
 
 final class RoutePattern {
 
+   private static final String SEPARATOR = "/";
    private static final Map<String, Class<? extends AbstractRouteType>> types = new HashMap<>();
+   private static final Pattern areaPattern = Pattern
+            .compile("^(\\/)?[a-zA-Z0-9%_-]+(\\/[a-zA-Z0-9%_-]+)?$");
+   private static final IntRouteType intType = new IntRouteType();
 
    private final List<ITemplatePart> parts;
-   private final int classArgCount;
 
    static {
       types.put("hex", HexRouteType.class);
@@ -58,63 +63,69 @@ final class RoutePattern {
          throw new NoSingleMethodException("Class " + clazz.getName()
                   + " must have only one constructor (found: " + constructors.length + ")");
       }
-      StringBuilder classPart = new StringBuilder();
+      Route route = clazz.getAnnotation(Route.class);
+      String routePath = route != null ? route.value()
+               : buildRouteFromParams(getResourceName(clazz), constructors[0].getParameterTypes());
+      if (!routePath.startsWith(SEPARATOR)) {
+         routePath = SEPARATOR + routePath;
+      }
       if (area != null && !area.isEmpty()) {
-         classPart.append('/');
-         classPart.append(area.replaceAll("^/", "").replaceAll("/$", "").replaceAll("//", "/"));
-      }
-      if (classPart.length() == 0 || classPart.charAt(classPart.length() - 1) != '/') {
-         classPart.append('/');
-      }
-      classPart.append(getResourceName(clazz));
-      for (Class<?> paramClass : constructors[0].getParameterTypes()) {
-         if (!hasValueOfMethod(paramClass)) {
-            throw new IllegalArgumentException(
-                     "Cannot convert route to " + paramClass.getSimpleName());
+         if (!areaPattern.matcher(area).find()) {
+            throw new IllegalArgumentException("Invalid area: " + area);
          }
-         classPart.append("/{");
-         classPart.append(getRouteTypeOf(paramClass));
-         classPart.append('}');
+         routePath = SEPARATOR + area.replaceAll("^/", "") + routePath;
+         routePath = routePath.replaceAll("/$", "");
       }
-      List<ITemplatePart> pattern = Arrays
-               .asList(RoutePatternParser.parse(classPart.toString(), types));
-      int argCount = (int) pattern.stream().filter(p -> p instanceof AbstractRouteType).count();
-      return new RoutePattern(pattern, argCount);
+      List<ITemplatePart> result = RoutePatternParser.parse(routePath, types);
+      if (route != null) {
+         validateRoute(result, constructors[0].getParameterTypes());
+      }
+      return new RoutePattern(result);
    }
 
    static RoutePattern build(RoutePattern resource, Method method) throws ParseException {
-      StringBuilder methodPart = new StringBuilder();
-      for (Class<?> paramClass : method.getParameterTypes()) {
-         if (!hasValueOfMethod(paramClass)) {
-            throw new IllegalArgumentException(
-                     "Cannot convert route to " + paramClass.getSimpleName());
-         }
-         methodPart.append("/{");
-         methodPart.append(getRouteTypeOf(paramClass));
-         methodPart.append('}');
+      Route route = method.getAnnotation(Route.class);
+      String routePath = route != null ? route.value()
+               : buildRouteFromParams(null, method.getParameterTypes());
+      if (!routePath.startsWith(SEPARATOR)) {
+         routePath = SEPARATOR + routePath;
+      }
+      List<ITemplatePart> result = RoutePatternParser.parse(routePath, types);
+      if (route != null) {
+         validateRoute(result, method.getParameterTypes());
       }
       List<ITemplatePart> pattern = new ArrayList<>();
       if (resource != null) {
          pattern.addAll(resource.parts);
       }
-      Arrays.stream(RoutePatternParser.parse(methodPart.toString(), types)).forEach(pattern::add);
-      return new RoutePattern(pattern, resource != null ? resource.classArgCount : 0);
+      result.forEach(pattern::add);
+      return new RoutePattern(pattern);
    }
 
-   public static String getResourceName(Class<?> clazz) {
-      String[] nameParts = clazz.getName().replaceAll("\\$", ".").split("\\.");
-      String name = nameParts[nameParts.length - 1].replaceAll("([A-Z])", "_$1")
-               .toLowerCase()
-               .replaceAll("^_", "");
-      if (name.endsWith("_resource")) {
-         name = name.substring(0, name.length() - 8).replaceAll("_$", "");
+   private static String buildRouteFromParams(String prefix, Class<?>[] parameterTypes)
+      throws TypeMismatchException {
+      StringBuilder result = new StringBuilder();
+      if (prefix != null) {
+         result.append('/');
+         result.append(prefix);
       }
-      return name;
+      for (Class<?> paramClass : parameterTypes) {
+         if (paramClass != String.class && !hasValueOfMethod(paramClass)) {
+            throw new TypeMismatchException(
+                     paramClass.getName() + " is not an acceptable route part");
+         }
+         result.append("/{");
+         result.append(getRouteTypeOf(paramClass));
+         result.append('}');
+      }
+      if (result.length() == 0) {
+         result.append('/');
+      }
+      return result.toString();
    }
 
    private static boolean hasValueOfMethod(Class<?> clazz) {
-      if (clazz == String.class || clazz == long.class || clazz == int.class || clazz == short.class
-               || clazz == byte.class) {
+      if (intType.isAssignableTo(clazz)) {
          return true;
       }
       try {
@@ -126,15 +137,31 @@ final class RoutePattern {
    }
 
    private static String getRouteTypeOf(Class<?> clazz) {
-      if (clazz == long.class || clazz == int.class || clazz == short.class || clazz == byte.class
-               || clazz == Long.class || clazz == Integer.class || clazz == Short.class
-               || clazz == Byte.class) {
-         return "int";
-      }
-      return "any";
+      return intType.isAssignableTo(clazz) ? "int" : "any";
    }
 
-   private RoutePattern(List<ITemplatePart> parts, int argCount) {
+   private static void validateRoute(List<ITemplatePart> route, Class<?>[] parameterTypes)
+      throws ParseException {
+      long count = route.stream().filter(p -> p instanceof AbstractRouteType).count();
+      if (count != parameterTypes.length) {
+         throw new ParseException("Wrong parameter count in route (found: " + count + ", expected: "
+                  + parameterTypes.length + ")", 0);
+      }
+      List<Class<?>> parameters = new ArrayList<>();
+      parameters.addAll(Arrays.asList(parameterTypes));
+      for (ITemplatePart part : route) {
+         if (part instanceof AbstractRouteType) {
+            AbstractRouteType var = (AbstractRouteType) part;
+            Class<?> param = parameters.remove(0);
+            if (param != String.class && !var.isAssignableTo(param)) {
+               throw new TypeMismatchException(
+                        "Cannot cast '" + var.getName() + "' to " + param.getName());
+            }
+         }
+      }
+   }
+
+   private RoutePattern(List<ITemplatePart> parts) {
       List<ITemplatePart> result = new ArrayList<>();
       StringBuilder literal = new StringBuilder();
       for (ITemplatePart part : parts) {
@@ -154,34 +181,36 @@ final class RoutePattern {
       if (!result.isEmpty() && result.get(result.size() - 1) instanceof LiteralPart) {
          LiteralPart lit = (LiteralPart) result.get(result.size() - 1);
          String litValue = lit.getValue();
-         if (litValue.endsWith("/") && !"/".equals(litValue)) {
+         if (litValue.endsWith(SEPARATOR) && !SEPARATOR.equals(litValue)) {
             result.remove(lit);
             lit = new LiteralPart(litValue.replaceAll("/$", ""));
             result.add(lit);
          }
       }
       this.parts = Collections.unmodifiableList(result);
-      this.classArgCount = argCount;
+   }
+
+   public static String getResourceName(Class<?> clazz) {
+      String[] nameParts = clazz.getName().replaceAll("\\$", ".").split("\\.");
+      String name = nameParts[nameParts.length - 1].replaceAll("([A-Z])", "_$1")
+               .toLowerCase()
+               .replaceAll("^_", "");
+      if (name.endsWith("_resource")) {
+         name = name.substring(0, name.length() - 8).replaceAll("_$", "");
+      }
+      return name;
    }
 
    @Override
    public String toString() {
       if (parts.isEmpty()) {
-         return "/";
+         return SEPARATOR;
       }
       StringBuilder result = new StringBuilder();
       for (ITemplatePart part : parts) {
          result.append(part.toString());
       }
       return result.toString();
-   }
-
-   List<ITemplatePart> getParts() {
-      return parts;
-   }
-
-   int getResourceArgsCount() {
-      return classArgCount;
    }
 }
 

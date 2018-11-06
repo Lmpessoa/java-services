@@ -136,7 +136,7 @@ public final class AbstractParserTest {
    public static class TestParser extends AbstractParser<TestVariablePart> {
 
       public static ITemplatePart[] parse(String template, boolean force) throws ParseException {
-         return new TestParser(template, force).parse();
+         return new TestParser(template, force).parse().toArray(new ITemplatePart[0]);
       }
 
       private TestParser(String template, boolean force) {

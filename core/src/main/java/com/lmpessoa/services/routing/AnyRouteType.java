@@ -38,7 +38,12 @@ final class AnyRouteType extends AbstractRouteType {
    }
 
    @Override
-   public String toString() {
-      return toString("any");
+   protected String getName() {
+      return "any";
+   }
+
+   @Override
+   protected boolean isAssignableTo(Class<?> clazz) {
+      return false;
    }
 }

@@ -106,7 +106,7 @@ public abstract class AbstractParser<T extends IVariablePart> {
     * @return a list of parts extracted from the template.
     * @throws ParseException if an error has been reached unexpectedly while parsing.
     */
-   protected final ITemplatePart[] parse() throws ParseException {
+   protected final List<ITemplatePart> parse() throws ParseException {
       pos = 0;
       List<ITemplatePart> result = new ArrayList<>();
       ITemplatePart lastPart = null;
@@ -125,7 +125,7 @@ public abstract class AbstractParser<T extends IVariablePart> {
             lastPart = part;
          }
       }
-      return result.toArray(new ITemplatePart[0]);
+      return result;
    }
 
    /**

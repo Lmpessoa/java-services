@@ -27,6 +27,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.text.ParseException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -45,7 +46,7 @@ final class RoutePatternParser extends AbstractParser<AbstractRouteType> {
       this.types = types;
    }
 
-   public static ITemplatePart[] parse(String template,
+   public static List<ITemplatePart> parse(String template,
       Map<String, Class<? extends AbstractRouteType>> types) throws ParseException {
       return new RoutePatternParser(template, types).parse();
    }

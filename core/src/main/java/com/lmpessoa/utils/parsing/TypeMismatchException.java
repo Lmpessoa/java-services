@@ -21,31 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.routing;
+package com.lmpessoa.utils.parsing;
 
-final class IntRouteType extends AbstractRouteType {
+import java.text.ParseException;
 
-   public IntRouteType() {
-      super(1, -1);
-   }
+public final class TypeMismatchException extends ParseException {
 
-   public IntRouteType(int length) {
-      super(length, length);
-   }
+   private static final long serialVersionUID = 1L;
 
-   public IntRouteType(int minLength, int maxLength) {
-      super(minLength, maxLength);
-   }
-
-   @Override
-   protected String getName() {
-      return "int";
-   }
-
-   @Override
-   protected boolean isAssignableTo(Class<?> clazz) {
-      return clazz == long.class || clazz == int.class || clazz == short.class
-               || clazz == byte.class || clazz == Long.class || clazz == Integer.class
-               || clazz == Short.class || clazz == Byte.class;
+   public TypeMismatchException(String message) {
+      super(message, 0);
    }
 }

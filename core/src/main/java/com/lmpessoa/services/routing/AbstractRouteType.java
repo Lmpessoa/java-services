@@ -99,16 +99,36 @@ public abstract class AbstractRouteType implements IVariablePart {
    }
 
    /**
-    * Returns a standardised representation of this route type using the given name.
+    * Returns the name used to identify occurrences of this type in routes.
     *
-    * @param name the representation name of the route type
-    * @return a standardised representation of this route type using the given name.
+    * @return the name used to identify occurrences of this type in routes.
     */
-   protected final String toString(String name) {
+   protected abstract String getName();
+
+   /**
+    * Returns whether values matched by this route type can be assigned to variables of the given
+    * type.
+    *
+    * <p>
+    * It is possible many classes are capable of accepting values matched by a route type.
+    * Subclasses implementing this method should test only for the prefered known types. Note that
+    * any route type will always be assignable to a <code>String</code> variable so there is no need
+    * to test for this type.
+    * </p>
+    *
+    * @param clazz the type to check if it is compatible with this route type.
+    * @return <code>true</code> if values matched by thos route type can be assigned to variables of
+    * the given type, <code>false</code> otherwise.
+    */
+   protected abstract boolean isAssignableTo(Class<?> clazz);
+
+   @Override
+   public final String toString() {
       StringBuilder result = new StringBuilder();
       result.append('{');
-      result.append(name);
+      result.append(getName().toLowerCase());
       if (minLength != 1 || maxLength != -1) {
+         result.append('(');
          if (minLength != 1) {
             result.append(minLength);
          }
@@ -118,8 +138,10 @@ public abstract class AbstractRouteType implements IVariablePart {
                result.append(maxLength);
             }
          }
+         result.append(')');
       }
       result.append('}');
       return result.toString();
    }
+
 }
