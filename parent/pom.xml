@@ -1,0 +1,141 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+   <modelVersion>4.0.0</modelVersion>
+
+   <groupId>com.lmpessoa.services</groupId>
+   <artifactId>parent</artifactId>
+   <version>1.0.0</version>
+   <packaging>pom</packaging>
+
+   <name>Java Services</name>
+   <description>A lightweight and easy engine for developing web APIs and microservices.</description>
+   <url>http://github.com/lmpessoa/java-services</url>
+   <inceptionYear>2017</inceptionYear>
+
+   <licenses>
+      <license>
+         <name>MIT License</name>
+         <url>http://www.opensource.org/licenses/mit-license.php</url>
+      </license>
+   </licenses>
+
+   <developers>
+      <developer>
+         <name>Leonardo Pessoa</name>
+         <url>https://lmpessoa.com/</url>
+         <timezone>America/Sao_Paulo</timezone>
+      </developer>
+   </developers>
+
+   <scm>
+      <connection>scm:git:git://github.com/lmpessoa/java-services.git</connection>
+      <developerConnection>scm:git:ssh://github.com:lmpessoa/java-services.git</developerConnection>
+      <url>http://github.com/lmpessoa/java-services/tree/master</url>
+   </scm>
+
+   <issueManagement>
+      <system>GitHub</system>
+      <url>http://github.com/lmpessoa/java-services/issues</url>
+   </issueManagement>
+
+   <properties>
+      <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+      <maven.compiler.source>1.8</maven.compiler.source>
+      <maven.compiler.target>1.8</maven.compiler.target>
+      <maven.source.attach>false</maven.source.attach>
+   </properties>
+
+   <dependencies>
+      <dependency>
+         <groupId>junit</groupId>
+         <artifactId>junit</artifactId>
+         <version>4.12</version>
+         <scope>test</scope>
+      </dependency>
+      <dependency>
+         <groupId>org.mockito</groupId>
+         <artifactId>mockito-core</artifactId>
+         <version>2.13.0</version>
+         <scope>test</scope>
+      </dependency>
+   </dependencies>
+
+   <build>
+      <finalName>${project.groupId}.${project.artifactId}-${project.version}</finalName>
+
+      <resources>
+         <resource>
+            <directory>src/main/resources</directory>
+         </resource>
+         <resource>
+            <directory>src/main/resources-filtered</directory>
+            <filtering>true</filtering>
+            <includes>
+               <include>**/*.version</include>
+            </includes>
+         </resource>
+      </resources>
+
+      <plugins>
+         <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <version>3.5.1</version>
+            <configuration>
+               <compilerArgs>
+                  <arg>-parameters</arg>
+               </compilerArgs>
+            </configuration>
+         </plugin>
+         <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <executions>
+               <execution>
+                  <id>attach-javadocs</id>
+                  <goals>
+                     <goal>jar</goal>
+                  </goals>
+               </execution>
+            </executions>
+            <configuration>
+               <author>false</author>
+               <protected>true</protected>
+               <excludePackageNames>*.internal</excludePackageNames>
+               <additionalparam>
+                  -Xdoclint:none
+                  -notimestamp
+                  -link
+                  http://docs.oracle.com/javase/8/docs/api/
+               </additionalparam>
+            </configuration>
+         </plugin>
+         <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <executions>
+               <execution>
+                  <id>attach-sources</id>
+                  <goals>
+                     <goal>jar-no-fork</goal>
+                  </goals>
+               </execution>
+            </executions>
+         </plugin>
+         <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <executions>
+               <execution>
+                  <id>sign-artifacts</id>
+                  <phase>verify</phase>
+                  <goals>
+                     <goal>sign</goal>
+                  </goals>
+               </execution>
+            </executions>
+         </plugin>
+      </plugins>
+   </build>
+</project>

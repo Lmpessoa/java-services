@@ -1,0 +1,49 @@
+.metadata
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.loadpath
+.recommenders
+.scannerwork/
+.sonarlint/
+
+# Eclipse Core
+.project
+.settings/
+RemoteSystemsTempFiles/
+
+# External tool builders
+.externalToolBuilders/
+
+# Locally stored "Eclipse launch configurations"
+*.launch
+
+# JDT-specific (Eclipse Java Development Tools)
+.classpath
+
+*.class
+
+*.jar
+*.war
+*.ear
+
+# Crash logs
+hs_err_pid*
+
+# Maven specific
+target/
+.mvn/
+pom.xml.*
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+
+# Apple specifics
+*.DS_Store
+.AppleDouble
+.LSOverride
+._*
