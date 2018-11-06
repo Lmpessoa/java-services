@@ -133,7 +133,7 @@ public final class AbstractParserTest {
       assertEquals("one{2}", ((TestVariablePart) result[0]).value);
    }
 
-   public static class TestParser extends AbstractTemplateParser<TestVariablePart> {
+   public static class TestParser extends AbstractParser<TestVariablePart> {
 
       public static ITemplatePart[] parse(String template, boolean force) throws ParseException {
          return new TestParser(template, force).parse();

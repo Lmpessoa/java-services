@@ -21,30 +21,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.utils.parsing;
+package com.lmpessoa.services.routing;
 
-public final class LiteralPart implements ITemplatePart {
+final class IntRouteType extends AbstractRouteType {
 
-   private final String value;
-
-   public LiteralPart(String value) {
-      this.value = value;
+   public IntRouteType() {
+      super(1, -1);
    }
 
-   public String getValue() {
-      return value;
+   public IntRouteType(int length) {
+      super(length, length);
    }
 
-   public boolean isEmpty() {
-      return value.isEmpty();
-   }
-
-   public int length() {
-      return value.length();
+   public IntRouteType(int minLength, int maxLength) {
+      super(minLength, maxLength);
    }
 
    @Override
    public String toString() {
-      return value;
+      return toString("int");
    }
 }

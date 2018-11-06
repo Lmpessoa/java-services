@@ -21,30 +21,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.utils.parsing;
+package com.lmpessoa.services.routing;
 
-public final class LiteralPart implements ITemplatePart {
+/**
+ * Thrown when a single constructor or method for a given name is not found on a class.
+ *
+ * <p>
+ * A <code>NoSingleMethodException</code> closely resembles a {@link NoSuchMethodException} except
+ * that instead of not finding the method or constructor it found more than one and thus cannot
+ * decide which one to use.
+ * </p>
+ */
+public final class NoSingleMethodException extends Exception {
 
-   private final String value;
+   private static final long serialVersionUID = 1L;
 
-   public LiteralPart(String value) {
-      this.value = value;
-   }
-
-   public String getValue() {
-      return value;
-   }
-
-   public boolean isEmpty() {
-      return value.isEmpty();
-   }
-
-   public int length() {
-      return value.length();
-   }
-
-   @Override
-   public String toString() {
-      return value;
+   /**
+    * Creates a new <code>NoSingleMethodException</code> with the given detail message.
+    *
+    * @param message the detail message.
+    */
+   public NoSingleMethodException(String message) {
+      super(message);
    }
 }

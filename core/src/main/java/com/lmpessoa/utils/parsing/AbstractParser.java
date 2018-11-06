@@ -61,7 +61,7 @@ import java.util.Map;
  *
  * @param <T> the actual type of varible parts returned by the template parser.
  */
-public abstract class AbstractTemplateParser<T extends IVariablePart> {
+public abstract class AbstractParser<T extends IVariablePart> {
 
    private static final Map<Character, Character> BLOCKS;
 
@@ -95,7 +95,7 @@ public abstract class AbstractTemplateParser<T extends IVariablePart> {
     * @param forceLiteralSeparator whether the template must force a literal separator between two
     * variables.
     */
-   protected AbstractTemplateParser(String template, boolean forceLiteralSeparator) {
+   protected AbstractParser(String template, boolean forceLiteralSeparator) {
       this.template = template;
       this.forceLiteralSeparator = forceLiteralSeparator;
    }
@@ -188,11 +188,10 @@ public abstract class AbstractTemplateParser<T extends IVariablePart> {
             result.append(template.substring(pos, varPos - 1));
             result.append('{');
             pos = varPos + 1;
-         } else if (varPos < 0) {
-            result.append(template.substring(pos));
-            pos = template.length();
-            break;
          } else {
+            if (varPos < 0) {
+               varPos = template.length();
+            }
             result.append(template.substring(pos, varPos));
             pos = varPos;
             break;
