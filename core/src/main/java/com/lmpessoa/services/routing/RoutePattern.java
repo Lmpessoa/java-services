@@ -41,11 +41,11 @@ import com.lmpessoa.utils.parsing.TypeMismatchException;
 
 final class RoutePattern {
 
-   private static final String SEPARATOR = "/";
-   private static final Map<String, Class<? extends AbstractRouteType>> types = new HashMap<>();
    private static final Pattern areaPattern = Pattern
             .compile("^(\\/)?[a-zA-Z0-9%_-]+(\\/[a-zA-Z0-9%_-]+)?$");
+   static final Map<String, Class<? extends AbstractRouteType>> types = new HashMap<>();
    private static final IntRouteType intType = new IntRouteType();
+   private static final String SEPARATOR = "/";
 
    private final List<ITemplatePart> parts;
 
@@ -161,7 +161,7 @@ final class RoutePattern {
       }
    }
 
-   private RoutePattern(List<ITemplatePart> parts) {
+   RoutePattern(List<ITemplatePart> parts) {
       List<ITemplatePart> result = new ArrayList<>();
       StringBuilder literal = new StringBuilder();
       for (ITemplatePart part : parts) {
@@ -190,6 +190,10 @@ final class RoutePattern {
       this.parts = Collections.unmodifiableList(result);
    }
 
+   int getVariableCount() {
+      return (int) parts.stream().filter(p -> p instanceof AbstractRouteType).count();
+   }
+
    public static String getResourceName(Class<?> clazz) {
       String[] nameParts = clazz.getName().replaceAll("\\$", ".").split("\\.");
       String name = nameParts[nameParts.length - 1].replaceAll("([A-Z])", "_$1")
@@ -211,6 +215,19 @@ final class RoutePattern {
          result.append(part.toString());
       }
       return result.toString();
+   }
+
+   @Override
+   public boolean equals(Object obj) {
+      if (obj instanceof RoutePattern) {
+         return toString().equals(obj.toString());
+      }
+      return false;
+   }
+
+   @Override
+   public int hashCode() {
+      return toString().hashCode();
    }
 }
 
