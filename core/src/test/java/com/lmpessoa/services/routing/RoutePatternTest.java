@@ -33,6 +33,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import com.lmpessoa.services.core.Route;
 import com.lmpessoa.utils.parsing.TypeMismatchException;
 
 public final class RoutePatternTest {
@@ -202,7 +203,7 @@ public final class RoutePatternTest {
    }
 
    @Test
-   public void testMethodWithResourceRoute()
+   public void testMethodRouteWithResource()
       throws NoSingleMethodException, ParseException, NoSuchMethodException {
       RoutePattern pat = RoutePattern.build("", TestResource.class);
       assertNotNull(pat);
@@ -213,10 +214,26 @@ public final class RoutePatternTest {
    }
 
    @Test
-   public void testMethodWithWrongTypeInRoute() throws NoSuchMethodException, ParseException {
+   public void testMethodRouteWithWrongType() throws NoSuchMethodException, ParseException {
       thrown.expect(TypeMismatchException.class);
       thrown.expectMessage("Cannot cast 'alpha' to int");
       RoutePattern.build(null, TestResource.class.getMethod("wrong", String.class, int.class));
+   }
+
+   @Test
+   public void testMethodWithContentBody() throws NoSuchMethodException, ParseException {
+      RoutePattern pat = RoutePattern.build(null,
+               TestResource.class.getMethod("content", SimpleTestResource.class));
+      assertNotNull(pat);
+      assertEquals("/", pat.toString());
+      assertEquals(SimpleTestResource.class, pat.getContentClass());
+   }
+
+   @Test
+   public void testMethodWithWrongContentBody() throws NoSuchMethodException, ParseException {
+      thrown.expect(TypeMismatchException.class);
+      thrown.expectMessage("java.lang.String[] is not an acceptable route part");
+      RoutePattern.build(null, TestResource.class.getMethod("content", String[].class));
    }
 
    // Test data ----------
@@ -287,6 +304,14 @@ public final class RoutePatternTest {
 
       @Route("{alpha(3..)}")
       public void routed(String s) {
+         // Test method, does nothing
+      }
+
+      public void content(SimpleTestResource res) {
+         // Test method, does nothing
+      }
+
+      public void content(String[] args) {
          // Test method, does nothing
       }
    }

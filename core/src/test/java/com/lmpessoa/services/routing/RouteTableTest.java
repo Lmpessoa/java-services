@@ -38,6 +38,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import com.lmpessoa.services.core.HttpGet;
+import com.lmpessoa.services.core.HttpPatch;
+import com.lmpessoa.services.core.HttpPost;
+import com.lmpessoa.services.core.HttpPut;
+import com.lmpessoa.services.core.Route;
+
 public final class RouteTableTest {
 
    @Rule
@@ -132,6 +138,22 @@ public final class RouteTableTest {
       assertSame(methodPut, methodPatch);
    }
 
+   @Test
+   public void testRouteDuplicated() throws ParseException {
+      Collection<Exception> result = routeMap.put(DuplicateTestResource.class);
+      assertEquals(1, result.size());
+      assertTrue(result.toArray()[0] instanceof DuplicateMethodException);
+   }
+
+   @Test
+   public void testRouteWithContent() throws ParseException {
+      routeMap.put(ContentTestResource.class);
+      assertTrue(routeMap.hasRoute("/test"));
+      assertArrayEquals(new HttpMethod[] { HttpMethod.POST }, routeMap.listMethodsOf("/test"));
+      assertEquals(AnotherTestResource.class,
+               routeMap.getRouteMethod(HttpMethod.POST, "/test").getContentClass());
+   }
+
    public static class TestResource {
 
       public void get() {
@@ -179,6 +201,26 @@ public final class RouteTableTest {
       @HttpPut
       @HttpPatch
       public void invalidAnnotations(int i) {
+         // Test method, does nothing
+      }
+   }
+
+   @Route("test")
+   public static class DuplicateTestResource {
+
+      public void post() {
+         // Test method, does nothing
+      }
+
+      public void post(AnotherTestResource res) {
+         // Test method, does nothing
+      }
+   }
+
+   @Route("test")
+   public static class ContentTestResource {
+
+      public void post(AnotherTestResource res) {
          // Test method, does nothing
       }
    }

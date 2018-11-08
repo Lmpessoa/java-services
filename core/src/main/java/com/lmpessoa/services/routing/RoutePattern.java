@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import com.lmpessoa.services.core.Route;
 import com.lmpessoa.utils.parsing.ITemplatePart;
 import com.lmpessoa.utils.parsing.LiteralPart;
 import com.lmpessoa.utils.parsing.TypeMismatchException;
@@ -48,6 +49,7 @@ final class RoutePattern {
    private static final String SEPARATOR = "/";
 
    private final List<ITemplatePart> parts;
+   private final Class<?> contentClass;
 
    static {
       types.put("hex", HexRouteType.class);
@@ -80,26 +82,39 @@ final class RoutePattern {
       if (route != null) {
          validateRoute(result, constructors[0].getParameterTypes());
       }
-      return new RoutePattern(result);
+      return new RoutePattern(result, null);
    }
 
    static RoutePattern build(RoutePattern resource, Method method) throws ParseException {
       Route route = method.getAnnotation(Route.class);
-      String routePath = route != null ? route.value()
-               : buildRouteFromParams(null, method.getParameterTypes());
+      List<Class<?>> params = new ArrayList<>(Arrays.asList(method.getParameterTypes()));
+      Class<?> lastArgument = null;
+      if (!params.isEmpty()) {
+         lastArgument = params.get(params.size() - 1);
+         if (lastArgument != String.class && !lastArgument.isArray() && !lastArgument.isInterface()
+                  && !lastArgument.isPrimitive()
+                  && !Modifier.isAbstract(lastArgument.getModifiers())
+                  && !hasValueOfMethod(lastArgument) && hasParameterlessConstructor(lastArgument)) {
+            params.remove(params.size() - 1);
+         } else {
+            lastArgument = null;
+         }
+      }
+      Class<?>[] paramTypes = params.toArray(new Class<?>[0]);
+      String routePath = route != null ? route.value() : buildRouteFromParams(null, paramTypes);
       if (!routePath.startsWith(SEPARATOR)) {
          routePath = SEPARATOR + routePath;
       }
       List<ITemplatePart> result = RoutePatternParser.parse(routePath, types);
       if (route != null) {
-         validateRoute(result, method.getParameterTypes());
+         validateRoute(result, paramTypes);
       }
       List<ITemplatePart> pattern = new ArrayList<>();
       if (resource != null) {
          pattern.addAll(resource.parts);
       }
       result.forEach(pattern::add);
-      return new RoutePattern(pattern);
+      return new RoutePattern(pattern, lastArgument);
    }
 
    private static String buildRouteFromParams(String prefix, Class<?>[] parameterTypes)
@@ -111,8 +126,11 @@ final class RoutePattern {
       }
       for (Class<?> paramClass : parameterTypes) {
          if (paramClass != String.class && !hasValueOfMethod(paramClass)) {
-            throw new TypeMismatchException(
-                     paramClass.getName() + " is not an acceptable route part");
+            String paramClassName = paramClass.getName();
+            if (paramClass.isArray()) {
+               paramClassName = paramClass.getComponentType().getName() + "[]";
+            }
+            throw new TypeMismatchException(paramClassName + " is not an acceptable route part");
          }
          result.append("/{");
          result.append(getRouteTypeOf(paramClass));
@@ -161,7 +179,28 @@ final class RoutePattern {
       }
    }
 
-   RoutePattern(List<ITemplatePart> parts) {
+   private static boolean hasParameterlessConstructor(Class<?> clazz) {
+      for (Constructor<?> c : clazz.getConstructors()) {
+         if (c.getParameterCount() == 0) {
+            return true;
+         }
+      }
+      return false;
+   }
+
+   public static String getResourceName(Class<?> clazz) {
+      String[] nameParts = clazz.getName().replaceAll("\\$", ".").split("\\.");
+      String name = nameParts[nameParts.length - 1].replaceAll("([A-Z])", "_$1")
+               .toLowerCase()
+               .replaceAll("^_", "");
+      if (name.endsWith("_resource")) {
+         name = name.substring(0, name.length() - 8).replaceAll("_$", "");
+      }
+      return name;
+   }
+
+   RoutePattern(List<ITemplatePart> parts, Class<?> contentClass) {
+      this.contentClass = contentClass;
       List<ITemplatePart> result = new ArrayList<>();
       StringBuilder literal = new StringBuilder();
       for (ITemplatePart part : parts) {
@@ -194,15 +233,8 @@ final class RoutePattern {
       return (int) parts.stream().filter(p -> p instanceof AbstractRouteType).count();
    }
 
-   public static String getResourceName(Class<?> clazz) {
-      String[] nameParts = clazz.getName().replaceAll("\\$", ".").split("\\.");
-      String name = nameParts[nameParts.length - 1].replaceAll("([A-Z])", "_$1")
-               .toLowerCase()
-               .replaceAll("^_", "");
-      if (name.endsWith("_resource")) {
-         name = name.substring(0, name.length() - 8).replaceAll("_$", "");
-      }
-      return name;
+   Class<?> getContentClass() {
+      return contentClass;
    }
 
    @Override

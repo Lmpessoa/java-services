@@ -21,37 +21,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.routing;
+package com.lmpessoa.services.core;
 
-import java.lang.reflect.Method;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-final class MethodEntry {
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-   private final Class<?> resourceClass;
-   private final Method method;
-   private final int resourceArgs;
-   private final Class<?> contentClass;
+/**
+ * Identifies a method that responds for an HTTP <code>DELETE</code> request.
+ *
+ * <p>
+ * Methods annotated with this will override the default behaviour of the engine, which is to
+ * identify the HTTP method from the name of the method.
+ * </p>
+ *
+ * <p>
+ * A method can be combined with others HTTP method annotations, thus a method can respond to more
+ * than one HTTP method request.
+ * </p>
+ */
+@Target(METHOD)
+@Retention(RUNTIME)
+public @interface HttpDelete {
 
-   MethodEntry(Class<?> resourceClass, Method method, int resourceArgs, Class<?> contentClass) {
-      this.resourceArgs = resourceArgs;
-      this.resourceClass = resourceClass;
-      this.method = method;
-      this.contentClass = contentClass;
-   }
-
-   Class<?> getResourceClass() {
-      return resourceClass;
-   }
-
-   Method getMethod() {
-      return method;
-   }
-
-   int getResourceArgumentCount() {
-      return resourceArgs;
-   }
-
-   Class<?> getContentClass() {
-      return contentClass;
-   }
 }

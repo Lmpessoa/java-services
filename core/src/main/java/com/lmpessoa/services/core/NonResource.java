@@ -21,29 +21,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.routing;
+package com.lmpessoa.services.core;
 
-import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * Identifies a method that responds for an HTTP <code>PATCH</code> request.
+ * Marks a class that is a potential resource so that the engine does not recognise it automatically
+ * as one.
  *
  * <p>
- * Methods annotated with this will override the default behaviour of the engine, which is to
- * identify the HTTP method from the name of the method.
- * </p>
- *
- * <p>
- * A method can be combined with others HTTP method annotations, thus a method can respond to more
- * than one HTTP method request.
+ * Use this annotation in non abstract resource classes which are to be used as superclasses for
+ * other resources. No methods from the annotated class will be available immediately as an endpoint
+ * but will be registered from the subclasses.
  * </p>
  */
-@Target(METHOD)
+@Target(TYPE)
 @Retention(RUNTIME)
-public @interface HttpPatch {
+public @interface NonResource {
 
 }

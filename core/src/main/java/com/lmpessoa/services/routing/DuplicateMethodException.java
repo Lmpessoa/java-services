@@ -23,11 +23,11 @@
  */
 package com.lmpessoa.services.routing;
 
-final class DuplicateMethodException extends Exception {
+public final class DuplicateMethodException extends Exception {
 
    private static final long serialVersionUID = 1L;
 
-   public DuplicateMethodException(HttpMethod methodName, RoutePattern methodPat, Class<?> clazz) {
+   DuplicateMethodException(HttpMethod methodName, RoutePattern methodPat, Class<?> clazz) {
       super("'" + methodName + " " + methodPat + "' redefined in " + clazz.getName());
    }
 

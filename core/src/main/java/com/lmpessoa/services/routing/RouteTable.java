@@ -38,6 +38,14 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import com.lmpessoa.services.core.HttpDelete;
+import com.lmpessoa.services.core.HttpGet;
+import com.lmpessoa.services.core.HttpOptions;
+import com.lmpessoa.services.core.HttpPatch;
+import com.lmpessoa.services.core.HttpPost;
+import com.lmpessoa.services.core.HttpPut;
+import com.lmpessoa.services.core.NonResource;
+
 final class RouteTable implements IRouteTable {
 
    private static final String ERROR = "Attempted to register ";
@@ -63,6 +71,9 @@ final class RouteTable implements IRouteTable {
          for (Entry<Class<?>, String> entry : classes.entrySet()) {
             try {
                Class<?> clazz = entry.getKey();
+               if (clazz.isAnnotationPresent(NonResource.class)) {
+                  continue;
+               }
                validateResourceClass(clazz);
                String area = entry.getValue();
                RoutePattern classPat = RoutePattern.build(area, clazz);
@@ -96,7 +107,8 @@ final class RouteTable implements IRouteTable {
             if (map.containsKey(methodName)) {
                throw new DuplicateMethodException(methodName, methodPat, clazz);
             }
-            map.put(methodName, new MethodEntry(clazz, method, classPat.getVariableCount()));
+            map.put(methodName, new MethodEntry(clazz, method, classPat.getVariableCount(),
+                     methodPat.getContentClass()));
          }
       } catch (Exception e) {
          exceptions.add(e);
@@ -151,12 +163,14 @@ final class RouteTable implements IRouteTable {
    }
 
    boolean hasRoute(String route) throws ParseException {
-      RoutePattern pat = new RoutePattern(RoutePatternParser.parse(route, RoutePattern.types));
+      RoutePattern pat = new RoutePattern(RoutePatternParser.parse(route, RoutePattern.types),
+               null);
       return endpoints.containsKey(pat);
    }
 
    HttpMethod[] listMethodsOf(String route) throws ParseException {
-      RoutePattern pat = new RoutePattern(RoutePatternParser.parse(route, RoutePattern.types));
+      RoutePattern pat = new RoutePattern(RoutePatternParser.parse(route, RoutePattern.types),
+               null);
       Map<HttpMethod, MethodEntry> map = endpoints.get(pat);
       if (map == null) {
          return new HttpMethod[0];
@@ -165,7 +179,8 @@ final class RouteTable implements IRouteTable {
    }
 
    MethodEntry getRouteMethod(HttpMethod method, String route) throws ParseException {
-      RoutePattern pat = new RoutePattern(RoutePatternParser.parse(route, RoutePattern.types));
+      RoutePattern pat = new RoutePattern(RoutePatternParser.parse(route, RoutePattern.types),
+               null);
       Map<HttpMethod, MethodEntry> map = endpoints.get(pat);
       return map.get(method);
    }
