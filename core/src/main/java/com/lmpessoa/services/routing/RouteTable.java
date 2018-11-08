@@ -23,16 +23,19 @@
  */
 package com.lmpessoa.services.routing;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 final class RouteTable implements IRouteTable {
@@ -80,8 +83,8 @@ final class RouteTable implements IRouteTable {
          if (method.getDeclaringClass() == Object.class) {
             return;
          }
-         HttpMethod methodName = findMethod(method);
-         if (methodName == null) {
+         HttpMethod[] methodNames = findMethod(method);
+         if (methodNames.length == 0) {
             return;
          }
          RoutePattern methodPat = RoutePattern.build(classPat, method);
@@ -89,23 +92,37 @@ final class RouteTable implements IRouteTable {
             endpoints.put(methodPat, new HashMap<>());
          }
          Map<HttpMethod, MethodEntry> map = endpoints.get(methodPat);
-         if (map.containsKey(methodName)) {
-            throw new DuplicateMethodException(methodName, methodPat, clazz);
+         for (HttpMethod methodName : methodNames) {
+            if (map.containsKey(methodName)) {
+               throw new DuplicateMethodException(methodName, methodPat, clazz);
+            }
+            map.put(methodName, new MethodEntry(clazz, method, classPat.getVariableCount()));
          }
-         map.put(methodName, new MethodEntry(clazz, method, classPat.getVariableCount()));
       } catch (Exception e) {
          exceptions.add(e);
       }
    }
 
-   private HttpMethod findMethod(Method method) {
+   private HttpMethod[] findMethod(Method method) {
+      Annotation[] methods = new Annotation[] { method.getAnnotation(HttpGet.class),
+               method.getAnnotation(HttpPost.class), method.getAnnotation(HttpPut.class),
+               method.getAnnotation(HttpPatch.class), method.getAnnotation(HttpDelete.class),
+               method.getAnnotation(HttpOptions.class) };
+      HttpMethod[] result = Arrays.stream(methods)
+               .filter(Objects::nonNull)
+               .map(a -> HttpMethod
+                        .valueOf(a.annotationType().getSimpleName().substring(4).toUpperCase()))
+               .toArray(HttpMethod[]::new);
+      if (result.length > 0) {
+         return result;
+      }
       String methodName = method.getName();
       for (HttpMethod value : HttpMethod.values()) {
          if (value.name().toLowerCase().equals(methodName)) {
-            return value;
+            return new HttpMethod[] { value };
          }
       }
-      return null;
+      return new HttpMethod[0];
    }
 
    private void validateResourceClass(Class<?> clazz) {

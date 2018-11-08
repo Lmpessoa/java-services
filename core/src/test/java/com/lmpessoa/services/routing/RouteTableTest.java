@@ -25,8 +25,10 @@ package com.lmpessoa.services.routing;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
+import java.lang.reflect.Method;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -115,6 +117,21 @@ public final class RouteTableTest {
       assertTrue(result.toArray()[0] instanceof IllegalArgumentException);
    }
 
+   @Test
+   public void testRoutesAnnotated() throws ParseException {
+      routeMap.put(AnnotatedResource.class);
+      assertTrue(routeMap.hasRoute("/test"));
+      HttpMethod[] methods = routeMap.listMethodsOf("/test");
+      Arrays.sort(methods);
+      assertArrayEquals(new HttpMethod[] { HttpMethod.GET, HttpMethod.POST }, methods);
+      methods = routeMap.listMethodsOf("/test/{int}");
+      Arrays.sort(methods);
+      assertArrayEquals(new HttpMethod[] { HttpMethod.PUT, HttpMethod.PATCH }, methods);
+      Method methodPut = routeMap.getRouteMethod(HttpMethod.PUT, "/test/{int}").getMethod();
+      Method methodPatch = routeMap.getRouteMethod(HttpMethod.PATCH, "/test/{int}").getMethod();
+      assertSame(methodPut, methodPatch);
+   }
+
    public static class TestResource {
 
       public void get() {
@@ -142,6 +159,26 @@ public final class RouteTableTest {
       }
 
       public void patch(int i) {
+         // Test method, does nothing
+      }
+   }
+
+   @Route("test")
+   public static class AnnotatedResource {
+
+      @HttpGet
+      public void someMethod() {
+         // Test method, does nothing
+      }
+
+      @HttpPost
+      public void anotherMethod() {
+         // Test method, does nothing
+      }
+
+      @HttpPut
+      @HttpPatch
+      public void invalidAnnotations(int i) {
          // Test method, does nothing
       }
    }
