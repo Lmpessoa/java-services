@@ -46,4 +46,9 @@ final class AnyRouteType extends AbstractRouteType {
    protected boolean isAssignableTo(Class<?> clazz) {
       return false;
    }
+
+   @Override
+   protected String getRegex() {
+      return "[^\\/]" + getRegexLength();
+   }
 }

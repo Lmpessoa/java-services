@@ -24,10 +24,13 @@
 package com.lmpessoa.services.routing;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.text.ParseException;
 import java.time.DayOfWeek;
+import java.util.regex.Matcher;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -234,6 +237,38 @@ public final class RoutePatternTest {
       thrown.expect(TypeMismatchException.class);
       thrown.expectMessage("java.lang.String[] is not an acceptable route part");
       RoutePattern.build(null, TestResource.class.getMethod("content", String[].class));
+   }
+
+   // Pattern ----------
+
+   @Test
+   public void testPatternBasic() throws NoSingleMethodException, ParseException {
+      RoutePattern pat = RoutePattern.build("", TestResource.class);
+      assertNotNull(pat);
+      assertTrue(pat.getPattern().matcher("/test").find());
+   }
+
+   @Test
+   public void testPatternWithArgument()
+      throws NoSingleMethodException, ParseException, NoSuchMethodException {
+      RoutePattern pat = RoutePattern.build("", TestResource.class);
+      assertNotNull(pat);
+      pat = RoutePattern.build(pat, TestResource.class.getMethod("test", int.class));
+      assertNotNull(pat);
+      Matcher matcher = pat.getPattern().matcher("/test/12");
+      assertTrue(matcher.find());
+      assertEquals("12", matcher.group(1));
+   }
+
+   @Test
+   public void testPatternWithWrongArgument()
+      throws NoSingleMethodException, ParseException, NoSuchMethodException {
+      RoutePattern pat = RoutePattern.build("", TestResource.class);
+      assertNotNull(pat);
+      pat = RoutePattern.build(pat, TestResource.class.getMethod("test", int.class));
+      assertNotNull(pat);
+      Matcher matcher = pat.getPattern().matcher("/test/ab");
+      assertFalse(matcher.find());
    }
 
    // Test data ----------

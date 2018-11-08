@@ -48,4 +48,9 @@ final class HexRouteType extends AbstractRouteType {
                || clazz == byte.class || clazz == Long.class || clazz == Integer.class
                || clazz == Short.class || clazz == Byte.class;
    }
+
+   @Override
+   protected String getRegex() {
+      return "[0-9a-fA-F]" + getRegexLength();
+   }
 }

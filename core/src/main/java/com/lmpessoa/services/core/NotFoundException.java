@@ -21,34 +21,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.routing;
+package com.lmpessoa.services.core;
 
-final class AlphaRouteType extends AbstractRouteType {
+/**
+ * Thrown when the requested resource endpoint does not exist.
+ */
+public final class NotFoundException extends HttpException {
 
-   public AlphaRouteType() {
-      super(1, -1);
+   private static final long serialVersionUID = 1L;
+
+   public NotFoundException() {
+      super();
    }
 
-   public AlphaRouteType(int length) {
-      super(length, length);
-   }
-
-   public AlphaRouteType(int minLength, int maxLength) {
-      super(minLength, maxLength);
-   }
-
-   @Override
-   protected String getName() {
-      return "alpha";
+   public NotFoundException(String message) {
+      super(message);
    }
 
    @Override
-   protected boolean isAssignableTo(Class<?> clazz) {
-      return false;
-   }
-
-   @Override
-   protected String getRegex() {
-      return "[a-zA-Z]" + getRegexLength();
+   public int getStatusCode() {
+      return 404;
    }
 }

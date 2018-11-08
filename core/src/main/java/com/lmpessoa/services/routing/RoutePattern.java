@@ -50,6 +50,7 @@ final class RoutePattern {
 
    private final List<ITemplatePart> parts;
    private final Class<?> contentClass;
+   private Pattern pattern = null;
 
    static {
       types.put("hex", HexRouteType.class);
@@ -235,6 +236,27 @@ final class RoutePattern {
 
    Class<?> getContentClass() {
       return contentClass;
+   }
+
+   Pattern getPattern() {
+      if (pattern == null) {
+         StringBuilder result = new StringBuilder();
+         result.append('^');
+         for (ITemplatePart part : parts) {
+            if (part instanceof LiteralPart) {
+               result.append(((LiteralPart) part).getValue()
+                        .replaceAll("([\\\\/$^?\\{\\}\\[\\]\\(\\)-])", "\\\\$1"));
+            } else {
+               result.append('(');
+               result.append(
+                        ((AbstractRouteType) part).getRegex().replaceAll("([\\(\\)])", "\\\\$1"));
+               result.append(')');
+            }
+         }
+         result.append('$');
+         pattern = Pattern.compile(result.toString());
+      }
+      return pattern;
    }
 
    @Override

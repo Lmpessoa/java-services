@@ -32,7 +32,7 @@ import com.lmpessoa.utils.parsing.IVariablePart;
  * <p>
  * A route type shall describe an unique rule to match an URI against. These may describe any static
  * kind of content that might be matched from an URI, i.e. a segment all composed by numbers. This
- * rule should be immuteble except for the optional constraint of minimum and maximum length the
+ * rule should be immutable except for the optional constraint of minimum and maximum length the
  * segment may have to match the route type instance.
  * </p>
  *
@@ -76,6 +76,63 @@ public abstract class AbstractRouteType implements IVariablePart {
    }
 
    /**
+    * Returns the expected regular expression modifier for the length requirements of this route
+    * type.
+    *
+    * @return the expected regular expression modifier for the length requirements of this route
+    * type.
+    */
+   protected final String getRegexLength() {
+      if (minLength == 1 && maxLength == -1) {
+         return "+";
+      } else if (minLength == maxLength) {
+         return "{" + minLength + "}";
+      } else if (minLength > 1 && maxLength == -1) {
+         return "{" + minLength + ",}";
+      } else if (minLength == 1 && maxLength > 0) {
+         return "{," + maxLength + "}";
+      }
+      return "{" + minLength + "," + maxLength + "}";
+   }
+
+   /**
+    * Returns the name used to identify occurrences of this type in routes.
+    *
+    * @return the name used to identify occurrences of this type in routes.
+    */
+   protected abstract String getName();
+
+   /**
+    * Returns the regular expression used to validate this type in routes.
+    *
+    * <p>
+    * Subclasses must provide an implementation of this method which returns a valid regular
+    * expression to match only the part of this route type. The returned value must not use
+    * parenthesis.
+    * </p>
+    *
+    * @return the regular expression used to validate this type in routes.
+    */
+   protected abstract String getRegex();
+
+   /**
+    * Returns whether values matched by this route type can be assigned to variables of the given
+    * type.
+    *
+    * <p>
+    * It is possible many classes are capable of accepting values matched by a route type.
+    * Subclasses implementing this method should test only for the prefered known types. Note that
+    * any route type will always be assignable to a <code>String</code> variable so there is no need
+    * to test for this type.
+    * </p>
+    *
+    * @param clazz the type to check if it is compatible with this route type.
+    * @return <code>true</code> if values matched by thos route type can be assigned to variables of
+    * the given type, <code>false</code> otherwise.
+    */
+   protected abstract boolean isAssignableTo(Class<?> clazz);
+
+   /**
     * Returns the minimum length this route type instance will recognise.
     *
     * @return the minimum length this route type instance will recognise.
@@ -97,30 +154,6 @@ public abstract class AbstractRouteType implements IVariablePart {
    public final int getMaxLength() {
       return maxLength;
    }
-
-   /**
-    * Returns the name used to identify occurrences of this type in routes.
-    *
-    * @return the name used to identify occurrences of this type in routes.
-    */
-   protected abstract String getName();
-
-   /**
-    * Returns whether values matched by this route type can be assigned to variables of the given
-    * type.
-    *
-    * <p>
-    * It is possible many classes are capable of accepting values matched by a route type.
-    * Subclasses implementing this method should test only for the prefered known types. Note that
-    * any route type will always be assignable to a <code>String</code> variable so there is no need
-    * to test for this type.
-    * </p>
-    *
-    * @param clazz the type to check if it is compatible with this route type.
-    * @return <code>true</code> if values matched by thos route type can be assigned to variables of
-    * the given type, <code>false</code> otherwise.
-    */
-   protected abstract boolean isAssignableTo(Class<?> clazz);
 
    @Override
    public final String toString() {

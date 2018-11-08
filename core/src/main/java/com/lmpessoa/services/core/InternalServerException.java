@@ -21,34 +21,51 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.routing;
+package com.lmpessoa.services.core;
 
-final class AlphaRouteType extends AbstractRouteType {
+/**
+ * Thrown when an internal server error has happened.
+ *
+ * <p>
+ * Any exception other than <code>HttpException</code>s can be thrown from any resource method.
+ * These will be understood by the engine as if an internal server error has happened and are
+ * wrapped in an instance of this class.
+ * </p>
+ */
+public final class InternalServerException extends HttpException {
 
-   public AlphaRouteType() {
-      super(1, -1);
+   private static final long serialVersionUID = 1L;
+
+   /**
+    * Creates a new <code>InternalServerException</code> with the given detail message.
+    *
+    * @param message the detail message.
+    */
+   public InternalServerException(String message) {
+      super(message);
    }
 
-   public AlphaRouteType(int length) {
-      super(length, length);
+   /**
+    * Creates a new <code>InternalServerException</code> with the given cause.
+    *
+    * @param cause the cause.
+    */
+   public InternalServerException(Throwable cause) {
+      super(cause);
    }
 
-   public AlphaRouteType(int minLength, int maxLength) {
-      super(minLength, maxLength);
+   /**
+    * Creates a new <code>InternalServerException</code> with the given detail message and cause.
+    *
+    * @param message the detail message.
+    * @param cause the cause.
+    */
+   public InternalServerException(String message, Throwable cause) {
+      super(message, cause);
    }
 
    @Override
-   protected String getName() {
-      return "alpha";
-   }
-
-   @Override
-   protected boolean isAssignableTo(Class<?> clazz) {
-      return false;
-   }
-
-   @Override
-   protected String getRegex() {
-      return "[a-zA-Z]" + getRegexLength();
+   public int getStatusCode() {
+      return 500;
    }
 }

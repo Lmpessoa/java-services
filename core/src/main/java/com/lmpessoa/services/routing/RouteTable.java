@@ -24,6 +24,8 @@
 package com.lmpessoa.services.routing;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.text.ParseException;
@@ -36,6 +38,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
 import com.lmpessoa.services.core.HttpDelete;
@@ -44,12 +48,28 @@ import com.lmpessoa.services.core.HttpOptions;
 import com.lmpessoa.services.core.HttpPatch;
 import com.lmpessoa.services.core.HttpPost;
 import com.lmpessoa.services.core.HttpPut;
+import com.lmpessoa.services.core.MethodNotAllowedException;
 import com.lmpessoa.services.core.NonResource;
+import com.lmpessoa.services.core.NotFoundException;
 
 final class RouteTable implements IRouteTable {
 
    private static final String ERROR = "Attempted to register ";
+   private static final Map<Class<?>, Function<String, ?>> specialCases;
+
    private final Map<RoutePattern, Map<HttpMethod, MethodEntry>> endpoints = new HashMap<>();
+
+   static {
+      Map<Class<?>, Function<String, ?>> special = new HashMap<>();
+      special.put(long.class, Long::valueOf);
+      special.put(int.class, Integer::valueOf);
+      special.put(short.class, Short::valueOf);
+      special.put(byte.class, Byte::valueOf);
+      special.put(float.class, Float::valueOf);
+      special.put(double.class, Double::valueOf);
+      special.put(boolean.class, Boolean::valueOf);
+      specialCases = Collections.unmodifiableMap(special);
+   }
 
    static String findArea(Class<?> clazz) {
       return "";
@@ -137,7 +157,7 @@ final class RouteTable implements IRouteTable {
       return new HttpMethod[0];
    }
 
-   private void validateResourceClass(Class<?> clazz) {
+   private void validateResourceClass(Class<?> clazz) throws NoSingleMethodException {
       if (clazz.isArray()) {
          throw new IllegalArgumentException(
                   ERROR + "an array type: " + clazz.getComponentType() + "[]");
@@ -160,6 +180,13 @@ final class RouteTable implements IRouteTable {
       if (Modifier.isAbstract(clazz.getModifiers())) {
          throw new IllegalArgumentException(ERROR + "an abstract class: " + clazz.getName());
       }
+      Constructor<?>[] constructors = clazz.getConstructors();
+      if (constructors.length != 1) {
+         throw new NoSingleMethodException("Class " + clazz.getName()
+                  + " must have only one constructor (found: " + constructors.length + ")");
+
+      }
+
    }
 
    boolean hasRoute(String route) throws ParseException {
@@ -183,5 +210,73 @@ final class RouteTable implements IRouteTable {
                null);
       Map<HttpMethod, MethodEntry> map = endpoints.get(pat);
       return map.get(method);
+   }
+
+   MatchedRoute matches(HttpMethod method, String path)
+      throws NotFoundException, MethodNotAllowedException {
+      boolean found = false;
+      for (Entry<RoutePattern, Map<HttpMethod, MethodEntry>> entry : endpoints.entrySet()) {
+         RoutePattern route = entry.getKey();
+         Matcher matcher = route.getPattern().matcher(path);
+         if (!matcher.find()) {
+            continue;
+         }
+         found = true;
+         MethodEntry methodEntry = entry.getValue().get(method);
+         if (methodEntry == null) {
+            continue;
+         }
+         List<Class<?>> params = new ArrayList<>();
+         Class<?> resourceClass = methodEntry.getResourceClass();
+         Constructor<?> constructor = resourceClass.getConstructors()[0];
+         params.addAll(Arrays.asList(constructor.getParameterTypes()));
+         Method methodCall = methodEntry.getMethod();
+         params.addAll(Arrays.asList(methodCall.getParameterTypes()));
+         if (methodEntry.getContentClass() != null) {
+            params.remove(params.size() - 1);
+         }
+         List<Object> result = convertParams(matcher, params);
+         if (result == null) {
+            continue;
+         }
+         if (methodEntry.getContentClass() != null) {
+            result.add(null);
+         }
+         return new MatchedRoute(methodEntry, result.toArray());
+      }
+      if (!found) {
+         throw new NotFoundException();
+      } else {
+         throw new MethodNotAllowedException();
+      }
+   }
+
+   private List<Object> convertParams(Matcher matcher, List<Class<?>> params) {
+      List<Object> result = new ArrayList<>();
+      for (int i = 1; i <= matcher.groupCount(); ++i) {
+         try {
+            Class<?> param = params.get(i - 1);
+            Object obj = convert(matcher.group(i), param);
+            result.add(obj);
+         } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            e.printStackTrace();
+            return null;
+         }
+      }
+      return result;
+   }
+
+   private Object convert(String value, Class<?> clazz)
+      throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+      if (clazz == String.class) {
+         return value;
+      }
+      if (specialCases.containsKey(clazz)) {
+         Function<String, ?> valueOf = specialCases.get(clazz);
+         return valueOf.apply(value);
+      } else {
+         Method valueOf = clazz.getMethod("valueOf", String.class);
+         return valueOf.invoke(null, value);
+      }
    }
 }

@@ -21,34 +21,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.routing;
+package com.lmpessoa.services.core;
 
-final class AlphaRouteType extends AbstractRouteType {
+/**
+ * Thrown when the requested resource exists but is not allow to respond to the requested method.
+ */
+public final class MethodNotAllowedException extends HttpException {
 
-   public AlphaRouteType() {
-      super(1, -1);
+   private static final long serialVersionUID = 1L;
+
+   /**
+    * Creates a new <code>MethodNotAllowedException</code>.
+    */
+   public MethodNotAllowedException() {
+      super();
    }
 
-   public AlphaRouteType(int length) {
-      super(length, length);
-   }
-
-   public AlphaRouteType(int minLength, int maxLength) {
-      super(minLength, maxLength);
+   /**
+    * Creates a new <code>MethodNotAllowedException</code> with the given detail message.
+    *
+    * @param message the detail message.
+    */
+   public MethodNotAllowedException(String message) {
+      super(message);
    }
 
    @Override
-   protected String getName() {
-      return "alpha";
-   }
-
-   @Override
-   protected boolean isAssignableTo(Class<?> clazz) {
-      return false;
-   }
-
-   @Override
-   protected String getRegex() {
-      return "[a-zA-Z]" + getRegexLength();
+   public int getStatusCode() {
+      return 405;
    }
 }

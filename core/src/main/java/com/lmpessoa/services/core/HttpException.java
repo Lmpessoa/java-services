@@ -21,34 +21,47 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.routing;
+package com.lmpessoa.services.core;
 
-final class AlphaRouteType extends AbstractRouteType {
+/**
+ * An <code>HttpException</code> is an abstract exception class that represents one of the HTTP
+ * client error status codes (4xx) or server error status codes (5xx).
+ *
+ * <p>
+ * If a method choses to throw an <code>HttpException</code> the engine understants that that
+ * exception represents the intended result to return to the sender of the request.
+ * </p>
+ *
+ * <p>
+ * Any other exception can be thrown from any resource method. These will be understood by the
+ * engine as if an internal server error (HTTP status code 500) has happened and that is what will
+ * be returned to the sender of the request in this case.
+ * </p>
+ */
+public abstract class HttpException extends Exception {
 
-   public AlphaRouteType() {
-      super(1, -1);
+   private static final long serialVersionUID = 1L;
+
+   HttpException() {
+      super();
    }
 
-   public AlphaRouteType(int length) {
-      super(length, length);
+   HttpException(String message) {
+      super(message);
    }
 
-   public AlphaRouteType(int minLength, int maxLength) {
-      super(minLength, maxLength);
+   HttpException(Throwable cause) {
+      super(cause);
    }
 
-   @Override
-   protected String getName() {
-      return "alpha";
+   HttpException(String message, Throwable cause) {
+      super(message, cause);
    }
 
-   @Override
-   protected boolean isAssignableTo(Class<?> clazz) {
-      return false;
-   }
-
-   @Override
-   protected String getRegex() {
-      return "[a-zA-Z]" + getRegexLength();
-   }
+   /**
+    * Returns the HTTP status code of this exception.
+    *
+    * @return the HTTP status code of this exception.
+    */
+   public abstract int getStatusCode();
 }
