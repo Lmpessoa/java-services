@@ -30,13 +30,17 @@ import static org.junit.Assert.assertTrue;
 
 import java.text.ParseException;
 import java.time.DayOfWeek;
+import java.util.Observer;
 import java.util.regex.Matcher;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import com.lmpessoa.services.BrokerObserver;
 import com.lmpessoa.services.core.Route;
+import com.lmpessoa.services.services.IServiceMap;
 import com.lmpessoa.services.services.NoSingleMethodException;
 import com.lmpessoa.util.parsing.TypeMismatchException;
 
@@ -45,17 +49,24 @@ public final class RoutePatternTest {
    @Rule
    public ExpectedException thrown = ExpectedException.none();
 
+   private IServiceMap serviceMap;
+
+   @Before
+   public void setup() {
+      serviceMap = IServiceMap.newInstance();
+   }
+
    // Class ----------
 
    @Test
    public void testClassWithMultipleConstructors() throws NoSingleMethodException, ParseException {
       thrown.expect(NoSingleMethodException.class);
-      RoutePattern.build("", MultipleInitResource.class);
+      RoutePattern.build("", MultipleInitResource.class, serviceMap);
    }
 
    @Test
    public void testClassNoParams() throws NoSingleMethodException, ParseException {
-      RoutePattern pat = RoutePattern.build("", TestResource.class);
+      RoutePattern pat = RoutePattern.build("", TestResource.class, serviceMap);
       assertNotNull(pat);
       assertEquals("/test", pat.toString());
    }
@@ -64,19 +75,19 @@ public final class RoutePatternTest {
    public void testClassUnknownArgument() throws NoSingleMethodException, ParseException {
       thrown.expect(TypeMismatchException.class);
       thrown.expectMessage("java.lang.Exception is not an acceptable route part");
-      RoutePattern.build("", UnknownResource.class);
+      RoutePattern.build("", UnknownResource.class, serviceMap);
    }
 
    @Test
    public void testClassWithValidSimpleArea() throws NoSingleMethodException, ParseException {
-      RoutePattern pat = RoutePattern.build("api", TestResource.class);
+      RoutePattern pat = RoutePattern.build("api", TestResource.class, serviceMap);
       assertNotNull(pat);
       assertEquals("/api/test", pat.toString());
    }
 
    @Test
    public void testClassWithValidDualArea() throws NoSingleMethodException, ParseException {
-      RoutePattern pat = RoutePattern.build("api/v1", TestResource.class);
+      RoutePattern pat = RoutePattern.build("api/v1", TestResource.class, serviceMap);
       assertNotNull(pat);
       assertEquals("/api/v1/test", pat.toString());
    }
@@ -85,42 +96,65 @@ public final class RoutePatternTest {
    public void testClassWithInvalidArea() throws NoSingleMethodException, ParseException {
       thrown.expect(IllegalArgumentException.class);
       thrown.expectMessage("Invalid area: api+1");
-      RoutePattern.build("api+1", TestResource.class);
+      RoutePattern.build("api+1", TestResource.class, serviceMap);
    }
 
    @Test
    public void testClassCompositeName() throws NoSingleMethodException, ParseException {
-      RoutePattern pat = RoutePattern.build("", SimpleTestResource.class);
+      RoutePattern pat = RoutePattern.build("", SimpleTestResource.class, serviceMap);
       assertNotNull(pat);
       assertEquals("/simple_test", pat.toString());
    }
 
    @Test
    public void testClassSimpleNameOneParam() throws NoSingleMethodException, ParseException {
-      RoutePattern pat = RoutePattern.build("", UserResource.class);
+      RoutePattern pat = RoutePattern.build("", UserResource.class, serviceMap);
       assertNotNull(pat);
       assertEquals("/user/{int}", pat.toString());
    }
 
    @Test
    public void testClassCompositeNameOneParam() throws NoSingleMethodException, ParseException {
-      RoutePattern pat = RoutePattern.build("", UserOrderResource.class);
+      RoutePattern pat = RoutePattern.build("", UserOrderResource.class, serviceMap);
       assertNotNull(pat);
       assertEquals("/user_order/{int}", pat.toString());
    }
 
    @Test
    public void testClassRouteNoParams() throws NoSingleMethodException, ParseException {
-      RoutePattern pat = RoutePattern.build("", OrderResource.class);
+      RoutePattern pat = RoutePattern.build("", OrderResource.class, serviceMap);
       assertNotNull(pat);
       assertEquals("/user_order", pat.toString());
    }
 
    @Test
    public void testClassRouteOneParam() throws NoSingleMethodException, ParseException {
-      RoutePattern pat = RoutePattern.build("", ExtraOrderResource.class);
+      RoutePattern pat = RoutePattern.build("", ExtraOrderResource.class, serviceMap);
       assertNotNull(pat);
       assertEquals("/user/{int}/order", pat.toString());
+   }
+
+   @Test
+   public void testClassServiceNoArguments() throws NoSingleMethodException, ParseException {
+      serviceMap.putSingleton(Observer.class, BrokerObserver.class);
+      RoutePattern pat = RoutePattern.build("", ServicedTestResource.class, serviceMap);
+      assertNotNull(pat);
+      assertEquals("/test", pat.toString());
+   }
+
+   @Test
+   public void testClassServiceOneArgument() throws NoSingleMethodException, ParseException {
+      serviceMap.putSingleton(Observer.class, BrokerObserver.class);
+      RoutePattern pat = RoutePattern.build("", MixedServiceTestResource.class, serviceMap);
+      assertNotNull(pat);
+      assertEquals("/test/{int}", pat.toString());
+   }
+
+   @Test
+   public void testClassServiceNotRegistered() throws NoSingleMethodException, ParseException {
+      thrown.expect(TypeMismatchException.class);
+      thrown.expectMessage(Observer.class.getName() + " is not an acceptable route part");
+      RoutePattern.build("", ServicedTestResource.class, serviceMap);
    }
 
    // Method ----------
@@ -209,7 +243,7 @@ public final class RoutePatternTest {
    @Test
    public void testMethodRouteWithResource()
       throws NoSingleMethodException, ParseException, NoSuchMethodException {
-      RoutePattern pat = RoutePattern.build("", TestResource.class);
+      RoutePattern pat = RoutePattern.build("", TestResource.class, serviceMap);
       assertNotNull(pat);
       assertEquals("/test", pat.toString());
       pat = RoutePattern.build(pat, TestResource.class.getMethod("routed"));
@@ -244,7 +278,7 @@ public final class RoutePatternTest {
 
    @Test
    public void testPatternBasic() throws NoSingleMethodException, ParseException {
-      RoutePattern pat = RoutePattern.build("", TestResource.class);
+      RoutePattern pat = RoutePattern.build("", TestResource.class, serviceMap);
       assertNotNull(pat);
       assertTrue(pat.getPattern().matcher("/test").find());
    }
@@ -252,7 +286,7 @@ public final class RoutePatternTest {
    @Test
    public void testPatternWithArgument()
       throws NoSingleMethodException, ParseException, NoSuchMethodException {
-      RoutePattern pat = RoutePattern.build("", TestResource.class);
+      RoutePattern pat = RoutePattern.build("", TestResource.class, serviceMap);
       assertNotNull(pat);
       pat = RoutePattern.build(pat, TestResource.class.getMethod("test", int.class));
       assertNotNull(pat);
@@ -264,7 +298,7 @@ public final class RoutePatternTest {
    @Test
    public void testPatternWithWrongArgument()
       throws NoSingleMethodException, ParseException, NoSuchMethodException {
-      RoutePattern pat = RoutePattern.build("", TestResource.class);
+      RoutePattern pat = RoutePattern.build("", TestResource.class, serviceMap);
       assertNotNull(pat);
       pat = RoutePattern.build(pat, TestResource.class.getMethod("test", int.class));
       assertNotNull(pat);
@@ -382,6 +416,22 @@ public final class RoutePatternTest {
    public static class UnknownResource {
 
       public UnknownResource(Exception e) {
+         // Test method, does nothing
+      }
+   }
+
+   @Route("test")
+   public static class ServicedTestResource {
+
+      public ServicedTestResource(Observer observer) {
+         // Test method, does nothing
+      }
+   }
+
+   @Route("test/{int}")
+   public static class MixedServiceTestResource {
+
+      public MixedServiceTestResource(int i, Observer observer) {
          // Test method, does nothing
       }
    }

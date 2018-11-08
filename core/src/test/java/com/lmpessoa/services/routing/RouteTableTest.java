@@ -25,6 +25,7 @@ package com.lmpessoa.services.routing;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
@@ -32,33 +33,40 @@ import java.lang.reflect.Method;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Observer;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import com.lmpessoa.services.BrokerObserver;
 import com.lmpessoa.services.core.HttpGet;
 import com.lmpessoa.services.core.HttpPatch;
 import com.lmpessoa.services.core.HttpPost;
 import com.lmpessoa.services.core.HttpPut;
 import com.lmpessoa.services.core.Route;
+import com.lmpessoa.services.services.IServiceMap;
+import com.lmpessoa.util.parsing.TypeMismatchException;
 
 public final class RouteTableTest {
 
    @Rule
    public ExpectedException thrown = ExpectedException.none();
 
+   private IServiceMap serviceMap;
    private RouteTable table;
 
    @Before
    public void setup() {
-      table = new RouteTable();
+      serviceMap = IServiceMap.newInstance();
+      table = new RouteTable(serviceMap);
    }
 
    @Test
    public void testRoutesMapped() throws ParseException {
-      table.put(TestResource.class);
+      Collection<Exception> result = table.put(TestResource.class);
+      assertEquals(0, result.size());
       assertTrue(table.hasRoute("/test"));
       HttpMethod[] methods = table.listMethodsOf("/test");
       Arrays.sort(methods);
@@ -71,8 +79,11 @@ public final class RouteTableTest {
 
    @Test
    public void testRoutesDuplicated() throws ParseException, NoSuchMethodException {
-      table.put(TestResource.class);
-      table.put(AnotherTestResource.class);
+      Collection<Exception> result = table.put(TestResource.class);
+      assertEquals(0, result.size());
+      result = table.put(AnotherTestResource.class);
+      assertEquals(1, result.size());
+      assertTrue(result.toArray()[0] instanceof DuplicateMethodException);
       HttpMethod[] methods = table.listMethodsOf("/test/{int}");
       Arrays.sort(methods);
       assertArrayEquals(new HttpMethod[] { HttpMethod.GET, HttpMethod.POST, HttpMethod.PATCH },
@@ -125,7 +136,8 @@ public final class RouteTableTest {
 
    @Test
    public void testRoutesAnnotated() throws ParseException {
-      table.put(AnnotatedResource.class);
+      Collection<Exception> result = table.put(AnnotatedResource.class);
+      assertEquals(0, result.size());
       assertTrue(table.hasRoute("/test"));
       HttpMethod[] methods = table.listMethodsOf("/test");
       Arrays.sort(methods);
@@ -147,11 +159,30 @@ public final class RouteTableTest {
 
    @Test
    public void testRouteWithContent() throws ParseException {
-      table.put(ContentTestResource.class);
+      Collection<Exception> result = table.put(ContentTestResource.class);
+      assertEquals(0, result.size());
       assertTrue(table.hasRoute("/test"));
       assertArrayEquals(new HttpMethod[] { HttpMethod.POST }, table.listMethodsOf("/test"));
       assertEquals(AnotherTestResource.class,
                table.getRouteMethod(HttpMethod.POST, "/test").getContentClass());
+   }
+
+   @Test
+   public void testRouteWithUnregisteredService() throws ParseException {
+      Collection<Exception> result = table.put(ServiceTestResource.class);
+      assertEquals(1, result.size());
+      assertTrue(result.toArray()[0] instanceof TypeMismatchException);
+      assertFalse(table.hasRoute("/test"));
+   }
+
+   @Test
+   public void testRouteWithInjectedService() throws ParseException {
+      Observer o = new BrokerObserver();
+      serviceMap.putSingleton(Observer.class, o);
+      Collection<Exception> result = table.put(ServiceTestResource.class);
+      assertEquals(0, result.size());
+      assertTrue(table.hasRoute("/test"));
+      assertArrayEquals(new HttpMethod[] { HttpMethod.GET }, table.listMethodsOf("/test"));
    }
 
    public static class TestResource {
@@ -221,6 +252,18 @@ public final class RouteTableTest {
    public static class ContentTestResource {
 
       public void post(AnotherTestResource res) {
+         // Test method, does nothing
+      }
+   }
+
+   @Route("test")
+   public static class ServiceTestResource {
+
+      public ServiceTestResource(Observer observer) {
+         // Test method, does nothing
+      }
+
+      public void get() {
          // Test method, does nothing
       }
    }

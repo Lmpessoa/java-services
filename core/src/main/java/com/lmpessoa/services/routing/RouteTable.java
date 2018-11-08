@@ -51,6 +51,7 @@ import com.lmpessoa.services.core.HttpPut;
 import com.lmpessoa.services.core.MethodNotAllowedException;
 import com.lmpessoa.services.core.NonResource;
 import com.lmpessoa.services.core.NotFoundException;
+import com.lmpessoa.services.services.IServiceMap;
 import com.lmpessoa.services.services.NoSingleMethodException;
 
 final class RouteTable implements IRouteTable {
@@ -59,6 +60,7 @@ final class RouteTable implements IRouteTable {
    private static final Map<Class<?>, Function<String, ?>> specialCases;
 
    private final Map<RoutePattern, Map<HttpMethod, MethodEntry>> endpoints = new HashMap<>();
+   private final IServiceMap serviceMap;
 
    static {
       Map<Class<?>, Function<String, ?>> special = new HashMap<>();
@@ -76,6 +78,10 @@ final class RouteTable implements IRouteTable {
       return "";
    }
 
+   RouteTable(IServiceMap serviceMap) {
+      this.serviceMap = serviceMap;
+   }
+
    @Override
    public Collection<Exception> putAll(Collection<Class<?>> classes) {
       return putClasses(classes.stream().collect(Collectors.toMap(c -> c, RouteTable::findArea)));
@@ -84,111 +90,6 @@ final class RouteTable implements IRouteTable {
    @Override
    public Collection<Exception> putAll(String area, Collection<Class<?>> classes) {
       return putClasses(classes.stream().collect(Collectors.toMap(c -> c, c -> area)));
-   }
-
-   private Collection<Exception> putClasses(Map<Class<?>, String> classes) {
-      List<Exception> exceptions = new ArrayList<>();
-      synchronized (this) {
-         for (Entry<Class<?>, String> entry : classes.entrySet()) {
-            try {
-               Class<?> clazz = entry.getKey();
-               if (clazz.isAnnotationPresent(NonResource.class)) {
-                  continue;
-               }
-               validateResourceClass(clazz);
-               String area = entry.getValue();
-               RoutePattern classPat = RoutePattern.build(area, clazz);
-               for (Method method : clazz.getMethods()) {
-                  putMethod(clazz, classPat, method, exceptions);
-               }
-            } catch (Exception e) {
-               exceptions.add(e);
-            }
-         }
-      }
-      return Collections.unmodifiableCollection(exceptions);
-   }
-
-   private void putMethod(Class<?> clazz, RoutePattern classPat, Method method,
-      List<Exception> exceptions) {
-      try {
-         if (method.getDeclaringClass() == Object.class) {
-            return;
-         }
-         HttpMethod[] methodNames = findMethod(method);
-         if (methodNames.length == 0) {
-            return;
-         }
-         RoutePattern methodPat = RoutePattern.build(classPat, method);
-         if (!endpoints.containsKey(methodPat)) {
-            endpoints.put(methodPat, new HashMap<>());
-         }
-         Map<HttpMethod, MethodEntry> map = endpoints.get(methodPat);
-         for (HttpMethod methodName : methodNames) {
-            if (map.containsKey(methodName)) {
-               throw new DuplicateMethodException(methodName, methodPat, clazz);
-            }
-            map.put(methodName, new MethodEntry(clazz, method, classPat.getVariableCount(),
-                     methodPat.getContentClass()));
-         }
-      } catch (Exception e) {
-         exceptions.add(e);
-      }
-   }
-
-   private HttpMethod[] findMethod(Method method) {
-      Annotation[] methods = new Annotation[] { method.getAnnotation(HttpGet.class),
-               method.getAnnotation(HttpPost.class), method.getAnnotation(HttpPut.class),
-               method.getAnnotation(HttpPatch.class), method.getAnnotation(HttpDelete.class),
-               method.getAnnotation(HttpOptions.class) };
-      HttpMethod[] result = Arrays.stream(methods)
-               .filter(Objects::nonNull)
-               .map(a -> HttpMethod
-                        .valueOf(a.annotationType().getSimpleName().substring(4).toUpperCase()))
-               .toArray(HttpMethod[]::new);
-      if (result.length > 0) {
-         return result;
-      }
-      String methodName = method.getName();
-      for (HttpMethod value : HttpMethod.values()) {
-         if (value.name().toLowerCase().equals(methodName)) {
-            return new HttpMethod[] { value };
-         }
-      }
-      return new HttpMethod[0];
-   }
-
-   private void validateResourceClass(Class<?> clazz) throws NoSingleMethodException {
-      if (clazz.isArray()) {
-         throw new IllegalArgumentException(
-                  ERROR + "an array type: " + clazz.getComponentType() + "[]");
-      }
-      if (clazz.isAnnotation()) {
-         throw new IllegalArgumentException(ERROR + "an annotation: " + clazz.getName());
-      }
-      if (clazz.isInterface()) {
-         throw new IllegalArgumentException(ERROR + "an interface: " + clazz.getName());
-      }
-      if (clazz.isAnonymousClass()) {
-         throw new IllegalArgumentException(ERROR + "an anonymous class: " + clazz.getName());
-      }
-      if (clazz.isEnum()) {
-         throw new IllegalArgumentException(ERROR + "an enumeration: " + clazz.getName());
-      }
-      if (clazz.isPrimitive()) {
-         throw new IllegalArgumentException(ERROR + "a primitive type: " + clazz.getName());
-      }
-      if (Modifier.isAbstract(clazz.getModifiers())) {
-         throw new IllegalArgumentException(ERROR + "an abstract class: " + clazz.getName());
-      }
-      Constructor<?>[] constructors = clazz.getConstructors();
-      if (constructors.length != 1) {
-         throw new NoSingleMethodException(
-                  "Class " + clazz.getName() + " must have only one constructor",
-                  constructors.length);
-
-      }
-
    }
 
    boolean hasRoute(String route) throws ParseException {
@@ -253,12 +154,121 @@ final class RouteTable implements IRouteTable {
       }
    }
 
+   private Collection<Exception> putClasses(Map<Class<?>, String> classes) {
+      List<Exception> exceptions = new ArrayList<>();
+      synchronized (this) {
+         for (Entry<Class<?>, String> entry : classes.entrySet()) {
+            try {
+               Class<?> clazz = entry.getKey();
+               if (clazz.isAnnotationPresent(NonResource.class)) {
+                  continue;
+               }
+               validateResourceClass(clazz);
+               String area = entry.getValue();
+               RoutePattern classPat = RoutePattern.build(area, clazz, serviceMap);
+               for (Method method : clazz.getMethods()) {
+                  putMethod(clazz, classPat, method, exceptions);
+               }
+            } catch (Exception e) {
+               exceptions.add(e);
+            }
+         }
+      }
+      return Collections.unmodifiableCollection(exceptions);
+   }
+
+   private void putMethod(Class<?> clazz, RoutePattern classPat, Method method,
+      List<Exception> exceptions) {
+      try {
+         if (method.getDeclaringClass() == Object.class) {
+            return;
+         }
+         HttpMethod[] methodNames = findMethod(method);
+         if (methodNames.length == 0) {
+            return;
+         }
+         RoutePattern methodPat = RoutePattern.build(classPat, method);
+         if (!endpoints.containsKey(methodPat)) {
+            endpoints.put(methodPat, new HashMap<>());
+         }
+         Map<HttpMethod, MethodEntry> map = endpoints.get(methodPat);
+         for (HttpMethod methodName : methodNames) {
+            if (map.containsKey(methodName)) {
+               throw new DuplicateMethodException(methodName, methodPat, clazz);
+            }
+            Constructor<?> constructor = clazz.getConstructors()[0];
+            map.put(methodName, new MethodEntry(clazz, method, constructor.getParameterCount(),
+                     methodPat.getContentClass()));
+         }
+      } catch (Exception e) {
+         exceptions.add(e);
+      }
+   }
+
+   private HttpMethod[] findMethod(Method method) {
+      Annotation[] methods = new Annotation[] { method.getAnnotation(HttpGet.class),
+               method.getAnnotation(HttpPost.class), method.getAnnotation(HttpPut.class),
+               method.getAnnotation(HttpPatch.class), method.getAnnotation(HttpDelete.class),
+               method.getAnnotation(HttpOptions.class) };
+      HttpMethod[] result = Arrays.stream(methods)
+               .filter(Objects::nonNull)
+               .map(a -> HttpMethod
+                        .valueOf(a.annotationType().getSimpleName().substring(4).toUpperCase()))
+               .toArray(HttpMethod[]::new);
+      if (result.length > 0) {
+         return result;
+      }
+      String methodName = method.getName();
+      for (HttpMethod value : HttpMethod.values()) {
+         // TO SONARQUBE: This is actually meant to be this way and behaves differently
+         // from what SonarQube is suggesting that should be implemented. Ignore SonarQube here.
+         if (value.name().toLowerCase().equals(methodName)) {
+            return new HttpMethod[] { value };
+         }
+      }
+      return new HttpMethod[0];
+   }
+
+   private void validateResourceClass(Class<?> clazz) throws NoSingleMethodException {
+      if (clazz.isArray()) {
+         throw new IllegalArgumentException(
+                  ERROR + "an array type: " + clazz.getComponentType() + "[]");
+      }
+      if (clazz.isAnnotation()) {
+         throw new IllegalArgumentException(ERROR + "an annotation: " + clazz.getName());
+      }
+      if (clazz.isInterface()) {
+         throw new IllegalArgumentException(ERROR + "an interface: " + clazz.getName());
+      }
+      if (clazz.isAnonymousClass()) {
+         throw new IllegalArgumentException(ERROR + "an anonymous class: " + clazz.getName());
+      }
+      if (clazz.isEnum()) {
+         throw new IllegalArgumentException(ERROR + "an enumeration: " + clazz.getName());
+      }
+      if (clazz.isPrimitive()) {
+         throw new IllegalArgumentException(ERROR + "a primitive type: " + clazz.getName());
+      }
+      if (Modifier.isAbstract(clazz.getModifiers())) {
+         throw new IllegalArgumentException(ERROR + "an abstract class: " + clazz.getName());
+      }
+      Constructor<?>[] constructors = clazz.getConstructors();
+      if (constructors.length != 1) {
+         throw new NoSingleMethodException(
+                  "Class " + clazz.getName() + " must have only one constructor",
+                  constructors.length);
+
+      }
+
+   }
+
    private List<Object> convertParams(Matcher matcher, List<Class<?>> params) {
       List<Object> result = new ArrayList<>();
-      for (int i = 1; i <= matcher.groupCount(); ++i) {
+      int group = 1;
+      for (Class<?> param : params) {
          try {
-            Class<?> param = params.get(i - 1);
-            Object obj = convert(matcher.group(i), param);
+            Object obj = serviceMap.contains(param) ? getService(param)
+                     : convert(matcher.group(group++), param);
             result.add(obj);
          } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
             e.printStackTrace();
@@ -266,6 +276,7 @@ final class RouteTable implements IRouteTable {
          }
       }
       return result;
+
    }
 
    private Object convert(String value, Class<?> clazz)
@@ -279,6 +290,19 @@ final class RouteTable implements IRouteTable {
       } else {
          Method valueOf = clazz.getMethod("valueOf", String.class);
          return valueOf.invoke(null, value);
+      }
+   }
+
+   private Object getService(Class<?> clazz) {
+      try {
+         Method locatorMethod = serviceMap.getClass().getDeclaredMethod("getLocator");
+         locatorMethod.setAccessible(true);
+         Object locator = locatorMethod.invoke(serviceMap);
+         Method locatorGet = locator.getClass().getDeclaredMethod("get", Class.class);
+         locatorGet.setAccessible(true);
+         return locatorGet.invoke(locator, clazz);
+      } catch (Exception e) {
+         throw new IllegalStateException(e);
       }
    }
 }

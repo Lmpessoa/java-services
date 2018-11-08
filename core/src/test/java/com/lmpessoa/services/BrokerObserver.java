@@ -21,21 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.services;
+package com.lmpessoa.services;
 
-/**
- * Thrown when an unexpected situation happened during a lazy service instantiation.
- */
-public final class LazyInstatiationException extends RuntimeException {
+import java.util.Observable;
+import java.util.Observer;
 
-   private static final long serialVersionUID = 1L;
+public final class BrokerObserver implements Observer {
 
-   /**
-    * Creates a new <code>LazyInstatiationException</code> with the given cause.
-    *
-    * @param cause the cause for the exception.
-    */
-   public LazyInstatiationException(Throwable cause) {
-      super(cause);
+   @Override
+   public void update(Observable o, Object arg) {
+      // TODO Auto-generated method stub
    }
 }

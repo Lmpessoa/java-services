@@ -41,6 +41,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import com.lmpessoa.services.BrokerObserver;
 import com.lmpessoa.services.routing.AbstractRouteType;
 
 public class ServiceLocatorTest {
@@ -234,14 +235,6 @@ public class ServiceLocatorTest {
    }
 
    // Test data ----------
-
-   public static class BrokerObserver implements Observer {
-
-      @Override
-      public void update(Observable o, Object arg) {
-         // Test method, does nothing
-      }
-   }
 
    public static class TransientDependent {
 

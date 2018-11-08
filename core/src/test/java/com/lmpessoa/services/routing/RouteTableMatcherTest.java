@@ -25,7 +25,8 @@ package com.lmpessoa.services.routing;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+
+import java.util.function.Supplier;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -36,24 +37,27 @@ import com.lmpessoa.services.core.HttpException;
 import com.lmpessoa.services.core.MethodNotAllowedException;
 import com.lmpessoa.services.core.NotFoundException;
 import com.lmpessoa.services.core.NotImplementedException;
+import com.lmpessoa.services.core.Route;
+import com.lmpessoa.services.services.IServiceMap;
 
 public final class RouteTableMatcherTest {
 
    @Rule
    public ExpectedException thrown = ExpectedException.none();
 
+   private IServiceMap serviceMap;
    private RouteTable table;
 
    @Before
    public void setup() {
-      table = new RouteTable();
+      serviceMap = IServiceMap.newInstance();
+      table = new RouteTable(serviceMap);
       table.put(TestResource.class);
    }
 
    @Test
    public void testMatchesGetRoot() throws NoSuchMethodException, HttpException {
       MatchedRoute result = table.matches(HttpMethod.GET, "/test");
-      assertNotNull(result);
       assertEquals(TestResource.class, result.getResourceClass());
       assertEquals(TestResource.class.getMethod("get"), result.getMethod());
       assertArrayEquals(new Object[0], result.getMethodArgs());
@@ -63,7 +67,6 @@ public final class RouteTableMatcherTest {
    @Test
    public void testMatchesGetOneArg() throws NoSuchMethodException, HttpException {
       MatchedRoute result = table.matches(HttpMethod.GET, "/test/7");
-      assertNotNull(result);
       assertEquals(TestResource.class, result.getResourceClass());
       assertEquals(TestResource.class.getMethod("get", int.class), result.getMethod());
       assertArrayEquals(new Object[] { 7 }, result.getMethodArgs());
@@ -73,7 +76,6 @@ public final class RouteTableMatcherTest {
    @Test
    public void testMatchesGetTwoArgs() throws NoSuchMethodException, HttpException {
       MatchedRoute result = table.matches(HttpMethod.GET, "/test/6/9");
-      assertNotNull(result);
       assertEquals(TestResource.class, result.getResourceClass());
       assertEquals(TestResource.class.getMethod("get", int.class, int.class), result.getMethod());
       assertArrayEquals(new Object[] { 6, 9 }, result.getMethodArgs());
@@ -83,7 +85,6 @@ public final class RouteTableMatcherTest {
    @Test
    public void testMatchesPostRoot() throws NoSuchMethodException, HttpException {
       MatchedRoute result = table.matches(HttpMethod.POST, "/test");
-      assertNotNull(result);
       assertEquals(TestResource.class, result.getResourceClass());
       assertEquals(TestResource.class.getMethod("post"), result.getMethod());
       assertArrayEquals(new Object[0], result.getMethodArgs());
@@ -93,7 +94,6 @@ public final class RouteTableMatcherTest {
    @Test
    public void testMatchesPostOneArg() throws NoSuchMethodException, HttpException {
       MatchedRoute result = table.matches(HttpMethod.POST, "/test/7");
-      assertNotNull(result);
       assertEquals(TestResource.class, result.getResourceClass());
       assertEquals(TestResource.class.getMethod("post", int.class), result.getMethod());
       assertArrayEquals(new Object[] { 7 }, result.getMethodArgs());
@@ -116,10 +116,21 @@ public final class RouteTableMatcherTest {
    public void testMatchesHttpException() throws NoSuchMethodException, HttpException {
       thrown.expect(NotImplementedException.class);
       MatchedRoute result = table.matches(HttpMethod.PATCH, "/test");
-      assertNotNull(result);
       assertEquals(TestResource.class, result.getResourceClass());
       assertEquals(TestResource.class.getMethod("patch"), result.getMethod());
       result.invoke();
+   }
+
+   @Test
+   public void testMatchesWithService() throws NoSuchMethodException, HttpException {
+      Message message = new Message();
+      serviceMap.putSingleton(Message.class, message);
+      table.put(ServiceTestResource.class);
+      MatchedRoute result = table.matches(HttpMethod.GET, "/service");
+      assertEquals(ServiceTestResource.class, result.getResourceClass());
+      assertEquals(ServiceTestResource.class.getMethod("get"), result.getMethod());
+      assertArrayEquals(new Object[] { message }, result.getConstructorArgs());
+      assertEquals(message.get(), result.invoke());
    }
 
    public static class TestResource {
@@ -146,6 +157,29 @@ public final class RouteTableMatcherTest {
 
       public void patch() throws NotImplementedException {
          throw new NotImplementedException();
+      }
+   }
+
+   public static class Message implements Supplier<String> {
+
+      @Override
+      public String get() {
+         return "Message";
+      }
+
+   }
+
+   @Route("service")
+   public static class ServiceTestResource {
+
+      private Message message;
+
+      public ServiceTestResource(Message message) {
+         this.message = message;
+      }
+
+      public String get() {
+         return message.get();
       }
    }
 }

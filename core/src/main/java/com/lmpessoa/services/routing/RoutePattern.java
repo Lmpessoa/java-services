@@ -33,9 +33,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 import com.lmpessoa.services.core.Route;
+import com.lmpessoa.services.services.IServiceMap;
 import com.lmpessoa.services.services.NoSingleMethodException;
 import com.lmpessoa.util.parsing.ITemplatePart;
 import com.lmpessoa.util.parsing.LiteralPart;
@@ -60,7 +62,7 @@ final class RoutePattern {
       types.put("any", AnyRouteType.class);
    }
 
-   static RoutePattern build(String area, Class<?> clazz)
+   static RoutePattern build(String area, Class<?> clazz, IServiceMap serviceMap)
       throws NoSingleMethodException, ParseException {
       final Constructor<?>[] constructors = clazz.getConstructors();
       if (constructors.length != 1) {
@@ -69,8 +71,20 @@ final class RoutePattern {
                   constructors.length);
       }
       Route route = clazz.getAnnotation(Route.class);
+      Class<?>[] paramTypes = Arrays.stream(constructors[0].getParameterTypes())
+               .filter(c -> !serviceMap.contains(c))
+               .toArray(Class<?>[]::new);
+      Optional<Class<?>> invalid = Arrays.stream(paramTypes)
+               .filter(c -> !hasValueOfMethod(c))
+               .findFirst();
+      if (invalid.isPresent()) {
+         Class<?> invalidClass = invalid.get();
+         String paramClassName = invalidClass.isArray() ? invalidClass.getComponentType() + "[]"
+                  : invalidClass.getName();
+         throw new TypeMismatchException(paramClassName + " is not an acceptable route part");
+      }
       String routePath = route != null ? route.value()
-               : buildRouteFromParams(getResourceName(clazz), constructors[0].getParameterTypes());
+               : buildRouteFromParams(getResourceName(clazz), paramTypes);
       if (!routePath.startsWith(SEPARATOR)) {
          routePath = SEPARATOR + routePath;
       }
@@ -83,7 +97,7 @@ final class RoutePattern {
       }
       List<ITemplatePart> result = RoutePatternParser.parse(routePath, types);
       if (route != null) {
-         validateRoute(result, constructors[0].getParameterTypes());
+         validateRoute(result, paramTypes);
       }
       return new RoutePattern(result, null);
    }
