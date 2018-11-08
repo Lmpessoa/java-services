@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.routing;
+package com.lmpessoa.services.services;
 
 /**
  * Thrown when a single constructor or method for a given name is not found on a class.
@@ -40,8 +40,9 @@ public final class NoSingleMethodException extends Exception {
     * Creates a new <code>NoSingleMethodException</code> with the given detail message.
     *
     * @param message the detail message.
+    * @param found the number of actual methods found.
     */
-   public NoSingleMethodException(String message) {
-      super(message);
+   public NoSingleMethodException(String message, int found) {
+      super(message + " (found: " + found + ')');
    }
 }

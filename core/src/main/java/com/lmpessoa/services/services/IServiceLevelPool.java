@@ -21,8 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.utils.parsing;
+package com.lmpessoa.services.services;
 
-public interface ITemplatePart {
-   // This is just a marker interface; no methods here
+import java.util.Map;
+
+interface IServiceLevelPool {
+
+   Map<Class<?>, Object> getPool(IServiceMap map);
 }

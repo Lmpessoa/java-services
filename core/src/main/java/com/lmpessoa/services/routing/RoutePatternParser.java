@@ -32,8 +32,8 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.lmpessoa.utils.parsing.AbstractParser;
-import com.lmpessoa.utils.parsing.ITemplatePart;
+import com.lmpessoa.util.parsing.AbstractParser;
+import com.lmpessoa.util.parsing.ITemplatePart;
 
 final class RoutePatternParser extends AbstractParser<AbstractRouteType> {
 

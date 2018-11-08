@@ -36,9 +36,10 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import com.lmpessoa.services.core.Route;
-import com.lmpessoa.utils.parsing.ITemplatePart;
-import com.lmpessoa.utils.parsing.LiteralPart;
-import com.lmpessoa.utils.parsing.TypeMismatchException;
+import com.lmpessoa.services.services.NoSingleMethodException;
+import com.lmpessoa.util.parsing.ITemplatePart;
+import com.lmpessoa.util.parsing.LiteralPart;
+import com.lmpessoa.util.parsing.TypeMismatchException;
 
 final class RoutePattern {
 
@@ -63,8 +64,9 @@ final class RoutePattern {
       throws NoSingleMethodException, ParseException {
       final Constructor<?>[] constructors = clazz.getConstructors();
       if (constructors.length != 1) {
-         throw new NoSingleMethodException("Class " + clazz.getName()
-                  + " must have only one constructor (found: " + constructors.length + ")");
+         throw new NoSingleMethodException(
+                  "Class " + clazz.getName() + " must have only one constructor",
+                  constructors.length);
       }
       Route route = clazz.getAnnotation(Route.class);
       String routePath = route != null ? route.value()

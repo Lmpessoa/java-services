@@ -37,7 +37,8 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import com.lmpessoa.services.core.Route;
-import com.lmpessoa.utils.parsing.TypeMismatchException;
+import com.lmpessoa.services.services.NoSingleMethodException;
+import com.lmpessoa.util.parsing.TypeMismatchException;
 
 public final class RoutePatternTest {
 

@@ -51,6 +51,7 @@ import com.lmpessoa.services.core.HttpPut;
 import com.lmpessoa.services.core.MethodNotAllowedException;
 import com.lmpessoa.services.core.NonResource;
 import com.lmpessoa.services.core.NotFoundException;
+import com.lmpessoa.services.services.NoSingleMethodException;
 
 final class RouteTable implements IRouteTable {
 
@@ -182,8 +183,9 @@ final class RouteTable implements IRouteTable {
       }
       Constructor<?>[] constructors = clazz.getConstructors();
       if (constructors.length != 1) {
-         throw new NoSingleMethodException("Class " + clazz.getName()
-                  + " must have only one constructor (found: " + constructors.length + ")");
+         throw new NoSingleMethodException(
+                  "Class " + clazz.getName() + " must have only one constructor",
+                  constructors.length);
 
       }
 

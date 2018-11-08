@@ -23,7 +23,7 @@
  */
 package com.lmpessoa.services.routing;
 
-import com.lmpessoa.utils.parsing.IVariablePart;
+import com.lmpessoa.util.parsing.IVariablePart;
 
 /**
  * An <code>AbstractRouteType</code> describes the common ground for all route types used with the

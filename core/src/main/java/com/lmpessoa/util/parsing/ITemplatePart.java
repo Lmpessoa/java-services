@@ -21,30 +21,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.utils.parsing;
+package com.lmpessoa.util.parsing;
 
-public final class LiteralPart implements ITemplatePart {
-
-   private final String value;
-
-   public LiteralPart(String value) {
-      this.value = value;
-   }
-
-   public String getValue() {
-      return value;
-   }
-
-   public boolean isEmpty() {
-      return value.isEmpty();
-   }
-
-   public int length() {
-      return value.length();
-   }
-
-   @Override
-   public String toString() {
-      return value;
-   }
+public interface ITemplatePart {
+   // This is just a marker interface; no methods here
 }

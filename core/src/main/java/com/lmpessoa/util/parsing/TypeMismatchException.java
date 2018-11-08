@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.utils.parsing;
+package com.lmpessoa.util.parsing;
 
 import java.text.ParseException;
 

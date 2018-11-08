@@ -21,8 +21,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.utils.parsing;
+package com.lmpessoa.services.services;
 
-public interface IVariablePart extends ITemplatePart {
-   // This is just a marker interface; no methods here
+import java.util.Map;
+
+/**
+ * Represents an object which can provide a service pool for request level injection.
+ * <p>
+ * This interface is mean for internal use and should not be used in applications.
+ * </p>
+ */
+public interface IServicePoolProvider {
+
+   /**
+    * Returns the pool of service responders for this object.
+    *
+    * @return the pool of service responders for this object.
+    */
+   Map<Class<?>, Object> getPool();
 }
