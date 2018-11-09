@@ -82,7 +82,9 @@ final class HttpRequestImpl implements HttpRequest {
       }
       if (clientStream.available() > 0) {
          body = new byte[clientStream.available()];
-         clientStream.read(body);
+         if (clientStream.read(body) != body.length) {
+            System.err.println("Different number of bytes read/available");
+         }
       } else {
          body = new byte[0];
       }

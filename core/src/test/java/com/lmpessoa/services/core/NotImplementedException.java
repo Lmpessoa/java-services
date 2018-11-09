@@ -22,31 +22,18 @@
  */
 package com.lmpessoa.services.core;
 
-/**
- * Thrown when the requested resource endpoint does not exist.
- */
-public final class NotFoundException extends HttpException {
+public class NotImplementedException extends HttpException {
 
    private static final long serialVersionUID = 1L;
 
-   /**
-    * Creates a new <code>NotFoundException</code>.
-    */
-   public NotFoundException() {
+   public NotImplementedException() {
       super();
-   }
-
-   /**
-    * Creates a new <code>NotFoundException</code> with the given detail message.
-    *
-    * @param message the detail message.
-    */
-   public NotFoundException(String message) {
-      super(message);
    }
 
    @Override
    public int getStatusCode() {
-      return 404;
+      // TODO Auto-generated method stub
+      return 0;
    }
+
 }

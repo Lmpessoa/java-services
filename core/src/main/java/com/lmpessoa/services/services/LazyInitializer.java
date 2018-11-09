@@ -24,19 +24,18 @@ package com.lmpessoa.services.services;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
-public class LazyInitializer<T> implements Supplier<T> {
+import com.lmpessoa.util.ClassUtils;
+
+final class LazyInitializer<T> implements Supplier<T> {
 
    private final Class<? extends T> provider;
-   private final ServiceMap serviceMap;
+   private final IServiceMap serviceMap;
 
    public LazyInitializer(Class<? extends T> provider, ReuseLevel level, IServiceMap serviceMap) {
-      ServiceMap map = (ServiceMap) serviceMap;
-      if (provider.isArray() || provider.isEnum() || provider.isInterface()
-               || provider.isPrimitive() || Modifier.isAbstract(provider.getModifiers())) {
+      if (!ClassUtils.isConcreteClass(provider)) {
          throw new IllegalArgumentException("Provider class must be a concrete class");
       }
       final Constructor<?>[] constructors = provider.getConstructors();
@@ -45,7 +44,7 @@ public class LazyInitializer<T> implements Supplier<T> {
                   "Provider class must have only one constructor", constructors.length));
       }
       for (Class<?> paramType : constructors[0].getParameterTypes()) {
-         ServiceEntry entry = map.getEntry(paramType);
+         ServiceEntry entry = ((ServiceMap) serviceMap).getEntry(paramType);
          if (entry == null) {
             throw new IllegalArgumentException(
                      "Dependent service " + paramType.getName() + " is not registered");
@@ -56,15 +55,14 @@ public class LazyInitializer<T> implements Supplier<T> {
          }
       }
       this.provider = provider;
-      this.serviceMap = map;
+      this.serviceMap = serviceMap;
    }
 
    @Override
    @SuppressWarnings("unchecked")
    public T get() {
       Constructor<?> constructor = provider.getConstructors()[0];
-      ServiceLocator locator = new ServiceLocator(serviceMap);
-      Object[] params = Arrays.stream(constructor.getParameterTypes()).map(locator::get).toArray(
+      Object[] params = Arrays.stream(constructor.getParameterTypes()).map(serviceMap::get).toArray(
                Object[]::new);
       try {
          return (T) constructor.newInstance(params);

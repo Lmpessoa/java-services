@@ -22,49 +22,12 @@
  */
 package com.lmpessoa.services.core;
 
-/**
- * Thrown when an internal server error has happened.
- *
- * <p>
- * Any exception other than <code>HttpException</code>s can be thrown from any resource method.
- * These will be understood by the engine as if an internal server error has happened and are
- * wrapped in an instance of this class.
- * </p>
- */
-public final class InternalServerException extends HttpException {
-
-   private static final long serialVersionUID = 1L;
+interface IHttpStatus {
 
    /**
-    * Creates a new <code>InternalServerException</code> with the given detail message.
+    * Returns the HTTP status code of this exception.
     *
-    * @param message the detail message.
+    * @return the HTTP status code of this exception.
     */
-   public InternalServerException(String message) {
-      super(message);
-   }
-
-   /**
-    * Creates a new <code>InternalServerException</code> with the given cause.
-    *
-    * @param cause the cause.
-    */
-   public InternalServerException(Throwable cause) {
-      super(cause);
-   }
-
-   /**
-    * Creates a new <code>InternalServerException</code> with the given detail message and cause.
-    *
-    * @param message the detail message.
-    * @param cause the cause.
-    */
-   public InternalServerException(String message, Throwable cause) {
-      super(message, cause);
-   }
-
-   @Override
-   public int getStatusCode() {
-      return 500;
-   }
+   int getStatusCode();
 }

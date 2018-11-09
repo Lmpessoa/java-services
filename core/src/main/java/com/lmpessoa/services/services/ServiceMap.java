@@ -26,8 +26,13 @@ import static com.lmpessoa.services.services.ReuseLevel.PER_REQUEST;
 import static com.lmpessoa.services.services.ReuseLevel.SINGLETON;
 import static com.lmpessoa.services.services.ReuseLevel.TRANSIENT;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -35,8 +40,6 @@ final class ServiceMap implements IServiceMap, IServicePoolProvider {
 
    private final Map<Class<?>, ServiceEntry> entries = new HashMap<>();
    private final Map<Class<?>, Object> pool = new HashMap<>();
-
-   private ServiceLocator locator = null;
 
    @Override
    public <T> void putSingleton(Class<T> service, Supplier<T> supplier) {
@@ -69,15 +72,43 @@ final class ServiceMap implements IServiceMap, IServicePoolProvider {
       return pool;
    }
 
-   ServiceEntry getEntry(Class<?> clazz) {
-      return entries.get(clazz);
+   @Override
+   @SuppressWarnings("unchecked")
+   public <T> T get(Class<T> clazz) {
+      ServiceEntry entry = entries.get(clazz);
+      if (entry == null) {
+         String className = clazz.isArray() ? clazz.getComponentType().getName() + "[]"
+                  : clazz.getName();
+         throw new NoSuchElementException("Service not found: " + className);
+      }
+      Map<Class<?>, Object> levelPool = entry.getLevel().getPool(this);
+      if (!levelPool.containsKey(clazz)) {
+         levelPool.put(clazz, entry.newInstance());
+      }
+      return (T) levelPool.get(clazz);
    }
 
-   ServiceLocator getLocator() {
-      if (locator == null) {
-         locator = new ServiceLocator(this);
+   @Override
+   public Object invoke(Object obj, String methodName)
+      throws NoSingleMethodException, IllegalAccessException, InvocationTargetException {
+      Class<?> clazz = obj instanceof Class<?> ? (Class<?>) obj : obj.getClass();
+      Object instance = obj instanceof Class<?> ? null : obj;
+      Method[] methods = Arrays.stream(clazz.getMethods())
+               .filter(m -> methodName.equals(m.getName()))
+               .toArray(Method[]::new);
+      if (methods.length != 1) {
+         throw new NoSingleMethodException("Class " + clazz.getName()
+                  + " must have exactly one method named '" + methodName + "'", methods.length);
       }
-      return locator;
+      if (Modifier.isStatic(methods[0].getModifiers()) != (instance == null)) {
+         throw new IllegalArgumentException("Mismatched static/instance method call");
+      }
+      Object[] args = Arrays.stream(methods[0].getParameterTypes()).map(this::get).toArray();
+      return methods[0].invoke(instance, args);
+   }
+
+   ServiceEntry getEntry(Class<?> clazz) {
+      return entries.get(clazz);
    }
 
    private void put(ReuseLevel level, Class<?> service, Supplier<?> supplier) {

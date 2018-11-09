@@ -28,7 +28,7 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 
 import com.lmpessoa.services.core.HttpException;
-import com.lmpessoa.services.core.InternalServerException;
+import com.lmpessoa.services.core.InternalServerError;
 
 /**
  * A <code>MatchedRoute</code> represents a set of information about a matched request route to
@@ -90,9 +90,8 @@ public final class MatchedRoute {
     *
     * @return a object result returned by the called method or <code>null</code> if nothing was
     * returned.
-    * @throws HttpException
     */
-   public Object invoke() throws HttpException {
+   public Object invoke() {
       try {
          Constructor<?> constructor = resourceClass.getConstructors()[0];
          Object resource = constructor.newInstance(constructorArgs);
@@ -101,9 +100,12 @@ public final class MatchedRoute {
          if (e.getCause() instanceof HttpException) {
             throw (HttpException) e.getCause();
          }
-         throw new InternalServerException(e.getCause());
+         if (e.getCause() instanceof InternalServerError) {
+            throw (InternalServerError) e.getCause();
+         }
+         throw new InternalServerError(e.getCause());
       } catch (Exception e) {
-         throw new InternalServerException(e);
+         throw new InternalServerError(e);
       }
    }
 }

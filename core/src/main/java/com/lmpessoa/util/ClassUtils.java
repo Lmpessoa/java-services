@@ -20,18 +20,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core;
+package com.lmpessoa.util;
 
-/**
- * Thrown from methods to indicate to clients the endpoint exist but is not implemented.
- */
-public final class NotImplementedException extends HttpException {
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.function.Predicate;
 
-   private static final long serialVersionUID = 1L;
+public final class ClassUtils {
 
-   @Override
-   public int getStatusCode() {
-      return 501;
+   public static Method[] findMethods(Class<?> clazz, Predicate<? super Method> predicate) {
+      return Arrays.stream(clazz.getMethods()).filter(predicate).toArray(Method[]::new);
    }
 
+   @SuppressWarnings("unchecked")
+   public static <T> Constructor<T> getConstructor(Class<T> clazz, Class<?>... parameterTypes) {
+      return (Constructor<T>) Arrays.stream(clazz.getConstructors())
+               .filter(c -> Arrays.equals(parameterTypes, c.getParameterTypes()))
+               .findFirst()
+               .orElse(null);
+   }
+
+   public static boolean isConcreteClass(Class<?> clazz) {
+      return !clazz.isArray() && !clazz.isEnum() && !clazz.isInterface() && !clazz.isPrimitive()
+               && !Modifier.isAbstract(clazz.getModifiers());
+   }
+
+   private ClassUtils() {
+      // Does nothing
+   }
 }

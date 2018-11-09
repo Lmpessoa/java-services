@@ -23,30 +23,48 @@
 package com.lmpessoa.services.core;
 
 /**
- * Thrown when the requested resource endpoint does not exist.
+ * Thrown when an internal server error has happened.
+ *
+ * <p>
+ * Any exception other than <code>HttpException</code>s can be thrown from any resource method.
+ * These will be understood by the engine as if an internal server error has happened and are
+ * wrapped in an instance of this class.
+ * </p>
  */
-public final class NotFoundException extends HttpException {
+public final class InternalServerError extends Error implements IHttpStatus {
 
    private static final long serialVersionUID = 1L;
 
    /**
-    * Creates a new <code>NotFoundException</code>.
-    */
-   public NotFoundException() {
-      super();
-   }
-
-   /**
-    * Creates a new <code>NotFoundException</code> with the given detail message.
+    * Creates a new <code>InternalServerException</code> with the given detail message.
     *
     * @param message the detail message.
     */
-   public NotFoundException(String message) {
+   public InternalServerError(String message) {
       super(message);
+   }
+
+   /**
+    * Creates a new <code>InternalServerException</code> with the given cause.
+    *
+    * @param cause the cause.
+    */
+   public InternalServerError(Throwable cause) {
+      super(cause);
+   }
+
+   /**
+    * Creates a new <code>InternalServerException</code> with the given detail message and cause.
+    *
+    * @param message the detail message.
+    * @param cause the cause.
+    */
+   public InternalServerError(String message, Throwable cause) {
+      super(message, cause);
    }
 
    @Override
    public int getStatusCode() {
-      return 404;
+      return 500;
    }
 }

@@ -27,7 +27,7 @@ package com.lmpessoa.services.core;
  * client error status codes (4xx) or server error status codes (5xx).
  *
  * <p>
- * If a method choses to throw an <code>HttpException</code> the engine understants that that
+ * If a method chooses to throw an <code>HttpException</code> the engine understands that that
  * exception represents the intended result to return to the sender of the request.
  * </p>
  *
@@ -37,7 +37,7 @@ package com.lmpessoa.services.core;
  * be returned to the sender of the request in this case.
  * </p>
  */
-public abstract class HttpException extends Exception {
+public abstract class HttpException extends RuntimeException implements IHttpStatus {
 
    private static final long serialVersionUID = 1L;
 
@@ -56,11 +56,4 @@ public abstract class HttpException extends Exception {
    HttpException(String message, Throwable cause) {
       super(message, cause);
    }
-
-   /**
-    * Returns the HTTP status code of this exception.
-    *
-    * @return the HTTP status code of this exception.
-    */
-   public abstract int getStatusCode();
 }

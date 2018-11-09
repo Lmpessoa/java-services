@@ -20,33 +20,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core;
+package com.lmpessoa.services.hosting;
 
-/**
- * Thrown when the requested resource endpoint does not exist.
- */
-public final class NotFoundException extends HttpException {
+import com.lmpessoa.services.routing.MatchedRoute;
 
-   private static final long serialVersionUID = 1L;
+final class ResultHandler {
 
-   /**
-    * Creates a new <code>NotFoundException</code>.
-    */
-   public NotFoundException() {
-      super();
+   public ResultHandler(NextHandler next) {
+      // Last handler, no need for next
    }
 
-   /**
-    * Creates a new <code>NotFoundException</code> with the given detail message.
-    *
-    * @param message the detail message.
-    */
-   public NotFoundException(String message) {
-      super(message);
-   }
-
-   @Override
-   public int getStatusCode() {
-      return 404;
+   public Object invoke(MatchedRoute request) {
+      return request.invoke();
    }
 }

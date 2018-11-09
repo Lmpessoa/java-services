@@ -26,7 +26,6 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -55,10 +54,10 @@ import com.lmpessoa.services.hosting.HttpRequest;
 import com.lmpessoa.services.routing.content.Serializer;
 import com.lmpessoa.services.services.IServiceMap;
 import com.lmpessoa.services.services.NoSingleMethodException;
+import com.lmpessoa.util.ClassUtils;
 
 final class RouteTable implements IRouteTable {
 
-   private static final String ERROR = "Attempted to register ";
    private static final Map<Class<?>, Function<String, ?>> specialCases;
 
    private final Map<RoutePattern, Map<HttpMethod, MethodEntry>> endpoints = new HashMap<>();
@@ -117,8 +116,7 @@ final class RouteTable implements IRouteTable {
       return map.get(method);
    }
 
-   MatchedRoute matches(HttpMethod method, String path)
-      throws NotFoundException, MethodNotAllowedException {
+   MatchedRoute matches(HttpMethod method, String path) {
       return matches(new HttpRequest() {
 
          @Override
@@ -133,7 +131,7 @@ final class RouteTable implements IRouteTable {
       });
    }
 
-   MatchedRoute matches(HttpRequest request) throws NotFoundException, MethodNotAllowedException {
+   MatchedRoute matches(HttpRequest request) {
       boolean found = false;
       for (Entry<RoutePattern, Map<HttpMethod, MethodEntry>> entry : endpoints.entrySet()) {
          RoutePattern route = entry.getKey();
@@ -263,27 +261,8 @@ final class RouteTable implements IRouteTable {
    }
 
    private void validateResourceClass(Class<?> clazz) throws NoSingleMethodException {
-      if (clazz.isArray()) {
-         throw new IllegalArgumentException(
-                  ERROR + "an array type: " + clazz.getComponentType() + "[]");
-      }
-      if (clazz.isAnnotation()) {
-         throw new IllegalArgumentException(ERROR + "an annotation: " + clazz.getName());
-      }
-      if (clazz.isInterface()) {
-         throw new IllegalArgumentException(ERROR + "an interface: " + clazz.getName());
-      }
-      if (clazz.isAnonymousClass()) {
-         throw new IllegalArgumentException(ERROR + "an anonymous class: " + clazz.getName());
-      }
-      if (clazz.isEnum()) {
-         throw new IllegalArgumentException(ERROR + "an enumeration: " + clazz.getName());
-      }
-      if (clazz.isPrimitive()) {
-         throw new IllegalArgumentException(ERROR + "a primitive type: " + clazz.getName());
-      }
-      if (Modifier.isAbstract(clazz.getModifiers())) {
-         throw new IllegalArgumentException(ERROR + "an abstract class: " + clazz.getName());
+      if (!ClassUtils.isConcreteClass(clazz)) {
+         throw new IllegalArgumentException("Resource class must be a concrete class");
       }
       Constructor<?>[] constructors = clazz.getConstructors();
       if (constructors.length != 1) {
@@ -300,7 +279,7 @@ final class RouteTable implements IRouteTable {
       int group = 1;
       for (Class<?> param : params) {
          try {
-            Object obj = serviceMap.contains(param) ? getService(param)
+            Object obj = serviceMap.contains(param) ? serviceMap.get(param)
                      : convert(matcher.group(group++), param);
             result.add(obj);
          } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
@@ -323,19 +302,6 @@ final class RouteTable implements IRouteTable {
       } else {
          Method valueOf = clazz.getMethod("valueOf", String.class);
          return valueOf.invoke(null, value);
-      }
-   }
-
-   private Object getService(Class<?> clazz) {
-      try {
-         Method locatorMethod = serviceMap.getClass().getDeclaredMethod("getLocator");
-         locatorMethod.setAccessible(true);
-         Object locator = locatorMethod.invoke(serviceMap);
-         Method locatorGet = locator.getClass().getDeclaredMethod("get", Class.class);
-         locatorGet.setAccessible(true);
-         return locatorGet.invoke(locator, clazz);
-      } catch (Exception e) {
-         throw new IllegalStateException(e);
       }
    }
 }

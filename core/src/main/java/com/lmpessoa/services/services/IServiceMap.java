@@ -26,6 +26,7 @@ import static com.lmpessoa.services.services.ReuseLevel.PER_REQUEST;
 import static com.lmpessoa.services.services.ReuseLevel.SINGLETON;
 import static com.lmpessoa.services.services.ReuseLevel.TRANSIENT;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.function.Supplier;
 
 /**
@@ -200,6 +201,8 @@ public interface IServiceMap {
     */
    <T> void putTransient(Class<T> service, Supplier<T> supplier);
 
+   // Utils ----------
+
    /**
     * Returns whether this service map has a egistration for the given service.
     *
@@ -208,4 +211,9 @@ public interface IServiceMap {
     * <code>false</code> otherwise.
     */
    boolean contains(Class<?> service);
+
+   <T> T get(Class<T> clazz);
+
+   Object invoke(Object obj, String methodName)
+      throws NoSingleMethodException, IllegalAccessException, InvocationTargetException;
 }
