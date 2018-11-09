@@ -43,6 +43,9 @@ import com.lmpessoa.services.core.NotImplementedException;
 import com.lmpessoa.services.core.Route;
 import com.lmpessoa.services.hosting.HttpRequest;
 import com.lmpessoa.services.hosting.HttpRequestBuilder;
+import com.lmpessoa.services.routing.HttpMethod;
+import com.lmpessoa.services.routing.MatchedRoute;
+import com.lmpessoa.services.routing.RouteTable;
 import com.lmpessoa.services.services.IServiceMap;
 
 public final class RouteTableMatcherTest {
@@ -148,8 +151,7 @@ public final class RouteTableMatcherTest {
                .build();
       MatchedRoute result = table.matches(request);
       assertEquals(TestResource.class, result.getResourceClass());
-      assertEquals(TestResource.class.getMethod("put", int.class, ContentObject.class),
-               result.getMethod());
+      assertEquals(TestResource.class.getMethod("put", int.class, ContentObject.class), result.getMethod());
       assertEquals(2, result.getMethodArgs().length);
       assertEquals(12, result.getMethodArgs()[0]);
       Object obj = result.getMethodArgs()[1];

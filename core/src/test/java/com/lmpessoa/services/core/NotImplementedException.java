@@ -22,6 +22,8 @@
  */
 package com.lmpessoa.services.core;
 
+import com.lmpessoa.services.core.HttpException;
+
 public class NotImplementedException extends HttpException {
 
    private static final long serialVersionUID = 1L;

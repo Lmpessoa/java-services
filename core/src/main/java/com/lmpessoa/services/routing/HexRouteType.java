@@ -43,9 +43,8 @@ final class HexRouteType extends AbstractRouteType {
 
    @Override
    protected boolean isAssignableTo(Class<?> clazz) {
-      return clazz == long.class || clazz == int.class || clazz == short.class
-               || clazz == byte.class || clazz == Long.class || clazz == Integer.class
-               || clazz == Short.class || clazz == Byte.class;
+      return clazz == long.class || clazz == int.class || clazz == short.class || clazz == byte.class
+               || clazz == Long.class || clazz == Integer.class || clazz == Short.class || clazz == Byte.class;
    }
 
    @Override

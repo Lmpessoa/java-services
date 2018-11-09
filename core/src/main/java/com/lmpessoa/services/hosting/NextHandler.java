@@ -56,8 +56,8 @@ public final class NextHandler {
     * Calls the next handler registered in the application.
     * <p>
     * New handlers must be aware that they are expected to return a result of their execution aftr
-    * completion. Implementors of new handlers may receive that result from the return of calling
-    * this function.
+    * completion. Implementors of new handlers may receive that result from the return of calling this
+    * function.
     * </p>
     *
     * @return the result returned by the next handler.
@@ -74,6 +74,7 @@ public final class NextHandler {
       NextHandler next = new NextHandler(mediator, index + 1);
       try {
          Constructor<?> constructor = handlerClass.getConstructor(NextHandler.class);
+         constructor.setAccessible(true);
          Object handler = constructor.newInstance(next);
          return mediator.getServices().invoke(handler, "invoke");
       } catch (InvocationTargetException e) {

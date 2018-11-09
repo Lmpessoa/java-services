@@ -31,6 +31,8 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import com.lmpessoa.services.routing.content.FormSerializer;
+
 public final class FormSerializerTest {
 
    private FormSerializer serializer = new FormSerializer();

@@ -26,6 +26,9 @@ import java.io.IOException;
 
 import org.junit.Test;
 
+import com.lmpessoa.services.hosting.HttpRequest;
+import com.lmpessoa.services.hosting.HttpRequestImpl;
+
 public final class HttpRequestTest {
 
    private HttpRequest getRequest(String filename) throws IOException {

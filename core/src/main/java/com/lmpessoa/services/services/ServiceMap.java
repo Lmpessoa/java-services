@@ -77,8 +77,7 @@ final class ServiceMap implements IServiceMap, IServicePoolProvider {
    public <T> T get(Class<T> clazz) {
       ServiceEntry entry = entries.get(clazz);
       if (entry == null) {
-         String className = clazz.isArray() ? clazz.getComponentType().getName() + "[]"
-                  : clazz.getName();
+         String className = clazz.isArray() ? clazz.getComponentType().getName() + "[]" : clazz.getName();
          throw new NoSuchElementException("Service not found: " + className);
       }
       Map<Class<?>, Object> levelPool = entry.getLevel().getPool(this);
@@ -93,18 +92,20 @@ final class ServiceMap implements IServiceMap, IServicePoolProvider {
       throws NoSingleMethodException, IllegalAccessException, InvocationTargetException {
       Class<?> clazz = obj instanceof Class<?> ? (Class<?>) obj : obj.getClass();
       Object instance = obj instanceof Class<?> ? null : obj;
-      Method[] methods = Arrays.stream(clazz.getMethods())
-               .filter(m -> methodName.equals(m.getName()))
-               .toArray(Method[]::new);
+      Method[] methods = Arrays.stream(clazz.getMethods()).filter(m -> methodName.equals(m.getName())).toArray(
+               Method[]::new);
       if (methods.length != 1) {
-         throw new NoSingleMethodException("Class " + clazz.getName()
-                  + " must have exactly one method named '" + methodName + "'", methods.length);
+         throw new NoSingleMethodException(
+                  "Class " + clazz.getName() + " must have exactly one method named '" + methodName + "'",
+                  methods.length);
       }
       if (Modifier.isStatic(methods[0].getModifiers()) != (instance == null)) {
          throw new IllegalArgumentException("Mismatched static/instance method call");
       }
       Object[] args = Arrays.stream(methods[0].getParameterTypes()).map(this::get).toArray();
-      return methods[0].invoke(instance, args);
+      Method method = methods[0];
+      method.setAccessible(true);
+      return method.invoke(instance, args);
    }
 
    ServiceEntry getEntry(Class<?> clazz) {
@@ -113,8 +114,7 @@ final class ServiceMap implements IServiceMap, IServicePoolProvider {
 
    private void put(ReuseLevel level, Class<?> service, Supplier<?> supplier) {
       if (entries.containsKey(Objects.requireNonNull(service))) {
-         throw new IllegalArgumentException(
-                  "Service " + service.getName() + " is already registered");
+         throw new IllegalArgumentException("Service " + service.getName() + " is already registered");
       }
       entries.put(service, new ServiceEntry(level, supplier));
    }

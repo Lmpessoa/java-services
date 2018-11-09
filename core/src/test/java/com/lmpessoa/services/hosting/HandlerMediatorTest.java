@@ -22,11 +22,22 @@
  */
 package com.lmpessoa.services.hosting;
 
+import static org.junit.Assert.assertEquals;
+
+import java.io.IOException;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import com.lmpessoa.services.hosting.HandlerMediator;
+import com.lmpessoa.services.hosting.HttpRequest;
+import com.lmpessoa.services.hosting.NextHandler;
+import com.lmpessoa.services.hosting.ResultHandler;
+import com.lmpessoa.services.routing.IRouteTable;
+import com.lmpessoa.services.routing.MatchedRoute;
+import com.lmpessoa.services.routing.RouteTableBridge;
 import com.lmpessoa.services.services.IServiceMap;
 
 public final class HandlerMediatorTest {
@@ -59,24 +70,24 @@ public final class HandlerMediatorTest {
    public void testRespondingChain() {
       request.code = 0;
       mediator.invoke();
-      assert "OK".equals(result.message);
-      assert result.code == 2;
+      assertEquals("OK", result.message);
+      assertEquals(2, result.code);
    }
 
    @Test
    public void testRejectingChain() {
       request.code = 2;
       mediator.invoke();
-      assert "Error".equals(result.message);
-      assert result.code == 4;
+      assertEquals("Error", result.message);
+      assertEquals(4, result.code);
    }
 
    @Test
    public void testTransformingChain() {
       request.code = 1;
       mediator.invoke();
-      assert "OK Computer".equals(result.message);
-      assert result.code == 2;
+      assertEquals("OK Computer", result.message);
+      assertEquals(2, result.code);
    }
 
    @Test
@@ -100,12 +111,28 @@ public final class HandlerMediatorTest {
       mediator.addHandler(MultipleInvokeHandler.class);
    }
 
-   static class Request {
+   @Test
+   public void testMediatorInvocation() throws IOException {
+      mediator = new HandlerMediator(services);
+      mediator.addHandler(ResultHandler.class);
+
+      IRouteTable routes = RouteTableBridge.get(services);
+      routes.put(TestResource.class);
+
+      HttpRequest request = new HttpRequestBuilder().setMethod("GET").setPath("/test").build();
+      MatchedRoute result = RouteTableBridge.match(routes, request);
+      services.putTransient(MatchedRoute.class, () -> result);
+
+      Object invokeResult = mediator.invoke();
+      assertEquals("Test", invokeResult);
+   }
+
+   public static class Request {
 
       public int code;
    }
 
-   static class Result {
+   public static class Result {
 
       public String message;
       public int code;
@@ -179,6 +206,13 @@ public final class HandlerMediatorTest {
 
       public void invoke(int i, Request request) {
          // Test method, does nothing
+      }
+   }
+
+   public static class TestResource {
+
+      public String get() {
+         return "Test";
       }
    }
 }

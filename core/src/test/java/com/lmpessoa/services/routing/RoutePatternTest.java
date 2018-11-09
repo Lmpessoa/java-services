@@ -39,6 +39,7 @@ import org.junit.rules.ExpectedException;
 
 import com.lmpessoa.services.BrokerObserver;
 import com.lmpessoa.services.core.Route;
+import com.lmpessoa.services.routing.RoutePattern;
 import com.lmpessoa.services.services.IServiceMap;
 import com.lmpessoa.services.services.NoSingleMethodException;
 import com.lmpessoa.util.parsing.TypeMismatchException;
@@ -182,8 +183,7 @@ public final class RoutePatternTest {
 
    @Test
    public void testMethodWithEnumParam() throws NoSuchMethodException, ParseException {
-      RoutePattern pat = RoutePattern.build(null,
-               TestResource.class.getMethod("test", DayOfWeek.class));
+      RoutePattern pat = RoutePattern.build(null, TestResource.class.getMethod("test", DayOfWeek.class));
       assertNotNull(pat);
       assertEquals("/{any}", pat.toString());
    }
@@ -197,8 +197,7 @@ public final class RoutePatternTest {
 
    @Test
    public void testMethodRouteRightParams() throws NoSuchMethodException, ParseException {
-      RoutePattern pat = RoutePattern.build(null,
-               TestResource.class.getMethod("routed", int.class, String.class));
+      RoutePattern pat = RoutePattern.build(null, TestResource.class.getMethod("routed", int.class, String.class));
       assertNotNull(pat);
       assertEquals("/route{int}-{alpha}", pat.toString());
    }
@@ -226,8 +225,7 @@ public final class RoutePatternTest {
 
    @Test
    public void testMethodRouteWithConstraint() throws NoSuchMethodException, ParseException {
-      RoutePattern pat = RoutePattern.build(null,
-               TestResource.class.getMethod("routed", String.class));
+      RoutePattern pat = RoutePattern.build(null, TestResource.class.getMethod("routed", String.class));
       assertNotNull(pat);
       assertEquals("/{alpha(3..)}", pat.toString());
    }
@@ -240,8 +238,7 @@ public final class RoutePatternTest {
    }
 
    @Test
-   public void testMethodRouteWithResource()
-      throws NoSingleMethodException, ParseException, NoSuchMethodException {
+   public void testMethodRouteWithResource() throws NoSingleMethodException, ParseException, NoSuchMethodException {
       RoutePattern pat = RoutePattern.build("", TestResource.class, serviceMap);
       assertNotNull(pat);
       assertEquals("/test", pat.toString());
@@ -259,8 +256,7 @@ public final class RoutePatternTest {
 
    @Test
    public void testMethodWithContentBody() throws NoSuchMethodException, ParseException {
-      RoutePattern pat = RoutePattern.build(null,
-               TestResource.class.getMethod("content", SimpleTestResource.class));
+      RoutePattern pat = RoutePattern.build(null, TestResource.class.getMethod("content", SimpleTestResource.class));
       assertNotNull(pat);
       assertEquals("/", pat.toString());
       assertEquals(SimpleTestResource.class, pat.getContentClass());
@@ -279,29 +275,31 @@ public final class RoutePatternTest {
    public void testPatternBasic() throws NoSingleMethodException, ParseException {
       RoutePattern pat = RoutePattern.build("", TestResource.class, serviceMap);
       assertNotNull(pat);
-      assertTrue(pat.getPattern().matcher("/test").find());
+      assertTrue(pat.getPattern()
+               .matcher("/test")
+               .find());
    }
 
    @Test
-   public void testPatternWithArgument()
-      throws NoSingleMethodException, ParseException, NoSuchMethodException {
+   public void testPatternWithArgument() throws NoSingleMethodException, ParseException, NoSuchMethodException {
       RoutePattern pat = RoutePattern.build("", TestResource.class, serviceMap);
       assertNotNull(pat);
       pat = RoutePattern.build(pat, TestResource.class.getMethod("test", int.class));
       assertNotNull(pat);
-      Matcher matcher = pat.getPattern().matcher("/test/12");
+      Matcher matcher = pat.getPattern()
+               .matcher("/test/12");
       assertTrue(matcher.find());
       assertEquals("12", matcher.group(1));
    }
 
    @Test
-   public void testPatternWithWrongArgument()
-      throws NoSingleMethodException, ParseException, NoSuchMethodException {
+   public void testPatternWithWrongArgument() throws NoSingleMethodException, ParseException, NoSuchMethodException {
       RoutePattern pat = RoutePattern.build("", TestResource.class, serviceMap);
       assertNotNull(pat);
       pat = RoutePattern.build(pat, TestResource.class.getMethod("test", int.class));
       assertNotNull(pat);
-      Matcher matcher = pat.getPattern().matcher("/test/ab");
+      Matcher matcher = pat.getPattern()
+               .matcher("/test/ab");
       assertFalse(matcher.find());
    }
 

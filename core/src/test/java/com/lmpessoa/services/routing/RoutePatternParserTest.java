@@ -33,6 +33,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import com.lmpessoa.services.routing.AbstractRouteType;
+import com.lmpessoa.services.routing.AlphaRouteType;
+import com.lmpessoa.services.routing.AnyRouteType;
+import com.lmpessoa.services.routing.HexRouteType;
+import com.lmpessoa.services.routing.IntRouteType;
+import com.lmpessoa.services.routing.RoutePatternParser;
+
 public final class RoutePatternParserTest {
 
    @Rule

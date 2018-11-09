@@ -30,7 +30,8 @@ final class JsonSerializer implements IContentParser {
    @Override
    public <T> T parse(String content, Class<T> clazz) {
       try {
-         Gson gson = new GsonBuilder().setPrettyPrinting().create();
+         Gson gson = new GsonBuilder().setPrettyPrinting()
+                  .create();
          return gson.fromJson(content, clazz);
       } catch (Exception e) {
          throw new RuntimeException(e);

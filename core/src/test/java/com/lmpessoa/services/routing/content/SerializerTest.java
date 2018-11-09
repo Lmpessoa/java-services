@@ -32,6 +32,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import org.junit.Test;
 
 import com.lmpessoa.services.core.MediaType;
+import com.lmpessoa.services.routing.content.Serializer;
 
 public final class SerializerTest {
 

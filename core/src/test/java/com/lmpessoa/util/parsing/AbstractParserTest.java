@@ -31,6 +31,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import com.lmpessoa.util.parsing.AbstractParser;
+import com.lmpessoa.util.parsing.ITemplatePart;
+import com.lmpessoa.util.parsing.IVariablePart;
+import com.lmpessoa.util.parsing.LiteralPart;
+
 public final class AbstractParserTest {
 
    @Rule

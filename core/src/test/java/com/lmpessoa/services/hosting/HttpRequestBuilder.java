@@ -29,6 +29,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.lmpessoa.services.hosting.HttpRequest;
+import com.lmpessoa.services.hosting.HttpRequestImpl;
+
 public final class HttpRequestBuilder {
 
    private String method = "GET";

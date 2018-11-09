@@ -36,8 +36,7 @@ import com.lmpessoa.util.parsing.ITemplatePart;
 
 final class RoutePatternParser extends AbstractParser<AbstractRouteType> {
 
-   private static final Pattern pattern = Pattern
-            .compile("^([a-z]+)(\\(([0-9]+)?(..)?([0-9]+)?\\))?$");
+   private static final Pattern pattern = Pattern.compile("^([a-z]+)(\\(([0-9]+)?(..)?([0-9]+)?\\))?$");
    private Map<String, Class<? extends AbstractRouteType>> types;
 
    RoutePatternParser(String template, Map<String, Class<? extends AbstractRouteType>> types) {
@@ -45,8 +44,8 @@ final class RoutePatternParser extends AbstractParser<AbstractRouteType> {
       this.types = types;
    }
 
-   public static List<ITemplatePart> parse(String template,
-      Map<String, Class<? extends AbstractRouteType>> types) throws ParseException {
+   public static List<ITemplatePart> parse(String template, Map<String, Class<? extends AbstractRouteType>> types)
+      throws ParseException {
       return new RoutePatternParser(template, types).parse();
    }
 
@@ -83,8 +82,8 @@ final class RoutePatternParser extends AbstractParser<AbstractRouteType> {
       try {
          Constructor<? extends AbstractRouteType> constructor = type.getConstructor(argTypes);
          return constructor.newInstance(args);
-      } catch (NoSuchMethodException | InstantiationException | IllegalAccessException
-               | IllegalArgumentException | InvocationTargetException e) {
+      } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | IllegalArgumentException
+               | InvocationTargetException e) {
          throw new ParseException(e.getMessage(), pos);
       }
    }

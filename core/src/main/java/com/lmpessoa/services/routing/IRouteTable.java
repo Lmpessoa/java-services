@@ -36,8 +36,8 @@ import java.util.Collection;
 public interface IRouteTable {
 
    /**
-    * Adds the methods of the given resource class to this route table. If any method provides a
-    * route and HTTP method that is already registered, the new value is discarded.
+    * Adds the methods of the given resource class to this route table. If any method provides a route
+    * and HTTP method that is already registered, the new value is discarded.
     *
     * @param clazz the class to add to the route table.
     * @return a list of exceptions raised during this call.
@@ -48,8 +48,7 @@ public interface IRouteTable {
 
    /**
     * Adds the methods of the given resource class to this route table under the given area. If any
-    * method provides a route and HTTP method that is already registered, the new value is
-    * discarded.
+    * method provides a route and HTTP method that is already registered, the new value is discarded.
     *
     * @param area the path of the area under which the resource will be located.
     * @param clazz the class to add to the route table.
@@ -60,8 +59,8 @@ public interface IRouteTable {
    }
 
    /**
-    * Adds the methods of all the given resource classes to this route table. If any method provides
-    * a route and HTTP method that is already registered, the new value is discarded.
+    * Adds the methods of all the given resource classes to this route table. If any method provides a
+    * route and HTTP method that is already registered, the new value is discarded.
     *
     * @param classes the collection of classes to add to the route table.
     * @return a list of exceptions raised during this call.
@@ -69,9 +68,8 @@ public interface IRouteTable {
    Collection<Exception> putAll(Collection<Class<?>> classes);
 
    /**
-    * Adds the methods of all the given resource class to this route table under the given area. If
-    * any method provides a route and HTTP method that is already registered, the new value is
-    * discarded.
+    * Adds the methods of all the given resource class to this route table under the given area. If any
+    * method provides a route and HTTP method that is already registered, the new value is discarded.
     *
     * @param area the path of the area under which the resource will be located.
     * @param classes the collection of classes to add to the route table.

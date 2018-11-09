@@ -22,33 +22,19 @@
  */
 package com.lmpessoa.services.routing;
 
-final class IntRouteType extends AbstractRouteType {
+import com.lmpessoa.services.hosting.HttpRequest;
+import com.lmpessoa.services.routing.IRouteTable;
+import com.lmpessoa.services.routing.MatchedRoute;
+import com.lmpessoa.services.routing.RouteTable;
+import com.lmpessoa.services.services.IServiceMap;
 
-   public IntRouteType() {
-      super(1, -1);
+public final class RouteTableBridge {
+
+   public static IRouteTable get(IServiceMap serviceMap) {
+      return new RouteTable(serviceMap);
    }
 
-   public IntRouteType(int length) {
-      super(length, length);
-   }
-
-   public IntRouteType(int minLength, int maxLength) {
-      super(minLength, maxLength);
-   }
-
-   @Override
-   protected String getName() {
-      return "int";
-   }
-
-   @Override
-   protected boolean isAssignableTo(Class<?> clazz) {
-      return clazz == long.class || clazz == int.class || clazz == short.class || clazz == byte.class
-               || clazz == Long.class || clazz == Integer.class || clazz == Short.class || clazz == Byte.class;
-   }
-
-   @Override
-   protected String getRegex() {
-      return "[0-9]" + getRegexLength();
+   public static MatchedRoute match(IRouteTable routes, HttpRequest request) {
+      return ((RouteTable) routes).matches(request);
    }
 }

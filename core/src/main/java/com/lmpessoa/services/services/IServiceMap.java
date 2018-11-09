@@ -55,8 +55,7 @@ public interface IServiceMap {
 
    /**
     * Adds the given class to the service map as a singleton service. The given class must be a
-    * concrete class and is used both for service discovery and instantiation of the service
-    * responder.
+    * concrete class and is used both for service discovery and instantiation of the service responder.
     * <p>
     * Each request for a singleton service will return the same object regardless.
     * </p>
@@ -68,8 +67,8 @@ public interface IServiceMap {
    }
 
    /**
-    * Adds the given class pair to the service map as a singleton service. The given service class
-    * is used for service discovery while the provider class must be a concrete class and is used to
+    * Adds the given class pair to the service map as a singleton service. The given service class is
+    * used for service discovery while the provider class must be a concrete class and is used to
     * create the instance object that will respond to service requests.
     * <p>
     * Each request for a singleton service will return the same object regardless.
@@ -83,9 +82,9 @@ public interface IServiceMap {
    }
 
    /**
-    * Adds the given provider function to the service map as singleton service. The given service
-    * class is used for service discovery and the provider function is used to create the instance
-    * object that will respond to service requests.
+    * Adds the given provider function to the service map as singleton service. The given service class
+    * is used for service discovery and the provider function is used to create the instance object
+    * that will respond to service requests.
     * <p>
     * Each request for a singleton service will return the same object regardless.
     * </p>
@@ -97,8 +96,8 @@ public interface IServiceMap {
    <T> void putSingleton(Class<T> service, Supplier<T> provider);
 
    /**
-    * Adds the given object instance to the service map as a singleton service. No other instances
-    * of the responder will be created through this call.
+    * Adds the given object instance to the service map as a singleton service. No other instances of
+    * the responder will be created through this call.
     * <p>
     * Each request for a singleton service will return the same object regardless.
     * </p>
@@ -112,8 +111,7 @@ public interface IServiceMap {
 
    /**
     * Adds the given class to the service map as a per request service. The given class must be a
-    * concrete class and is used both for service discovery and instantiation of the service
-    * responder.
+    * concrete class and is used both for service discovery and instantiation of the service responder.
     * <p>
     * As the name implies, each request for a per request service will return the same object within
     * each different request.
@@ -126,8 +124,8 @@ public interface IServiceMap {
    }
 
    /**
-    * Adds the given class pair to the service map as a per request service. The given service class
-    * is used for service discovery while the provider class must be a concrete class and is used to
+    * Adds the given class pair to the service map as a per request service. The given service class is
+    * used for service discovery while the provider class must be a concrete class and is used to
     * create the instance object that will respond to service requests.
     * <p>
     * As the name implies, each request for a per request service will return the same object within
@@ -160,8 +158,7 @@ public interface IServiceMap {
 
    /**
     * Adds the given class to the service map as a transient service. The given class must be a
-    * concrete class and is used both for service discovery and instantiation of the service
-    * responder.
+    * concrete class and is used both for service discovery and instantiation of the service responder.
     * <p>
     * Each request for a transient object will return a new object.
     * </p>
@@ -173,8 +170,8 @@ public interface IServiceMap {
    }
 
    /**
-    * Adds the given class pair to the service map as a transient service. The given service class
-    * is used for service discovery while the provider class must be a concrete class and is used to
+    * Adds the given class pair to the service map as a transient service. The given service class is
+    * used for service discovery while the provider class must be a concrete class and is used to
     * create the instance object that will respond to service requests.
     * <p>
     * Each request for a transient object will return a new object.
@@ -188,15 +185,15 @@ public interface IServiceMap {
    }
 
    /**
-    * Adds the given provider function to the service map as transient service. The given service
-    * class is used for service discovery and the provider function is used to create the instance
-    * object that will respond to service requests.
+    * Adds the given provider function to the service map as transient service. The given service class
+    * is used for service discovery and the provider function is used to create the instance object
+    * that will respond to service requests.
     * <p>
     * Each request for a transient object will return a new object.
     * </p>
     *
     * @param service the class of the service to be registered.
-    * @param provider the function that creates cobjects that supply the service the service for the
+    * @param provider the function that creates objects that supply the service the service for the
     * base class.
     */
    <T> void putTransient(Class<T> service, Supplier<T> supplier);
@@ -204,7 +201,7 @@ public interface IServiceMap {
    // Utils ----------
 
    /**
-    * Returns whether this service map has a egistration for the given service.
+    * Returns whether this service map has a registration for the given service.
     *
     * @param service the service to check if there is a registration on this service map.
     * @return <code>true</code> if this service map has a registration for the given service,

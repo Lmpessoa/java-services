@@ -38,7 +38,7 @@ public final class NotFoundException extends HttpException {
 
    /**
     * Creates a new <code>NotFoundException</code> with the given detail message.
-    *
+    * 
     * @param message the detail message.
     */
    public NotFoundException(String message) {

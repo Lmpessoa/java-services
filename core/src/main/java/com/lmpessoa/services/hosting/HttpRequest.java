@@ -84,8 +84,8 @@ public interface HttpRequest {
     * but only the value send with the request headers.
     * </p>
     *
-    * @return the content length of the body of this HTTP request, or <code>0</code> if this value
-    * is not present.
+    * @return the content length of the body of this HTTP request, or <code>0</code> if this value is
+    * not present.
     */
    default long getContentLength() {
       return 0;

@@ -94,14 +94,12 @@ final class RouteTable implements IRouteTable {
    }
 
    boolean hasRoute(String route) throws ParseException {
-      RoutePattern pat = new RoutePattern(RoutePatternParser.parse(route, RoutePattern.types),
-               null);
+      RoutePattern pat = new RoutePattern(RoutePatternParser.parse(route, RoutePattern.types), null);
       return endpoints.containsKey(pat);
    }
 
    HttpMethod[] listMethodsOf(String route) throws ParseException {
-      RoutePattern pat = new RoutePattern(RoutePatternParser.parse(route, RoutePattern.types),
-               null);
+      RoutePattern pat = new RoutePattern(RoutePatternParser.parse(route, RoutePattern.types), null);
       Map<HttpMethod, MethodEntry> map = endpoints.get(pat);
       if (map == null) {
          return new HttpMethod[0];
@@ -110,8 +108,7 @@ final class RouteTable implements IRouteTable {
    }
 
    MethodEntry getRouteMethod(HttpMethod method, String route) throws ParseException {
-      RoutePattern pat = new RoutePattern(RoutePatternParser.parse(route, RoutePattern.types),
-               null);
+      RoutePattern pat = new RoutePattern(RoutePatternParser.parse(route, RoutePattern.types), null);
       Map<HttpMethod, MethodEntry> map = endpoints.get(pat);
       return map.get(method);
    }
@@ -173,8 +170,7 @@ final class RouteTable implements IRouteTable {
    }
 
    private Object parseContentBody(HttpRequest request, Class<?> contentClass) {
-      if (request.getContentType() != null && request.getBody() != null
-               && request.getContentLength() > 0) {
+      if (request.getContentType() != null && request.getBody() != null && request.getContentLength() > 0) {
          try (Scanner scanner = new Scanner(request.getBody())) {
             scanner.useDelimiter("\\A");
             if (scanner.hasNext()) {
@@ -208,8 +204,7 @@ final class RouteTable implements IRouteTable {
       return Collections.unmodifiableCollection(exceptions);
    }
 
-   private void putMethod(Class<?> clazz, RoutePattern classPat, Method method,
-      List<Exception> exceptions) {
+   private void putMethod(Class<?> clazz, RoutePattern classPat, Method method, List<Exception> exceptions) {
       try {
          if (method.getDeclaringClass() == Object.class) {
             return;
@@ -228,8 +223,8 @@ final class RouteTable implements IRouteTable {
                throw new DuplicateMethodException(methodName, methodPat, clazz);
             }
             Constructor<?> constructor = clazz.getConstructors()[0];
-            map.put(methodName, new MethodEntry(clazz, method, constructor.getParameterCount(),
-                     methodPat.getContentClass()));
+            map.put(methodName,
+                     new MethodEntry(clazz, method, constructor.getParameterCount(), methodPat.getContentClass()));
          }
       } catch (Exception e) {
          exceptions.add(e);
@@ -243,8 +238,7 @@ final class RouteTable implements IRouteTable {
                method.getAnnotation(HttpOptions.class) };
       HttpMethod[] result = Arrays.stream(methods)
                .filter(Objects::nonNull)
-               .map(a -> HttpMethod
-                        .valueOf(a.annotationType().getSimpleName().substring(4).toUpperCase()))
+               .map(a -> HttpMethod.valueOf(a.annotationType().getSimpleName().substring(4).toUpperCase()))
                .toArray(HttpMethod[]::new);
       if (result.length > 0) {
          return result;
@@ -266,8 +260,7 @@ final class RouteTable implements IRouteTable {
       }
       Constructor<?>[] constructors = clazz.getConstructors();
       if (constructors.length != 1) {
-         throw new NoSingleMethodException(
-                  "Class " + clazz.getName() + " must have only one constructor",
+         throw new NoSingleMethodException("Class " + clazz.getName() + " must have only one constructor",
                   constructors.length);
 
       }
@@ -279,8 +272,7 @@ final class RouteTable implements IRouteTable {
       int group = 1;
       for (Class<?> param : params) {
          try {
-            Object obj = serviceMap.contains(param) ? serviceMap.get(param)
-                     : convert(matcher.group(group++), param);
+            Object obj = serviceMap.contains(param) ? serviceMap.get(param) : convert(matcher.group(group++), param);
             result.add(obj);
          } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
             e.printStackTrace();

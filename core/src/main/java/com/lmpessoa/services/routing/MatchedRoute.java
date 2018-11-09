@@ -84,8 +84,8 @@ public final class MatchedRoute {
     * Calls the resolved method.
     *
     * <p>
-    * This method does not expect arguments provided by the developer since all the expected
-    * arguments gathered from the HTTP request are internally known to this class.
+    * This method does not expect arguments provided by the developer since all the expected arguments
+    * gathered from the HTTP request are internally known to this class.
     * </p>
     *
     * @return a object result returned by the called method or <code>null</code> if nothing was

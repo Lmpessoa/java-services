@@ -40,18 +40,17 @@ final class LazyInitializer<T> implements Supplier<T> {
       }
       final Constructor<?>[] constructors = provider.getConstructors();
       if (constructors.length != 1) {
-         throw new IllegalArgumentException(new NoSingleMethodException(
-                  "Provider class must have only one constructor", constructors.length));
+         throw new IllegalArgumentException(
+                  new NoSingleMethodException("Provider class must have only one constructor", constructors.length));
       }
       for (Class<?> paramType : constructors[0].getParameterTypes()) {
          ServiceEntry entry = ((ServiceMap) serviceMap).getEntry(paramType);
          if (entry == null) {
-            throw new IllegalArgumentException(
-                     "Dependent service " + paramType.getName() + " is not registered");
+            throw new IllegalArgumentException("Dependent service " + paramType.getName() + " is not registered");
          }
          if (entry.getLevel().compareTo(level) < 0) {
-            throw new IllegalArgumentException("Class " + provider.getName()
-                     + " has a lower lifetime than one of its dependencies");
+            throw new IllegalArgumentException(
+                     "Class " + provider.getName() + " has a lower lifetime than one of its dependencies");
          }
       }
       this.provider = provider;
@@ -62,8 +61,7 @@ final class LazyInitializer<T> implements Supplier<T> {
    @SuppressWarnings("unchecked")
    public T get() {
       Constructor<?> constructor = provider.getConstructors()[0];
-      Object[] params = Arrays.stream(constructor.getParameterTypes()).map(serviceMap::get).toArray(
-               Object[]::new);
+      Object[] params = Arrays.stream(constructor.getParameterTypes()).map(serviceMap::get).toArray(Object[]::new);
       try {
          return (T) constructor.newInstance(params);
       } catch (InvocationTargetException e) {
