@@ -38,7 +38,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import com.lmpessoa.services.BrokerObserver;
-import com.lmpessoa.services.routing.Route;
+import com.lmpessoa.services.core.Route;
 import com.lmpessoa.services.routing.RoutePattern;
 import com.lmpessoa.services.services.IServiceMap;
 import com.lmpessoa.services.services.NoSingleMethodException;

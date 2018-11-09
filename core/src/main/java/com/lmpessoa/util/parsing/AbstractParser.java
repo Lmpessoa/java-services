@@ -55,10 +55,10 @@ import java.util.Map;
  *
  * <p>
  * Whenever the template requires a variable to be seen as a literal, it must be escaped by
- * preceeding it with a backslash (<code>\</code>).
+ * preceding it with a backslash (<code>\</code>).
  * </p>
  *
- * @param <T> the actual type of varible parts returned by the template parser.
+ * @param <T> the actual type of variable parts returned by the template parser.
  */
 public abstract class AbstractParser<T extends IVariablePart> {
 

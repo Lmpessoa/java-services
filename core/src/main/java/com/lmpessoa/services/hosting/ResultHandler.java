@@ -22,9 +22,15 @@
  */
 package com.lmpessoa.services.hosting;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.lang.reflect.Method;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 
+import com.lmpessoa.services.core.ContentType;
 import com.lmpessoa.services.core.MediaType;
+import com.lmpessoa.services.routing.MatchedRoute;
 import com.lmpessoa.services.routing.content.Serializer;
 
 final class ResultHandler {
@@ -35,10 +41,10 @@ final class ResultHandler {
       this.next = next;
    }
 
-   public HttpResult invoke(HttpRequest request) {
+   public HttpResult invoke(HttpRequest request, MatchedRoute route) {
       Object obj = getResultObject();
       int statusCode = getStatusCode(obj);
-      HttpResultInputStream is = getContentBody(obj, request);
+      HttpResultInputStream is = getContentBody(obj, request, route.getMethod());
       return new HttpResult(statusCode, obj, is);
    }
 
@@ -60,7 +66,28 @@ final class ResultHandler {
       return 200;
    }
 
-   private HttpResultInputStream getContentBody(Object obj, HttpRequest request) {
+   private HttpResultInputStream getContentBody(Object obj, HttpRequest request, Method method) {
+      Object result = obj;
+      if (result instanceof String) {
+         result = ((String) result).getBytes(Charset.forName("UTF-8"));
+      }
+      if (result instanceof byte[]) {
+         result = new ByteArrayInputStream((byte[]) result);
+      }
+      if (result instanceof HttpResultInputStream) {
+         return (HttpResultInputStream) result;
+      } else if (result instanceof InputStream) {
+         ContentType contentAnn = method.getAnnotation(ContentType.class);
+         String contentType;
+         if (contentAnn != null) {
+            contentType = contentAnn.value();
+         } else if (obj instanceof String) {
+            contentType = MediaType.TEXT;
+         } else {
+            contentType = MediaType.BINARY;
+         }
+         return new HttpResultInputStream(contentType, (InputStream) result);
+      }
       String[] accepts;
       if (request.getHeaders().containsKey("Accept")) {
          accepts = Arrays.stream(request.getHeaders().get("Accept").split("\\.")) //

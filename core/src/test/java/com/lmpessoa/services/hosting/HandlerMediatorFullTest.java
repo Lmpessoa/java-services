@@ -22,29 +22,33 @@
  */
 package com.lmpessoa.services.hosting;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.Charset;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import com.lmpessoa.services.core.ContentType;
 import com.lmpessoa.services.core.HttpGet;
 import com.lmpessoa.services.core.MediaType;
+import com.lmpessoa.services.core.Route;
 import com.lmpessoa.services.hosting.HandlerMediator;
 import com.lmpessoa.services.hosting.HttpRequest;
 import com.lmpessoa.services.hosting.HttpResult;
+import com.lmpessoa.services.hosting.HttpResultInputStream;
 import com.lmpessoa.services.hosting.InternalServerError;
 import com.lmpessoa.services.hosting.InvokeHandler;
 import com.lmpessoa.services.hosting.ResultHandler;
 import com.lmpessoa.services.routing.IRouteTable;
 import com.lmpessoa.services.routing.MatchedRoute;
-import com.lmpessoa.services.routing.Route;
 import com.lmpessoa.services.routing.RouteTableBridge;
 import com.lmpessoa.services.services.IServiceMap;
 
@@ -84,11 +88,19 @@ public final class HandlerMediatorFullTest {
       return mediator.invoke();
    }
 
+   public String readAll(InputStream is) throws IOException {
+      byte[] data = new byte[is.available()];
+      is.read(data);
+      return new String(data, Charset.forName("UTF-8"));
+   }
+
    @Test
    public void testMediatorWithString() throws IOException {
       HttpResult result = perform("/test/string");
       assertEquals(200, result.getStatusCode());
       assertEquals("Test", result.getObject());
+      assertNotNull(result.getInputStream());
+      assertEquals(MediaType.TEXT, result.getInputStream().getContentType());
    }
 
    @Test
@@ -117,11 +129,40 @@ public final class HandlerMediatorFullTest {
    public void testMediatorWithObject() throws IOException {
       HttpResult result = perform("/test/object");
       assertEquals(200, result.getStatusCode());
+      assertNotNull(result.getInputStream());
       assertEquals(MediaType.JSON, result.getInputStream().getContentType());
-      byte[] content = new byte[result.getInputStream().available()];
-      result.getInputStream().read(content);
-      assertArrayEquals(new byte[] { 123, 34, 105, 100, 34, 58, 49, 50, 44, 34, 109, 101, 115, 115, 97, 103, 101, 34,
-               58, 34, 84, 101, 115, 116, 34, 125 }, content);
+      String content = readAll(result.getInputStream());
+      assertEquals("{\"id\":12,\"message\":\"Test\"}", content);
+   }
+
+   @Test
+   public void testMediatorWithStream() throws IOException {
+      HttpResult result = perform("/test/binary");
+      assertEquals(200, result.getStatusCode());
+      assertNotNull(result.getInputStream());
+      assertEquals(MediaType.BINARY, result.getInputStream().getContentType());
+      String content = readAll(result.getInputStream());
+      assertEquals("Test", content);
+   }
+
+   @Test
+   public void testMediatorWithTypedStream() throws IOException {
+      HttpResult result = perform("/test/typed");
+      assertEquals(200, result.getStatusCode());
+      assertNotNull(result.getInputStream());
+      assertEquals(MediaType.YAML, result.getInputStream().getContentType());
+      String content = readAll(result.getInputStream());
+      assertEquals("Test", content);
+   }
+
+   @Test
+   public void testMediatorWithResultStream() throws IOException {
+      HttpResult result = perform("/test/result");
+      assertEquals(200, result.getStatusCode());
+      assertNotNull(result.getInputStream());
+      assertEquals(MediaType.YAML, result.getInputStream().getContentType());
+      String content = readAll(result.getInputStream());
+      assertEquals("Test", content);
    }
 
    public static class TestObject {
@@ -165,6 +206,26 @@ public final class HandlerMediatorFullTest {
       @Route("object")
       public TestObject object() {
          return new TestObject(12, "Test");
+      }
+
+      @HttpGet
+      @Route("binary")
+      public byte[] binary() {
+         return "Test".getBytes();
+      }
+
+      @HttpGet
+      @Route("typed")
+      @ContentType(MediaType.YAML)
+      public byte[] typed() {
+         return "Test".getBytes();
+      }
+
+      @HttpGet
+      @Route("result")
+      @ContentType(MediaType.ATOM)
+      public InputStream result() {
+         return new HttpResultInputStream(MediaType.YAML, "Test".getBytes());
       }
    }
 }
