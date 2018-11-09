@@ -1,5 +1,4 @@
 /*
- * A light and easy engine for developing web APIs and microservices.
  * Copyright (c) 2017 Leonardo Pessoa
  * http://github.com/lmpessoa/java-services
  *
@@ -41,7 +40,7 @@ import java.util.Map;
  * Subclasses must implement the method {@link #parseVariable(int, String)} in order to produce the
  * actual variable representation to be returned by that parse. Also, subclasses are recommended to
  * maintain the visibility of the methods in this class and also implement a static method which
- * will both instanciate the parser and run the parsing process. Since the parser is not required
+ * will both instantiate the parser and run the parsing process. Since the parser is not required
  * after the parsing process is finished, it can be discarded afterwards.
  * </p>
  *

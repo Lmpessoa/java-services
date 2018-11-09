@@ -1,0 +1,10 @@
+GET /?id=0 HTTP/1.1
+Host: localhost:2020
+Connection: keep-alive
+Cache-Control: max-age=0
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8
+Accept-Encoding: gzip, deflate, br
+Accept-Language: en-GB,en;q=0.8,pt;q=0.6
+Cookie: _ga=GA1.1.1059561821.1502932845; toggle=false; TCSESSIONID=7E5D8A63894C7960F49800D5C6570AFF; JSESSIONID=EDD54A7BFAADF5199AC1637F9DC3F911; auth_token=149daf3ceabde2270eb77663d2cafa4ca6ff2583

@@ -1,5 +1,4 @@
 /*
- * A light and easy engine for developing web APIs and microservices.
  * Copyright (c) 2017 Leonardo Pessoa
  * http://github.com/lmpessoa/java-services
  *
@@ -38,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Scanner;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
@@ -51,6 +51,8 @@ import com.lmpessoa.services.core.HttpPut;
 import com.lmpessoa.services.core.MethodNotAllowedException;
 import com.lmpessoa.services.core.NonResource;
 import com.lmpessoa.services.core.NotFoundException;
+import com.lmpessoa.services.hosting.HttpRequest;
+import com.lmpessoa.services.routing.content.Serializer;
 import com.lmpessoa.services.services.IServiceMap;
 import com.lmpessoa.services.services.NoSingleMethodException;
 
@@ -117,14 +119,30 @@ final class RouteTable implements IRouteTable {
 
    MatchedRoute matches(HttpMethod method, String path)
       throws NotFoundException, MethodNotAllowedException {
+      return matches(new HttpRequest() {
+
+         @Override
+         public String getMethod() {
+            return method.name();
+         }
+
+         @Override
+         public String getPath() {
+            return path;
+         }
+      });
+   }
+
+   MatchedRoute matches(HttpRequest request) throws NotFoundException, MethodNotAllowedException {
       boolean found = false;
       for (Entry<RoutePattern, Map<HttpMethod, MethodEntry>> entry : endpoints.entrySet()) {
          RoutePattern route = entry.getKey();
-         Matcher matcher = route.getPattern().matcher(path);
+         Matcher matcher = route.getPattern().matcher(request.getPath());
          if (!matcher.find()) {
             continue;
          }
          found = true;
+         HttpMethod method = HttpMethod.valueOf(request.getMethod());
          MethodEntry methodEntry = entry.getValue().get(method);
          if (methodEntry == null) {
             continue;
@@ -135,15 +153,17 @@ final class RouteTable implements IRouteTable {
          params.addAll(Arrays.asList(constructor.getParameterTypes()));
          Method methodCall = methodEntry.getMethod();
          params.addAll(Arrays.asList(methodCall.getParameterTypes()));
+         Object contentObject = null;
          if (methodEntry.getContentClass() != null) {
             params.remove(params.size() - 1);
+            contentObject = parseContentBody(request, methodEntry.getContentClass());
          }
          List<Object> result = convertParams(matcher, params);
          if (result == null) {
             continue;
          }
          if (methodEntry.getContentClass() != null) {
-            result.add(null);
+            result.add(contentObject);
          }
          return new MatchedRoute(methodEntry, result.toArray());
       }
@@ -152,6 +172,19 @@ final class RouteTable implements IRouteTable {
       } else {
          throw new MethodNotAllowedException();
       }
+   }
+
+   private Object parseContentBody(HttpRequest request, Class<?> contentClass) {
+      if (request.getContentType() != null && request.getBody() != null
+               && request.getContentLength() > 0) {
+         try (Scanner scanner = new Scanner(request.getBody())) {
+            scanner.useDelimiter("\\A");
+            if (scanner.hasNext()) {
+               return Serializer.parse(request.getContentType(), scanner.next(), contentClass);
+            }
+         }
+      }
+      return null;
    }
 
    private Collection<Exception> putClasses(Map<Class<?>, String> classes) {

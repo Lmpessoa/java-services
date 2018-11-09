@@ -1,5 +1,4 @@
 /*
- * A light and easy engine for developing web APIs and microservices.
  * Copyright (c) 2017 Leonardo Pessoa
  * http://github.com/lmpessoa/java-services
  *

@@ -1,5 +1,4 @@
 /*
- * A light and easy engine for developing web APIs and microservices.
  * Copyright (c) 2017 Leonardo Pessoa
  * http://github.com/lmpessoa/java-services
  *
@@ -25,7 +24,10 @@ package com.lmpessoa.services.routing;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
+import java.io.IOException;
 import java.util.function.Supplier;
 
 import org.junit.Before;
@@ -34,10 +36,13 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import com.lmpessoa.services.core.HttpException;
+import com.lmpessoa.services.core.MediaType;
 import com.lmpessoa.services.core.MethodNotAllowedException;
 import com.lmpessoa.services.core.NotFoundException;
 import com.lmpessoa.services.core.NotImplementedException;
 import com.lmpessoa.services.core.Route;
+import com.lmpessoa.services.hosting.HttpRequest;
+import com.lmpessoa.services.hosting.HttpRequestBuilder;
 import com.lmpessoa.services.services.IServiceMap;
 
 public final class RouteTableMatcherTest {
@@ -133,6 +138,39 @@ public final class RouteTableMatcherTest {
       assertEquals(message.get(), result.invoke());
    }
 
+   @Test
+   public void testMatchesWithContent()
+      throws IOException, NotFoundException, MethodNotAllowedException, NoSuchMethodException {
+      HttpRequest request = new HttpRequestBuilder().setMethod("PUT")
+               .setPath("/test/12")
+               .setBody("id=12&name=Test&email=test%40test.com&checked=true")
+               .setContentType(MediaType.FORM)
+               .build();
+      MatchedRoute result = table.matches(request);
+      assertEquals(TestResource.class, result.getResourceClass());
+      assertEquals(TestResource.class.getMethod("put", int.class, ContentObject.class),
+               result.getMethod());
+      assertEquals(2, result.getMethodArgs().length);
+      assertEquals(12, result.getMethodArgs()[0]);
+      Object obj = result.getMethodArgs()[1];
+      assertNotNull(obj);
+      assertTrue(obj instanceof ContentObject);
+      ContentObject cobj = (ContentObject) result.getMethodArgs()[1];
+      assertEquals(12, cobj.id);
+      assertEquals("Test", cobj.name);
+      assertEquals("test@test.com", cobj.email);
+      assertTrue(cobj.checked);
+      ;
+   }
+
+   public static class ContentObject {
+
+      public int id;
+      public String name;
+      public String email;
+      public boolean checked;
+   }
+
    public static class TestResource {
 
       public String get() {
@@ -157,6 +195,10 @@ public final class RouteTableMatcherTest {
 
       public void patch() throws NotImplementedException {
          throw new NotImplementedException();
+      }
+
+      public void put(int i, ContentObject content) {
+
       }
    }
 
