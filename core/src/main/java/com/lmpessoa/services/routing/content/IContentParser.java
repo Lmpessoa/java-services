@@ -22,7 +22,7 @@
  */
 package com.lmpessoa.services.routing.content;
 
-public interface IContentParser {
+interface IContentParser {
 
    <T> T parse(String content, Class<T> resultClass);
 }

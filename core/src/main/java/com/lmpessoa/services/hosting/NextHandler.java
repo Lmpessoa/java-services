@@ -25,15 +25,12 @@ package com.lmpessoa.services.hosting;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
-import com.lmpessoa.services.core.HttpException;
-import com.lmpessoa.services.core.InternalServerError;
-
 /**
  * Wraps the call to the next handler in the application.
  *
  * <p>
  * A proxy to the next handler is created automatically by the application for each handler class
- * registered. This proxy ensures each handler is instatiated only when required (when a the
+ * registered. This proxy ensures each handler is instantiated only when required (when a the
  * previous handler explicitly {@link #invoke}s the next handler).
  * </p>
  *

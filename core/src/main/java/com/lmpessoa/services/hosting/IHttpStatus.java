@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core;
+package com.lmpessoa.services.hosting;
 
 interface IHttpStatus {
 

@@ -27,8 +27,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
-import com.lmpessoa.services.core.HttpException;
-import com.lmpessoa.services.core.InternalServerError;
+import com.lmpessoa.services.hosting.HttpException;
+import com.lmpessoa.services.hosting.InternalServerError;
 
 /**
  * A <code>MatchedRoute</code> represents a set of information about a matched request route to

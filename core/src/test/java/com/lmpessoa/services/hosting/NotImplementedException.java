@@ -20,33 +20,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core;
+package com.lmpessoa.services.hosting;
 
-/**
- * Thrown when the requested resource exists but is not allow to respond to the requested method.
- */
-public final class MethodNotAllowedException extends HttpException {
+import com.lmpessoa.services.hosting.HttpException;
+
+public class NotImplementedException extends HttpException {
 
    private static final long serialVersionUID = 1L;
 
-   /**
-    * Creates a new <code>MethodNotAllowedException</code>.
-    */
-   public MethodNotAllowedException() {
+   public NotImplementedException() {
       super();
-   }
-
-   /**
-    * Creates a new <code>MethodNotAllowedException</code> with the given detail message.
-    *
-    * @param message the detail message.
-    */
-   public MethodNotAllowedException(String message) {
-      super(message);
    }
 
    @Override
    public int getStatusCode() {
-      return 405;
+      return 501;
    }
+
 }

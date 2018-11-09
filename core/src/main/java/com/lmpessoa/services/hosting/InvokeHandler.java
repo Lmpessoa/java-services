@@ -20,39 +20,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.routing.content;
+package com.lmpessoa.services.hosting;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.nio.charset.Charset;
+import com.lmpessoa.services.routing.MatchedRoute;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+final class InvokeHandler {
 
-final class JsonSerializer implements IContentParser, IContentProducer {
-
-   @Override
-   public <T> T parse(String content, Class<T> clazz) {
-      try {
-         Gson gson = new GsonBuilder().setPrettyPrinting().create();
-         return gson.fromJson(content, clazz);
-      } catch (RuntimeException e) {
-         throw e;
-      } catch (Exception e) {
-         throw new RuntimeException(e);
-      }
+   public InvokeHandler(NextHandler next) {
+      // Last handler, no need for next
    }
 
-   @Override
-   public InputStream produce(Object obj) {
-      try {
-         Gson gson = new GsonBuilder().create();
-         byte[] data = gson.toJson(obj).getBytes(Charset.forName("UTF-8"));
-         return new ByteArrayInputStream(data);
-      } catch (RuntimeException e) {
-         throw e;
-      } catch (Exception e) {
-         throw new RuntimeException(e);
-      }
+   public Object invoke(MatchedRoute request) {
+      return request.invoke();
    }
 }

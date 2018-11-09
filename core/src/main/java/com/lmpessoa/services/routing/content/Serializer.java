@@ -22,10 +22,12 @@
  */
 package com.lmpessoa.services.routing.content;
 
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
 import com.lmpessoa.services.core.MediaType;
+import com.lmpessoa.services.hosting.HttpResultInputStream;
 
 /**
  * The <code>Serializer</code> class provides an abstraction to transform HTTP content between plain
@@ -53,7 +55,28 @@ public final class Serializer {
       if (handlers.containsKey(contentType)) {
          Object handler = handlers.get(contentType);
          if (handler instanceof IContentParser) {
-            return ((IContentParser) handler).parse(content, resultClass);
+            try {
+               return ((IContentParser) handler).parse(content, resultClass);
+            } catch (Exception e) {
+               e.printStackTrace();
+            }
+         }
+      }
+      return null;
+   }
+
+   public static HttpResultInputStream produce(String[] accepts, Object obj) {
+      for (String contentType : accepts) {
+         if (handlers.containsKey(contentType)) {
+            Object handler = handlers.get(contentType);
+            if (handler instanceof IContentProducer) {
+               try {
+                  InputStream is = ((IContentProducer) handler).produce(obj);
+                  return new HttpResultInputStream(contentType, is);
+               } catch (Exception e) {
+                  e.printStackTrace();
+               }
+            }
          }
       }
       return null;

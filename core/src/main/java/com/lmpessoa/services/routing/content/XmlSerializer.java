@@ -22,13 +22,18 @@
  */
 package com.lmpessoa.services.routing.content;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.io.StringReader;
+import java.io.StringWriter;
+import java.nio.charset.Charset;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
-final class XmlSerializer implements IContentParser {
+final class XmlSerializer implements IContentParser, IContentProducer {
 
    @Override
    @SuppressWarnings("unchecked")
@@ -37,6 +42,20 @@ final class XmlSerializer implements IContentParser {
          JAXBContext context = JAXBContext.newInstance(clazz);
          Unmarshaller unmarshaller = context.createUnmarshaller();
          return (T) unmarshaller.unmarshal(new StringReader(content));
+      } catch (JAXBException e) {
+         throw new RuntimeException(e);
+      }
+   }
+
+   @Override
+   public InputStream produce(Object obj) {
+      try {
+         JAXBContext context = JAXBContext.newInstance(obj.getClass());
+         Marshaller marshaller = context.createMarshaller();
+         StringWriter result = new StringWriter();
+         marshaller.marshal(obj, result);
+         byte[] data = result.toString().getBytes(Charset.forName("UTF-8"));
+         return new ByteArrayInputStream(data);
       } catch (JAXBException e) {
          throw new RuntimeException(e);
       }

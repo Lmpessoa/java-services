@@ -24,20 +24,14 @@ package com.lmpessoa.services.hosting;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.IOException;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import com.lmpessoa.services.hosting.HandlerMediator;
-import com.lmpessoa.services.hosting.HttpRequest;
+import com.lmpessoa.services.hosting.HttpResult;
 import com.lmpessoa.services.hosting.NextHandler;
-import com.lmpessoa.services.hosting.ResultHandler;
-import com.lmpessoa.services.routing.IRouteTable;
-import com.lmpessoa.services.routing.MatchedRoute;
-import com.lmpessoa.services.routing.RouteTableBridge;
 import com.lmpessoa.services.services.IServiceMap;
 
 public final class HandlerMediatorTest {
@@ -48,7 +42,6 @@ public final class HandlerMediatorTest {
    private HandlerMediator mediator;
    private IServiceMap services;
    private Request request;
-   private Result result;
 
    @Before
    public void setup() {
@@ -60,16 +53,14 @@ public final class HandlerMediatorTest {
       mediator.addHandler(RespondingHandler.class);
 
       request = new Request();
-      result = new Result();
-
       services.putSingleton(Request.class, request);
-      services.putSingleton(Result.class, result);
    }
 
    @Test
    public void testRespondingChain() {
       request.code = 0;
-      mediator.invoke();
+      HttpResult httpResult = mediator.invoke();
+      Result result = (Result) httpResult.getObject();
       assertEquals("OK", result.message);
       assertEquals(2, result.code);
    }
@@ -77,7 +68,8 @@ public final class HandlerMediatorTest {
    @Test
    public void testRejectingChain() {
       request.code = 2;
-      mediator.invoke();
+      HttpResult httpResult = mediator.invoke();
+      Result result = (Result) httpResult.getObject();
       assertEquals("Error", result.message);
       assertEquals(4, result.code);
    }
@@ -85,7 +77,8 @@ public final class HandlerMediatorTest {
    @Test
    public void testTransformingChain() {
       request.code = 1;
-      mediator.invoke();
+      HttpResult httpResult = mediator.invoke();
+      Result result = (Result) httpResult.getObject();
       assertEquals("OK Computer", result.message);
       assertEquals(2, result.code);
    }
@@ -111,22 +104,6 @@ public final class HandlerMediatorTest {
       mediator.addHandler(MultipleInvokeHandler.class);
    }
 
-   @Test
-   public void testMediatorInvocation() throws IOException {
-      mediator = new HandlerMediator(services);
-      mediator.addHandler(ResultHandler.class);
-
-      IRouteTable routes = RouteTableBridge.get(services);
-      routes.put(TestResource.class);
-
-      HttpRequest request = new HttpRequestBuilder().setMethod("GET").setPath("/test").build();
-      MatchedRoute result = RouteTableBridge.match(routes, request);
-      services.putTransient(MatchedRoute.class, () -> result);
-
-      Object invokeResult = mediator.invoke();
-      assertEquals("Test", invokeResult);
-   }
-
    public static class Request {
 
       public int code;
@@ -134,8 +111,13 @@ public final class HandlerMediatorTest {
 
    public static class Result {
 
-      public String message;
-      public int code;
+      public final String message;
+      public final int code;
+
+      public Result(int code, String message) {
+         this.message = message;
+         this.code = code;
+      }
    }
 
    public static class RespondingHandler {
@@ -144,9 +126,8 @@ public final class HandlerMediatorTest {
          // Ignore, will never forward
       }
 
-      public void invoke(Result result) {
-         result.message = "OK";
-         result.code = 2;
+      public Result invoke() {
+         return new Result(2, "OK");
       }
    }
 
@@ -158,12 +139,11 @@ public final class HandlerMediatorTest {
          this.next = next;
       }
 
-      public void invoke(Request request, Result result) {
+      public Result invoke(Request request) {
          if (request.code == 2) {
-            result.message = "Error";
-            result.code = 4;
+            return new Result(4, "Error");
          } else {
-            next.invoke();
+            return (Result) next.invoke();
          }
       }
    }
@@ -176,11 +156,12 @@ public final class HandlerMediatorTest {
          this.next = next;
       }
 
-      public void invoke(Request request, Result result) {
-         next.invoke();
+      public HttpResult invoke(Request request) {
+         Result result = (Result) next.invoke();
          if (request.code == 1) {
-            result.message += " Computer";
+            result = new Result(result.code, result.message + " Computer");
          }
+         return new HttpResult(200, result, null);
       }
    }
 

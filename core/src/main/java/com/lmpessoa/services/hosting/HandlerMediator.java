@@ -22,6 +22,7 @@
  */
 package com.lmpessoa.services.hosting;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,8 +45,12 @@ final class HandlerMediator {
       if (ClassUtils.getConstructor(handlerClass, NextHandler.class) == null) {
          throw new IllegalArgumentException("Handler must implement a required constructor");
       }
-      if (ClassUtils.findMethods(handlerClass, m -> "invoke".equals(m.getName())).length != 1) {
+      Method[] invokes = ClassUtils.findMethods(handlerClass, m -> "invoke".equals(m.getName()));
+      if (invokes.length != 1) {
          throw new IllegalArgumentException("Handler must have exaclty one method named 'invoke'");
+      }
+      if (handlers.isEmpty() && invokes[0].getReturnType() != HttpResult.class) {
+         throw new IllegalArgumentException("First handler must return an HttpResult");
       }
       handlers.add(handlerClass);
    }
@@ -58,8 +63,8 @@ final class HandlerMediator {
       return serviceMap;
    }
 
-   Object invoke() {
+   HttpResult invoke() {
       NextHandler next = new NextHandler(this, 0);
-      return next.invoke();
+      return (HttpResult) next.invoke();
    }
 }

@@ -22,37 +22,9 @@
  */
 package com.lmpessoa.services.routing.content;
 
-import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.nio.charset.Charset;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+interface IContentProducer {
 
-final class JsonSerializer implements IContentParser, IContentProducer {
-
-   @Override
-   public <T> T parse(String content, Class<T> clazz) {
-      try {
-         Gson gson = new GsonBuilder().setPrettyPrinting().create();
-         return gson.fromJson(content, clazz);
-      } catch (RuntimeException e) {
-         throw e;
-      } catch (Exception e) {
-         throw new RuntimeException(e);
-      }
-   }
-
-   @Override
-   public InputStream produce(Object obj) {
-      try {
-         Gson gson = new GsonBuilder().create();
-         byte[] data = gson.toJson(obj).getBytes(Charset.forName("UTF-8"));
-         return new ByteArrayInputStream(data);
-      } catch (RuntimeException e) {
-         throw e;
-      } catch (Exception e) {
-         throw new RuntimeException(e);
-      }
-   }
+   InputStream produce(Object obj);
 }

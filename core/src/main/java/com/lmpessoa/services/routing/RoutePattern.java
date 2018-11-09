@@ -35,7 +35,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
-import com.lmpessoa.services.core.Route;
 import com.lmpessoa.services.services.IServiceMap;
 import com.lmpessoa.services.services.NoSingleMethodException;
 import com.lmpessoa.util.parsing.ITemplatePart;

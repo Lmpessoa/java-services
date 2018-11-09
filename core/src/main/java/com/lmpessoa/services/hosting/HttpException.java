@@ -20,51 +20,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core;
+package com.lmpessoa.services.hosting;
 
 /**
- * Thrown when an internal server error has happened.
+ * An <code>HttpException</code> is an abstract exception class that represents one of the HTTP
+ * client error status codes (4xx) or server error status codes (5xx).
  *
  * <p>
- * Any exception other than <code>HttpException</code>s can be thrown from any resource method.
- * These will be understood by the engine as if an internal server error has happened and are
- * wrapped in an instance of this class.
+ * If a method choses to throw an <code>HttpException</code> the engine understants that that
+ * exception represents the intended result to return to the sender of the request.
+ * </p>
+ *
+ * <p>
+ * Any other exception can be thrown from any resource method. These will be understood by the
+ * engine as if an internal server error (HTTP status code 500) has happened and that is what will
+ * be returned to the sender of the request in this case.
  * </p>
  */
-public final class InternalServerError extends Error implements IHttpStatus {
+public abstract class HttpException extends RuntimeException implements IHttpStatus {
 
    private static final long serialVersionUID = 1L;
 
-   /**
-    * Creates a new <code>InternalServerException</code> with the given detail message.
-    *
-    * @param message the detail message.
-    */
-   public InternalServerError(String message) {
+   HttpException() {
+      super();
+   }
+
+   HttpException(String message) {
       super(message);
    }
 
-   /**
-    * Creates a new <code>InternalServerException</code> with the given cause.
-    *
-    * @param cause the cause.
-    */
-   public InternalServerError(Throwable cause) {
+   HttpException(Throwable cause) {
       super(cause);
    }
 
-   /**
-    * Creates a new <code>InternalServerException</code> with the given detail message and cause.
-    *
-    * @param message the detail message.
-    * @param cause the cause.
-    */
-   public InternalServerError(String message, Throwable cause) {
+   HttpException(String message, Throwable cause) {
       super(message, cause);
-   }
-
-   @Override
-   public int getStatusCode() {
-      return 500;
    }
 }

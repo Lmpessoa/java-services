@@ -22,15 +22,53 @@
  */
 package com.lmpessoa.services.hosting;
 
-import com.lmpessoa.services.routing.MatchedRoute;
+import java.util.Arrays;
+
+import com.lmpessoa.services.core.MediaType;
+import com.lmpessoa.services.routing.content.Serializer;
 
 final class ResultHandler {
 
+   private NextHandler next;
+
    public ResultHandler(NextHandler next) {
-      // Last handler, no need for next
+      this.next = next;
    }
 
-   public Object invoke(MatchedRoute request) {
-      return request.invoke();
+   public HttpResult invoke(HttpRequest request) {
+      Object obj = getResultObject();
+      int statusCode = getStatusCode(obj);
+      HttpResultInputStream is = getContentBody(obj, request);
+      return new HttpResult(statusCode, obj, is);
+   }
+
+   private Object getResultObject() {
+      try {
+         return next.invoke();
+      } catch (Throwable t) {
+         // This is correct; we capture every kind of exception here
+         return t;
+      }
+   }
+
+   private int getStatusCode(Object obj) {
+      if (obj == null) {
+         return 204;
+      } else if (obj instanceof IHttpStatus) {
+         return ((IHttpStatus) obj).getStatusCode();
+      }
+      return 200;
+   }
+
+   private HttpResultInputStream getContentBody(Object obj, HttpRequest request) {
+      String[] accepts;
+      if (request.getHeaders().containsKey("Accept")) {
+         accepts = Arrays.stream(request.getHeaders().get("Accept").split("\\.")) //
+                  .map(String::trim) //
+                  .toArray(String[]::new);
+      } else {
+         accepts = new String[] { MediaType.JSON };
+      }
+      return Serializer.produce(accepts, obj);
    }
 }

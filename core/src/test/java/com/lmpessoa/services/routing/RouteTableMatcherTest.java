@@ -35,16 +35,16 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.lmpessoa.services.core.HttpException;
 import com.lmpessoa.services.core.MediaType;
-import com.lmpessoa.services.core.MethodNotAllowedException;
-import com.lmpessoa.services.core.NotFoundException;
-import com.lmpessoa.services.core.NotImplementedException;
-import com.lmpessoa.services.core.Route;
+import com.lmpessoa.services.hosting.HttpException;
 import com.lmpessoa.services.hosting.HttpRequest;
 import com.lmpessoa.services.hosting.HttpRequestBuilder;
+import com.lmpessoa.services.hosting.MethodNotAllowedException;
+import com.lmpessoa.services.hosting.NotFoundException;
+import com.lmpessoa.services.hosting.NotImplementedException;
 import com.lmpessoa.services.routing.HttpMethod;
 import com.lmpessoa.services.routing.MatchedRoute;
+import com.lmpessoa.services.routing.Route;
 import com.lmpessoa.services.routing.RouteTable;
 import com.lmpessoa.services.services.IServiceMap;
 
