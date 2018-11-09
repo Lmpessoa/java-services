@@ -25,6 +25,9 @@ package com.lmpessoa.services.hosting;
 import java.io.InputStream;
 import java.util.Map;
 
+/**
+ * Captures the raw HTTP request data.
+ */
 public interface HttpRequest {
 
    /**

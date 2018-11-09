@@ -20,21 +20,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.routing;
+package com.lmpessoa.services.test.resources;
 
-import com.lmpessoa.services.hosting.HttpRequest;
-import com.lmpessoa.services.routing.IRouteTable;
-import com.lmpessoa.services.routing.MatchedRoute;
-import com.lmpessoa.services.routing.RouteTable;
-import com.lmpessoa.services.services.IServiceMap;
+public class TestResource {
 
-public final class RouteTableBridge {
-
-   public static IRouteTable get(IServiceMap serviceMap) throws NoSuchMethodException {
-      return new RouteTable(serviceMap);
-   }
-
-   public static MatchedRoute match(IRouteTable routes, HttpRequest request) {
-      return ((RouteTable) routes).matches(request);
+   public void get() {
+      // Test method, does nothing
    }
 }

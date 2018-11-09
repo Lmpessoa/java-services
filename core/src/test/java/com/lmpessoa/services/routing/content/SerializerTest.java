@@ -27,11 +27,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.IOException;
+import java.nio.charset.Charset;
+
 import javax.xml.bind.annotation.XmlRootElement;
 
 import org.junit.Test;
 
 import com.lmpessoa.services.core.MediaType;
+import com.lmpessoa.services.hosting.HttpResultInputStream;
 import com.lmpessoa.services.routing.content.Serializer;
 
 public final class SerializerTest {
@@ -69,6 +73,33 @@ public final class SerializerTest {
       assertEquals("Test", result.name);
       assertArrayEquals(new String[] { "test@test.com", "test@test.org" }, result.email);
       assertTrue(result.checked);
+   }
+
+   @Test
+   public void testProduceXmlString() throws IOException {
+      HttpResultInputStream result = Serializer.produce(new String[] { MediaType.XML }, "Test");
+      byte[] data = new byte[result.available()];
+      result.read(data);
+      String content = new String(data, Charset.forName("UTF-8"));
+      assertEquals("<?xml version=\"1.0\"?><string value=\"Test\"/>", content);
+   }
+
+   @Test
+   public void testProduceXmlInt() throws IOException {
+      HttpResultInputStream result = Serializer.produce(new String[] { MediaType.XML }, 12);
+      byte[] data = new byte[result.available()];
+      result.read(data);
+      String content = new String(data, Charset.forName("UTF-8"));
+      assertEquals("<?xml version=\"1.0\"?><int value=\"12\"/>", content);
+   }
+
+   @Test
+   public void testProduceXmlException() throws IOException {
+      HttpResultInputStream result = Serializer.produce(new String[] { MediaType.XML }, new NullPointerException());
+      byte[] data = new byte[result.available()];
+      result.read(data);
+      String content = new String(data, Charset.forName("UTF-8"));
+      assertEquals("<?xml version=\"1.0\"?><exception type=\"NullPointerException\"/>", content);
    }
 
    @XmlRootElement(name = "object")

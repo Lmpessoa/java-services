@@ -44,7 +44,7 @@ public final class HandlerMediatorTest {
    private Request request;
 
    @Before
-   public void setup() {
+   public void setup() throws NoSuchMethodException {
       services = IServiceMap.newInstance();
 
       mediator = new HandlerMediator(services);

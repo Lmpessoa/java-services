@@ -49,6 +49,7 @@ import com.lmpessoa.services.core.HttpPost;
 import com.lmpessoa.services.core.HttpPut;
 import com.lmpessoa.services.core.NonResource;
 import com.lmpessoa.services.hosting.HttpRequest;
+import com.lmpessoa.services.hosting.InternalServerError;
 import com.lmpessoa.services.hosting.MethodNotAllowedException;
 import com.lmpessoa.services.hosting.NotFoundException;
 import com.lmpessoa.services.routing.content.Serializer;
@@ -61,7 +62,9 @@ final class RouteTable implements IRouteTable {
    private static final Map<Class<?>, Function<String, ?>> specialCases;
 
    private final Map<RoutePattern, Map<HttpMethod, MethodEntry>> endpoints = new HashMap<>();
+   private final RouteOptions options = new RouteOptions();
    private final IServiceMap serviceMap;
+   private final Method serviceGetter;
 
    static {
       Map<Class<?>, Function<String, ?>> special = new HashMap<>();
@@ -75,17 +78,20 @@ final class RouteTable implements IRouteTable {
       specialCases = Collections.unmodifiableMap(special);
    }
 
-   static String findArea(Class<?> clazz) {
-      return "";
-   }
-
-   RouteTable(IServiceMap serviceMap) {
+   RouteTable(IServiceMap serviceMap) throws NoSuchMethodException {
+      this.serviceGetter = serviceMap.getClass().getMethod("get", Class.class);
+      this.serviceGetter.setAccessible(true);
       this.serviceMap = serviceMap;
    }
 
    @Override
+   public Collection<Exception> put(Class<?> clazz) {
+      return putAll(options.findArea(clazz), Arrays.asList(clazz));
+   }
+
+   @Override
    public Collection<Exception> putAll(Collection<Class<?>> classes) {
-      return putClasses(classes.stream().collect(Collectors.toMap(c -> c, RouteTable::findArea)));
+      return putClasses(classes.stream().collect(Collectors.toMap(c -> c, options::findArea)));
    }
 
    @Override
@@ -94,12 +100,12 @@ final class RouteTable implements IRouteTable {
    }
 
    boolean hasRoute(String route) throws ParseException {
-      RoutePattern pat = new RoutePattern(RoutePatternParser.parse(route, RoutePattern.types), null);
+      RoutePattern pat = new RoutePattern(RoutePatternParser.parse(route, options), null);
       return endpoints.containsKey(pat);
    }
 
    HttpMethod[] listMethodsOf(String route) throws ParseException {
-      RoutePattern pat = new RoutePattern(RoutePatternParser.parse(route, RoutePattern.types), null);
+      RoutePattern pat = new RoutePattern(RoutePatternParser.parse(route, options), null);
       Map<HttpMethod, MethodEntry> map = endpoints.get(pat);
       if (map == null) {
          return new HttpMethod[0];
@@ -108,7 +114,7 @@ final class RouteTable implements IRouteTable {
    }
 
    MethodEntry getRouteMethod(HttpMethod method, String route) throws ParseException {
-      RoutePattern pat = new RoutePattern(RoutePatternParser.parse(route, RoutePattern.types), null);
+      RoutePattern pat = new RoutePattern(RoutePatternParser.parse(route, options), null);
       Map<HttpMethod, MethodEntry> map = endpoints.get(pat);
       return map.get(method);
    }
@@ -154,9 +160,6 @@ final class RouteTable implements IRouteTable {
             contentObject = parseContentBody(request, methodEntry.getContentClass());
          }
          List<Object> result = convertParams(matcher, params);
-         if (result == null) {
-            continue;
-         }
          if (methodEntry.getContentClass() != null) {
             result.add(contentObject);
          }
@@ -167,6 +170,10 @@ final class RouteTable implements IRouteTable {
       } else {
          throw new MethodNotAllowedException();
       }
+   }
+
+   IRouteOptions getOptions() {
+      return options;
    }
 
    private Object parseContentBody(HttpRequest request, Class<?> contentClass) {
@@ -192,7 +199,7 @@ final class RouteTable implements IRouteTable {
                }
                validateResourceClass(clazz);
                String area = entry.getValue();
-               RoutePattern classPat = RoutePattern.build(area, clazz, serviceMap);
+               RoutePattern classPat = RoutePattern.build(area, clazz, serviceMap, options);
                for (Method method : clazz.getMethods()) {
                   putMethod(clazz, classPat, method, exceptions);
                }
@@ -213,7 +220,7 @@ final class RouteTable implements IRouteTable {
          if (methodNames.length == 0) {
             return;
          }
-         RoutePattern methodPat = RoutePattern.build(classPat, method);
+         RoutePattern methodPat = RoutePattern.build(classPat, method, options);
          if (!endpoints.containsKey(methodPat)) {
             endpoints.put(methodPat, new HashMap<>());
          }
@@ -272,15 +279,17 @@ final class RouteTable implements IRouteTable {
       int group = 1;
       for (Class<?> param : params) {
          try {
-            Object obj = serviceMap.contains(param) ? serviceMap.get(param) : convert(matcher.group(group++), param);
+            Object obj = serviceMap.contains(param) ? getService(param) : convert(matcher.group(group++), param);
             result.add(obj);
          } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-            e.printStackTrace();
-            return null;
+            throw new InternalServerError(e);
          }
       }
       return result;
+   }
 
+   private Object getService(Class<?> clazz) throws IllegalAccessException, InvocationTargetException {
+      return serviceGetter.invoke(serviceMap, clazz);
    }
 
    private Object convert(String value, Class<?> clazz)

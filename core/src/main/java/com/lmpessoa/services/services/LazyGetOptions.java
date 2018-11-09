@@ -20,21 +20,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.routing;
+package com.lmpessoa.services.services;
 
-import com.lmpessoa.services.hosting.HttpRequest;
-import com.lmpessoa.services.routing.IRouteTable;
-import com.lmpessoa.services.routing.MatchedRoute;
-import com.lmpessoa.services.routing.RouteTable;
-import com.lmpessoa.services.services.IServiceMap;
+import java.lang.reflect.Method;
+import java.util.function.Supplier;
 
-public final class RouteTableBridge {
+import com.lmpessoa.services.hosting.InternalServerError;
 
-   public static IRouteTable get(IServiceMap serviceMap) throws NoSuchMethodException {
-      return new RouteTable(serviceMap);
+final class LazyGetOptions<T> implements Supplier<T> {
+
+   private final ServiceMap serviceMap;
+   private final Class<?> serviceClass;
+
+   LazyGetOptions(Class<T> configClass, ServiceMap serviceMap, Class<?> serviceClass) {
+      this.serviceMap = serviceMap;
+      this.serviceClass = serviceClass;
    }
 
-   public static MatchedRoute match(IRouteTable routes, HttpRequest request) {
-      return ((RouteTable) routes).matches(request);
+   @Override
+   @SuppressWarnings("unchecked")
+   public T get() {
+      try {
+         Object service = serviceMap.get(serviceClass);
+         Method getOptions = service.getClass().getMethod("getOptions");
+         return (T) getOptions.invoke(service);
+      } catch (Exception e) {
+         throw new InternalServerError(e);
+      }
    }
+
 }

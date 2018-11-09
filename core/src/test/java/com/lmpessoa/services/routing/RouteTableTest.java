@@ -62,7 +62,7 @@ public final class RouteTableTest {
    private RouteTable table;
 
    @Before
-   public void setup() {
+   public void setup() throws NoSuchMethodException {
       serviceMap = IServiceMap.newInstance();
       table = new RouteTable(serviceMap);
    }
@@ -92,8 +92,7 @@ public final class RouteTableTest {
       Arrays.sort(methods);
       assertArrayEquals(new HttpMethod[] { HttpMethod.GET, HttpMethod.POST, HttpMethod.PATCH }, methods);
       assertEquals(TestResource.class.getMethod("patch", int.class),
-               table.getRouteMethod(HttpMethod.PATCH, "/test/{int}")
-                        .getMethod());
+               table.getRouteMethod(HttpMethod.PATCH, "/test/{int}").getMethod());
    }
 
    @Test
@@ -149,10 +148,8 @@ public final class RouteTableTest {
       methods = table.listMethodsOf("/test/{int}");
       Arrays.sort(methods);
       assertArrayEquals(new HttpMethod[] { HttpMethod.PUT, HttpMethod.PATCH }, methods);
-      Method methodPut = table.getRouteMethod(HttpMethod.PUT, "/test/{int}")
-               .getMethod();
-      Method methodPatch = table.getRouteMethod(HttpMethod.PATCH, "/test/{int}")
-               .getMethod();
+      Method methodPut = table.getRouteMethod(HttpMethod.PUT, "/test/{int}").getMethod();
+      Method methodPatch = table.getRouteMethod(HttpMethod.PATCH, "/test/{int}").getMethod();
       assertSame(methodPut, methodPatch);
    }
 
@@ -169,8 +166,7 @@ public final class RouteTableTest {
       assertEquals(0, result.size());
       assertTrue(table.hasRoute("/test"));
       assertArrayEquals(new HttpMethod[] { HttpMethod.POST }, table.listMethodsOf("/test"));
-      assertEquals(AnotherTestResource.class, table.getRouteMethod(HttpMethod.POST, "/test")
-               .getContentClass());
+      assertEquals(AnotherTestResource.class, table.getRouteMethod(HttpMethod.POST, "/test").getContentClass());
    }
 
    @Test

@@ -27,7 +27,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,16 +36,15 @@ import com.lmpessoa.util.parsing.ITemplatePart;
 final class RoutePatternParser extends AbstractParser<AbstractRouteType> {
 
    private static final Pattern pattern = Pattern.compile("^([a-z]+)(\\(([0-9]+)?(..)?([0-9]+)?\\))?$");
-   private Map<String, Class<? extends AbstractRouteType>> types;
+   private final RouteOptions options;
 
-   RoutePatternParser(String template, Map<String, Class<? extends AbstractRouteType>> types) {
+   RoutePatternParser(String template, RouteOptions options) {
       super(template, true);
-      this.types = types;
+      this.options = options;
    }
 
-   public static List<ITemplatePart> parse(String template, Map<String, Class<? extends AbstractRouteType>> types)
-      throws ParseException {
-      return new RoutePatternParser(template, types).parse();
+   public static List<ITemplatePart> parse(String template, RouteOptions options) throws ParseException {
+      return new RoutePatternParser(template, options).parse();
    }
 
    @Override
@@ -56,7 +54,7 @@ final class RoutePatternParser extends AbstractParser<AbstractRouteType> {
          throw new ParseException("Invalid variable definition", pos);
       }
       String varType = matcher.group(1);
-      Class<? extends AbstractRouteType> type = types.get(varType);
+      Class<? extends AbstractRouteType> type = options.getTypes().get(varType);
       if (type == null) {
          throw new ParseException("Unknown route type: " + varType, pos);
       }
@@ -81,7 +79,9 @@ final class RoutePatternParser extends AbstractParser<AbstractRouteType> {
       Arrays.fill(argTypes, int.class);
       try {
          Constructor<? extends AbstractRouteType> constructor = type.getConstructor(argTypes);
-         return constructor.newInstance(args);
+         AbstractRouteType result = constructor.newInstance(args);
+         result.setRouteOptions(options);
+         return result;
       } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | IllegalArgumentException
                | InvocationTargetException e) {
          throw new ParseException(e.getMessage(), pos);

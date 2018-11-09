@@ -26,8 +26,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.text.ParseException;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -35,9 +33,7 @@ import org.junit.rules.ExpectedException;
 
 import com.lmpessoa.services.routing.AbstractRouteType;
 import com.lmpessoa.services.routing.AlphaRouteType;
-import com.lmpessoa.services.routing.AnyRouteType;
-import com.lmpessoa.services.routing.HexRouteType;
-import com.lmpessoa.services.routing.IntRouteType;
+import com.lmpessoa.services.routing.RouteOptions;
 import com.lmpessoa.services.routing.RoutePatternParser;
 
 public final class RoutePatternParserTest {
@@ -45,17 +41,10 @@ public final class RoutePatternParserTest {
    @Rule
    public ExpectedException thrown = ExpectedException.none();
 
-   private static final Map<String, Class<? extends AbstractRouteType>> types = new HashMap<>();
-
-   static {
-      types.put("hex", HexRouteType.class);
-      types.put("int", IntRouteType.class);
-      types.put("alpha", AlphaRouteType.class);
-      types.put("any", AnyRouteType.class);
-   }
+   private static final RouteOptions options = new RouteOptions();
 
    private static AbstractRouteType parseVariable(String variable) throws ParseException {
-      return new RoutePatternParser("", types).parseVariable(0, variable);
+      return new RoutePatternParser("", options).parseVariable(0, variable);
    }
 
    @Test

@@ -58,7 +58,7 @@ public final class Serializer {
             try {
                return ((IContentParser) handler).parse(content, resultClass);
             } catch (Exception e) {
-               e.printStackTrace();
+               e.printStackTrace(); // or ignore
             }
          }
       }
@@ -74,7 +74,7 @@ public final class Serializer {
                   InputStream is = ((IContentProducer) handler).produce(obj);
                   return new HttpResultInputStream(contentType, is);
                } catch (Exception e) {
-                  e.printStackTrace();
+                  e.printStackTrace(); // or ignore
                }
             }
          }

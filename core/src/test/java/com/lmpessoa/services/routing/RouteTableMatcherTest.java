@@ -57,7 +57,7 @@ public final class RouteTableMatcherTest {
    private RouteTable table;
 
    @Before
-   public void setup() {
+   public void setup() throws NoSuchMethodException {
       serviceMap = IServiceMap.newInstance();
       table = new RouteTable(serviceMap);
       table.put(TestResource.class);

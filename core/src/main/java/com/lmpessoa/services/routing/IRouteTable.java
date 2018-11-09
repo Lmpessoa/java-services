@@ -25,6 +25,8 @@ package com.lmpessoa.services.routing;
 import java.util.Arrays;
 import java.util.Collection;
 
+import com.lmpessoa.services.services.ConfiguresWith;
+
 /**
  * Represents a map of routes of the application.
  * <p>
@@ -33,6 +35,7 @@ import java.util.Collection;
  * application.
  * </p>
  */
+@ConfiguresWith(IRouteOptions.class)
 public interface IRouteTable {
 
    /**
@@ -42,9 +45,7 @@ public interface IRouteTable {
     * @param clazz the class to add to the route table.
     * @return a list of exceptions raised during this call.
     */
-   default Collection<Exception> put(Class<?> clazz) {
-      return putAll(RouteTable.findArea(clazz), Arrays.asList(clazz));
-   }
+   Collection<Exception> put(Class<?> clazz);
 
    /**
     * Adds the methods of the given resource class to this route table under the given area. If any

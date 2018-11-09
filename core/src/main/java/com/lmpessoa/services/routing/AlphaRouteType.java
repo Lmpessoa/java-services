@@ -37,11 +37,6 @@ final class AlphaRouteType extends AbstractRouteType {
    }
 
    @Override
-   protected String getName() {
-      return "alpha";
-   }
-
-   @Override
    protected boolean isAssignableTo(Class<?> clazz) {
       return false;
    }

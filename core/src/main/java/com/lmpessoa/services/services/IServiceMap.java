@@ -26,18 +26,17 @@ import static com.lmpessoa.services.services.ReuseLevel.PER_REQUEST;
 import static com.lmpessoa.services.services.ReuseLevel.SINGLETON;
 import static com.lmpessoa.services.services.ReuseLevel.TRANSIENT;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.function.Supplier;
 
 /**
  * A service registry is a registration service used to help locate other services by using a
  * service injection. Registration can be made into the following levels:
  * <ul>
- * <li><b>Singleton</b> services have one single instance respond for the service thoughout the
+ * <li><b>Singleton</b> services have one single instance respond for the service throughout the
  * entire lifetime of the application.</li>
  * <li><b>Per Request</b> services have a different instance respond for the service for each
  * request (or just like singleton but within each request).</li>
- * <li><b>Transient</b> services have one new instance everytime the service is requested.</li>
+ * <li><b>Transient</b> services have one new instance every time the service is requested.</li>
  * </ul>
  */
 public interface IServiceMap {
@@ -209,8 +208,5 @@ public interface IServiceMap {
     */
    boolean contains(Class<?> service);
 
-   <T> T get(Class<T> clazz);
-
-   Object invoke(Object obj, String methodName)
-      throws NoSingleMethodException, IllegalAccessException, InvocationTargetException;
+   IServiceMap getConfigMap();
 }

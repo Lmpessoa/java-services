@@ -37,11 +37,6 @@ final class AnyRouteType extends AbstractRouteType {
    }
 
    @Override
-   protected String getName() {
-      return "any";
-   }
-
-   @Override
    protected boolean isAssignableTo(Class<?> clazz) {
       return false;
    }

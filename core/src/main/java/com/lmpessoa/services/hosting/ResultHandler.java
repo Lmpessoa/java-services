@@ -23,6 +23,7 @@
 package com.lmpessoa.services.hosting;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.nio.charset.Charset;
@@ -67,9 +68,17 @@ final class ResultHandler {
    }
 
    private HttpResultInputStream getContentBody(Object obj, HttpRequest request, Method method) {
+      if (obj == null || obj instanceof HttpException) {
+         return null;
+      }
       Object result = obj;
+      if (obj instanceof InternalServerError) {
+         result = ((InternalServerError) obj).getCause();
+      }
       if (result instanceof String) {
          result = ((String) result).getBytes(Charset.forName("UTF-8"));
+      } else if (result instanceof ByteArrayOutputStream) {
+         result = ((ByteArrayOutputStream) result).toByteArray();
       }
       if (result instanceof byte[]) {
          result = new ByteArrayInputStream((byte[]) result);

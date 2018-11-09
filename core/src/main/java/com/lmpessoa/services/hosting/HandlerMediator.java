@@ -22,6 +22,7 @@
  */
 package com.lmpessoa.services.hosting;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,8 +34,11 @@ final class HandlerMediator {
 
    private final List<Class<?>> handlers = new ArrayList<>();
    private final IServiceMap serviceMap;
+   private final Method serviceInvoke;
 
-   HandlerMediator(IServiceMap serviceMap) {
+   HandlerMediator(IServiceMap serviceMap) throws NoSuchMethodException {
+      this.serviceInvoke = serviceMap.getClass().getMethod("invoke", Object.class, String.class);
+      this.serviceInvoke.setAccessible(true);
       this.serviceMap = serviceMap;
    }
 
@@ -59,8 +63,15 @@ final class HandlerMediator {
       return index >= 0 && index < handlers.size() ? handlers.get(index) : null;
    }
 
-   IServiceMap getServices() {
-      return serviceMap;
+   Object invokeService(Object obj, String methodName) throws IllegalAccessException, InvocationTargetException {
+      try {
+         return serviceInvoke.invoke(serviceMap, obj, methodName);
+      } catch (InvocationTargetException e) {
+         while (e.getCause() instanceof InvocationTargetException) {
+            e = (InvocationTargetException) e.getCause();
+         }
+         throw e;
+      }
    }
 
    HttpResult invoke() {

@@ -46,6 +46,7 @@ import com.lmpessoa.util.parsing.IVariablePart;
  */
 public abstract class AbstractRouteType implements IVariablePart {
 
+   private RouteOptions options;
    private final int minLength;
    private final int maxLength;
 
@@ -93,20 +94,13 @@ public abstract class AbstractRouteType implements IVariablePart {
    }
 
    /**
-    * Returns the name used to identify occurrences of this type in routes.
-    *
-    * @return the name used to identify occurrences of this type in routes.
-    */
-   protected abstract String getName();
-
-   /**
     * Returns the regular expression used to validate this type in routes.
     *
     * <p>
     * Subclasses must provide an implementation of this method which returns a valid regular expression
     * to match only the part of this route type. The returned value must not use parenthesis.
     * </p>
-    * 
+    *
     * @return the regular expression used to validate this type in routes.
     */
    protected abstract String getRegex();
@@ -116,16 +110,24 @@ public abstract class AbstractRouteType implements IVariablePart {
     *
     * <p>
     * It is possible many classes are capable of accepting values matched by a route type. Subclasses
-    * implementing this method should test only for the preferred known types. Note that any route type
+    * implementing this method should test only for the prefered known types. Note that any route type
     * will always be assignable to a <code>String</code> variable so there is no need to test for this
     * type.
     * </p>
     *
     * @param clazz the type to check if it is compatible with this route type.
-    * @return <code>true</code> if values matched by this route type can be assigned to variables of
+    * @return <code>true</code> if values matched by thos route type can be assigned to variables of
     * the given type, <code>false</code> otherwise.
     */
    protected abstract boolean isAssignableTo(Class<?> clazz);
+
+   String getName() {
+      return options.getTypeName(this);
+   }
+
+   void setRouteOptions(RouteOptions options) {
+      this.options = options;
+   }
 
    /**
     * Returns the minimum length this route type instance will recognise.
@@ -171,5 +173,4 @@ public abstract class AbstractRouteType implements IVariablePart {
       result.append('}');
       return result.toString();
    }
-
 }

@@ -27,13 +27,31 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
+import com.lmpessoa.services.hosting.InternalServerError;
+
 final class XmlSerializer implements IContentParser, IContentProducer {
+
+   private static final Map<Class<?>, String> types = new HashMap<>();
+   private static final String XML_HEAD = "<?xml version=\"1.0\"?>";
+
+   static {
+      types.put(String.class, "string");
+      types.put(Long.class, "long");
+      types.put(Integer.class, "int");
+      types.put(Short.class, "short");
+      types.put(Byte.class, "byte");
+      types.put(Double.class, "double");
+      types.put(Float.class, "float");
+      types.put(Boolean.class, "boolean");
+   }
 
    @Override
    @SuppressWarnings("unchecked")
@@ -49,15 +67,44 @@ final class XmlSerializer implements IContentParser, IContentProducer {
 
    @Override
    public InputStream produce(Object obj) {
+      String result;
+      if (types.containsKey(obj.getClass())) {
+         result = producePrimitive(types.get(obj.getClass()), obj.toString());
+      } else if (obj instanceof Throwable) {
+         result = produceException((Throwable) obj);
+      } else {
+         result = produceObject(obj);
+      }
+      byte[] data = result.getBytes(Charset.forName("UTF-8"));
+      return new ByteArrayInputStream(data);
+   }
+
+   private String producePrimitive(String name, String value) {
+      return XML_HEAD + "<" + name + " value=\"" + value + "\"/>";
+   }
+
+   private String produceException(Throwable t) {
+      StringBuilder result = new StringBuilder();
+      result.append(XML_HEAD);
+      result.append("<exception type=\"");
+      result.append(t.getClass().getSimpleName());
+      if (t.getMessage() != null && !t.getMessage().isEmpty()) {
+         result.append("\" message=\"");
+         result.append(t.getMessage());
+      }
+      result.append("\"/>");
+      return result.toString();
+   }
+
+   private String produceObject(Object obj) {
       try {
          JAXBContext context = JAXBContext.newInstance(obj.getClass());
          Marshaller marshaller = context.createMarshaller();
          StringWriter result = new StringWriter();
          marshaller.marshal(obj, result);
-         byte[] data = result.toString().getBytes(Charset.forName("UTF-8"));
-         return new ByteArrayInputStream(data);
+         return result.toString();
       } catch (JAXBException e) {
-         throw new RuntimeException(e);
+         throw new InternalServerError(e);
       }
    }
 }

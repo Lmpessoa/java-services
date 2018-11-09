@@ -32,7 +32,7 @@ import com.lmpessoa.util.ClassUtils;
 final class LazyInitializer<T> implements Supplier<T> {
 
    private final Class<? extends T> provider;
-   private final IServiceMap serviceMap;
+   private final ServiceMap serviceMap;
 
    public LazyInitializer(Class<? extends T> provider, ReuseLevel level, IServiceMap serviceMap) {
       if (!ClassUtils.isConcreteClass(provider)) {
@@ -54,7 +54,7 @@ final class LazyInitializer<T> implements Supplier<T> {
          }
       }
       this.provider = provider;
-      this.serviceMap = serviceMap;
+      this.serviceMap = (ServiceMap) serviceMap;
    }
 
    @Override

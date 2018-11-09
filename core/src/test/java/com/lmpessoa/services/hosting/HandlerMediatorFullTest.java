@@ -65,9 +65,8 @@ public final class HandlerMediatorFullTest {
    private MatchedRoute route;
 
    @Before
-   public void setup() {
+   public void setup() throws NoSuchMethodException {
       services = IServiceMap.newInstance();
-      services.putSingleton(HttpRequest.class, () -> request);
       services.putTransient(MatchedRoute.class, () -> route);
 
       routes = RouteTableBridge.get(services);
@@ -84,6 +83,7 @@ public final class HandlerMediatorFullTest {
                .setMethod("GET") //
                .setPath(path) //
                .build();
+      services.putSingleton(HttpRequest.class, request);
       route = RouteTableBridge.match(routes, request);
       return mediator.invoke();
    }

@@ -32,6 +32,7 @@ import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -72,7 +73,6 @@ final class ServiceMap implements IServiceMap, IServicePoolProvider {
       return pool;
    }
 
-   @Override
    @SuppressWarnings("unchecked")
    public <T> T get(Class<T> clazz) {
       ServiceEntry entry = entries.get(clazz);
@@ -82,12 +82,15 @@ final class ServiceMap implements IServiceMap, IServicePoolProvider {
       }
       Map<Class<?>, Object> levelPool = entry.getLevel().getPool(this);
       if (!levelPool.containsKey(clazz)) {
-         levelPool.put(clazz, entry.newInstance());
+         Object obj = entry.newInstance();
+         if (!clazz.isAssignableFrom(obj.getClass())) {
+            throw new ClassCastException("Cannot convert " + obj.getClass().getName() + " to " + clazz.getName());
+         }
+         levelPool.put(clazz, obj);
       }
       return (T) levelPool.get(clazz);
    }
 
-   @Override
    public Object invoke(Object obj, String methodName)
       throws NoSingleMethodException, IllegalAccessException, InvocationTargetException {
       Class<?> clazz = obj instanceof Class<?> ? (Class<?>) obj : obj.getClass();
@@ -119,4 +122,19 @@ final class ServiceMap implements IServiceMap, IServicePoolProvider {
       entries.put(service, new ServiceEntry(level, supplier));
    }
 
+   @Override
+   @SuppressWarnings({ "unchecked", "rawtypes" })
+   public IServiceMap getConfigMap() {
+      ServiceMap result = new ServiceMap();
+      entries.entrySet()
+               .stream() //
+               .filter(e -> ReuseLevel.SINGLETON.equals(e.getValue().getLevel())) //
+               .map(Entry::getKey) //
+               .filter(c -> c.isAnnotationPresent(ConfiguresWith.class))
+               .forEach(c -> {
+                  ConfiguresWith config = c.getAnnotation(ConfiguresWith.class);
+                  result.putSingleton(config.value(), new LazyGetOptions(config.value(), this, c));
+               });
+      return result;
+   }
 }
