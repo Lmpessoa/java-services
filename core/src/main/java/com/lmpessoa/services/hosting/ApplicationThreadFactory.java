@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2017 Leonardo Pessoa
- * http://github.com/lmpessoa/java-services
+ * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,14 +26,21 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadFactory;
 
+import com.lmpessoa.services.logging.ILogger;
 import com.lmpessoa.services.services.IServicePoolProvider;
 
 final class ApplicationThreadFactory implements ThreadFactory {
 
+   private final ILogger log;
+
+   ApplicationThreadFactory(ILogger log) {
+      this.log = log;
+   }
+
    @Override
    public Thread newThread(Runnable r) {
       Thread result = new ApplicationThread(r);
-      result.setUncaughtExceptionHandler((t, e) -> e.printStackTrace(System.err));
+      result.setUncaughtExceptionHandler((t, e) -> log.fatal(e));
       return result;
    }
 

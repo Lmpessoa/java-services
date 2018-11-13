@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2017 Leonardo Pessoa
- * http://github.com/lmpessoa/java-services
+ * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -40,6 +40,7 @@ import java.util.regex.Pattern;
 
 import com.lmpessoa.services.core.NonResource;
 import com.lmpessoa.services.core.Resource;
+import com.lmpessoa.services.logging.ILogger;
 import com.lmpessoa.services.routing.IRouteTable;
 import com.lmpessoa.services.routing.MatchedRoute;
 import com.lmpessoa.services.services.IConfigurationLifecycle;
@@ -97,11 +98,13 @@ public final class Application {
    private static Application currentApp;
 
    private final ApplicationOptions options = new ApplicationOptions(this);
+   private final Map<String, Object> argMap;
    private final HandlerMediator mediator;
    private final IServiceMap serviceMap;
    private final IRouteTable routeTable;
    private final Class<?> startupClass;
    private final IHostEnvironment env;
+   private final ILogger log;
 
    private ServerSocket serverSocket;
    private Method tableMatches;
@@ -162,18 +165,15 @@ public final class Application {
       }
    }
 
-   Application(Class<?> startupClass, String[] args)
-      throws IllegalAccessException, NoSuchMethodException {
-      Map<String, Object> argMap = readArguments(args);
+   Application(Class<?> startupClass, String[] args) throws IllegalAccessException, NoSuchMethodException {
+      this.argMap = readArguments(args);
       String envName = (String) argMap.getOrDefault("env", System.getenv("SERVICES_ENVIRONMENT_NAME"));
       this.env = () -> envName != null ? formatEnvName(envName) : "Development";
       this.serviceMap = IServiceMap.newInstance();
       this.routeTable = IRouteTable.newInstance(serviceMap);
-      this.serviceMap.putSingleton(IServiceMap.class, this.serviceMap);
-      this.serviceMap.putSingleton(IRouteTable.class, this.routeTable);
       this.mediator = new HandlerMediator(serviceMap);
+      this.log = ILogger.newInstance();
       this.startupClass = startupClass;
-      configure(argMap);
    }
 
    static Class<?> findStartupClass() {
@@ -188,8 +188,7 @@ public final class Application {
    static InetAddress parseIpAddress(String addr) {
       final String ipv4Pattern = "(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])";
       final String ipv6Pattern = "([0-9a-f]{1,4}:){7}([0-9a-f]){1,4}";
-      if (!"localhost".equals(addr) && !Pattern.matches(ipv4Pattern, addr)
-               && !Pattern.matches(ipv6Pattern, addr)) {
+      if (!"localhost".equals(addr) && !Pattern.matches(ipv4Pattern, addr) && !Pattern.matches(ipv6Pattern, addr)) {
          throw new IllegalArgumentException("Not a valid IP address: '" + addr + "'");
       }
       try {
@@ -208,13 +207,14 @@ public final class Application {
       try {
          serverSocket.close();
       } catch (IOException e) {
-         e.printStackTrace();
+         log.debug(e);
       }
    }
 
    void run() throws IOException {
+      doConfigure();
       routeTable.putAll(scanResourcesFromStartup());
-      listening();
+      listen();
    }
 
    IServiceMap getServiceMap() {
@@ -227,6 +227,10 @@ public final class Application {
 
    HandlerMediator getMediator() {
       return mediator;
+   }
+
+   ILogger getLogger() {
+      return log;
    }
 
    MatchedRoute matches(HttpRequest request) {
@@ -245,9 +249,9 @@ public final class Application {
          } else if (e.getCause() instanceof Error) {
             throw (Error) e.getCause();
          }
-         e.printStackTrace();
+         log.error(e);
       } catch (IllegalAccessException | IllegalArgumentException e) {
-         e.printStackTrace();
+         log.error(e);
       }
       return null;
    }
@@ -281,12 +285,8 @@ public final class Application {
       return options.getThreadPool().submit(target);
    }
 
-   private static String formatEnvName(String envName) {
-      return envName == null ? null
-               : Character.toUpperCase(envName.charAt(0)) + envName.substring(1).toLowerCase();
-   }
-
-   private void configure(Map<String, Object> args) {
+   void doConfigure() {
+      populateServiceMap();
       configureServices();
       IServiceMap configMap = serviceMap.getConfigMap();
       configMap.putSingleton(IApplicationOptions.class, options);
@@ -294,30 +294,70 @@ public final class Application {
       configure(configMap);
       endConfiguration(configMap);
 
-      addr = (InetAddress) args.getOrDefault("bind", options.getBindAddress());
-      port = (int) args.getOrDefault("port", options.getPort());
-      if (args.containsKey(MAX_JOBS)) {
-         options.limitConcurrentJobs((int) args.get(MAX_JOBS));
+      addr = (InetAddress) argMap.getOrDefault("bind", options.getBindAddress());
+      port = (int) argMap.getOrDefault("port", options.getPort());
+      if (argMap.containsKey(MAX_JOBS)) {
+         options.limitConcurrentJobs((int) argMap.get(MAX_JOBS));
       }
-      if (args.containsKey(ACCEPT_XML)) {
+      if (argMap.containsKey(ACCEPT_XML)) {
          options.acceptXmlRequests();
       }
    }
 
-   private Map<String, Object> readArguments(String[] args) throws IllegalAccessException {
+   private static String formatEnvName(String envName) {
+      return envName == null ? null : Character.toUpperCase(envName.charAt(0)) + envName.substring(1).toLowerCase();
+   }
+
+   private void populateServiceMap() {
+      // Singleton
+      serviceMap.putSingleton(IServiceMap.class, this.serviceMap);
+      serviceMap.putSingleton(IRouteTable.class, this.routeTable);
+      serviceMap.putSingleton(ILogger.class, this.log);
+      serviceMap.putSingleton(IHostEnvironment.class, env);
+
+      // Per Request
+      serviceMap.putPerRequest(HttpRequest.class, () -> null);
+      serviceMap.putPerRequest(MatchedRoute.class, () -> null);
+      serviceMap.putPerRequest(ConnectionInfo.class, () -> null);
+   }
+
+   private Map<String, Object> readArguments(String[] args) {
       ArgumentReader reader = new ArgumentReader();
       reader.setOption("port", Integer::valueOf);
       reader.setOption("bind", Application::parseIpAddress);
       reader.setOption("env", s -> s);
       reader.setOption(MAX_JOBS, 'j', Integer::valueOf);
       reader.setFlag(ACCEPT_XML, 'X');
+      reader.setFlag("debug");
       return reader.parse(args);
    }
 
+   private void configure(IServiceMap configMap) {
+      mediator.addHandler(ResultHandler.class);
+      try {
+         String envSpecific = CONFIGURE + env.getName();
+         Method[] methods = ClassUtils.findMethods(startupClass, m -> envSpecific.equals(m.getName()));
+         if (methods.length != 1) {
+            methods = ClassUtils.findMethods(startupClass, m -> CONFIGURE.equals(m.getName()));
+            if (methods.length != 1) {
+               log.info("Could not find a configuration method");
+               return;
+            }
+         }
+
+         Method mapInvoke = ClassUtils.getDeclaredMethod(configMap.getClass(), "invoke", Object.class, Method.class);
+         mapInvoke.setAccessible(true);
+         try {
+            mapInvoke.invoke(configMap, startupClass, methods[0]);
+         } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+            log.debug(e);
+         }
+      } finally {
+         mediator.addHandler(InvokeHandler.class);
+      }
+   }
+
    private void configureServices() {
-      serviceMap.putSingleton(IHostEnvironment.class, env);
-      serviceMap.putPerRequest(HttpRequest.class, () -> null);
-      serviceMap.putPerRequest(MatchedRoute.class, () -> null);
       String envSpecific = CONFIGURE + env.getName() + "Services";
       Method configServices = ClassUtils.getMethod(startupClass, envSpecific, IServiceMap.class);
       Object[] args = new Object[] { serviceMap };
@@ -326,8 +366,7 @@ public final class Application {
                   IHostEnvironment.class);
          args = new Object[] { serviceMap, env };
          if (configServices == null) {
-            configServices = ClassUtils.getMethod(startupClass, "configureServices",
-                     IServiceMap.class);
+            configServices = ClassUtils.getMethod(startupClass, "configureServices", IServiceMap.class);
             args = new Object[] { serviceMap };
          }
       }
@@ -335,37 +374,10 @@ public final class Application {
          try {
             configServices.invoke(null, args);
          } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-            e.printStackTrace();
+            log.debug(e);
          }
       } else {
-         System.err.println("Could not find a service configuration method");
-      }
-   }
-
-   private void configure(IServiceMap configMap) {
-      mediator.addHandler(ResultHandler.class);
-      try {
-         String envSpecific = CONFIGURE + env.getName();
-         Method[] methods = ClassUtils.findMethods(startupClass,
-                  m -> envSpecific.equals(m.getName()));
-         if (methods.length != 1) {
-            methods = ClassUtils.findMethods(startupClass, m -> CONFIGURE.equals(m.getName()));
-            if (methods.length != 1) {
-               System.err.println("Could not find a configuration method");
-               return;
-            }
-         }
-
-         Method mapInvoke = ClassUtils.getDeclaredMethod(configMap.getClass(), "invoke",
-                  Object.class, Method.class);
-         mapInvoke.setAccessible(true);
-         try {
-            mapInvoke.invoke(configMap, startupClass, methods[0]);
-         } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-            e.printStackTrace();
-         }
-      } finally {
-         mediator.addHandler(InvokeHandler.class);
+         log.info("Could not find a service configuration method");
       }
    }
 
@@ -380,15 +392,14 @@ public final class Application {
             try {
                Object obj = getter.invoke(configMap, service);
                ((IConfigurationLifecycle) obj).configurationEnded();
-            } catch (IllegalAccessException | IllegalArgumentException
-                     | InvocationTargetException e) {
-               e.printStackTrace();
+            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+               log.warning(e);
             }
          }
       }
    }
 
-   private void listening() throws IOException {
+   private void listen() throws IOException {
       try (ServerSocket server = new ServerSocket(port, 0, addr)) {
          this.serverSocket = server;
          server.setSoTimeout(1);
@@ -399,7 +410,7 @@ public final class Application {
             } catch (SocketTimeoutException e) {
                // just ignore
             } catch (IOException e) {
-               e.printStackTrace();
+               log.error(e);
             }
          }
       }

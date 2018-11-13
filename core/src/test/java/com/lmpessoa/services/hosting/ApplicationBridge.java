@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2017 Leonardo Pessoa
- * http://github.com/lmpessoa/java-services
+ * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,10 +23,16 @@
 package com.lmpessoa.services.hosting;
 
 import com.lmpessoa.services.hosting.Application;
+import com.lmpessoa.services.logging.LoggerBridge;
 
 public final class ApplicationBridge {
 
    public static Object parseIpAddress(String addr) {
       return Application.parseIpAddress(addr);
    }
+
+   public static void useNullLogWriter(Application app) {
+      LoggerBridge.useNullLogWriter(app.getLogger());
+   }
+
 }

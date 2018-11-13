@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2017 Leonardo Pessoa
- * http://github.com/lmpessoa/java-services
+ * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -45,6 +45,7 @@ public final class AutoLoaderTest {
    @Test
    public void testScanDefault() throws IOException, IllegalAccessException, NoSuchMethodException {
       app = new Application(AutoLoaderTest.class, new String[0]);
+      ApplicationBridge.useNullLogWriter(app);
       Collection<Class<?>> result = app.scanResourcesFromStartup();
       assertTrue(result.contains(com.lmpessoa.services.test.resources.IndexResource.class));
       assertTrue(result.contains(com.lmpessoa.services.test.resources.TestResource.class));
@@ -55,6 +56,8 @@ public final class AutoLoaderTest {
    @Test
    public void testScanUserDefined() throws IOException, IllegalAccessException, NoSuchMethodException {
       app = new Application(MainWithApi.class, new String[0]);
+      ApplicationBridge.useNullLogWriter(app);
+      app.doConfigure();
       Collection<Class<?>> result = app.scanResourcesFromStartup();
       assertTrue(result.contains(com.lmpessoa.services.test.resources.IndexResource.class));
       assertTrue(result.contains(com.lmpessoa.services.test.resources.TestResource.class));

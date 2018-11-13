@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2017 Leonardo Pessoa
- * http://github.com/lmpessoa/java-services
+ * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -204,7 +204,7 @@ public final class RouteTableMatcherTest {
       }
    }
 
-   public static class Message implements Supplier<String> {
+   static class Message implements Supplier<String> {
 
       @Override
       public String get() {

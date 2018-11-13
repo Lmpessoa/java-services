@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2017 Leonardo Pessoa
- * http://github.com/lmpessoa/java-services
+ * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -44,6 +44,8 @@ public final class RequestJobTest {
    @Before
    public void setup() throws NoSuchMethodException, IllegalAccessException {
       app = new Application(RequestJobTest.class, new String[0]);
+      ApplicationBridge.useNullLogWriter(app);
+      app.doConfigure();
       app.getRouteTable().put("", TestResource.class);
    }
 

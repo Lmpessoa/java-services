@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2017 Leonardo Pessoa
- * http://github.com/lmpessoa/java-services
+ * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -80,7 +80,8 @@ public class RequestHandlerJob implements Runnable {
    @Override
    public void run() {
       Map<Class<?>, Object> pool = ((IServicePoolProvider) Thread.currentThread()).getPool();
-      Thread.currentThread().setName("request/" + Thread.currentThread().getId());
+      Thread.currentThread().setName("request");
+      pool.put(ConnectionInfo.class, new ConnectionInfo(clientSocket));
       pool.put(HttpRequest.class, request);
       HttpResult result;
       try {
@@ -103,8 +104,10 @@ public class RequestHandlerJob implements Runnable {
             if (result.getInputStream() != null) {
                HttpResultInputStream is = result.getInputStream();
                data = new byte[is.available()];
-               if (is.read(data) != data.length) {
-                  System.err.println("Content length difference");
+               int read = is.read(data);
+               if (read != data.length) {
+                  app.getLogger().warning(
+                           "Different lengths (expected: " + data.length + " bytes, found: " + read + " bytes)");
                }
                client.append("Content-Type: ");
                client.append(is.getContentType());

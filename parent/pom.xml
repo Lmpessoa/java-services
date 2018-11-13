@@ -10,7 +10,7 @@
 
    <name>Java Services</name>
    <description>A lightweight and easy engine for developing web APIs and microservices.</description>
-   <url>http://github.com/lmpessoa/java-services</url>
+   <url>https://github.com/lmpessoa/java-services</url>
    <inceptionYear>2017</inceptionYear>
 
    <licenses>
@@ -31,12 +31,12 @@
    <scm>
       <connection>scm:git:git://github.com/lmpessoa/java-services.git</connection>
       <developerConnection>scm:git:ssh://github.com:lmpessoa/java-services.git</developerConnection>
-      <url>http://github.com/lmpessoa/java-services/tree/master</url>
+      <url>https://github.com/lmpessoa/java-services/tree/master</url>
    </scm>
 
    <issueManagement>
       <system>GitHub</system>
-      <url>http://github.com/lmpessoa/java-services/issues</url>
+      <url>https://github.com/lmpessoa/java-services/issues</url>
    </issueManagement>
 
    <properties>

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2017 Leonardo Pessoa
- * http://github.com/lmpessoa/java-services
+ * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,6 @@ package com.lmpessoa.services.routing.content;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UnknownFormatConversionException;
 
 import com.lmpessoa.services.core.MediaType;
 import com.lmpessoa.services.hosting.HttpResultInputStream;
@@ -60,11 +59,11 @@ public final class Serializer {
                Object handler = handlerClass.newInstance();
                return ((IContentParser) handler).parse(content, resultClass);
             } catch (Exception e) {
-               e.printStackTrace(); // or ignore
+               throw new SerializationException("Error deserialising content", e);
             }
          }
       }
-      throw new UnknownFormatConversionException("Cannot deserialise from " + contentType);
+      throw new SerializationException("Cannot deserialise from " + contentType);
    }
 
    public static HttpResultInputStream produce(String[] accepts, Object obj) {
@@ -77,12 +76,13 @@ public final class Serializer {
                   InputStream is = ((IContentProducer) handler).produce(obj);
                   return new HttpResultInputStream(contentType, is);
                } catch (Exception e) {
-                  e.printStackTrace(); // or ignore
+                  // Just let SonarQube complain about this
+                  e.printStackTrace();
                }
             }
          }
       }
-      throw new UnknownFormatConversionException("Cannot serialise in any of the requested formats");
+      throw new SerializationException("Cannot serialise in any of the requested formats");
    }
 
    static void enableXml(boolean enable) {

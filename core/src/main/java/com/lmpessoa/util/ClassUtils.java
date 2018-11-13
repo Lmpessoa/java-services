@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2017 Leonardo Pessoa
- * http://github.com/lmpessoa/java-services
+ * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,7 @@ package com.lmpessoa.util;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -170,6 +171,22 @@ public final class ClassUtils {
       String location = findClassLocation(clazz);
       return location.startsWith("jar:") ? findClassesInJar(location.substring(9))
                : findClassesInPath(location.substring(5) + "/", "");
+   }
+
+   public static <T> T newInstance(Class<T> clazz, Object... params) {
+      Class<?>[] paramTypes = Arrays.stream(params).map(Object::getClass).toArray(Class<?>[]::new);
+      return newInstance(clazz, paramTypes, params);
+   }
+
+   public static <T> T newInstance(Class<T> clazz, Class<?>[] paramTypes, Object... params) {
+      try {
+         Constructor<T> construct = clazz.getDeclaredConstructor(paramTypes);
+         construct.setAccessible(true);
+         return construct.newInstance(params);
+      } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
+         e.printStackTrace();
+      }
+      return null;
    }
 
    private static String findClassLocation(Class<?> clazz) {

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2017 Leonardo Pessoa
- * http://github.com/lmpessoa/java-services
+ * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,7 +29,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.UnknownFormatConversionException;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
@@ -39,6 +38,7 @@ import org.junit.rules.ExpectedException;
 
 import com.lmpessoa.services.core.MediaType;
 import com.lmpessoa.services.hosting.HttpResultInputStream;
+import com.lmpessoa.services.routing.content.SerializationException;
 import com.lmpessoa.services.routing.content.Serializer;
 
 public final class SerializerTest {
@@ -60,7 +60,7 @@ public final class SerializerTest {
 
    @Test
    public void testParseXmlFails() {
-      thrown.expect(UnknownFormatConversionException.class);
+      thrown.expect(SerializationException.class);
       Serializer.enableXml(false);
       String content = "<?xml version=\"1.0\"?><object><id>12</id><name>Test</name>"
                + "<email>test@test.com</email><email>test@test.org</email><checked>true</checked></object>";
@@ -93,7 +93,7 @@ public final class SerializerTest {
 
    @Test
    public void testProduceXmlFails() throws IOException {
-      thrown.expect(UnknownFormatConversionException.class);
+      thrown.expect(SerializationException.class);
       Serializer.enableXml(false);
       Serializer.produce(new String[] { MediaType.XML }, "Test");
    }

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2017 Leonardo Pessoa
- * http://github.com/lmpessoa/java-services
+ * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,28 +30,33 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.lmpessoa.services.routing.content.Serializer;
+import com.lmpessoa.services.services.AbstractOptions;
 import com.lmpessoa.util.ClassUtils;
 
-final class ApplicationOptions implements IApplicationOptions {
+final class ApplicationOptions extends AbstractOptions implements IApplicationOptions {
 
-   private final ApplicationThreadFactory threadFactory = new ApplicationThreadFactory();
-   private final Application application;
+   private final ApplicationThreadFactory threadFactory;
+   private final Application app;
 
-   private ExecutorService threadPool = Executors.newCachedThreadPool(threadFactory);
+   private ExecutorService threadPool;
    private InetAddress addr = null;
    private int port = 5617;
 
-   public ApplicationOptions(Application application) {
-      this.application = application;
+   public ApplicationOptions(Application app) {
+      this.threadFactory = new ApplicationThreadFactory(app.getLogger());
+      this.threadPool = Executors.newCachedThreadPool(threadFactory);
+      this.app = app;
    }
 
    @Override
    public void usePort(int port) {
+      protectConfiguration();
       this.port = port;
    }
 
    @Override
    public void bindToAddress(String addr) {
+      protectConfiguration();
       if (addr != null) {
          try {
             this.addr = InetAddress.getByName(addr);
@@ -65,22 +70,25 @@ final class ApplicationOptions implements IApplicationOptions {
 
    @Override
    public void acceptXmlRequests() {
+      protectConfiguration();
       Method enableXml = ClassUtils.getDeclaredMethod(Serializer.class, "enableXml");
       enableXml.setAccessible(true);
       try {
          enableXml.invoke(null, true);
       } catch (IllegalAccessException | InvocationTargetException e) {
-         e.printStackTrace(); // or ignore
+         app.getLogger().debug(e);
       }
    }
 
    @Override
    public void addHandler(Class<?> handlerClass) {
-      application.getMediator().addHandler(handlerClass);
+      protectConfiguration();
+      app.getMediator().addHandler(handlerClass);
    }
 
    @Override
    public void limitConcurrentJobs(int maxJobs) {
+      protectConfiguration();
       threadPool = Executors.newFixedThreadPool(maxJobs, threadFactory);
    }
 

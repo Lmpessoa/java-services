@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2017 Leonardo Pessoa
- * http://github.com/lmpessoa/java-services
+ * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +24,8 @@ package com.lmpessoa.services.hosting;
 
 import static org.junit.Assert.assertEquals;
 
+import java.io.IOException;
+
 import org.junit.Before;
 import org.junit.Test;
 
@@ -36,28 +38,33 @@ public final class ApplicationConfigurationTest {
    private static String servicesResult;
    private static String configResult;
 
+   private Application app;
+
    @Before
    public void setup() {
       servicesResult = configResult = null;
    }
 
    @Test
-   public void testConfigMultipleEnvironments() throws NoSuchMethodException, IllegalAccessException {
-      new Application(CommonEnv.class, new String[0]);
+   public void testConfigMultipleEnvironments() throws NoSuchMethodException, IllegalAccessException, IOException {
+      app = new Application(CommonEnv.class, new String[0]);
+      app.doConfigure();
       assertEquals("common", servicesResult);
       assertEquals("common", configResult);
    }
 
    @Test
-   public void testConfigDefaultEnvironment() throws NoSuchMethodException, IllegalAccessException {
-      new Application(DefaultEnv.class, new String[0]);
+   public void testConfigDefaultEnvironment() throws NoSuchMethodException, IllegalAccessException, IOException {
+      app = new Application(DefaultEnv.class, new String[0]);
+      app.doConfigure();
       assertEquals("common", servicesResult);
       assertEquals("dev", configResult);
    }
 
    @Test
-   public void testConfigSpecificEnvironment() throws NoSuchMethodException, IllegalAccessException {
-      new Application(SpecificEnv.class, new String[] { "-e", "Staging" });
+   public void testConfigSpecificEnvironment() throws NoSuchMethodException, IllegalAccessException, IOException {
+      app = new Application(SpecificEnv.class, new String[] { "-e", "Staging" });
+      app.doConfigure();
       assertEquals("staging", servicesResult);
       assertEquals("staging", configResult);
    }

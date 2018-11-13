@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2017 Leonardo Pessoa
- * http://github.com/lmpessoa/java-services
+ * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -39,15 +39,16 @@ final class HttpRequestImpl implements HttpRequest {
 
    private static final String UTF8 = "UTF-8";
 
-   private Map<String, String> headers = new HashMap<>();
-   private byte[] content = new byte[0];
+   private final Map<String, String> headers;
+   private final String queryString;
+   private final String protocol;
+   private final byte[] content;
+   private final String method;
+   private final String path;
+
    private Map<String, String> cookies;
    private Map<String, String> query;
    private Map<String, String> form;
-   private String queryString;
-   private String protocol;
-   private String method;
-   private String path;
 
    HttpRequestImpl(InputStream clientStream) throws IOException {
       String requestLine = readLine(clientStream);
@@ -55,12 +56,14 @@ final class HttpRequestImpl implements HttpRequest {
       this.method = parts[0];
       this.protocol = parts[2];
       parts = parts[1].split("\\?", 2);
-      this.path = parts[0];
+      String path = parts[0];
+      Map<String, String> headers = new HashMap<>();
       if (path.startsWith("http://") || path.startsWith("https://")) {
          int index = path.indexOf('/', path.indexOf("://") + 3);
          headers.put("Host", path.substring(0, index));
          path = path.substring(index);
       }
+      this.path = path;
       this.queryString = parts.length > 1 ? parts[1] : null;
       String headerLine;
       while ((headerLine = readLine(clientStream)) != null && !headerLine.isEmpty()) {
@@ -70,7 +73,7 @@ final class HttpRequestImpl implements HttpRequest {
          }
          headers.put(head[0].trim(), head[1].trim());
       }
-      headers = Collections.unmodifiableMap(headers);
+      this.headers = Collections.unmodifiableMap(headers);
       if (headers.containsKey("Content-Type")) {
          if (!headers.containsKey("Content-Length")) {
             throw new LengthRequiredException();
@@ -78,13 +81,18 @@ final class HttpRequestImpl implements HttpRequest {
          if (getContentLength() > Integer.MAX_VALUE || getContentLength() < 0) {
             throw new UnsupportedOperationException("Body content too large");
          }
-         content = new byte[(int) getContentLength()];
+         byte[] content = new byte[(int) getContentLength()];
          while (clientStream.available() < content.length) {
             // Do nothing, just sit and wait
          }
-         if (clientStream.read(content) != content.length) {
-            System.err.println("Error reading from client");
+         int read = clientStream.read(content);
+         if (read != content.length) {
+            throw new AssertionError(
+                     "Error reading from client (expected: " + content.length + " bytes, found: " + read + " bytes)");
          }
+         this.content = content;
+      } else {
+         this.content = new byte[0];
       }
    }
 
