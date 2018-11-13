@@ -68,12 +68,12 @@ public class RequestHandlerJob extends Thread implements IServicePoolProvider, U
       statusCodeTexts.put(501, "Not Implemented");
    }
 
-   public RequestHandlerJob(Application app, Socket socket) throws IOException {
+   RequestHandlerJob(Application app, Socket socket) throws IOException {
       this(app, new HttpRequestImpl(socket.getInputStream()), socket.getOutputStream());
       this.clientSocket = socket;
    }
 
-   public RequestHandlerJob(Application app, HttpRequest request, OutputStream out) {
+   RequestHandlerJob(Application app, HttpRequest request, OutputStream out) {
       setName("request/" + getId());
       setDefaultUncaughtExceptionHandler(this);
       this.app = Objects.requireNonNull(app);
@@ -96,48 +96,46 @@ public class RequestHandlerJob extends Thread implements IServicePoolProvider, U
 
       StringBuilder client = new StringBuilder();
       try {
-         client.append("HTTP/1.1 ");
-         client.append(result.getStatusCode());
-         client.append(' ');
-         client.append(statusCodeTexts.get(result.getStatusCode()));
-         client.append(CRLF);
-         byte[] data = null;
-         if (result.getInputStream() != null) {
-            HttpResultInputStream is = result.getInputStream();
-            data = new byte[is.available()];
-            if (is.read(data) != data.length) {
-               System.err.println("Content length difference");
-            }
-            client.append("Content-Type: ");
-            client.append(is.getContentType());
+         try {
+            client.append("HTTP/1.1 ");
+            client.append(result.getStatusCode());
+            client.append(' ');
+            client.append(statusCodeTexts.get(result.getStatusCode()));
             client.append(CRLF);
-            client.append("Content-Length: ");
-            client.append(data.length);
-            client.append(CRLF);
-            if (result.getInputStream().getDownloadName() != null) {
-               client.append("Content-Disposition: attachment; filename=\"");
-               client.append(is.getDownloadName());
-               client.append('"');
+            byte[] data = null;
+            if (result.getInputStream() != null) {
+               HttpResultInputStream is = result.getInputStream();
+               data = new byte[is.available()];
+               if (is.read(data) != data.length) {
+                  System.err.println("Content length difference");
+               }
+               client.append("Content-Type: ");
+               client.append(is.getContentType());
+               client.append(CRLF);
+               client.append("Content-Length: ");
+               client.append(data.length);
+               client.append(CRLF);
+               if (result.getInputStream().getDownloadName() != null) {
+                  client.append("Content-Disposition: attachment; filename=\"");
+                  client.append(is.getDownloadName());
+                  client.append('"');
+                  client.append(CRLF);
+               }
                client.append(CRLF);
             }
-            client.append(CRLF);
-         }
-         out.write(client.toString().getBytes());
-         if (data != null) {
-            out.write(data);
-         }
-         out.flush();
-      } catch (IOException e) {
-         throw new InternalServerError(e);
-      } finally {
-         app.threads.remove(this);
-         try {
+            out.write(client.toString().getBytes());
+            if (data != null) {
+               out.write(data);
+            }
+            out.flush();
+         } finally {
+            app.threads.remove(this);
             if (clientSocket != null) {
                clientSocket.close();
             }
-         } catch (IOException e) {
-            throw new InternalServerError(e);
          }
+      } catch (IOException e) {
+         throw new InternalServerError(e);
       }
    }
 

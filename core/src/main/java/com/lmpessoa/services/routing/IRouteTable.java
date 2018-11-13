@@ -82,4 +82,13 @@ public interface IRouteTable {
     * @return a list of exceptions raised during this call.
     */
    Collection<Exception> putAll(String area, Collection<Class<?>> classes);
+
+   /**
+    * Returns the name of the area classes in the given package name should belong to.
+    * 
+    * @param packageName the name of the package to check.
+    * @return the name of the area classes in the given package name should belong to, or
+    * <code>null</code> if no area captures classes in the given package name.
+    */
+   String findArea(String packageName);
 }

@@ -20,34 +20,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.services;
+package com.lmpessoa.services.core;
 
-import java.lang.reflect.Method;
-import java.util.function.Supplier;
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-import com.lmpessoa.services.hosting.InternalServerError;
+import java.lang.annotation.Documented;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-final class LazyGetOptions<T> implements Supplier<T> {
-
-   private final ServiceMap serviceMap;
-   private final Class<?> serviceClass;
-
-   LazyGetOptions(Class<T> configClass, ServiceMap serviceMap, Class<?> serviceClass) {
-      this.serviceMap = serviceMap;
-      this.serviceClass = serviceClass;
-   }
-
-   @Override
-   @SuppressWarnings("unchecked")
-   public T get() {
-      try {
-         Object service = serviceMap.get(serviceClass);
-         Method getOptions = service.getClass().getDeclaredMethod("getOptions");
-         getOptions.setAccessible(true);
-         return (T) getOptions.invoke(service);
-      } catch (Exception e) {
-         throw new InternalServerError(e);
-      }
-   }
+/**
+ * Marks a class that must be seen as a resource by the engine.
+ *
+ * <p>
+ * Classes don't usually need to be annotated with this to be recognised as resources by the engine
+ * as long as their names end with the "Resource" suffix and that is not the complete name of the
+ * class. To have classes recognised as resources without following this convention, classes must be
+ * annotated with <code>@Resource</code>.
+ * </p>
+ *
+ * <p>
+ * Note that classes must still be located in one of the registered area packages in order to be
+ * automatically registered with the engine.
+ */
+@Documented
+@Target(TYPE)
+@Retention(RUNTIME)
+public @interface Resource {
 
 }

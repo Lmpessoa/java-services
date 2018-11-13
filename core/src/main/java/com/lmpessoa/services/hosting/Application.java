@@ -31,8 +31,13 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+import java.util.regex.Pattern;
 
+import com.lmpessoa.services.core.NonResource;
+import com.lmpessoa.services.core.Resource;
 import com.lmpessoa.services.routing.IRouteTable;
 import com.lmpessoa.services.routing.MatchedRoute;
 import com.lmpessoa.services.services.IConfigurationLifecycle;
@@ -84,10 +89,6 @@ public final class Application {
 
    private static final String CONFIGURE = "configure";
    private static Application currentApp;
-   private static IHostEnvironment env = () -> {
-      String envName = formatEnvName(System.getenv("SERVICES_ENVIRONMENT_NAME"));
-      return envName != null ? envName : "Development";
-   };
 
    final List<Thread> threads = new ArrayList<>();
 
@@ -95,6 +96,7 @@ public final class Application {
    private final IServiceMap serviceMap;
    private final IRouteTable routeTable;
    private final Class<?> startupClass;
+   private final IHostEnvironment env;
    private final InetAddress iface;
    private final int port;
 
@@ -129,13 +131,12 @@ public final class Application {
     * @param addr the network address the application will be listening to.
     * @param port the number of the port the application will be listening to.
     */
-   public static void startAt(int port, InetAddress iface)
-      throws NoSuchMethodException, IOException {
+   public static void startAt(int port, InetAddress iface) throws NoSuchMethodException, IOException {
       Thread.currentThread().setName("main");
       if (currentApp != null) {
          throw new IllegalStateException("Application is already running");
       }
-      currentApp = new Application(findStartupClass(), port, iface);
+      currentApp = new Application(findStartupClass(), System.getenv("SERVICES_ENVIRONMENT_NAME"), port, iface);
       currentApp.run();
       currentApp = null;
    }
@@ -156,9 +157,15 @@ public final class Application {
       }
    }
 
-   Application(Class<?> startupClass, int port, InetAddress iface) throws NoSuchMethodException {
+   Application(Class<?> startupClass, String envName, int port, InetAddress iface) throws NoSuchMethodException {
+      this.env = () -> {
+         String name = formatEnvName(envName);
+         return name != null ? name : "Development";
+      };
       this.serviceMap = IServiceMap.newInstance();
       this.routeTable = IRouteTable.newInstance(serviceMap);
+      this.serviceMap.putSingleton(IServiceMap.class, this.serviceMap);
+      this.serviceMap.putSingleton(IRouteTable.class, this.routeTable);
       this.mediator = new HandlerMediator(serviceMap);
       this.startupClass = startupClass;
       this.port = port;
@@ -175,6 +182,7 @@ public final class Application {
 
    void run() throws IOException {
       doConfiguration();
+      routeTable.putAll(scanResourcesFromStartup());
       listening();
    }
 
@@ -192,8 +200,7 @@ public final class Application {
 
    MatchedRoute matches(HttpRequest request) {
       if (tableMatches == null) {
-         tableMatches = ClassUtils.getDeclaredMethod(routeTable.getClass(), "matches",
-                  HttpRequest.class);
+         tableMatches = ClassUtils.getDeclaredMethod(routeTable.getClass(), "matches", HttpRequest.class);
       }
       if (tableMatches == null) {
          return null;
@@ -222,11 +229,36 @@ public final class Application {
       endConfiguration(configMap);
    }
 
+   Collection<Class<?>> scanResourcesFromStartup() throws IOException {
+      final Pattern endsInResource = Pattern.compile("[a-zA-Z0-9]Resource$");
+      Collection<String> classes = ClassUtils.scanInProjectOf(startupClass);
+      Collection<Class<?>> result = new ArrayList<>();
+      for (String className : classes) {
+         String[] pckgs = className.split("\\.");
+         String pckg = String.join(".", Arrays.copyOf(pckgs, pckgs.length - 1));
+         if (routeTable.findArea(pckg) == null) {
+            continue;
+         }
+         try {
+            Class<?> clazz = Class.forName(className);
+            if (ClassUtils.isConcreteClass(clazz) && Modifier.isPublic(clazz.getModifiers())
+                     && (endsInResource.matcher(clazz.getSimpleName()).find()
+                              || clazz.isAnnotationPresent(Resource.class))
+                     && !clazz.isAnnotationPresent(NonResource.class)) {
+               result.add(clazz);
+            }
+         } catch (ClassNotFoundException e) {
+            return null;
+         }
+      }
+      return result;
+   }
+
    private static Class<?> findStartupClass() {
       StackTraceElement[] trace = Thread.currentThread().getStackTrace();
       String appClassName = Application.class.getName();
       for (int i = 1; i < trace.length; ++i) {
-         if (trace[i].getClassName().equals(appClassName)) {
+         if (!trace[i].getClassName().equals(appClassName)) {
             try {
                return Class.forName(trace[i].getClassName());
             } catch (ClassNotFoundException e) {
@@ -238,8 +270,7 @@ public final class Application {
    }
 
    private static String formatEnvName(String envName) {
-      return envName == null ? null
-               : Character.toUpperCase(envName.charAt(0)) + envName.substring(1).toLowerCase();
+      return envName == null ? null : Character.toUpperCase(envName.charAt(0)) + envName.substring(1).toLowerCase();
    }
 
    private void configureServices() {
@@ -254,8 +285,7 @@ public final class Application {
                   IHostEnvironment.class);
          args = new Object[] { serviceMap, env };
          if (configServices == null) {
-            configServices = ClassUtils.getMethod(startupClass, "configureServices",
-                     IServiceMap.class);
+            configServices = ClassUtils.getMethod(startupClass, "configureServices", IServiceMap.class);
             args = new Object[] { serviceMap };
          }
       }
@@ -274,8 +304,7 @@ public final class Application {
       mediator.addHandler(ResultHandler.class);
       try {
          String envSpecific = CONFIGURE + env.getName();
-         Method[] methods = ClassUtils.findMethods(startupClass,
-                  m -> envSpecific.equals(m.getName()));
+         Method[] methods = ClassUtils.findMethods(startupClass, m -> envSpecific.equals(m.getName()));
          if (methods.length != 1) {
             methods = ClassUtils.findMethods(startupClass, m -> CONFIGURE.equals(m.getName()));
             if (methods.length != 1) {
@@ -284,8 +313,8 @@ public final class Application {
             }
          }
 
-         Method mapInvoke = ClassUtils.getDeclaredMethod(configMap.getClass(), "invoke",
-                  Object.class, Method.class);
+         Method mapInvoke = ClassUtils.getDeclaredMethod(configMap.getClass(), "invoke", Object.class, Method.class);
+         mapInvoke.setAccessible(true);
          try {
             mapInvoke.invoke(configMap, startupClass, methods[0]);
          } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
@@ -297,17 +326,17 @@ public final class Application {
    }
 
    private void endConfiguration(IServiceMap configMap) {
-      Method getter = ClassUtils.getDeclaredMethod(startupClass, "get", Class.class);
+      Method getter = ClassUtils.getDeclaredMethod(configMap.getClass(), "get", Class.class);
       if (getter == null) {
          return;
       }
+      getter.setAccessible(true);
       for (Class<?> options : configMap.getServices()) {
          if (IConfigurationLifecycle.class.isAssignableFrom(options)) {
             try {
                Object obj = getter.invoke(configMap, options);
                ((IConfigurationLifecycle) obj).configurationEnded();
-            } catch (IllegalAccessException | IllegalArgumentException
-                     | InvocationTargetException e) {
+            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
                e.printStackTrace();
             }
          }

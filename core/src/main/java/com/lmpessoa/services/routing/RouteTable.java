@@ -26,6 +26,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -91,12 +92,18 @@ final class RouteTable implements IRouteTable {
 
    @Override
    public Collection<Exception> putAll(Collection<Class<?>> classes) {
-      return putClasses(classes.stream().collect(Collectors.toMap(c -> c, options::findArea)));
+      return putClasses(classes.stream().filter(c -> options.findArea(c) != null).collect(
+               Collectors.toMap(c -> c, options::findArea)));
    }
 
    @Override
    public Collection<Exception> putAll(String area, Collection<Class<?>> classes) {
-      return putClasses(classes.stream().collect(Collectors.toMap(c -> c, c -> area)));
+      return putClasses(classes.stream().filter(c -> area != null).collect(Collectors.toMap(c -> c, c -> area)));
+   }
+
+   @Override
+   public String findArea(String packageName) {
+      return options.findArea(packageName);
    }
 
    boolean hasRoute(String route) throws ParseException {
@@ -262,8 +269,8 @@ final class RouteTable implements IRouteTable {
    }
 
    private void validateResourceClass(Class<?> clazz) throws NoSingleMethodException {
-      if (!ClassUtils.isConcreteClass(clazz)) {
-         throw new IllegalArgumentException("Resource class must be a concrete class");
+      if (!ClassUtils.isConcreteClass(clazz) && Modifier.isPublic(clazz.getModifiers())) {
+         throw new IllegalArgumentException("Resource class must be a public concrete class");
       }
       Constructor<?>[] constructors = clazz.getConstructors();
       if (constructors.length != 1) {

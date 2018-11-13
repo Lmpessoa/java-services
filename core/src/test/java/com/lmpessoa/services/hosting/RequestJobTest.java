@@ -42,9 +42,9 @@ public final class RequestJobTest {
 
    @Before
    public void setup() throws NoSuchMethodException {
-      app = new Application(RequestJobTest.class, 5616, null);
+      app = new Application(RequestJobTest.class, null, 5616, null);
       app.doConfiguration();
-      app.getRouteTable().put(TestResource.class);
+      app.getRouteTable().put("", TestResource.class);
    }
 
    private String[] runJob(HttpRequest request) throws InterruptedException {

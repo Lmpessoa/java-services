@@ -60,7 +60,7 @@ public final class RouteTableMatcherTest {
    public void setup() throws NoSuchMethodException {
       serviceMap = IServiceMap.newInstance();
       table = new RouteTable(serviceMap);
-      table.put(TestResource.class);
+      table.put("", TestResource.class);
    }
 
    @Test
@@ -133,7 +133,7 @@ public final class RouteTableMatcherTest {
    public void testMatchesWithService() throws NoSuchMethodException, HttpException {
       Message message = new Message();
       serviceMap.putSingleton(Message.class, message);
-      table.put(ServiceTestResource.class);
+      table.put("", ServiceTestResource.class);
       MatchedRoute result = table.matches(HttpMethod.GET, "/service");
       assertEquals(ServiceTestResource.class, result.getResourceClass());
       assertEquals(ServiceTestResource.class.getMethod("get"), result.getMethod());

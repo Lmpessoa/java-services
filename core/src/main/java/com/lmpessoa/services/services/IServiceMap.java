@@ -33,11 +33,11 @@ import java.util.function.Supplier;
  * A service registry is a registration service used to help locate other services by using a
  * service injection. Registration can be made into the following levels:
  * <ul>
- * <li><b>Singleton</b> services have one single instance respond for the service throughout the
+ * <li><b>Singleton</b> services have one single instance respond for the service thoughout the
  * entire lifetime of the application.</li>
  * <li><b>Per Request</b> services have a different instance respond for the service for each
  * request (or just like singleton but within each request).</li>
- * <li><b>Transient</b> services have one new instance every time the service is requested.</li>
+ * <li><b>Transient</b> services have one new instance everytime the service is requested.</li>
  * </ul>
  */
 public interface IServiceMap {
@@ -193,7 +193,7 @@ public interface IServiceMap {
     * </p>
     *
     * @param service the class of the service to be registered.
-    * @param provider the function that creates objects that supply the service the service for the
+    * @param provider the function that creates cobjects that supply the service the service for the
     * base class.
     */
    <T> void putTransient(Class<T> service, Supplier<T> supplier);
@@ -201,7 +201,7 @@ public interface IServiceMap {
    // Utils ----------
 
    /**
-    * Returns whether this service map has a registration for the given service.
+    * Returns whether this service map has a egistration for the given service.
     *
     * @param service the service to check if there is a registration on this service map.
     * @return <code>true</code> if this service map has a registration for the given service,

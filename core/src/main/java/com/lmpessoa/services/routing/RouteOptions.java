@@ -34,6 +34,7 @@ final class RouteOptions implements IRouteOptions {
    private final Map<String, String> indices = new HashMap<>();
 
    RouteOptions() {
+      addArea("", ".resources$");
       addType("hex", HexRouteType.class);
       addType("int", IntRouteType.class);
       addType("alpha", AlphaRouteType.class);
@@ -42,10 +43,10 @@ final class RouteOptions implements IRouteOptions {
 
    @Override
    public void addArea(String areaPath, String packageExpr, String defaultResource) {
-      if (!Pattern.matches("^[a-zA-Z0-9]+(\\/[a-zA-Z0-9]+)?$", areaPath)) {
+      if (!Pattern.matches("^([a-zA-Z0-9]+(\\/[a-zA-Z0-9]+)?)?$", areaPath)) {
          throw new IllegalArgumentException("Invalid area path: " + areaPath);
       }
-      String packExpr = packageExpr.replaceAll("\\.", "\\.");
+      String packExpr = packageExpr.replaceAll("\\.", "\\\\.");
       packages.put(areaPath, Pattern.compile(packExpr));
       String defRes = defaultResource.toLowerCase();
       if (!Pattern.matches("^[a-z][a-z0-9]*$", defRes)) {
@@ -77,15 +78,18 @@ final class RouteOptions implements IRouteOptions {
 
    String findArea(Class<?> clazz) {
       if (clazz.isPrimitive() || clazz.isArray()) {
-         return "";
+         return null;
       }
-      String packageName = clazz.getPackage().getName();
+      return findArea(clazz.getPackage().getName());
+   }
+
+   String findArea(String packageName) {
       for (Entry<String, Pattern> entry : packages.entrySet()) {
          if (entry.getValue().matcher(packageName).find()) {
             return entry.getKey();
          }
       }
-      return "";
+      return null;
    }
 
    String getAreaIndex(String area) {

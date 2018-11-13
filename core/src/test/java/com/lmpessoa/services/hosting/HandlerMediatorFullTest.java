@@ -70,7 +70,7 @@ public final class HandlerMediatorFullTest {
       services.putTransient(MatchedRoute.class, () -> route);
 
       routes = RouteTableBridge.get(services);
-      routes.put(TestResource.class);
+      routes.put("", TestResource.class);
 
       mediator = new HandlerMediator(services);
       mediator.addHandler(ResultHandler.class);
