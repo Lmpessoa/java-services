@@ -24,21 +24,21 @@ package com.lmpessoa.services.hosting;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import com.lmpessoa.services.routing.content.Serializer;
 import com.lmpessoa.util.ClassUtils;
 
 final class ApplicationOptions implements IApplicationOptions {
 
+   private final ApplicationThreadFactory threadFactory = new ApplicationThreadFactory();
    private final Application application;
+
+   private ExecutorService threadPool = Executors.newCachedThreadPool(threadFactory);
 
    public ApplicationOptions(Application application) {
       this.application = application;
-   }
-
-   @Override
-   public void addHandler(Class<?> handlerClass) {
-      application.getMediator().addHandler(handlerClass);
    }
 
    @Override
@@ -50,5 +50,19 @@ final class ApplicationOptions implements IApplicationOptions {
       } catch (IllegalAccessException | InvocationTargetException e) {
          e.printStackTrace(); // or ignore
       }
+   }
+
+   @Override
+   public void addHandler(Class<?> handlerClass) {
+      application.getMediator().addHandler(handlerClass);
+   }
+
+   @Override
+   public void limitConcurrentJobs(int maxJobs) {
+      threadPool = Executors.newFixedThreadPool(maxJobs, threadFactory);
+   }
+
+   ExecutorService getThreadPool() {
+      return threadPool;
    }
 }

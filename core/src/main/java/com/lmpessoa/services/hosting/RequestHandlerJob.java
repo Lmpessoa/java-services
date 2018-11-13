@@ -24,7 +24,6 @@ package com.lmpessoa.services.hosting;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.Thread.UncaughtExceptionHandler;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,12 +32,11 @@ import java.util.Objects;
 import com.lmpessoa.services.routing.MatchedRoute;
 import com.lmpessoa.services.services.IServicePoolProvider;
 
-public class RequestHandlerJob extends Thread implements IServicePoolProvider, UncaughtExceptionHandler {
+public class RequestHandlerJob implements Runnable {
 
    private static final Map<Integer, String> statusCodeTexts = new HashMap<>();
    private static final String CRLF = "\r\n";
 
-   private final Map<Class<?>, Object> pool = new HashMap<>();
    private final Application app;
    private final HttpRequest request;
    private final OutputStream out;
@@ -74,8 +72,6 @@ public class RequestHandlerJob extends Thread implements IServicePoolProvider, U
    }
 
    RequestHandlerJob(Application app, HttpRequest request, OutputStream out) {
-      setName("request/" + getId());
-      setDefaultUncaughtExceptionHandler(this);
       this.app = Objects.requireNonNull(app);
       this.request = Objects.requireNonNull(request);
       this.out = Objects.requireNonNull(out);
@@ -83,7 +79,8 @@ public class RequestHandlerJob extends Thread implements IServicePoolProvider, U
 
    @Override
    public void run() {
-      app.threads.add(this);
+      Map<Class<?>, Object> pool = ((IServicePoolProvider) Thread.currentThread()).getPool();
+      Thread.currentThread().setName("request/" + Thread.currentThread().getId());
       pool.put(HttpRequest.class, request);
       HttpResult result;
       try {
@@ -129,7 +126,6 @@ public class RequestHandlerJob extends Thread implements IServicePoolProvider, U
             }
             out.flush();
          } finally {
-            app.threads.remove(this);
             if (clientSocket != null) {
                clientSocket.close();
             }
@@ -137,15 +133,5 @@ public class RequestHandlerJob extends Thread implements IServicePoolProvider, U
       } catch (IOException e) {
          throw new InternalServerError(e);
       }
-   }
-
-   @Override
-   public Map<Class<?>, Object> getPool() {
-      return pool;
-   }
-
-   @Override
-   public void uncaughtException(Thread t, Throwable e) {
-      e.printStackTrace();
    }
 }

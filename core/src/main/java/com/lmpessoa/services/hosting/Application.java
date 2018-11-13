@@ -33,7 +33,8 @@ import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.regex.Pattern;
 
 import com.lmpessoa.services.core.NonResource;
@@ -90,8 +91,6 @@ public final class Application {
    private static final String CONFIGURE = "configure";
    private static Application currentApp;
 
-   final List<Thread> threads = new ArrayList<>();
-
    private final ApplicationOptions options = new ApplicationOptions(this);
    private final HandlerMediator mediator;
    private final IServiceMap serviceMap;
@@ -101,6 +100,7 @@ public final class Application {
    private final InetAddress iface;
    private final int port;
 
+   private ExecutorService threadPool;
    private ServerSocket serverSocket;
    private Method tableMatches;
 
@@ -137,7 +137,7 @@ public final class Application {
       if (currentApp != null) {
          throw new IllegalStateException("Application is already running");
       }
-      currentApp = new Application(findStartupClass(), System.getenv("LEEOW_ENVIRONMENT_NAME"), port, iface);
+      currentApp = new Application(findStartupClass(), System.getenv("SERVICES_ENVIRONMENT_NAME"), port, iface);
       currentApp.run();
       currentApp = null;
    }
@@ -155,6 +155,24 @@ public final class Application {
    public static void shutdown() {
       if (currentApp != null) {
          currentApp.stop();
+         currentApp.threadPool.shutdown();
+      }
+   }
+
+   /**
+    * Forces the application to shut down immediately.
+    *
+    * <p>
+    * Applications wishing to enable a forceful shutdown should implement a resource that calls this
+    * method. Instead of providing a ready-made resource to support this feature, by requiring
+    * developers to implement their own resources to call this method ensures there is no default route
+    * for shutdown and enables other security requirements to be implemented.
+    * </p>
+    */
+   public static void shutdownNow() {
+      if (currentApp != null) {
+         currentApp.stop();
+         currentApp.threadPool.shutdownNow();
       }
    }
 
@@ -229,6 +247,7 @@ public final class Application {
       configMap.putSingleton(IHostEnvironment.class, env);
       configure(configMap);
       endConfiguration(configMap);
+      threadPool = options.getThreadPool();
    }
 
    Collection<Class<?>> scanResourcesFromStartup() throws IOException {
@@ -254,6 +273,10 @@ public final class Application {
          }
       }
       return result;
+   }
+
+   Future<?> submitJob(Runnable target) {
+      return threadPool.submit(target);
    }
 
    private static Class<?> findStartupClass() {
@@ -352,8 +375,7 @@ public final class Application {
          while (!server.isClosed()) {
             try {
                Socket socket = server.accept();
-               Thread t = new RequestHandlerJob(this, socket);
-               t.start();
+               threadPool.execute(new RequestHandlerJob(this, socket));
             } catch (SocketTimeoutException e) {
                // just ignore
             } catch (IOException e) {
@@ -361,7 +383,7 @@ public final class Application {
             }
          }
       }
-      while (!threads.isEmpty()) {
+      while (!threadPool.isTerminated()) {
          // Do nothing, just wait
       }
    }

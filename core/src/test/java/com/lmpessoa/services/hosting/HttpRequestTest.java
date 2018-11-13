@@ -22,14 +22,18 @@
  */
 package com.lmpessoa.services.hosting;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.IOException;
 
+import org.junit.Rule;
 import org.junit.Test;
-
-import com.lmpessoa.services.hosting.HttpRequest;
-import com.lmpessoa.services.hosting.HttpRequestImpl;
+import org.junit.rules.ExpectedException;
 
 public final class HttpRequestTest {
+
+   @Rule
+   public ExpectedException thrown = ExpectedException.none();
 
    private HttpRequest getRequest(String filename) throws IOException {
       return new HttpRequestImpl(this.getClass().getResourceAsStream("/http/" + filename));
@@ -38,50 +42,56 @@ public final class HttpRequestTest {
    @Test
    public void testSimpleGetRequest() throws IOException {
       HttpRequest request = getRequest("simple_get_request.txt");
-      assert "GET".equals(request.getMethod());
-      assert "/path/file.html".equals(request.getPath());
-      assert "someuser@jmarshall.com".equals(request.getHeaders().get("From"));
+      assertEquals("GET", request.getMethod());
+      assertEquals("/path/file.html", request.getPath());
+      assertEquals("someuser@jmarshall.com", request.getHeaders().get("From"));
    }
 
    @Test
    public void testQueryGetRequest() throws IOException {
       HttpRequest request = getRequest("query_get_request.txt");
-      assert "GET".equals(request.getMethod());
-      assert "/b/ss/rsid/0".equals(request.getPath());
-      assert "apps.sillystring.com/summary.do".equals(request.getQuery().get("g"));
+      assertEquals("GET", request.getMethod());
+      assertEquals("/b/ss/rsid/0", request.getPath());
+      assertEquals("apps.sillystring.com/summary.do", request.getQuery().get("g"));
    }
 
    @Test
    public void testHostedGetRequest() throws IOException {
       HttpRequest request = getRequest("hosted_get_request.txt");
-      assert "GET".equals(request.getMethod());
-      assert "/path/file.html".equals(request.getPath());
-      assert "https://lmpessoa.com".equals(request.getHost());
+      assertEquals("GET", request.getMethod());
+      assertEquals("/path/file.html", request.getPath());
+      assertEquals("https://lmpessoa.com", request.getHost());
    }
 
    @Test
    public void testFormPostRequest() throws IOException {
       HttpRequest request = getRequest("form_post_request.txt");
-      assert "POST".equals(request.getMethod());
-      assert "/path/script.cgi".equals(request.getPath());
-      assert "flies".equals(request.getForm().get("favorite flavor"));
+      assertEquals("POST", request.getMethod());
+      assertEquals("/path/script.cgi", request.getPath());
+      assertEquals("flies", request.getForm().get("favorite flavor"));
    }
 
    @Test
-   public void testJsonPostRequest() throws IOException {
+   public void testJsonPutRequest() throws IOException {
       HttpRequest request = getRequest("json_put_request.txt");
-      assert "PUT".equals(request.getMethod());
-      assert "/api/2.2/auth/signin".equals(request.getPath());
-      assert "application/json".equals(request.getContentType());
-      assert request.getBody().available() == 122;
+      assertEquals("PUT", request.getMethod());
+      assertEquals("/api/2.2/auth/signin", request.getPath());
+      assertEquals("application/json", request.getContentType());
+      assertEquals(129, request.getBody().available());
+   }
+
+   @Test
+   public void testWrongPutRequest() throws IOException {
+      thrown.expect(LengthRequiredException.class);
+      getRequest("wrong_put_request.txt");
    }
 
    @Test
    public void testCookiesGetRequest() throws IOException {
       HttpRequest request = getRequest("cookies_get_request.txt");
-      assert "GET".equals(request.getMethod());
-      assert "/".equals(request.getPath());
-      assert "false".equals(request.getCookies().get("toggle"));
+      assertEquals("GET", request.getMethod());
+      assertEquals("/", request.getPath());
+      assertEquals("false", request.getCookies().get("toggle"));
 
    }
 }

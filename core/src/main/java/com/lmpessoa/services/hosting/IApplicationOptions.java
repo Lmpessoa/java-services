@@ -22,9 +22,56 @@
  */
 package com.lmpessoa.services.hosting;
 
+/**
+ * Describe the configuration options for the application.
+ *
+ * <p>
+ * Objects of this class are injected during the configuration phase of the application to allow it
+ * to be configured before the application is running and resource classes are loaded.
+ * </p>
+ */
 public interface IApplicationOptions {
 
+   /**
+    * Declares the application will accept requests made using XML.
+    *
+    * <p>
+    * By default, applications only accept requests to be made using JSON. By calling this
+    * method during the configuration phase of the application lifecycle will enable the application to
+    * also accept requests made using XML content and respond with XML when requested.
+    * </p>
+    */
+   void acceptXmlRequests();
+
+   /**
+    * Adds a class to the engine pipeline to handle requests and responses.
+    *
+    * <p>
+    * Each handler can perform operations before and after the next handler. A handler may also decide
+    * not to pass a request to the next, which is called short-circuiting the request pipeline.
+    * Short-circuiting is often desirable because it avoids unnecessary work.
+    * </p>
+    *
+    * <p>
+    * The order in which handlers are added in the configuration phase also defines the order in which
+    * they are invoked when handling requests, and the reverse order for the response. This ordering is
+    * critical for security, performance, and functionality.
+    * </p>
+    *
+    * @param handlerClass the class of the handler to add.
+    */
    void addHandler(Class<?> handlerClass);
 
-   void acceptXmlRequests();
+   /**
+    * Limits the maximum number of jobs the application should execute in parallel.
+    *
+    * <p>
+    * By default, an application will handle as many jobs as it is tasked with. In a development
+    * environment this usually not an issue but may be in staging and production environments. This
+    * method allows developers to limit how many concurrent jobs can be executed by the application.
+    * </p>
+    *
+    * @param maxJobs the maximum number of jobs that the application should execute in parallel.
+    */
+   void limitConcurrentJobs(int maxJobs);
 }

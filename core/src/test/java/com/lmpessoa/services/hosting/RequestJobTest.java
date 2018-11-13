@@ -26,6 +26,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.concurrent.Future;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -49,9 +50,10 @@ public final class RequestJobTest {
 
    private String[] runJob(HttpRequest request) throws InterruptedException {
       ByteArrayOutputStream out = new ByteArrayOutputStream();
-      Thread job = new RequestHandlerJob(app, request, out);
-      job.start();
-      job.join(0);
+      Future<?> result = app.submitJob(new RequestHandlerJob(app, request, out));
+      while (!result.isDone()) {
+         // Does nothing, just sit and wait
+      }
       return new String(out.toByteArray()).split("\r\n");
    }
 

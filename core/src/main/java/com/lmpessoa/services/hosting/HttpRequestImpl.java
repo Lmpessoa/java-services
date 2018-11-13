@@ -40,20 +40,18 @@ final class HttpRequestImpl implements HttpRequest {
    private static final String UTF8 = "UTF-8";
 
    private Map<String, String> headers = new HashMap<>();
+   private byte[] content = new byte[0];
    private Map<String, String> cookies;
    private Map<String, String> query;
    private Map<String, String> form;
    private String queryString;
    private String protocol;
    private String method;
-   private byte[] body;
    private String path;
 
    HttpRequestImpl(InputStream clientStream) throws IOException {
-      StringBuilder request = new StringBuilder();
-      String line;
-      line = readLine(clientStream);
-      String[] parts = line.split(" ");
+      String requestLine = readLine(clientStream);
+      String[] parts = requestLine.split(" ");
       this.method = parts[0];
       this.protocol = parts[2];
       parts = parts[1].split("\\?", 2);
@@ -64,29 +62,29 @@ final class HttpRequestImpl implements HttpRequest {
          path = path.substring(index);
       }
       this.queryString = parts.length > 1 ? parts[1] : null;
-      request.append(line + "\n");
-      while ((line = readLine(clientStream)) != null) {
-         if (line.isEmpty()) {
-            break;
-         }
-         String[] head = line.split(":", 2);
+      String headerLine;
+      while ((headerLine = readLine(clientStream)) != null && !headerLine.isEmpty()) {
+         String[] head = headerLine.split(":", 2);
          if (head.length != 2) {
-            throw new IllegalStateException("Unrecognised header value: " + line);
+            throw new IllegalStateException("Illegal header line: '" + headerLine + "'");
          }
          headers.put(head[0].trim(), head[1].trim());
-         request.append(line + "\n");
       }
       headers = Collections.unmodifiableMap(headers);
-      if (getContentLength() > Integer.MAX_VALUE) {
-         throw new UnsupportedOperationException("Body content too large");
-      }
-      if (clientStream.available() > 0) {
-         body = new byte[clientStream.available()];
-         if (clientStream.read(body) != body.length) {
-            System.err.println("Different number of bytes read/available");
+      if (headers.containsKey("Content-Type")) {
+         if (!headers.containsKey("Content-Length")) {
+            throw new LengthRequiredException();
          }
-      } else {
-         body = new byte[0];
+         if (getContentLength() > Integer.MAX_VALUE || getContentLength() < 0) {
+            throw new UnsupportedOperationException("Body content too large");
+         }
+         content = new byte[(int) getContentLength()];
+         while (clientStream.available() < content.length) {
+            // Do nothing, just sit and wait
+         }
+         if (clientStream.read(content) != content.length) {
+            System.err.println("Error reading from client");
+         }
       }
    }
 
@@ -128,7 +126,7 @@ final class HttpRequestImpl implements HttpRequest {
 
    @Override
    public InputStream getBody() {
-      return new ByteArrayInputStream(body);
+      return new ByteArrayInputStream(content);
    }
 
    @Override
@@ -159,7 +157,7 @@ final class HttpRequestImpl implements HttpRequest {
    public Map<String, String> getForm() {
       if (form == null && MediaType.FORM.equals(getContentType())) {
          Map<String, String> result = new HashMap<>();
-         Arrays.asList(new String(body).split("&"))
+         Arrays.asList(new String(content).split("&"))
                   .stream() //
                   .map(s -> s.split("=", 2)) //
                   .forEach(s -> {
@@ -190,14 +188,11 @@ final class HttpRequestImpl implements HttpRequest {
 
    private String readLine(InputStream input) throws IOException {
       ByteArrayOutputStream result = new ByteArrayOutputStream();
-      int b;
-      while ((b = input.read()) > -1) {
-         if (b == '\n') {
-            break;
-         } else if (b != '\r') {
-            result.write(new byte[] { (byte) b });
-         }
+      int[] b = new int[] { 0, 0 };
+      while ((b[1] = input.read()) > -1 && !Arrays.equals(b, new int[] { '\r', '\n' })) {
+         result.write(new byte[] { (byte) b[1] });
+         b[0] = b[1];
       }
-      return new String(result.toByteArray()).trim();
+      return result.toString(UTF8).trim();
    }
 }

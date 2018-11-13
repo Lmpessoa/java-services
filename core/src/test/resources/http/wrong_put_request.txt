@@ -1,7 +1,6 @@
 PUT /api/2.2/auth/signin HTTP/1.1
 Host: my-server
 Content-Type:application/json
-Content-Length: 129
 Accept:application/json 
                 
 {
