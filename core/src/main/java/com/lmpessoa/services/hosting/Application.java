@@ -30,10 +30,11 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.concurrent.ExecutorService;
+import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.regex.Pattern;
 
@@ -43,6 +44,7 @@ import com.lmpessoa.services.routing.IRouteTable;
 import com.lmpessoa.services.routing.MatchedRoute;
 import com.lmpessoa.services.services.IConfigurationLifecycle;
 import com.lmpessoa.services.services.IServiceMap;
+import com.lmpessoa.util.ArgumentReader;
 import com.lmpessoa.util.ClassUtils;
 
 /**
@@ -88,7 +90,10 @@ import com.lmpessoa.util.ClassUtils;
  */
 public final class Application {
 
+   private static final String ACCEPT_XML = "accept-xml";
+   private static final String MAX_JOBS = "max-jobs";
    private static final String CONFIGURE = "configure";
+
    private static Application currentApp;
 
    private final ApplicationOptions options = new ApplicationOptions(this);
@@ -97,47 +102,30 @@ public final class Application {
    private final IRouteTable routeTable;
    private final Class<?> startupClass;
    private final IHostEnvironment env;
-   private final InetAddress iface;
-   private final int port;
 
-   private ExecutorService threadPool;
    private ServerSocket serverSocket;
    private Method tableMatches;
+   private InetAddress addr;
+   private int port;
 
    /**
-    * Starts the application listening on the default port (port 5617).
+    * Starts the application with the given list of arguments.
+    *
     * <p>
-    * The application will be available in every network address served by the computer.
-    * </p>
-    */
-   public static void start() throws NoSuchMethodException, IOException {
-      startAt(5617, null);
-   }
-
-   /**
-    * Starts the application listening on the given port.
-    * <p>
-    * The application will be available in every network address served by the computer.
+    * The list of arguments should be passed from the main method to this unmodified. If a developer
+    * wishes to set any of the arguments available from the command line, use the methods in the
+    * IApplicationOptions used with the <code>configure</code> method.
     * </p>
     *
-    * @param port the number of the port the application will be listening to.
+    * @param args the arguments received by the application
+    * @throws IOException
+    * @throws IllegalAccessException
+    * @throws NoSuchMethodException
     */
-   public static void startAt(int port) throws NoSuchMethodException, IOException {
-      startAt(port, null);
-   }
-
-   /**
-    * Starts the application listening on the given port and on the given network address.
-    *
-    * @param addr the network address the application will be listening to.
-    * @param port the number of the port the application will be listening to.
-    */
-   public static void startAt(int port, InetAddress iface) throws NoSuchMethodException, IOException {
+   public static synchronized void startWith(String[] args)
+      throws IOException, IllegalAccessException, NoSuchMethodException {
       Thread.currentThread().setName("main");
-      if (currentApp != null) {
-         throw new IllegalStateException("Application is already running");
-      }
-      currentApp = new Application(findStartupClass(), System.getenv("SERVICES_ENVIRONMENT_NAME"), port, iface);
+      currentApp = new Application(findStartupClass(), args);
       currentApp.run();
       currentApp = null;
    }
@@ -146,16 +134,15 @@ public final class Application {
     * Shuts down the application gracefully.
     *
     * <p>
-    * Applications wishing to enable a graceful shutdown should implement a resource that calls this
-    * method. Instead of providing a ready-made resource to support this feature, by requiring
+    * Applications wishing to enable a graceful shutdown should implement a resource that calls
+    * this method. Instead of providing a ready-made resource to support this feature, by requiring
     * developers to implement their own resources to call this method ensures there is no default
     * route for shutdown and enables other security requirements to be implemented.
     * </p>
     */
    public static void shutdown() {
       if (currentApp != null) {
-         currentApp.stop();
-         currentApp.threadPool.shutdown();
+         currentApp.stop(true);
       }
    }
 
@@ -165,33 +152,59 @@ public final class Application {
     * <p>
     * Applications wishing to enable a forceful shutdown should implement a resource that calls this
     * method. Instead of providing a ready-made resource to support this feature, by requiring
-    * developers to implement their own resources to call this method ensures there is no default route
-    * for shutdown and enables other security requirements to be implemented.
+    * developers to implement their own resources to call this method ensures there is no default
+    * route for shutdown and enables other security requirements to be implemented.
     * </p>
     */
    public static void shutdownNow() {
       if (currentApp != null) {
-         currentApp.stop();
-         currentApp.threadPool.shutdownNow();
+         currentApp.stop(false);
       }
    }
 
-   Application(Class<?> startupClass, String envName, int port, InetAddress iface) throws NoSuchMethodException {
-      this.env = () -> {
-         String name = formatEnvName(envName);
-         return name != null ? name : "Development";
-      };
+   Application(Class<?> startupClass, String[] args)
+      throws IllegalAccessException, NoSuchMethodException {
+      Map<String, Object> argMap = readArguments(args);
+      String envName = (String) argMap.getOrDefault("env", System.getenv("SERVICES_ENVIRONMENT_NAME"));
+      this.env = () -> envName != null ? formatEnvName(envName) : "Development";
       this.serviceMap = IServiceMap.newInstance();
       this.routeTable = IRouteTable.newInstance(serviceMap);
       this.serviceMap.putSingleton(IServiceMap.class, this.serviceMap);
       this.serviceMap.putSingleton(IRouteTable.class, this.routeTable);
       this.mediator = new HandlerMediator(serviceMap);
       this.startupClass = startupClass;
-      this.port = port;
-      this.iface = iface;
+      configure(argMap);
    }
 
-   void stop() {
+   static Class<?> findStartupClass() {
+      StackTraceElement[] trace = Thread.currentThread().getStackTrace();
+      try {
+         return Class.forName(trace[3].getClassName());
+      } catch (Exception e) {
+         throw new IllegalStateException("Could not find startup class", e);
+      }
+   }
+
+   static InetAddress parseIpAddress(String addr) {
+      final String ipv4Pattern = "(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])";
+      final String ipv6Pattern = "([0-9a-f]{1,4}:){7}([0-9a-f]){1,4}";
+      if (!"localhost".equals(addr) && !Pattern.matches(ipv4Pattern, addr)
+               && !Pattern.matches(ipv6Pattern, addr)) {
+         throw new IllegalArgumentException("Not a valid IP address: '" + addr + "'");
+      }
+      try {
+         return InetAddress.getByName(addr);
+      } catch (UnknownHostException e) {
+         throw new IllegalArgumentException("Not a valid IP address: '" + addr + "'", e);
+      }
+   }
+
+   void stop(boolean graceful) {
+      if (graceful) {
+         options.getThreadPool().shutdown();
+      } else {
+         options.getThreadPool().shutdownNow();
+      }
       try {
          serverSocket.close();
       } catch (IOException e) {
@@ -200,7 +213,6 @@ public final class Application {
    }
 
    void run() throws IOException {
-      doConfiguration();
       routeTable.putAll(scanResourcesFromStartup());
       listening();
    }
@@ -240,16 +252,6 @@ public final class Application {
       return null;
    }
 
-   void doConfiguration() {
-      configureServices();
-      IServiceMap configMap = serviceMap.getConfigMap();
-      configMap.putSingleton(IApplicationOptions.class, options);
-      configMap.putSingleton(IHostEnvironment.class, env);
-      configure(configMap);
-      endConfiguration(configMap);
-      threadPool = options.getThreadPool();
-   }
-
    Collection<Class<?>> scanResourcesFromStartup() throws IOException {
       final Pattern endsInResource = Pattern.compile("[a-zA-Z0-9]Resource$");
       Collection<String> classes = ClassUtils.scanInProjectOf(startupClass);
@@ -276,26 +278,40 @@ public final class Application {
    }
 
    Future<?> submitJob(Runnable target) {
-      return threadPool.submit(target);
-   }
-
-   private static Class<?> findStartupClass() {
-      StackTraceElement[] trace = Thread.currentThread().getStackTrace();
-      String appClassName = Application.class.getName();
-      for (int i = 1; i < trace.length; ++i) {
-         if (!trace[i].getClassName().equals(appClassName)) {
-            try {
-               return Class.forName(trace[i].getClassName());
-            } catch (ClassNotFoundException e) {
-               throw new Error(e.getMessage());
-            }
-         }
-      }
-      throw new Error("Could not find startup class");
+      return options.getThreadPool().submit(target);
    }
 
    private static String formatEnvName(String envName) {
-      return envName == null ? null : Character.toUpperCase(envName.charAt(0)) + envName.substring(1).toLowerCase();
+      return envName == null ? null
+               : Character.toUpperCase(envName.charAt(0)) + envName.substring(1).toLowerCase();
+   }
+
+   private void configure(Map<String, Object> args) {
+      configureServices();
+      IServiceMap configMap = serviceMap.getConfigMap();
+      configMap.putSingleton(IApplicationOptions.class, options);
+      configMap.putSingleton(IHostEnvironment.class, env);
+      configure(configMap);
+      endConfiguration(configMap);
+
+      addr = (InetAddress) args.getOrDefault("bind", options.getBindAddress());
+      port = (int) args.getOrDefault("port", options.getPort());
+      if (args.containsKey(MAX_JOBS)) {
+         options.limitConcurrentJobs((int) args.get(MAX_JOBS));
+      }
+      if (args.containsKey(ACCEPT_XML)) {
+         options.acceptXmlRequests();
+      }
+   }
+
+   private Map<String, Object> readArguments(String[] args) throws IllegalAccessException {
+      ArgumentReader reader = new ArgumentReader();
+      reader.setOption("port", Integer::valueOf);
+      reader.setOption("bind", Application::parseIpAddress);
+      reader.setOption("env", s -> s);
+      reader.setOption(MAX_JOBS, 'j', Integer::valueOf);
+      reader.setFlag(ACCEPT_XML, 'X');
+      return reader.parse(args);
    }
 
    private void configureServices() {
@@ -310,7 +326,8 @@ public final class Application {
                   IHostEnvironment.class);
          args = new Object[] { serviceMap, env };
          if (configServices == null) {
-            configServices = ClassUtils.getMethod(startupClass, "configureServices", IServiceMap.class);
+            configServices = ClassUtils.getMethod(startupClass, "configureServices",
+                     IServiceMap.class);
             args = new Object[] { serviceMap };
          }
       }
@@ -329,7 +346,8 @@ public final class Application {
       mediator.addHandler(ResultHandler.class);
       try {
          String envSpecific = CONFIGURE + env.getName();
-         Method[] methods = ClassUtils.findMethods(startupClass, m -> envSpecific.equals(m.getName()));
+         Method[] methods = ClassUtils.findMethods(startupClass,
+                  m -> envSpecific.equals(m.getName()));
          if (methods.length != 1) {
             methods = ClassUtils.findMethods(startupClass, m -> CONFIGURE.equals(m.getName()));
             if (methods.length != 1) {
@@ -338,7 +356,8 @@ public final class Application {
             }
          }
 
-         Method mapInvoke = ClassUtils.getDeclaredMethod(configMap.getClass(), "invoke", Object.class, Method.class);
+         Method mapInvoke = ClassUtils.getDeclaredMethod(configMap.getClass(), "invoke",
+                  Object.class, Method.class);
          mapInvoke.setAccessible(true);
          try {
             mapInvoke.invoke(configMap, startupClass, methods[0]);
@@ -361,7 +380,8 @@ public final class Application {
             try {
                Object obj = getter.invoke(configMap, service);
                ((IConfigurationLifecycle) obj).configurationEnded();
-            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+            } catch (IllegalAccessException | IllegalArgumentException
+                     | InvocationTargetException e) {
                e.printStackTrace();
             }
          }
@@ -369,13 +389,13 @@ public final class Application {
    }
 
    private void listening() throws IOException {
-      try (ServerSocket server = new ServerSocket(port, 0, iface)) {
+      try (ServerSocket server = new ServerSocket(port, 0, addr)) {
          this.serverSocket = server;
          server.setSoTimeout(1);
          while (!server.isClosed()) {
             try {
                Socket socket = server.accept();
-               threadPool.execute(new RequestHandlerJob(this, socket));
+               options.getThreadPool().execute(new RequestHandlerJob(this, socket));
             } catch (SocketTimeoutException e) {
                // just ignore
             } catch (IOException e) {
@@ -383,7 +403,7 @@ public final class Application {
             }
          }
       }
-      while (!threadPool.isTerminated()) {
+      while (!options.getThreadPool().isTerminated()) {
          // Do nothing, just wait
       }
    }

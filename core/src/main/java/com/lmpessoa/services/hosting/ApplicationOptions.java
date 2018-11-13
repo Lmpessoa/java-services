@@ -24,6 +24,8 @@ package com.lmpessoa.services.hosting;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -36,9 +38,29 @@ final class ApplicationOptions implements IApplicationOptions {
    private final Application application;
 
    private ExecutorService threadPool = Executors.newCachedThreadPool(threadFactory);
+   private InetAddress addr = null;
+   private int port = 5617;
 
    public ApplicationOptions(Application application) {
       this.application = application;
+   }
+
+   @Override
+   public void usePort(int port) {
+      this.port = port;
+   }
+
+   @Override
+   public void bindToAddress(String addr) {
+      if (addr != null) {
+         try {
+            this.addr = InetAddress.getByName(addr);
+         } catch (UnknownHostException e) {
+            throw new IllegalArgumentException("Unknown host: " + addr, e);
+         }
+      } else {
+         this.addr = null;
+      }
    }
 
    @Override
@@ -64,5 +86,13 @@ final class ApplicationOptions implements IApplicationOptions {
 
    ExecutorService getThreadPool() {
       return threadPool;
+   }
+
+   int getPort() {
+      return port;
+   }
+
+   InetAddress getBindAddress() {
+      return addr;
    }
 }

@@ -33,8 +33,6 @@ import com.lmpessoa.services.services.IServiceMap;
 
 public final class ApplicationConfigurationTest {
 
-   private Application app;
-
    private static String servicesResult;
    private static String configResult;
 
@@ -44,25 +42,22 @@ public final class ApplicationConfigurationTest {
    }
 
    @Test
-   public void testConfigMultipleEnvironments() throws NoSuchMethodException {
-      app = new Application(CommonEnv.class, null, 5617, null);
-      app.doConfiguration();
+   public void testConfigMultipleEnvironments() throws NoSuchMethodException, IllegalAccessException {
+      new Application(CommonEnv.class, new String[0]);
       assertEquals("common", servicesResult);
       assertEquals("common", configResult);
    }
 
    @Test
-   public void testConfigDefaultEnvironment() throws NoSuchMethodException {
-      app = new Application(DefaultEnv.class, null, 5617, null);
-      app.doConfiguration();
+   public void testConfigDefaultEnvironment() throws NoSuchMethodException, IllegalAccessException {
+      new Application(DefaultEnv.class, new String[0]);
       assertEquals("common", servicesResult);
       assertEquals("dev", configResult);
    }
 
    @Test
-   public void testConfigSpecificEnvironment() throws NoSuchMethodException {
-      app = new Application(SpecificEnv.class, "Staging", 5617, null);
-      app.doConfiguration();
+   public void testConfigSpecificEnvironment() throws NoSuchMethodException, IllegalAccessException {
+      new Application(SpecificEnv.class, new String[] { "-e", "Staging" });
       assertEquals("staging", servicesResult);
       assertEquals("staging", configResult);
    }

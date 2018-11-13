@@ -30,6 +30,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import com.lmpessoa.services.hosting.HttpRequest;
+import com.lmpessoa.services.hosting.HttpRequestImpl;
+import com.lmpessoa.services.hosting.LengthRequiredException;
+
 public final class HttpRequestTest {
 
    @Rule

@@ -122,12 +122,11 @@ public final class ClassUtils {
    public static Method getDeclaredMethod(Class<?> clazz, String methodName, Class<?>... parameterTypes) {
       Objects.requireNonNull(clazz);
       Objects.requireNonNull(methodName);
-      Method result = Arrays.stream(clazz.getDeclaredMethods())
+      return Arrays.stream(clazz.getDeclaredMethods())
                .filter(m -> methodName.equals(m.getName()))
                .filter(m -> Arrays.equals(parameterTypes, m.getParameterTypes()))
                .findFirst()
                .orElse(null);
-      return result;
    }
 
    /**

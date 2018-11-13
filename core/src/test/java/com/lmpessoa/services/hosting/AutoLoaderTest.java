@@ -28,7 +28,6 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.util.Collection;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -43,17 +42,9 @@ public final class AutoLoaderTest {
 
    private Application app;
 
-   @Before
-   public void setup() throws NoSuchMethodException {
-      app = new Application(AutoLoaderTest.class, null, 5617, null);
-   }
-
-   public static void configure(IRouteOptions routes) {
-      routes.addArea("api/v1", ".resources.api$");
-   }
-
    @Test
-   public void testScanDefault() throws IOException {
+   public void testScanDefault() throws IOException, IllegalAccessException, NoSuchMethodException {
+      app = new Application(AutoLoaderTest.class, new String[0]);
       Collection<Class<?>> result = app.scanResourcesFromStartup();
       assertTrue(result.contains(com.lmpessoa.services.test.resources.IndexResource.class));
       assertTrue(result.contains(com.lmpessoa.services.test.resources.TestResource.class));
@@ -62,12 +53,19 @@ public final class AutoLoaderTest {
    }
 
    @Test
-   public void testScanUserDefined() throws IOException {
-      app.doConfiguration();
+   public void testScanUserDefined() throws IOException, IllegalAccessException, NoSuchMethodException {
+      app = new Application(MainWithApi.class, new String[0]);
       Collection<Class<?>> result = app.scanResourcesFromStartup();
       assertTrue(result.contains(com.lmpessoa.services.test.resources.IndexResource.class));
       assertTrue(result.contains(com.lmpessoa.services.test.resources.TestResource.class));
       assertFalse(result.contains(com.lmpessoa.services.test.resources.AbstractResource.class));
       assertTrue(result.contains(com.lmpessoa.services.test.resources.api.TestResource.class));
+   }
+
+   public static class MainWithApi {
+
+      public static void configure(IRouteOptions routes) {
+         routes.addArea("api/v1", ".resources.api$");
+      }
    }
 }

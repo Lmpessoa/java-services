@@ -42,9 +42,8 @@ public final class RequestJobTest {
    private Application app;
 
    @Before
-   public void setup() throws NoSuchMethodException {
-      app = new Application(RequestJobTest.class, null, 5616, null);
-      app.doConfiguration();
+   public void setup() throws NoSuchMethodException, IllegalAccessException {
+      app = new Application(RequestJobTest.class, new String[0]);
       app.getRouteTable().put("", TestResource.class);
    }
 
