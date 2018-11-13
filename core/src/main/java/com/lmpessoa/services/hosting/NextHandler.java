@@ -73,7 +73,7 @@ public final class NextHandler {
          Constructor<?> constructor = handlerClass.getConstructor(NextHandler.class);
          constructor.setAccessible(true);
          Object handler = constructor.newInstance(next);
-         return mediator.invokeService(handler, "invoke");
+         return mediator.invokeService(handler);
       } catch (InvocationTargetException e) {
          if (e.getCause() instanceof HttpException) {
             throw (HttpException) e.getCause();

@@ -26,6 +26,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 public final class ClassUtils {
@@ -36,13 +37,35 @@ public final class ClassUtils {
 
    @SuppressWarnings("unchecked")
    public static <T> Constructor<T> getConstructor(Class<T> clazz, Class<?>... parameterTypes) {
+      Objects.requireNonNull(clazz);
       return (Constructor<T>) Arrays.stream(clazz.getConstructors())
                .filter(c -> Arrays.equals(parameterTypes, c.getParameterTypes()))
                .findFirst()
                .orElse(null);
    }
 
+   public static Method getMethod(Class<?> clazz, String methodName, Class<?>... parameterTypes) {
+      Objects.requireNonNull(clazz);
+      Objects.requireNonNull(methodName);
+      return Arrays.stream(clazz.getMethods())
+               .filter(m -> methodName.equals(m.getName()))
+               .filter(m -> Arrays.equals(parameterTypes, m.getParameterTypes()))
+               .findFirst()
+               .orElse(null);
+   }
+
+   public static Method getDeclaredMethod(Class<?> clazz, String methodName, Class<?>... parameterTypes) {
+      Objects.requireNonNull(clazz);
+      Objects.requireNonNull(methodName);
+      return Arrays.stream(clazz.getDeclaredMethods())
+               .filter(m -> methodName.equals(m.getName()))
+               .filter(m -> Arrays.equals(parameterTypes, m.getParameterTypes()))
+               .findFirst()
+               .orElse(null);
+   }
+
    public static boolean isConcreteClass(Class<?> clazz) {
+      Objects.requireNonNull(clazz);
       return !clazz.isArray() && !clazz.isEnum() && !clazz.isInterface() && !clazz.isPrimitive()
                && !Modifier.isAbstract(clazz.getModifiers());
    }
@@ -50,4 +73,5 @@ public final class ClassUtils {
    private ClassUtils() {
       // Does nothing
    }
+
 }

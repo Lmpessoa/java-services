@@ -26,6 +26,7 @@ import static com.lmpessoa.services.services.ReuseLevel.PER_REQUEST;
 import static com.lmpessoa.services.services.ReuseLevel.SINGLETON;
 import static com.lmpessoa.services.services.ReuseLevel.TRANSIENT;
 
+import java.util.Set;
 import java.util.function.Supplier;
 
 /**
@@ -207,6 +208,8 @@ public interface IServiceMap {
     * <code>false</code> otherwise.
     */
    boolean contains(Class<?> service);
+
+   Set<Class<?>> getServices();
 
    IServiceMap getConfigMap();
 }

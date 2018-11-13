@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import com.lmpessoa.services.services.ConfiguresWith;
+import com.lmpessoa.services.services.IServiceMap;
 
 /**
  * Represents a map of routes of the application.
@@ -37,6 +38,10 @@ import com.lmpessoa.services.services.ConfiguresWith;
  */
 @ConfiguresWith(IRouteOptions.class)
 public interface IRouteTable {
+
+   static IRouteTable newInstance(IServiceMap serviceMap) throws NoSuchMethodException {
+      return new RouteTable(serviceMap);
+   }
 
    /**
     * Adds the methods of the given resource class to this route table. If any method provides a route

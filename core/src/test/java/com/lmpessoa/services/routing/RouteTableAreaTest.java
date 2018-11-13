@@ -46,6 +46,13 @@ public final class RouteTableAreaTest {
    }
 
    @Test
+   public void testDefaultResource() throws ParseException {
+      table.put(com.lmpessoa.services.test.resources.IndexResource.class);
+      assertTrue(table.hasRoute("/"));
+      assertTrue(table.hasRoute("/test"));
+   }
+
+   @Test
    public void testDefaultArea() throws ParseException {
       table.put(com.lmpessoa.services.test.resources.api.TestResource.class);
       assertTrue(table.hasRoute("/test"));

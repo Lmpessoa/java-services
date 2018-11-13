@@ -45,7 +45,7 @@ final class ResultHandler {
    public HttpResult invoke(HttpRequest request, MatchedRoute route) {
       Object obj = getResultObject();
       int statusCode = getStatusCode(obj);
-      HttpResultInputStream is = getContentBody(obj, request, route.getMethod());
+      HttpResultInputStream is = getContentBody(obj, request, route == null ? null : route.getMethod());
       return new HttpResult(statusCode, obj, is);
    }
 
@@ -86,7 +86,7 @@ final class ResultHandler {
       if (result instanceof HttpResultInputStream) {
          return (HttpResultInputStream) result;
       } else if (result instanceof InputStream) {
-         ContentType contentAnn = method.getAnnotation(ContentType.class);
+         ContentType contentAnn = method == null ? null : method.getAnnotation(ContentType.class);
          String contentType;
          if (contentAnn != null) {
             contentType = contentAnn.value();

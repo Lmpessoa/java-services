@@ -79,6 +79,7 @@ final class RoutePattern {
          routePath = SEPARATOR + area.replaceAll("^/", "") + routePath;
          routePath = routePath.replaceAll("/$", "");
       }
+      routePath = routePath.replaceAll("^/" + options.getAreaIndex(area), "");
       List<ITemplatePart> result = RoutePatternParser.parse(routePath, options);
       if (route != null) {
          validateRoute(result, paramTypes);

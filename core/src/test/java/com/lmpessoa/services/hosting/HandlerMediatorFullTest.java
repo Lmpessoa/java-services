@@ -73,7 +73,6 @@ public final class HandlerMediatorFullTest {
       routes.put(TestResource.class);
 
       mediator = new HandlerMediator(services);
-      mediator = new HandlerMediator(services);
       mediator.addHandler(ResultHandler.class);
       mediator.addHandler(InvokeHandler.class);
    }

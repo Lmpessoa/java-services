@@ -32,12 +32,14 @@ import com.lmpessoa.util.ClassUtils;
 
 final class HandlerMediator {
 
+   private static final String INVOKE = "invoke";
+
    private final List<Class<?>> handlers = new ArrayList<>();
    private final IServiceMap serviceMap;
    private final Method serviceInvoke;
 
    HandlerMediator(IServiceMap serviceMap) throws NoSuchMethodException {
-      this.serviceInvoke = serviceMap.getClass().getMethod("invoke", Object.class, String.class);
+      this.serviceInvoke = serviceMap.getClass().getDeclaredMethod(INVOKE, Object.class, String.class);
       this.serviceInvoke.setAccessible(true);
       this.serviceMap = serviceMap;
    }
@@ -49,7 +51,7 @@ final class HandlerMediator {
       if (ClassUtils.getConstructor(handlerClass, NextHandler.class) == null) {
          throw new IllegalArgumentException("Handler must implement a required constructor");
       }
-      Method[] invokes = ClassUtils.findMethods(handlerClass, m -> "invoke".equals(m.getName()));
+      Method[] invokes = ClassUtils.findMethods(handlerClass, m -> INVOKE.equals(m.getName()));
       if (invokes.length != 1) {
          throw new IllegalArgumentException("Handler must have exaclty one method named 'invoke'");
       }
@@ -63,9 +65,9 @@ final class HandlerMediator {
       return index >= 0 && index < handlers.size() ? handlers.get(index) : null;
    }
 
-   Object invokeService(Object obj, String methodName) throws IllegalAccessException, InvocationTargetException {
+   Object invokeService(Object obj) throws IllegalAccessException, InvocationTargetException {
       try {
-         return serviceInvoke.invoke(serviceMap, obj, methodName);
+         return serviceInvoke.invoke(serviceMap, obj, INVOKE);
       } catch (InvocationTargetException e) {
          while (e.getCause() instanceof InvocationTargetException) {
             e = (InvocationTargetException) e.getCause();
