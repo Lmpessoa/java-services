@@ -92,6 +92,7 @@ public final class Application {
 
    final List<Thread> threads = new ArrayList<>();
 
+   private final ApplicationOptions options = new ApplicationOptions(this);
    private final HandlerMediator mediator;
    private final IServiceMap serviceMap;
    private final IRouteTable routeTable;
@@ -136,7 +137,7 @@ public final class Application {
       if (currentApp != null) {
          throw new IllegalStateException("Application is already running");
       }
-      currentApp = new Application(findStartupClass(), System.getenv("SERVICES_ENVIRONMENT_NAME"), port, iface);
+      currentApp = new Application(findStartupClass(), System.getenv("LEEOW_ENVIRONMENT_NAME"), port, iface);
       currentApp.run();
       currentApp = null;
    }
@@ -224,6 +225,7 @@ public final class Application {
    void doConfiguration() {
       configureServices();
       IServiceMap configMap = serviceMap.getConfigMap();
+      configMap.putSingleton(IApplicationOptions.class, options);
       configMap.putSingleton(IHostEnvironment.class, env);
       configure(configMap);
       endConfiguration(configMap);
@@ -331,10 +333,10 @@ public final class Application {
          return;
       }
       getter.setAccessible(true);
-      for (Class<?> options : configMap.getServices()) {
-         if (IConfigurationLifecycle.class.isAssignableFrom(options)) {
+      for (Class<?> service : configMap.getServices()) {
+         if (IConfigurationLifecycle.class.isAssignableFrom(service)) {
             try {
-               Object obj = getter.invoke(configMap, options);
+               Object obj = getter.invoke(configMap, service);
                ((IConfigurationLifecycle) obj).configurationEnded();
             } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
                e.printStackTrace();

@@ -269,16 +269,14 @@ final class RouteTable implements IRouteTable {
    }
 
    private void validateResourceClass(Class<?> clazz) throws NoSingleMethodException {
-      if (!ClassUtils.isConcreteClass(clazz) && Modifier.isPublic(clazz.getModifiers())) {
+      if (!ClassUtils.isConcreteClass(clazz) || !Modifier.isPublic(clazz.getModifiers())) {
          throw new IllegalArgumentException("Resource class must be a public concrete class");
       }
       Constructor<?>[] constructors = clazz.getConstructors();
       if (constructors.length != 1) {
          throw new NoSingleMethodException("Class " + clazz.getName() + " must have only one constructor",
                   constructors.length);
-
       }
-
    }
 
    private List<Object> convertParams(Matcher matcher, List<Class<?>> params) {

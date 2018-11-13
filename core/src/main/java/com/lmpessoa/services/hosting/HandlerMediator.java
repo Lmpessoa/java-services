@@ -24,7 +24,6 @@ package com.lmpessoa.services.hosting;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,8 +45,8 @@ final class HandlerMediator {
    }
 
    void addHandler(Class<?> handlerClass) {
-      if (!ClassUtils.isConcreteClass(handlerClass) && Modifier.isPublic(handlerClass.getModifiers())) {
-         throw new IllegalArgumentException("Handler must be a public concrete class");
+      if (!ClassUtils.isConcreteClass(handlerClass)) {
+         throw new IllegalArgumentException("Handler must be a concrete class");
       }
       if (ClassUtils.getConstructor(handlerClass, NextHandler.class) == null) {
          throw new IllegalArgumentException("Handler must implement a required constructor");

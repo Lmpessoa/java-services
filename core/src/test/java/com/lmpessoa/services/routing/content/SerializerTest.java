@@ -29,16 +29,22 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.UnknownFormatConversionException;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import com.lmpessoa.services.core.MediaType;
 import com.lmpessoa.services.hosting.HttpResultInputStream;
 import com.lmpessoa.services.routing.content.Serializer;
 
 public final class SerializerTest {
+
+   @Rule
+   public ExpectedException thrown = ExpectedException.none();
 
    @Test
    public void testParseJson() {
@@ -53,7 +59,17 @@ public final class SerializerTest {
    }
 
    @Test
+   public void testParseXmlFails() {
+      thrown.expect(UnknownFormatConversionException.class);
+      Serializer.enableXml(false);
+      String content = "<?xml version=\"1.0\"?><object><id>12</id><name>Test</name>"
+               + "<email>test@test.com</email><email>test@test.org</email><checked>true</checked></object>";
+      Serializer.parse(MediaType.XML, content, TestObject.class);
+   }
+
+   @Test
    public void testParseXml() {
+      Serializer.enableXml(true);
       String content = "<?xml version=\"1.0\"?><object><id>12</id><name>Test</name>"
                + "<email>test@test.com</email><email>test@test.org</email><checked>true</checked></object>";
       TestObject result = Serializer.parse(MediaType.XML, content, TestObject.class);
@@ -76,7 +92,15 @@ public final class SerializerTest {
    }
 
    @Test
+   public void testProduceXmlFails() throws IOException {
+      thrown.expect(UnknownFormatConversionException.class);
+      Serializer.enableXml(false);
+      Serializer.produce(new String[] { MediaType.XML }, "Test");
+   }
+
+   @Test
    public void testProduceXmlString() throws IOException {
+      Serializer.enableXml(true);
       HttpResultInputStream result = Serializer.produce(new String[] { MediaType.XML }, "Test");
       byte[] data = new byte[result.available()];
       result.read(data);
@@ -86,6 +110,7 @@ public final class SerializerTest {
 
    @Test
    public void testProduceXmlInt() throws IOException {
+      Serializer.enableXml(true);
       HttpResultInputStream result = Serializer.produce(new String[] { MediaType.XML }, 12);
       byte[] data = new byte[result.available()];
       result.read(data);
@@ -95,6 +120,7 @@ public final class SerializerTest {
 
    @Test
    public void testProduceXmlException() throws IOException {
+      Serializer.enableXml(true);
       HttpResultInputStream result = Serializer.produce(new String[] { MediaType.XML }, new NullPointerException());
       byte[] data = new byte[result.available()];
       result.read(data);

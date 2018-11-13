@@ -25,6 +25,7 @@ package com.lmpessoa.services.routing.content;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UnknownFormatConversionException;
 
 import com.lmpessoa.services.core.MediaType;
 import com.lmpessoa.services.hosting.HttpResultInputStream;
@@ -35,12 +36,12 @@ import com.lmpessoa.services.hosting.HttpResultInputStream;
  */
 public final class Serializer {
 
-   private static final Map<String, Object> handlers = new HashMap<>();
+   private static final Map<String, Class<?>> handlers = new HashMap<>();
 
    static {
-      handlers.put(MediaType.JSON, new JsonSerializer());
-      handlers.put(MediaType.XML, new XmlSerializer());
-      handlers.put(MediaType.FORM, new FormSerializer());
+      handlers.put(MediaType.JSON, JsonSerializer.class);
+      handlers.put(MediaType.FORM, FormSerializer.class);
+      handlers.put("*/*", JsonSerializer.class);
    }
 
    /**
@@ -53,24 +54,26 @@ public final class Serializer {
     */
    public static <T> T parse(String contentType, String content, Class<T> resultClass) {
       if (handlers.containsKey(contentType)) {
-         Object handler = handlers.get(contentType);
-         if (handler instanceof IContentParser) {
+         Class<?> handlerClass = handlers.get(contentType);
+         if (IContentParser.class.isAssignableFrom(handlerClass)) {
             try {
+               Object handler = handlerClass.newInstance();
                return ((IContentParser) handler).parse(content, resultClass);
             } catch (Exception e) {
                e.printStackTrace(); // or ignore
             }
          }
       }
-      return null;
+      throw new UnknownFormatConversionException("Cannot deserialise from " + contentType);
    }
 
    public static HttpResultInputStream produce(String[] accepts, Object obj) {
       for (String contentType : accepts) {
          if (handlers.containsKey(contentType)) {
-            Object handler = handlers.get(contentType);
-            if (handler instanceof IContentProducer) {
+            Class<?> handlerClass = handlers.get(contentType);
+            if (IContentProducer.class.isAssignableFrom(handlerClass)) {
                try {
+                  Object handler = handlerClass.newInstance();
                   InputStream is = ((IContentProducer) handler).produce(obj);
                   return new HttpResultInputStream(contentType, is);
                } catch (Exception e) {
@@ -79,7 +82,15 @@ public final class Serializer {
             }
          }
       }
-      return null;
+      throw new UnknownFormatConversionException("Cannot serialise in any of the requested formats");
+   }
+
+   static void enableXml(boolean enable) {
+      if (enable && !handlers.containsKey(MediaType.XML)) {
+         handlers.put(MediaType.XML, XmlSerializer.class);
+      } else if (!enable && handlers.containsKey(MediaType.XML)) {
+         handlers.remove(MediaType.XML);
+      }
    }
 
    private Serializer() {

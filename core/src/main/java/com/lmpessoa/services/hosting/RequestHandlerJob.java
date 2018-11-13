@@ -115,7 +115,7 @@ public class RequestHandlerJob extends Thread implements IServicePoolProvider, U
                client.append("Content-Length: ");
                client.append(data.length);
                client.append(CRLF);
-               if (result.getInputStream().getDownloadName() != null) {
+               if (is.isForceDownload()) {
                   client.append("Content-Disposition: attachment; filename=\"");
                   client.append(is.getDownloadName());
                   client.append('"');

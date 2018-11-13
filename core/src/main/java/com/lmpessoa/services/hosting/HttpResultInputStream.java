@@ -129,16 +129,6 @@ public final class HttpResultInputStream extends InputStream {
    }
 
    @Override
-   public void mark(int readLimit) {
-      content.mark(readLimit);
-   }
-
-   @Override
-   public boolean markSupported() {
-      return content.markSupported();
-   }
-
-   @Override
    public int read() throws IOException {
       return content.read();
    }
@@ -149,17 +139,7 @@ public final class HttpResultInputStream extends InputStream {
    }
 
    @Override
-   public int read(byte[] b, int off, int len) throws IOException {
-      return content.read(b, off, len);
-   }
-
-   @Override
    public void reset() throws IOException {
       content.reset();
-   }
-
-   @Override
-   public long skip(long n) throws IOException {
-      return content.skip(n);
    }
 }

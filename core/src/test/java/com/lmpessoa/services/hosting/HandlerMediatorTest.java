@@ -29,6 +29,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import com.lmpessoa.services.hosting.HandlerMediator;
+import com.lmpessoa.services.hosting.HttpResult;
+import com.lmpessoa.services.hosting.NextHandler;
 import com.lmpessoa.services.services.IServiceMap;
 
 public final class HandlerMediatorTest {
@@ -83,7 +86,7 @@ public final class HandlerMediatorTest {
    @Test
    public void testRejectAbstractClass() {
       thrown.expect(IllegalArgumentException.class);
-      thrown.expectMessage("Handler must be a public concrete class");
+      thrown.expectMessage("Handler must be a concrete class");
       mediator.addHandler(AbstractTestHandler.class);
    }
 

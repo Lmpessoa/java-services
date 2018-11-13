@@ -45,8 +45,12 @@ import com.lmpessoa.services.core.HttpPatch;
 import com.lmpessoa.services.core.HttpPost;
 import com.lmpessoa.services.core.HttpPut;
 import com.lmpessoa.services.core.Route;
+import com.lmpessoa.services.routing.AbstractRouteType;
+import com.lmpessoa.services.routing.DuplicateMethodException;
+import com.lmpessoa.services.routing.HttpMethod;
+import com.lmpessoa.services.routing.IRouteTable;
+import com.lmpessoa.services.routing.RouteTable;
 import com.lmpessoa.services.services.IServiceMap;
-import com.lmpessoa.services.services.NoSingleMethodException;
 import com.lmpessoa.util.parsing.TypeMismatchException;
 
 public final class RouteTableTest {
@@ -86,8 +90,7 @@ public final class RouteTableTest {
       assertTrue(result.toArray()[0] instanceof DuplicateMethodException);
       HttpMethod[] methods = table.listMethodsOf("/test/{int}");
       Arrays.sort(methods);
-      assertArrayEquals(new HttpMethod[] { HttpMethod.GET, HttpMethod.POST, HttpMethod.PATCH },
-               methods);
+      assertArrayEquals(new HttpMethod[] { HttpMethod.GET, HttpMethod.POST, HttpMethod.PATCH }, methods);
       assertEquals(TestResource.class.getMethod("patch", int.class),
                table.getRouteMethod(HttpMethod.PATCH, "/test/{int}").getMethod());
    }
@@ -96,7 +99,7 @@ public final class RouteTableTest {
    public void testRoutesWithEnum() {
       Collection<Exception> result = table.put("", HttpMethod.class);
       assertEquals(1, result.size());
-      assertTrue(result.toArray()[0] instanceof NoSingleMethodException);
+      assertTrue(result.toArray()[0] instanceof IllegalArgumentException);
    }
 
    @Test
@@ -163,8 +166,7 @@ public final class RouteTableTest {
       assertEquals(0, result.size());
       assertTrue(table.hasRoute("/test"));
       assertArrayEquals(new HttpMethod[] { HttpMethod.POST }, table.listMethodsOf("/test"));
-      assertEquals(AnotherTestResource.class,
-               table.getRouteMethod(HttpMethod.POST, "/test").getContentClass());
+      assertEquals(AnotherTestResource.class, table.getRouteMethod(HttpMethod.POST, "/test").getContentClass());
    }
 
    @Test
