@@ -26,13 +26,11 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 import com.lmpessoa.services.hosting.Application;
-import com.lmpessoa.services.hosting.ConnectionInfo;
-import com.lmpessoa.services.services.IServicePoolProvider;
 import com.lmpessoa.util.ClassUtils;
+import com.lmpessoa.util.ConnectionInfo;
 
 /**
  * Represents a log entry.
@@ -55,7 +53,7 @@ public final class LogEntry {
    private final Object message;
 
    private final StackTraceElement logPoint;
-   private final ConnectionInfo threadConn;
+   private final ConnectionInfo connInfo;
    private final String threadName;
    private final long threadId;
 
@@ -124,7 +122,7 @@ public final class LogEntry {
     * @return the connection information about the current request.
     */
    public ConnectionInfo getConnection() {
-      return threadConn;
+      return connInfo;
    }
 
    /**
@@ -141,6 +139,11 @@ public final class LogEntry {
       return threadName;
    }
 
+   /**
+    * Returns the ID of the thread in which the log entry was created.
+    * 
+    * @return the ID of the thread in which the log entry was created.
+    */
    public long getThreadId() {
       return threadId;
    }
@@ -150,25 +153,20 @@ public final class LogEntry {
       return String.format("[%s] %s: %s", getSeverity(), getClassName(), getMessage());
    }
 
-   LogEntry(Severity severity, Object message) {
-      this(ZonedDateTime.now(), severity, message);
+   LogEntry(Severity severity, Object message, ConnectionInfo connInfo) {
+      this(ZonedDateTime.now(), severity, message, connInfo);
    }
 
-   LogEntry(ZonedDateTime time, Severity severity, Object message) {
+   LogEntry(ZonedDateTime time, Severity severity, Object message, ConnectionInfo connInfo) {
       this.time = time;
       this.severity = Objects.requireNonNull(severity);
       this.message = Objects.requireNonNull(message);
+      this.connInfo = connInfo;
 
       Thread thread = Thread.currentThread();
       logPoint = getFirstNonTraced(thread.getStackTrace());
       threadName = thread.getName();
       threadId = thread.getId();
-      if (thread instanceof IServicePoolProvider) {
-         final Map<Class<?>, Object> pool = ((IServicePoolProvider) thread).getPool();
-         threadConn = (ConnectionInfo) pool.get(ConnectionInfo.class);
-      } else {
-         threadConn = null;
-      }
    }
 
    String[] getAdditionalMessages() {
@@ -204,7 +202,7 @@ public final class LogEntry {
       this.logPoint = parentEntry.logPoint;
       this.threadName = parentEntry.threadName;
       this.threadId = parentEntry.threadId;
-      this.threadConn = parentEntry.threadConn;
+      this.connInfo = parentEntry.connInfo;
    }
 
    private static boolean skipNonTraced(StackTraceElement element) {

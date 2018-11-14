@@ -54,6 +54,7 @@ import com.lmpessoa.services.services.IConfigurationLifecycle;
 import com.lmpessoa.services.services.IServiceMap;
 import com.lmpessoa.util.ArgumentReader;
 import com.lmpessoa.util.ClassUtils;
+import com.lmpessoa.util.ConnectionInfo;
 
 /**
  * Represents the entry point of the application.
@@ -301,6 +302,7 @@ public final class Application {
    }
 
    void doConfigure() {
+      log.setConnectionSupplier(() -> serviceMap.get(ConnectionInfo.class));
       configureServices();
       IServiceMap configMap = serviceMap.getConfigMap();
       configMap.putSingleton(IApplicationOptions.class, options);

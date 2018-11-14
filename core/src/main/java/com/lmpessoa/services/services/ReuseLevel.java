@@ -22,36 +22,6 @@
  */
 package com.lmpessoa.services.services;
 
-import java.util.HashMap;
-import java.util.Map;
-
-enum ReuseLevel implements IServiceLevelPool {
-   TRANSIENT {
-
-      @Override
-      public Map<Class<?>, Object> getPool(IServiceMap map) {
-         return new HashMap<>();
-      }
-   },
-   PER_REQUEST {
-
-      @Override
-      public Map<Class<?>, Object> getPool(IServiceMap map) {
-         final Thread thread = Thread.currentThread();
-         if (!(thread instanceof IServicePoolProvider)) {
-            throw new IllegalStateException("Cannot access object pool for this service map");
-         }
-         return ((IServicePoolProvider) thread).getPool();
-      }
-   },
-   SINGLETON {
-
-      @Override
-      public Map<Class<?>, Object> getPool(IServiceMap map) {
-         if (!(map instanceof IServicePoolProvider)) {
-            throw new IllegalStateException("Cannot access object pool for this service map");
-         }
-         return ((IServicePoolProvider) map).getPool();
-      }
-   };
+enum ReuseLevel {
+   TRANSIENT, PER_REQUEST, SINGLETON;
 }

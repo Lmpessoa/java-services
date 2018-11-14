@@ -22,7 +22,12 @@
  */
 package com.lmpessoa.services.logging;
 
+import java.util.function.Supplier;
+
+import com.lmpessoa.services.Internal;
 import com.lmpessoa.services.services.IConfigurable;
+import com.lmpessoa.util.ClassUtils;
+import com.lmpessoa.util.ConnectionInfo;
 
 /**
  * Enables logging messages throughout the application.
@@ -36,17 +41,9 @@ import com.lmpessoa.services.services.IConfigurable;
 @NonTraced
 public interface ILogger extends IConfigurable<ILoggerOptions> {
 
-   /**
-    * Returns a new instance of a logger.
-    *
-    * <p>
-    * Applications should not call this method directly as it is meant for internal use only. To get a
-    * logger from a resource, add an <code>ILogger</code> argument to its constructor.
-    * </p>
-    *
-    * @return a new instance of a logger.
-    */
+   @Internal
    static ILogger newInstance() {
+      ClassUtils.checkInternalAccess();
       return new Logger();
    }
 
@@ -62,6 +59,22 @@ public interface ILogger extends IConfigurable<ILoggerOptions> {
     */
    void fatal(Object message);
 
+   /**
+    * Logs a fatal message
+    *
+    * <p>
+    * Fatal messages indicate a severe error that cause the application (or a thread) to terminate
+    * prematurely.
+    * </p>
+    *
+    * <p>
+    * This method is a shortcut to log a formatted text message. Its behaviour is the same as logging
+    * <code>String.format(message, args)</code>.
+    * </p>
+    *
+    * @param message the message template to build the message.
+    * @param args the list of arguments used to format the message.
+    */
    default void fatal(String message, Object... args) {
       fatal(String.format(message, args));
    }
@@ -78,6 +91,22 @@ public interface ILogger extends IConfigurable<ILoggerOptions> {
     */
    void error(Object message);
 
+   /**
+    * Logs an error message.
+    *
+    * <p>
+    * Error messages indicates an unexpected error or exception occurred but the application managed to
+    * handle it and can continue. Part of the processing when this error occurred may be lost.
+    * </p>
+    *
+    * <p>
+    * This method is a shortcut to log a formatted text message. Its behaviour is the same as logging
+    * <code>String.format(message, args)</code>.
+    * </p>
+    *
+    * @param message the message template to build the message.
+    * @param args the list of arguments used to format the message.
+    */
    default void error(String message, Object... args) {
       error(String.format(message, args));
    }
@@ -94,6 +123,22 @@ public interface ILogger extends IConfigurable<ILoggerOptions> {
     */
    void warning(Object message);
 
+   /**
+    * Logs a warning message.
+    *
+    * <p>
+    * Warning messages indicate an unexpected situation (not mandatorily an exception) occurred and the
+    * application handled it but the situation was worth registering.
+    * </p>
+    *
+    * <p>
+    * This method is a shortcut to log a formatted text message. Its behaviour is the same as logging
+    * <code>String.format(message, args)</code>.
+    * </p>
+    *
+    * @param message the message template to build the message.
+    * @param args the list of arguments used to format the message.
+    */
    default void warning(String message, Object... args) {
       warning(String.format(message, args));
    }
@@ -110,6 +155,22 @@ public interface ILogger extends IConfigurable<ILoggerOptions> {
     */
    void info(Object message);
 
+   /**
+    * Logs an informative message.
+    *
+    * <p>
+    * Information messages are used to register interesting runtime events (i.e. startup/shutdown).
+    * Usually information messages do not have their source in exceptions.
+    * </p>
+    *
+    * <p>
+    * This method is a shortcut to log a formatted text message. Its behaviour is the same as logging
+    * <code>String.format(message, args)</code>.
+    * </p>
+    *
+    * @param message the message template to build the message.
+    * @param args the list of arguments used to format the message.
+    */
    default void info(String message, Object... args) {
       info(String.format(message, args));
    }
@@ -126,7 +187,26 @@ public interface ILogger extends IConfigurable<ILoggerOptions> {
     */
    void debug(Object message);
 
+   /**
+    * Logs a debug message.
+    *
+    * <p>
+    * Debug messages are used to register information about the application execution that can be used
+    * to understand if the application behaviour is correct.
+    * </p>
+    *
+    * <p>
+    * This method is a shortcut to log a formatted text message. Its behaviour is the same as logging
+    * <code>String.format(message, args)</code>.
+    * </p>
+    *
+    * @param message the message template to build the message.
+    * @param args the list of arguments used to format the message.
+    */
    default void debug(String message, Object... args) {
       debug(String.format(message, args));
    }
+
+   @Internal
+   void setConnectionSupplier(Supplier<ConnectionInfo> supplier);
 }

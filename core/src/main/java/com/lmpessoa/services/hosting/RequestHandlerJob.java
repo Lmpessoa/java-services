@@ -32,7 +32,8 @@ import java.util.Objects;
 import com.lmpessoa.services.logging.ILogger;
 import com.lmpessoa.services.logging.NonTraced;
 import com.lmpessoa.services.routing.MatchedRoute;
-import com.lmpessoa.services.services.IServicePoolProvider;
+import com.lmpessoa.services.services.IServiceMap;
+import com.lmpessoa.util.ConnectionInfo;
 
 @NonTraced
 final class RequestHandlerJob implements Runnable {
@@ -84,22 +85,9 @@ final class RequestHandlerJob implements Runnable {
 
    @Override
    public void run() {
-      Map<Class<?>, Object> pool = ((IServicePoolProvider) Thread.currentThread()).getPool();
-      Thread.currentThread().setName("request");
-      pool.put(ConnectionInfo.class, new ConnectionInfo(clientSocket));
-      pool.put(HttpRequest.class, request);
-      HttpResult result;
-      try {
-         MatchedRoute route = app.matches(request);
-         pool.put(MatchedRoute.class, route);
-         result = app.getMediator().invoke();
-      } catch (InternalServerError | HttpException e) {
-         result = new HttpResult(request, e.getStatusCode(), e, null);
-      }
-      log.info(result);
-      if (result.getObject() instanceof InternalServerError) {
-         log.error(((InternalServerError) result.getObject()).getCause());
-      }
+      initializeJob();
+      HttpResult result = resolveRequest();
+
       StringBuilder client = new StringBuilder();
       try {
          try {
@@ -141,5 +129,29 @@ final class RequestHandlerJob implements Runnable {
       } catch (IOException e) {
          throw new InternalServerError(e);
       }
+   }
+
+   private void initializeJob() {
+      Thread.currentThread().setName("request");
+      final IServiceMap serviceMap = app.getServiceMap();
+      serviceMap.putRequestValue(ConnectionInfo.class, new ConnectionInfo(clientSocket));
+      serviceMap.putRequestValue(HttpRequest.class, request);
+   }
+
+   private HttpResult resolveRequest() {
+      HttpResult result;
+      try {
+         MatchedRoute route = app.matches(request);
+         app.getServiceMap().putRequestValue(MatchedRoute.class, route);
+         result = app.getMediator().invoke();
+      } catch (InternalServerError | HttpException e) {
+         result = new HttpResult(request, e.getStatusCode(), e, null);
+      }
+      log.info(result);
+      if (result.getObject() instanceof InternalServerError) {
+         log.error(((InternalServerError) result.getObject()).getCause());
+      }
+      return result;
+
    }
 }

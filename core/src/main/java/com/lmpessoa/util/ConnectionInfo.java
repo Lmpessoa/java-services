@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.hosting;
+package com.lmpessoa.util;
 
 import java.net.InetAddress;
 import java.net.Socket;
@@ -32,7 +32,7 @@ public final class ConnectionInfo {
 
    private final Socket socket;
 
-   ConnectionInfo(Socket socket) {
+   public ConnectionInfo(Socket socket) {
       this.socket = socket;
    }
 

@@ -28,10 +28,7 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.Observable;
 import java.util.Observer;
 
@@ -43,7 +40,6 @@ import org.junit.rules.ExpectedException;
 import com.lmpessoa.services.BrokerObserver;
 import com.lmpessoa.services.routing.AbstractRouteType;
 import com.lmpessoa.services.services.IServiceMap;
-import com.lmpessoa.services.services.IServicePoolProvider;
 import com.lmpessoa.services.services.NoSingleMethodException;
 import com.lmpessoa.services.services.ServiceMap;
 
@@ -180,11 +176,11 @@ public class ServiceMapTest {
    public void testInjectPerRequest() throws InterruptedException {
       final BrokerObserver[] objs = new BrokerObserver[2];
       map.putPerRequest(BrokerObserver.class);
-      Thread t0 = new RequestThread(() -> {
+      Thread t0 = new Thread(() -> {
          objs[0] = map.get(BrokerObserver.class);
       });
       t0.start();
-      Thread t1 = new RequestThread(() -> {
+      Thread t1 = new Thread(() -> {
          objs[1] = map.get(BrokerObserver.class);
       });
       t1.start();
@@ -197,12 +193,12 @@ public class ServiceMapTest {
    public void testInjectWithInstancing() throws InterruptedException {
       final Observer[] objs = new Observer[3];
       map.putPerRequest(Observer.class, BrokerObserver.class);
-      Thread t0 = new RequestThread(() -> {
+      Thread t0 = new Thread(() -> {
          objs[0] = map.get(Observer.class);
          objs[1] = map.get(Observer.class);
       });
       t0.start();
-      Thread t1 = new RequestThread(() -> {
+      Thread t1 = new Thread(() -> {
          objs[2] = map.get(Observer.class);
       });
       t1.start();
@@ -259,26 +255,6 @@ public class ServiceMapTest {
 
       public TwoConstructorsClass(int i) {
          // Test method, does nothing
-      }
-   }
-
-   private static class RequestThread extends Thread implements IServicePoolProvider {
-
-      private Map<Class<?>, Object> pool = new HashMap<>();
-      private Runnable runnable;
-
-      public RequestThread(Runnable runnable) {
-         this.runnable = Objects.requireNonNull(runnable);
-      }
-
-      @Override
-      public void run() {
-         runnable.run();
-      }
-
-      @Override
-      public Map<Class<?>, Object> getPool() {
-         return pool;
       }
    }
 

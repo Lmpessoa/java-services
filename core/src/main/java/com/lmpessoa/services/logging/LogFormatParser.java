@@ -40,7 +40,7 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.lmpessoa.services.hosting.ConnectionInfo;
+import com.lmpessoa.util.ConnectionInfo;
 import com.lmpessoa.util.parsing.AbstractParser;
 import com.lmpessoa.util.parsing.ITemplatePart;
 
@@ -50,16 +50,6 @@ final class LogFormatParser extends AbstractParser<LogVariable> {
             .compile("^([A-Z][a-zA-Z0-9]*(?:\\.[A-Z0-9][a-zA-Z0-9]*)*)(?:\\:([<>])(\\d+))?$");
    private final Map<String, Function<LogEntry, String>> variables;
    private static String hostname;
-
-   private LogFormatParser(String template, Map<String, Function<LogEntry, String>> variables) {
-      super(template, false, null);
-      this.variables = variables;
-   }
-
-   static List<ITemplatePart> parse(String template, Map<String, Function<LogEntry, String>> variables)
-      throws ParseException {
-      return new LogFormatParser(template, variables).parse();
-   }
 
    @Override
    protected LogVariable parseVariable(int pos, String variablePart) throws ParseException {
@@ -78,6 +68,11 @@ final class LogFormatParser extends AbstractParser<LogVariable> {
          return new ClassNameLogVariable(varName, rightAlign, length, func);
       }
       return new LogVariable(varName, rightAlign, length, func);
+   }
+
+   static List<ITemplatePart> parse(String template, Map<String, Function<LogEntry, String>> variables)
+      throws ParseException {
+      return new LogFormatParser(template, variables).parse();
    }
 
    static void registerVariables(Map<String, Function<LogEntry, String>> variables) {
@@ -106,6 +101,11 @@ final class LogFormatParser extends AbstractParser<LogVariable> {
       variables.put("Remote.Addr", LogFormatParser::getRemoteAddress);
       variables.put("Remote.Host", LogFormatParser::getRemoteHost);
       variables.put("Local.Host", LogFormatParser::getLocalHost);
+   }
+
+   private LogFormatParser(String template, Map<String, Function<LogEntry, String>> variables) {
+      super(template, false, null);
+      this.variables = variables;
    }
 
    private static DateTimeFormatter formatterOf(TemporalField field, TextStyle style) {

@@ -24,6 +24,7 @@ package com.lmpessoa.util;
 
 import java.text.ParseException;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import com.lmpessoa.services.logging.ILogger;
 import com.lmpessoa.services.logging.ILoggerOptions;
@@ -55,6 +56,11 @@ final class NullLogger implements ILogger {
 
    @Override
    public void debug(Object message) {
+      // Test method, does nothing
+   }
+
+   @Override
+   public void setConnectionSupplier(Supplier<ConnectionInfo> supplier) {
       // Test method, does nothing
    }
 

@@ -22,14 +22,9 @@
  */
 package com.lmpessoa.services.hosting;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.ThreadFactory;
 
-import com.lmpessoa.services.Internal;
 import com.lmpessoa.services.logging.ILogger;
-import com.lmpessoa.services.services.IServicePoolProvider;
-import com.lmpessoa.util.ClassUtils;
 
 final class ApplicationThreadFactory implements ThreadFactory {
 
@@ -41,24 +36,8 @@ final class ApplicationThreadFactory implements ThreadFactory {
 
    @Override
    public Thread newThread(Runnable r) {
-      Thread result = new ApplicationThread(r);
+      Thread result = new Thread(r);
       result.setUncaughtExceptionHandler((t, e) -> log.fatal(e));
       return result;
-   }
-
-   static class ApplicationThread extends Thread implements IServicePoolProvider {
-
-      private final Map<Class<?>, Object> pool = new HashMap<>();
-
-      public ApplicationThread(Runnable target) {
-         super(target);
-      }
-
-      @Internal
-      @Override
-      public Map<Class<?>, Object> getPool() {
-         ClassUtils.checkInternalAccess();
-         return pool;
-      }
    }
 }

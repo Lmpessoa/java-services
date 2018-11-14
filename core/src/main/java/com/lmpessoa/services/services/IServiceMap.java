@@ -115,7 +115,7 @@ public interface IServiceMap {
     * @param service the class of the service to be registered.
     * @param instance the instance to be used to respond to service requests.
     */
-   <T> void putSingleton(Class<T> service, T instance);
+   <T, U extends T> void putSingleton(Class<T> service, U instance);
 
    // Per Request ----------
 
@@ -219,10 +219,18 @@ public interface IServiceMap {
     */
    boolean contains(Class<?> service);
 
+   /**
+    * Returns the list of classes served by this service map.
+    *
+    * @return the list of classes served by this service map.
+    */
    Set<Class<?>> getServices();
 
    @Internal
    IServiceMap getConfigMap();
+
+   @Internal
+   <T> void putRequestValue(Class<T> service, T value);
 
    @Internal
    <T> T get(Class<T> serviceClass);

@@ -26,9 +26,11 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Queue;
+import java.util.function.Supplier;
 
 import com.lmpessoa.services.Internal;
 import com.lmpessoa.util.ClassUtils;
+import com.lmpessoa.util.ConnectionInfo;
 
 @NonTraced
 final class Logger implements ILogger, Runnable {
@@ -37,6 +39,7 @@ final class Logger implements ILogger, Runnable {
    private final LoggerOptions options = new LoggerOptions(this);
 
    private Collection<LogEntry> cachedEntries = new ArrayList<>();
+   private Supplier<ConnectionInfo> connSupplier;
    private LogWriter writer = null;
    private Thread thread = null;
 
@@ -78,6 +81,11 @@ final class Logger implements ILogger, Runnable {
    }
 
    @Override
+   public void setConnectionSupplier(Supplier<ConnectionInfo> supplier) {
+      this.connSupplier = supplier;
+   }
+
+   @Override
    public void run() {
       try {
          writer.prepare();
@@ -107,7 +115,8 @@ final class Logger implements ILogger, Runnable {
    }
 
    private synchronized void log(Severity level, Object message) {
-      LogEntry entry = new LogEntry(level, message);
+      ConnectionInfo connInfo = connSupplier != null ? connSupplier.get() : null;
+      LogEntry entry = new LogEntry(level, message, connInfo);
       if (!options.isConfigured()) {
          synchronized (cachedEntries) {
             cachedEntries.add(entry);

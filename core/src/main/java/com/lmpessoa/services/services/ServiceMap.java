@@ -39,14 +39,16 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import com.lmpessoa.services.Internal;
 import com.lmpessoa.services.logging.NonTraced;
 import com.lmpessoa.util.ClassUtils;
 
 @NonTraced
-final class ServiceMap implements IServiceMap, IServicePoolProvider {
+final class ServiceMap implements IServiceMap {
 
+   private final ThreadLocal<Map<Class<?>, Object>> threadPool = ThreadLocal.withInitial(HashMap::new);
    private final Map<Class<?>, ServiceEntry> entries = new HashMap<>();
-   private final Map<Class<?>, Object> pool = new HashMap<>();
+   private final Map<Class<?>, Object> globalPool = new HashMap<>();
 
    @Override
    public <T> void putSingleton(Class<T> service, Supplier<T> supplier) {
@@ -54,9 +56,9 @@ final class ServiceMap implements IServiceMap, IServicePoolProvider {
    }
 
    @Override
-   public <T> void putSingleton(Class<T> service, T instance) {
+   public <T, U extends T> void putSingleton(Class<T> service, U instance) {
       put(SINGLETON, service, null);
-      pool.put(service, instance);
+      globalPool.put(service, instance);
    }
 
    @Override
@@ -79,10 +81,22 @@ final class ServiceMap implements IServiceMap, IServicePoolProvider {
       return entries.keySet();
    }
 
+   @Internal
    @Override
-   public Map<Class<?>, Object> getPool() {
+   public <T> void putRequestValue(Class<T> service, T value) {
       ClassUtils.checkInternalAccess();
-      return pool;
+      threadPool.get().put(service, value);
+   }
+
+   private Map<Class<?>, Object> getPool(ReuseLevel level) {
+      switch (level) {
+         case SINGLETON:
+            return globalPool;
+         case PER_REQUEST:
+            return threadPool.get();
+         default:
+            return null;
+      }
    }
 
    @Override
@@ -94,15 +108,17 @@ final class ServiceMap implements IServiceMap, IServicePoolProvider {
          String className = clazz.isArray() ? clazz.getComponentType().getName() + "[]" : clazz.getName();
          throw new NoSuchElementException("Service not found: " + className);
       }
-      Map<Class<?>, Object> levelPool = entry.getLevel().getPool(this);
-      if (!levelPool.containsKey(clazz)) {
-         Object obj = entry.newInstance();
-         if (!clazz.isAssignableFrom(obj.getClass())) {
-            throw new ClassCastException("Cannot convert " + obj.getClass().getName() + " to " + clazz.getName());
+      T value;
+      Map<Class<?>, Object> levelPool = getPool(entry.getLevel());
+      if (levelPool == null || !levelPool.containsKey(clazz)) {
+         value = (T) entry.newInstance();
+         if (levelPool != null) {
+            levelPool.put(clazz, value);
          }
-         levelPool.put(clazz, obj);
+      } else {
+         value = (T) levelPool.get(clazz);
       }
-      return (T) levelPool.get(clazz);
+      return value;
    }
 
    @Override
