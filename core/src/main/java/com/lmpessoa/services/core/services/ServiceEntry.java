@@ -20,28 +20,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services;
+package com.lmpessoa.services.core.services;
 
-import static java.lang.annotation.ElementType.CONSTRUCTOR;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.TYPE;
-import static java.lang.annotation.RetentionPolicy.SOURCE;
+import java.util.function.Supplier;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+final class ServiceEntry {
 
-/**
- * Indicates an internal class or method.
- *
- * <p>
- * Internal methods (as well as methods from internal classes) may be public but should not be
- * called directly by your application. They are meant to be used only internally by the engine.
- * </p>
- */
-@Inherited
-@Documented
-@Retention(SOURCE)
-@Target({ TYPE, METHOD, CONSTRUCTOR })
-public @interface Internal {}
+   private final ReuseLevel level;
+   private final Supplier<?> supplier;
+
+   ServiceEntry(ReuseLevel level, Supplier<?> supplier) {
+      this.supplier = supplier;
+      this.level = level;
+   }
+
+   ReuseLevel getLevel() {
+      return level;
+   }
+
+   Object newInstance() {
+      return supplier.get();
+   }
+}

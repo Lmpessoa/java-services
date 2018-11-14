@@ -20,42 +20,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core;
-
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-
-import com.lmpessoa.services.core.hosting.HttpResultInputStream;
+package com.lmpessoa.services.core.hosting;
 
 /**
- * Identifies the content type returned by a method.
+ * An <code>HttpException</code> is an abstract exception class that represents one of the HTTP
+ * client error status codes (4xx) or server error status codes (5xx).
  *
  * <p>
- * Methods returning objects are usually automatically cast into an REST representation according to
- * the Accept header sent by the client. In methods that return input streams and byte arrays the
- * result is assumed to be in raw format and should be sent straight to the client without further
- * transformation.
+ * If a method chooses to throw an <code>HttpException</code> the engine understands that that
+ * exception represents the intended result to return to the sender of the request.
  * </p>
  *
  * <p>
- * Methods which return input stream and byte arrays may choose to annotate the method with
- * <code>ContentType</code> to indicate all content returned from this method should be returned
- * with the given content type.
+ * Any other exception can be thrown from any resource method. These will be understood by the
+ * engine as if an internal server error (HTTP status code 500) has happened and that is what will
+ * be returned to the sender of the request in this case.
  * </p>
- *
- * <p>
- * Optionally, methods may return an <code>HttpResultInputStream</code> if the content type of the
- * return may vary.
- * </p>
- *
- * @see HttpResultInputStream
  */
-@Target(METHOD)
-@Retention(RUNTIME)
-public @interface ContentType {
+public abstract class HttpException extends RuntimeException implements IHttpStatus {
 
-   String value();
+   private static final long serialVersionUID = 1L;
+
+   HttpException() {
+      super();
+   }
+
+   HttpException(String message) {
+      super(message);
+   }
+
+   HttpException(Throwable cause) {
+      super(cause);
+   }
+
+   HttpException(String message, Throwable cause) {
+      super(message, cause);
+   }
 }

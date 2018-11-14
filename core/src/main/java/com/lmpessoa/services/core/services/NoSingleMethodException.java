@@ -20,42 +20,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core;
-
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-
-import com.lmpessoa.services.core.hosting.HttpResultInputStream;
+package com.lmpessoa.services.core.services;
 
 /**
- * Identifies the content type returned by a method.
+ * Thrown when a single constructor or method for a given name is not found on a class.
  *
  * <p>
- * Methods returning objects are usually automatically cast into an REST representation according to
- * the Accept header sent by the client. In methods that return input streams and byte arrays the
- * result is assumed to be in raw format and should be sent straight to the client without further
- * transformation.
+ * A <code>NoSingleMethodException</code> closely resembles a {@link NoSuchMethodException} except
+ * that instead of not finding the method or constructor it found more than one and thus cannot
+ * decide which one to use.
  * </p>
- *
- * <p>
- * Methods which return input stream and byte arrays may choose to annotate the method with
- * <code>ContentType</code> to indicate all content returned from this method should be returned
- * with the given content type.
- * </p>
- *
- * <p>
- * Optionally, methods may return an <code>HttpResultInputStream</code> if the content type of the
- * return may vary.
- * </p>
- *
- * @see HttpResultInputStream
  */
-@Target(METHOD)
-@Retention(RUNTIME)
-public @interface ContentType {
+public final class NoSingleMethodException extends Exception {
 
-   String value();
+   private static final long serialVersionUID = 1L;
+
+   /**
+    * Creates a new <code>NoSingleMethodException</code> with the given detail message.
+    *
+    * @param message the detail message.
+    * @param found the number of actual methods found.
+    */
+   public NoSingleMethodException(String message, int found) {
+      super(message + " (found: " + found + ')');
+   }
 }

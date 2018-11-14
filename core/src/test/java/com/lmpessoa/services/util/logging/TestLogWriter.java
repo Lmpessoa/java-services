@@ -20,28 +20,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services;
+package com.lmpessoa.services.util.logging;
 
-import static java.lang.annotation.ElementType.CONSTRUCTOR;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.TYPE;
-import static java.lang.annotation.RetentionPolicy.SOURCE;
+import com.lmpessoa.services.util.logging.LogEntry;
+import com.lmpessoa.services.util.logging.LogWriter;
+import com.lmpessoa.services.util.logging.Severity;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+final class TestLogWriter extends LogWriter {
 
-/**
- * Indicates an internal class or method.
- *
- * <p>
- * Internal methods (as well as methods from internal classes) may be public but should not be
- * called directly by your application. They are meant to be used only internally by the engine.
- * </p>
- */
-@Inherited
-@Documented
-@Retention(SOURCE)
-@Target({ TYPE, METHOD, CONSTRUCTOR })
-public @interface Internal {}
+   private LogEntry entry;
+
+   @Override
+   public void append(LogEntry entry) {
+      this.entry = entry;
+   }
+
+   String[] getLastAdditionalMessages() {
+      return entry != null ? entry.getAdditionalMessages() : new String[0];
+   }
+
+   LogEntry getLastTrace() {
+      return entry != null ? entry.getTraceEntry() : null;
+   }
+
+   String getLastMessage() {
+      return entry != null ? entry.getMessage() : null;
+   }
+
+   Severity getLastSeverity() {
+      return entry != null ? entry.getSeverity() : null;
+   }
+}

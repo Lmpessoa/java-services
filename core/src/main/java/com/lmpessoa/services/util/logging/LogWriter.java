@@ -20,42 +20,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core;
-
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-
-import com.lmpessoa.services.core.hosting.HttpResultInputStream;
+package com.lmpessoa.services.util.logging;
 
 /**
- * Identifies the content type returned by a method.
+ * Defines the common interface for log writers.
  *
  * <p>
- * Methods returning objects are usually automatically cast into an REST representation according to
- * the Accept header sent by the client. In methods that return input streams and byte arrays the
- * result is assumed to be in raw format and should be sent straight to the client without further
- * transformation.
+ * Log writing classes are responsible for ensuring the availability and disposal of every resource
+ * they require to fulfill the storage of the log entry.
  * </p>
- *
- * <p>
- * Methods which return input stream and byte arrays may choose to annotate the method with
- * <code>ContentType</code> to indicate all content returned from this method should be returned
- * with the given content type.
- * </p>
- *
- * <p>
- * Optionally, methods may return an <code>HttpResultInputStream</code> if the content type of the
- * return may vary.
- * </p>
- *
- * @see HttpResultInputStream
  */
-@Target(METHOD)
-@Retention(RUNTIME)
-public @interface ContentType {
+public abstract class LogWriter {
 
-   String value();
+   protected void prepare() {
+      // Nothing to do here
+   }
+
+   /**
+    * Appends the given log entry to the underlying log storage.
+    *
+    * @param entry the log entry to be stored.
+    */
+   protected abstract void append(LogEntry entry);
+
+   protected void finished() {
+      // Nothing to do here
+   }
 }

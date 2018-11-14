@@ -20,28 +20,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services;
+package com.lmpessoa.services.core.routing.content;
 
-import static java.lang.annotation.ElementType.CONSTRUCTOR;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.TYPE;
-import static java.lang.annotation.RetentionPolicy.SOURCE;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.Charset;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
-/**
- * Indicates an internal class or method.
- *
- * <p>
- * Internal methods (as well as methods from internal classes) may be public but should not be
- * called directly by your application. They are meant to be used only internally by the engine.
- * </p>
- */
-@Inherited
-@Documented
-@Retention(SOURCE)
-@Target({ TYPE, METHOD, CONSTRUCTOR })
-public @interface Internal {}
+final class JsonSerializer implements IContentParser, IContentProducer {
+
+   @Override
+   public <T> T parse(String content, Class<T> clazz) {
+      try {
+         Gson gson = new GsonBuilder().setPrettyPrinting().create();
+         return gson.fromJson(content, clazz);
+      } catch (RuntimeException e) {
+         throw e;
+      } catch (Exception e) {
+         throw new RuntimeException(e);
+      }
+   }
+
+   @Override
+   public InputStream produce(Object obj) {
+      try {
+         Gson gson = new GsonBuilder().create();
+         byte[] data = gson.toJson(obj).getBytes(Charset.forName("UTF-8"));
+         return new ByteArrayInputStream(data);
+      } catch (RuntimeException e) {
+         throw e;
+      } catch (Exception e) {
+         throw new RuntimeException(e);
+      }
+   }
+}

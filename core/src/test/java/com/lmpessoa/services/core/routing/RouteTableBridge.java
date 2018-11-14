@@ -20,28 +20,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services;
+package com.lmpessoa.services.core.routing;
 
-import static java.lang.annotation.ElementType.CONSTRUCTOR;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.TYPE;
-import static java.lang.annotation.RetentionPolicy.SOURCE;
+import com.lmpessoa.services.core.hosting.HttpRequest;
+import com.lmpessoa.services.core.routing.IRouteTable;
+import com.lmpessoa.services.core.routing.MatchedRoute;
+import com.lmpessoa.services.core.routing.RouteTable;
+import com.lmpessoa.services.core.services.IServiceMap;
+import com.lmpessoa.services.util.logging.ILogger;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+public final class RouteTableBridge {
 
-/**
- * Indicates an internal class or method.
- *
- * <p>
- * Internal methods (as well as methods from internal classes) may be public but should not be
- * called directly by your application. They are meant to be used only internally by the engine.
- * </p>
- */
-@Inherited
-@Documented
-@Retention(SOURCE)
-@Target({ TYPE, METHOD, CONSTRUCTOR })
-public @interface Internal {}
+   public static IRouteTable get(IServiceMap serviceMap, ILogger log) throws NoSuchMethodException {
+      return new RouteTable(serviceMap, log);
+   }
+
+   public static MatchedRoute match(IRouteTable routes, HttpRequest request) {
+      return ((RouteTable) routes).matches(request);
+   }
+}

@@ -20,28 +20,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services;
-
-import static java.lang.annotation.ElementType.CONSTRUCTOR;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.TYPE;
-import static java.lang.annotation.RetentionPolicy.SOURCE;
-
-import java.lang.annotation.Documented;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+package com.lmpessoa.services.core.hosting;
 
 /**
- * Indicates an internal class or method.
- *
- * <p>
- * Internal methods (as well as methods from internal classes) may be public but should not be
- * called directly by your application. They are meant to be used only internally by the engine.
- * </p>
+ * Thrown when the requested resource endpoint does not exist.
  */
-@Inherited
-@Documented
-@Retention(SOURCE)
-@Target({ TYPE, METHOD, CONSTRUCTOR })
-public @interface Internal {}
+public final class NotFoundException extends HttpException {
+
+   private static final long serialVersionUID = 1L;
+
+   /**
+    * Creates a new <code>NotFoundException</code>.
+    */
+   public NotFoundException() {
+      super();
+   }
+
+   /**
+    * Creates a new <code>NotFoundException</code> with the given detail message.
+    * 
+    * @param message the detail message.
+    */
+   public NotFoundException(String message) {
+      super(message);
+   }
+
+   @Override
+   public int getStatusCode() {
+      return 404;
+   }
+}

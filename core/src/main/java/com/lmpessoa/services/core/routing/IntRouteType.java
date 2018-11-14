@@ -20,28 +20,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services;
+package com.lmpessoa.services.core.routing;
 
-import static java.lang.annotation.ElementType.CONSTRUCTOR;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.TYPE;
-import static java.lang.annotation.RetentionPolicy.SOURCE;
+final class IntRouteType extends AbstractRouteType {
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+   public IntRouteType() {
+      super(1, -1);
+   }
 
-/**
- * Indicates an internal class or method.
- *
- * <p>
- * Internal methods (as well as methods from internal classes) may be public but should not be
- * called directly by your application. They are meant to be used only internally by the engine.
- * </p>
- */
-@Inherited
-@Documented
-@Retention(SOURCE)
-@Target({ TYPE, METHOD, CONSTRUCTOR })
-public @interface Internal {}
+   public IntRouteType(int length) {
+      super(length, length);
+   }
+
+   public IntRouteType(int minLength, int maxLength) {
+      super(minLength, maxLength);
+   }
+
+   @Override
+   protected boolean isAssignableTo(Class<?> clazz) {
+      return clazz == long.class || clazz == int.class || clazz == short.class || clazz == byte.class
+               || clazz == Long.class || clazz == Integer.class || clazz == Short.class || clazz == Byte.class;
+   }
+
+   @Override
+   protected String getRegex() {
+      return "[0-9]" + getRegexLength();
+   }
+}

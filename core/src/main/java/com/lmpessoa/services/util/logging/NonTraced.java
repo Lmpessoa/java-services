@@ -20,42 +20,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core;
+package com.lmpessoa.services.util.logging;
 
 import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+import java.lang.annotation.Documented;
+import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import com.lmpessoa.services.core.hosting.HttpResultInputStream;
-
 /**
- * Identifies the content type returned by a method.
+ * Identifies a class or method that should not be traced in logs.
  *
  * <p>
- * Methods returning objects are usually automatically cast into an REST representation according to
- * the Accept header sent by the client. In methods that return input streams and byte arrays the
- * result is assumed to be in raw format and should be sent straight to the client without further
- * transformation.
+ * When an application is configured to log traces, it outputs an extra line for each log entry
+ * containing information about the method that called the log method. By annotating a class or
+ * method with <code>@NonTraced</code> the annotated method or all the methods of the annotated
+ * class are excluded from being displayed in trace log entries.
  * </p>
  *
  * <p>
- * Methods which return input stream and byte arrays may choose to annotate the method with
- * <code>ContentType</code> to indicate all content returned from this method should be returned
- * with the given content type.
+ * Note, however, that due to the nature of stack trace information all methods with a given name
+ * must be annotated in order for them to be excluded from tracing.
  * </p>
- *
- * <p>
- * Optionally, methods may return an <code>HttpResultInputStream</code> if the content type of the
- * return may vary.
- * </p>
- *
- * @see HttpResultInputStream
  */
-@Target(METHOD)
+@Inherited
+@Documented
 @Retention(RUNTIME)
-public @interface ContentType {
-
-   String value();
-}
+@Target({ TYPE, METHOD })
+public @interface NonTraced {}

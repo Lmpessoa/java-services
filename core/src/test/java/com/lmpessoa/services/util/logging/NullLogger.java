@@ -20,17 +20,54 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.test.resources;
+package com.lmpessoa.services.util.logging;
 
+import java.util.function.Supplier;
+
+import com.lmpessoa.services.util.ConnectionInfo;
 import com.lmpessoa.services.util.logging.ILogger;
+import com.lmpessoa.services.util.logging.ILoggerOptions;
+import com.lmpessoa.services.util.logging.Severity;
 
-public class TestResource {
+public final class NullLogger implements ILogger, ILoggerOptions {
 
-   public void get() {
-      // Test method, does nothing
+   @Override
+   public void fatal(Object message) {
+      // Test method, nothing to do
    }
 
-   public void log(ILogger log) {
-      log.info("Test");
+   @Override
+   public void error(Object message) {
+      // Test method, nothing to do
+   }
+
+   @Override
+   public void warning(Object message) {
+      // Test method, nothing to do
+   }
+
+   @Override
+   public void info(Object message) {
+      // Test method, nothing to do
+   }
+
+   @Override
+   public void debug(Object message) {
+      // Test method, nothing to do
+   }
+
+   @Override
+   public void setDefaultLevel(Severity level) {
+      // Test method, nothing to do
+   }
+
+   @Override
+   public void setPackageLevel(String packageName, Severity level) {
+      // Test method, nothing to do
+   }
+
+   @Override
+   public void setConnectionSupplier(Supplier<ConnectionInfo> supplier) {
+      // Test method, nothing to do
    }
 }

@@ -20,28 +20,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services;
+package com.lmpessoa.services.util.logging;
 
-import static java.lang.annotation.ElementType.CONSTRUCTOR;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.TYPE;
-import static java.lang.annotation.RetentionPolicy.SOURCE;
+import java.util.function.Function;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+final class ClassNameLogVariable extends LogVariable {
 
-/**
- * Indicates an internal class or method.
- *
- * <p>
- * Internal methods (as well as methods from internal classes) may be public but should not be
- * called directly by your application. They are meant to be used only internally by the engine.
- * </p>
- */
-@Inherited
-@Documented
-@Retention(SOURCE)
-@Target({ TYPE, METHOD, CONSTRUCTOR })
-public @interface Internal {}
+   protected ClassNameLogVariable(String name, boolean rightAlign, int length, Function<LogEntry, String> func) {
+      super(name, rightAlign, length, func);
+   }
+
+   @Override
+   public String getValueOf(LogEntry entry) {
+      String result = entry.getClassName();
+      if (result == null) {
+         result = "";
+      } else if (length() > 0) {
+         String[] parts = result.split("\\.");
+         int i = 0;
+         while (result.length() > length() && i < parts.length - 1) {
+            parts[i] = parts[i].substring(0, 1);
+            result = String.join(".", parts);
+            i += 1;
+         }
+      }
+      return format(result);
+   }
+}
