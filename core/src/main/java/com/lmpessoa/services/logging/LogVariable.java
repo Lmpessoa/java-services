@@ -30,17 +30,36 @@ class LogVariable implements IVariablePart {
 
    private final String name;
    private final boolean rightAlign;
-   protected final int length;
+   private final int length;
    private final Function<LogEntry, String> func;
 
-   protected LogVariable(String name, boolean rightAlign, int length, Function<LogEntry, String> func) {
+   @Override
+   public final String toString() {
+      StringBuilder result = new StringBuilder();
+      result.append('{');
+      result.append(name);
+      if (length != -1) {
+         result.append('(');
+         result.append(rightAlign ? '>' : '<');
+         result.append(length);
+         result.append(')');
+      }
+      result.append('}');
+      return result.toString();
+   }
+
+   LogVariable(String name, boolean rightAlign, int length, Function<LogEntry, String> func) {
       this.name = name;
       this.rightAlign = rightAlign;
       this.length = length;
       this.func = func;
    }
 
-   protected final String format(Object value) {
+   String getValueOf(LogEntry entry) {
+      return format(func.apply(entry));
+   }
+
+   final String format(Object value) {
       String result = value.toString();
       if (length > 0) {
          if (result.length() > length) {
@@ -62,22 +81,11 @@ class LogVariable implements IVariablePart {
       return result;
    }
 
-   public String getValueOf(LogEntry entry) {
-      return format(func.apply(entry));
+   boolean isMessage() {
+      return "Message".equals(name);
    }
 
-   @Override
-   public final String toString() {
-      StringBuilder result = new StringBuilder();
-      result.append('{');
-      result.append(name);
-      if (length != -1) {
-         result.append('(');
-         result.append(rightAlign ? '>' : '<');
-         result.append(length);
-         result.append(')');
-      }
-      result.append('}');
-      return result.toString();
+   int length() {
+      return length;
    }
 }

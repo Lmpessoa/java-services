@@ -20,17 +20,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.test.resources;
+package com.lmpessoa.services;
 
-import com.lmpessoa.services.logging.ILogger;
+import static java.lang.annotation.ElementType.CONSTRUCTOR;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-public class TestResource {
+import java.lang.annotation.Documented;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-   public void get() {
-      // Test method, does nothing
-   }
-
-   public void log(ILogger log) {
-      log.info("Test");
-   }
-}
+/**
+ * Indicates an internal class or method.
+ *
+ * <p>
+ * Internal methods (as well as methods from internal classes) may be public but should not be
+ * called directly by your application. They are meant to be used only internally by the engine.
+ * </p>
+ */
+@Inherited
+@Documented
+@Retention(RUNTIME)
+@Target({ METHOD, CONSTRUCTOR })
+public @interface Internal {}

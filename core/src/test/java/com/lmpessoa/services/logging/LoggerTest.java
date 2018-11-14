@@ -22,49 +22,94 @@
  */
 package com.lmpessoa.services.logging;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
+import java.text.ParseException;
 import java.util.Arrays;
 
 import org.junit.Before;
 import org.junit.Test;
 
+import com.lmpessoa.services.services.IConfigurationLifecycle;
+import com.lmpessoa.services.test.resources.TestResource;
+
 public final class LoggerTest {
 
    private TestLogWriter output;
+   private TestResource res;
    private Logger log;
 
    @Before
-   public void setup() {
+   public void setup() throws ParseException {
+      setupWith(Severity.WARNING);
+   }
+
+   public void setupWith(Severity defaultLevel) throws ParseException {
+      setupWith(defaultLevel, null);
+   }
+
+   public void setupWith(Severity defaultLevel, Severity packageLevel) throws ParseException {
+      res = new TestResource();
       log = new Logger();
-      log.getOptions().setDefaultLevel(Severity.WARNING);
+      log.getOptions().setDefaultLevel(defaultLevel);
+      if (packageLevel != null) {
+         log.getOptions().setPackageLevel("com.lmpessoa.services.test.resources", packageLevel);
+      }
       output = new TestLogWriter();
       log.getOptions().useWriter(output);
+      log.getOptions().useTemplate("[{Severity}] {Message}");
+      ((IConfigurationLifecycle) log.getOptions()).configurationEnded();
    }
 
    @Test
    public void testLastWarningMessage() throws InterruptedException {
       log.warning("Test");
       Thread.sleep(100);
-      assertEquals(Severity.WARNING, output.getLevel());
-      assertEquals("Test", output.getMessage());
+      assertEquals(Severity.WARNING, output.getLastSeverity());
+      assertEquals("Test", output.getLastMessage());
+      assertArrayEquals(new String[0], output.getLastAdditionalMessages());
    }
 
    @Test
    public void testLastErrorMessage() throws InterruptedException {
       log.error("Test");
       Thread.sleep(100);
-      assertEquals(Severity.ERROR, output.getLevel());
-      assertEquals("Test", output.getMessage());
+      assertEquals(Severity.ERROR, output.getLastSeverity());
+      assertEquals("Test", output.getLastMessage());
+      assertArrayEquals(new String[0], output.getLastAdditionalMessages());
    }
 
    @Test
    public void testLastInfoMessage() throws InterruptedException {
       log.info("Test");
       Thread.sleep(100);
-      assertNull(output.getLevel());
-      assertNull(output.getMessage());
+      assertNull(output.getLastSeverity());
+      assertNull(output.getLastMessage());
+      assertArrayEquals(new String[0], output.getLastAdditionalMessages());
+   }
+
+   @Test
+   public void testLastNoneMessage() throws InterruptedException, ParseException {
+      setupWith(Severity.NONE);
+      log.fatal("Test");
+      Thread.sleep(100);
+      assertNull(output.getLastSeverity());
+      assertNull(output.getLastMessage());
+      assertArrayEquals(new String[0], output.getLastAdditionalMessages());
+   }
+
+   @Test
+   public void testTraceEntry() throws InterruptedException {
+      log.error("Test");
+      Thread.sleep(100);
+      LogEntry trace = output.getLastTrace();
+      assertEquals(Severity.TRACE, trace.getSeverity());
+      assertEquals(
+               "...at com.lmpessoa.services.logging.LoggerTest.testTraceEntry(LoggerTest.java:105)",
+               trace.getMessage());
+      assertArrayEquals(new String[0], output.getLastAdditionalMessages());
    }
 
    @Test
@@ -73,40 +118,40 @@ public final class LoggerTest {
       e.setStackTrace(Arrays.copyOf(e.getStackTrace(), 2));
       log.error(e);
       Thread.sleep(100);
-      assertEquals(Severity.ERROR, output.getLevel());
-      assertEquals("java.lang.RuntimeException: Test", output.getMessage());
+      assertEquals(Severity.ERROR, output.getLastSeverity());
+      assertEquals("java.lang.RuntimeException: Test", output.getLastMessage());
+      assertArrayEquals(new String[] {
+               "...at com.lmpessoa.services.logging.LoggerTest.testExceptionNoDebug(LoggerTest.java:117)" },
+               output.getLastAdditionalMessages());
+      assertNull(output.getLastTrace());
    }
 
    @Test
-   public void testExceptionWithDebug() throws InterruptedException {
-      log.getOptions().setDefaultLevel(Severity.DEBUG);
-      RuntimeException e = new RuntimeException("Test");
-      e.setStackTrace(Arrays.copyOf(e.getStackTrace(), 1));
-      log.error(e);
+   public void testPackageLevelDefault() throws InterruptedException {
+      res.log(log);
       Thread.sleep(100);
-      assertEquals(Severity.DEBUG, output.getLevel());
-      assertEquals(
-               "\tat com.lmpessoa.services.logging.LoggerTest.testExceptionWithDebug(LoggerTest.java:83)",
-               output.getMessage());
+      assertNull(output.getLastSeverity());
+      assertNull(output.getLastMessage());
+      assertArrayEquals(new String[0], output.getLastAdditionalMessages());
    }
 
-   final class TestLogWriter implements LogWriter {
+   @Test
+   public void testPackageLevelOff() throws InterruptedException, ParseException {
+      setupWith(Severity.WARNING, Severity.NONE);
+      res.log(log);
+      Thread.sleep(100);
+      assertNull(output.getLastSeverity());
+      assertNull(output.getLastMessage());
+      assertArrayEquals(new String[0], output.getLastAdditionalMessages());
+   }
 
-      private String lastMessage = null;
-      private Severity lastLevel = null;
-
-      @Override
-      public void append(LogEntry entry) {
-         lastMessage = entry.getMessage();
-         lastLevel = entry.getSeverity();
-      }
-
-      String getMessage() {
-         return lastMessage;
-      }
-
-      Severity getLevel() {
-         return lastLevel;
-      }
+   @Test
+   public void testPackageLevelInfo() throws InterruptedException, ParseException {
+      setupWith(Severity.WARNING, Severity.INFO);
+      res.log(log);
+      Thread.sleep(100);
+      assertEquals(Severity.INFO, output.getLastSeverity());
+      assertEquals("Test", output.getLastMessage());
+      assertArrayEquals(new String[0], output.getLastAdditionalMessages());
    }
 }

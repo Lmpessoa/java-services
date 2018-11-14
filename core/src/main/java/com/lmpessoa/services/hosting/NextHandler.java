@@ -25,6 +25,8 @@ package com.lmpessoa.services.hosting;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
+import com.lmpessoa.services.logging.NonTraced;
+
 /**
  * Wraps the call to the next handler in the application.
  *
@@ -38,6 +40,7 @@ import java.lang.reflect.InvocationTargetException;
  * The proxy can only be invoked once per request.
  * </p>
  */
+@NonTraced
 public final class NextHandler {
 
    private final HandlerMediator mediator;

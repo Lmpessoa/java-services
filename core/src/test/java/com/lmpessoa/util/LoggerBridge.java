@@ -20,27 +20,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.services;
+package com.lmpessoa.util;
 
-import static java.lang.annotation.ElementType.TYPE;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import com.lmpessoa.services.logging.ILogger;
+import com.lmpessoa.util.NullLogger;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+public class LoggerBridge {
 
-/**
- * Indicates a service class may be configured using an object of the given type.
- *
- * <p>
- * Services to be configured must be registered as singleton services and must implement a method
- * called <code>getOptions()</code> with no arguments and returning an object of the given type. The
- * return type of the declared method does not need to be of the same type declared in this
- * interface but the object must be assignable to a variable of the annotation type.
- * </p>
- */
-@Target(TYPE)
-@Retention(RUNTIME)
-public @interface ConfiguresWith {
-
-   Class<?> value();
+   public static ILogger getNullLogger() {
+      return new NullLogger();
+   }
 }

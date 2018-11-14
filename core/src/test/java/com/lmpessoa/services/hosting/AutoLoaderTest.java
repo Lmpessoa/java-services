@@ -33,19 +33,21 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import com.lmpessoa.services.hosting.Application;
+import com.lmpessoa.services.logging.ILogger;
 import com.lmpessoa.services.routing.IRouteOptions;
+import com.lmpessoa.util.LoggerBridge;
 
 public final class AutoLoaderTest {
 
    @Rule
    public ExpectedException thrown = ExpectedException.none();
 
+   private static ILogger log = LoggerBridge.getNullLogger();
    private Application app;
 
    @Test
    public void testScanDefault() throws IOException, IllegalAccessException, NoSuchMethodException {
-      app = new Application(AutoLoaderTest.class, new String[0]);
-      ApplicationBridge.useNullLogWriter(app);
+      app = new Application(AutoLoaderTest.class, new String[0], log);
       Collection<Class<?>> result = app.scanResourcesFromStartup();
       assertTrue(result.contains(com.lmpessoa.services.test.resources.IndexResource.class));
       assertTrue(result.contains(com.lmpessoa.services.test.resources.TestResource.class));
@@ -55,8 +57,7 @@ public final class AutoLoaderTest {
 
    @Test
    public void testScanUserDefined() throws IOException, IllegalAccessException, NoSuchMethodException {
-      app = new Application(MainWithApi.class, new String[0]);
-      ApplicationBridge.useNullLogWriter(app);
+      app = new Application(MainWithApi.class, new String[0], log);
       app.doConfigure();
       Collection<Class<?>> result = app.scanResourcesFromStartup();
       assertTrue(result.contains(com.lmpessoa.services.test.resources.IndexResource.class));

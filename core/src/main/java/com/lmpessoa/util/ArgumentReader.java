@@ -22,7 +22,10 @@
  */
 package com.lmpessoa.util;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
@@ -64,21 +67,6 @@ public final class ArgumentReader {
     * Defines an argument option with the given label.
     *
     * <p>
-    * Options defined with this method will try and find the first unregistered mnemonic from the
-    * characters of the given option name.
-    * </p>
-    *
-    * @param label the name of the argument option.
-    * @param type the function to validate and convert the argument value.
-    */
-   public void setOption(String label, Function<String, Object> type) {
-      setOption(label, findMnemonicOf(label), type);
-   }
-
-   /**
-    * Defines an argument option with the given label.
-    *
-    * <p>
     * Options defined with this method are given explicitly the mnemonic associated with this option.
     * This value can also differ completely from the label or even be <code>null</code> to indicate
     * there should be no mnemonic for this option.
@@ -88,7 +76,7 @@ public final class ArgumentReader {
     * @param mnemonic a mnemonic to use instead of the full name of the option.
     * @param type the function to validate and convert the argument value.
     */
-   public void setOption(String label, Character mnemonic, Function<String, Object> type) {
+   public void setOption(Character mnemonic, String label, Function<String, Object> type) {
       Objects.requireNonNull(type);
       if (!options.containsKey(label)) {
          options.put(label, type);
@@ -96,20 +84,6 @@ public final class ArgumentReader {
             mnemonics.put(mnemonic, label);
          }
       }
-   }
-
-   /**
-    * Defines an argument flag with the given label.
-    *
-    * <p>
-    * Flags defined with this method will try and find the first unregistered mnemonic from the
-    * characters of the given flag name.
-    * </p>
-    *
-    * @param label the name of the argument flag.
-    */
-   public void setFlag(String label) {
-      setFlag(label, findMnemonicOf(label));
    }
 
    /**
@@ -124,11 +98,11 @@ public final class ArgumentReader {
     * @param label the name of the argument flag.
     * @param mnemonic a mnemonic to use instead of the full name of the flag.
     */
-   public void setFlag(String option, Character mnemonic) {
-      if (!options.containsKey(option)) {
-         options.put(option, null);
+   public void setFlag(Character mnemonic, String label) {
+      if (!options.containsKey(label)) {
+         options.put(label, null);
          if (mnemonic != null && !mnemonics.containsKey(mnemonic)) {
-            mnemonics.put(mnemonic, option);
+            mnemonics.put(mnemonic, label);
          }
       }
    }
@@ -145,45 +119,37 @@ public final class ArgumentReader {
     * @param args the list of arguments of the application to parse.
     * @return a map with the options and flags found in the arguments.
     */
-   public Map<String, Object> parse(String[] args) {
+   public Map<String, Object> parse(String[] arguments) {
       Map<String, Object> result = new HashMap<>();
-      for (int i = 0; i < args.length; ++i) {
+      List<String> args = new ArrayList<>(Arrays.asList(arguments));
+      while (!args.isEmpty()) {
+         final String arg = args.remove(0);
          String modifier = null;
-         if (args[i].startsWith("--")) {
-            modifier = args[i].substring(2);
-         } else if (args[i].startsWith("-")) {
-            char ch = args[i].charAt(1);
+         if (arg.startsWith("--")) {
+            modifier = arg.substring(2);
+         } else if (arg.startsWith("-")) {
+            char ch = arg.charAt(1);
             modifier = mnemonics.get(ch);
          }
          if (modifier == null || !options.containsKey(modifier)) {
-            throw new IllegalArgumentException("Invalid option: " + args[i]);
+            throw new IllegalArgumentException("Unknown option: " + arg);
          }
          Function<String, Object> type = options.get(modifier);
          if (type != null) {
-            if (i + 1 == args.length) {
-               throw new IllegalStateException("Option requires an argument: " + modifier);
+            if (args.isEmpty() || args.get(0).startsWith("-")) {
+               throw new IllegalStateException("Option requires an argument: " + arg);
             }
-            i += 1;
+            String svalue = args.remove(0);
             try {
-               Object value = type.apply(args[i]);
+               Object value = type.apply(svalue);
                result.put(modifier, value);
             } catch (Exception e) {
-               throw new IllegalArgumentException("Invalid value for " + modifier + ": '" + args[i] + "'");
+               throw new IllegalArgumentException("Invalid value for " + arg + ": '" + svalue + "'");
             }
          } else {
             result.put(modifier, Boolean.TRUE);
          }
       }
       return result;
-
-   }
-
-   private Character findMnemonicOf(String option) {
-      for (char ch : option.toCharArray()) {
-         if (Character.isLetter(ch) && !mnemonics.containsKey(ch)) {
-            return ch;
-         }
-      }
-      return null;
    }
 }

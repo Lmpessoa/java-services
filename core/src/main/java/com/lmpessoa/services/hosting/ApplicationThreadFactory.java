@@ -26,8 +26,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadFactory;
 
+import com.lmpessoa.services.Internal;
 import com.lmpessoa.services.logging.ILogger;
 import com.lmpessoa.services.services.IServicePoolProvider;
+import com.lmpessoa.util.ClassUtils;
 
 final class ApplicationThreadFactory implements ThreadFactory {
 
@@ -52,8 +54,10 @@ final class ApplicationThreadFactory implements ThreadFactory {
          super(target);
       }
 
+      @Internal
       @Override
       public Map<Class<?>, Object> getPool() {
+         ClassUtils.checkInternalAccess();
          return pool;
       }
    }

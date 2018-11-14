@@ -22,8 +22,6 @@
  */
 package com.lmpessoa.services.hosting;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.concurrent.ExecutorService;
@@ -31,7 +29,6 @@ import java.util.concurrent.Executors;
 
 import com.lmpessoa.services.routing.content.Serializer;
 import com.lmpessoa.services.services.AbstractOptions;
-import com.lmpessoa.util.ClassUtils;
 
 final class ApplicationOptions extends AbstractOptions implements IApplicationOptions {
 
@@ -49,13 +46,23 @@ final class ApplicationOptions extends AbstractOptions implements IApplicationOp
    }
 
    @Override
-   public void usePort(int port) {
+   public void acceptXmlRequests() {
+      protectConfiguration();
+      Serializer.enableXml(true);
+   }
+
+   @Override
+   public void addHandler(Class<?> handlerClass) {
+      protectConfiguration();
+      app.getMediator().addHandler(handlerClass);
+   }
+
+   void usePort(int port) {
       protectConfiguration();
       this.port = port;
    }
 
-   @Override
-   public void bindToAddress(String addr) {
+   void bindToAddress(String addr) {
       protectConfiguration();
       if (addr != null) {
          try {
@@ -68,26 +75,7 @@ final class ApplicationOptions extends AbstractOptions implements IApplicationOp
       }
    }
 
-   @Override
-   public void acceptXmlRequests() {
-      protectConfiguration();
-      Method enableXml = ClassUtils.getDeclaredMethod(Serializer.class, "enableXml");
-      enableXml.setAccessible(true);
-      try {
-         enableXml.invoke(null, true);
-      } catch (IllegalAccessException | InvocationTargetException e) {
-         app.getLogger().debug(e);
-      }
-   }
-
-   @Override
-   public void addHandler(Class<?> handlerClass) {
-      protectConfiguration();
-      app.getMediator().addHandler(handlerClass);
-   }
-
-   @Override
-   public void limitConcurrentJobs(int maxJobs) {
+   void limitConcurrentJobs(int maxJobs) {
       protectConfiguration();
       threadPool = Executors.newFixedThreadPool(maxJobs, threadFactory);
    }

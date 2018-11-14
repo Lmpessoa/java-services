@@ -29,6 +29,7 @@ import java.util.Arrays;
 
 import com.lmpessoa.services.hosting.HttpException;
 import com.lmpessoa.services.hosting.InternalServerError;
+import com.lmpessoa.services.logging.NonTraced;
 
 /**
  * A <code>MatchedRoute</code> represents a set of information about a matched request route to
@@ -40,6 +41,7 @@ import com.lmpessoa.services.hosting.InternalServerError;
  * HTTP protocol.
  * </p>
  */
+@NonTraced
 public final class MatchedRoute {
 
    private final Class<?> resourceClass;

@@ -25,79 +25,139 @@ package com.lmpessoa.services.logging;
 import static org.junit.Assert.assertEquals;
 
 import java.text.ParseException;
-import java.time.ZoneOffset;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
 
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public final class LogFormatterTest {
 
-   private LogEntry entry = new LogEntry(Severity.ERROR, "Test", 0, ZonedDateTime.now().getZone());
+   @Rule
+   public ExpectedException thrown = ExpectedException.none();
 
-   private String formatWith(String template) throws ParseException {
-      LogFormatter formatter = LogFormatter.parse(template);
-      return formatter.format(entry);
+   private final LogEntry entry = new LogEntry(ZonedDateTime
+            .of(LocalDateTime.of(2017, 6, 5, 5, 42, 7), ZoneId.of("America/Sao_Paulo")),
+            Severity.ERROR, "Test");
+   private Map<String, Function<LogEntry, String>> variables;
+
+   @Before
+   public void setup() {
+      variables = new HashMap<>();
+      LogFormatParser.registerVariables(variables);
    }
 
    @Test
    public void testFormatTimeWeb() throws ParseException {
       String result = formatWith("{Time.Web}");
-      ZonedDateTime utc = ZonedDateTime.ofInstant(entry.getTime().toInstant(), ZoneOffset.UTC);
-      assertEquals(DateTimeFormatter.RFC_1123_DATE_TIME.format(utc), result);
+      assertEquals("Mon, 5 Jun 2017 08:42:07 GMT", result);
    }
 
    @Test
    public void testFormatDateValue() throws ParseException {
       String result = formatWith("{Time.Year}-{Time.Month}-{Time.Day}");
-      assertEquals(DateTimeFormatter.ISO_LOCAL_DATE.format(entry.getTime()), result);
+      assertEquals("2017-06-05", result);
    }
 
    @Test
    public void testFormatTimeValue() throws ParseException {
       String result = formatWith("{Time.Hour}:{Time.Minutes}:{Time.Seconds}");
-      assertEquals(DateTimeFormatter.ISO_LOCAL_TIME.format(entry.getTime()).substring(0, 8),
-               result);
+      assertEquals("05:42:07", result);
+   }
+
+   @Test
+   public void testFormatMonthValue() throws ParseException {
+      String result = formatWith("{Time.Month.Name} {Time.Month.Short}");
+      assertEquals("June Jun", result);
+   }
+
+   @Test
+   public void testFormatWeekdayValue() throws ParseException {
+      String result = formatWith("{Time.WeekDay} {Time.WeekDay.Short}");
+      assertEquals("Monday Mon", result);
+   }
+
+   @Test
+   public void testFormatAmPmValue() throws ParseException {
+      String result = formatWith("{Time.12Hour} {Time.AmPm}");
+      assertEquals("05 AM", result);
    }
 
    @Test
    public void testFormatLevelLeft() throws ParseException {
-      String result = formatWith("{Severity(<10)}");
+      String result = formatWith("{Severity:<10}");
       assertEquals("ERROR     ", result);
    }
 
    @Test
    public void testFormatLevelRight() throws ParseException {
-      String result = formatWith("{Severity(>10)}");
+      String result = formatWith("{Severity:>10}");
       assertEquals("     ERROR", result);
    }
 
    @Test
+   public void testFormatLevelShort() throws ParseException {
+      String result = formatWith("{Severity:<3}");
+      assertEquals("ERR", result);
+   }
+
+   @Test
    public void testFormatClassNameAbbreviated() throws ParseException {
-      String result = formatWith("{Class.Name(<30)}");
+      String result = formatWith("{Class.Name:<30}");
       assertEquals("c.l.s.logging.LogFormatterTest", result);
    }
 
    @Test
    public void testFormatClassNameAbbreviated2() throws ParseException {
-      String result = formatWith("{Class.Name(<25)}");
+      String result = formatWith("{Class.Name:<25}");
       assertEquals("c.l.s.l.LogFormatterTest ", result);
    }
 
    @Test
+   public void testFormatWithCustomVariable() throws ParseException {
+      variables.put("Custom", LogFormatterTest::customFormatter);
+      String result = formatWith("{Custom:>12}");
+      assertEquals("  main/ERROR", result);
+   }
+
+   @Test
+   public void testFormatRemoteValue() throws ParseException {
+      String result = formatWith("{Remote.Host} {Remote.Addr}");
+      assertEquals("localhost 127.0.0.1", result);
+   }
+
+   @Test
+   public void testInvalidVariableReference() throws ParseException {
+      thrown.expect(ParseException.class);
+      formatWith("{invalid$-var}");
+   }
+
+   @Test
+   public void testNonDefinedVariable() throws ParseException {
+      thrown.expect(ParseException.class);
+      formatWith("{Undefined}");
+   }
+
+   @Test
    public void testCompleteFormatter() throws ParseException {
-      String result = formatWith(ILoggerOptions.DEFAULT);
-      String date = result.substring(0, 23);
-      result = result.substring(24);
-      String expected = DateTimeFormatter.ISO_DATE_TIME.format(entry.getTime().toLocalDateTime());
-      if (expected.length() == 19) {
-         expected += ".000";
-      }
-      while (expected.length() < 23) {
-         expected = expected.substring(0, 20) + '0' + expected.substring(20);
-      }
-      assertEquals(expected, date);
-      assertEquals("ERROR   -- [main        ] c.l.services.logging.LogFormatterTest    : Test",
+      String result = formatWith(FormattedLogWriter.DEFAULT);
+      assertEquals(
+               "2017-06-05T05:42:07.000   ERROR -- [localhost      ] c.l.s.logging.LogFormatterTest       : Test",
                result);
+   }
+
+   private String formatWith(String template) throws ParseException {
+      LogFormatter formatter = LogFormatter.parse(template, variables);
+      return formatter.format(entry);
+   }
+
+   private static String customFormatter(LogEntry entry) {
+      return entry.getThreadName() + "/" + entry.getSeverity().toString();
    }
 }

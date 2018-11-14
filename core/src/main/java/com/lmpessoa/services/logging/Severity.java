@@ -41,11 +41,19 @@ package com.lmpessoa.services.logging;
  * used to understand if the application behaviour is correct.</li>
  * </ul>
  *
+ * Two additional levels help fine tune what is logged but no messages can be specifically logged at
+ * those levels.
+ * <ul>
+ * <li><b>NONE</b> indicates nothing should be logged at all; and</li>
+ * <li><b>TRACE</b> is similar to <code>DEBUG</code> but all messages will follow an additional
+ * entry indicating where in code the message was recorded.</li>
+ * </ul>
+ *
  * <p>
  * Try to attain to these guidelines when defining which level of severity you should use when
  * logging in order to maintain consistency throughout the application.
  * </p>
  */
 public enum Severity {
-   FATAL, ERROR, WARNING, INFO, DEBUG;
+   NONE, FATAL, ERROR, WARNING, INFO, DEBUG, TRACE;
 }

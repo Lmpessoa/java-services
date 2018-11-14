@@ -20,17 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.test.resources;
+package com.lmpessoa.services.services;
 
-import com.lmpessoa.services.logging.ILogger;
+public interface IConfigurable<T> {
 
-public class TestResource {
-
-   public void get() {
-      // Test method, does nothing
-   }
-
-   public void log(ILogger log) {
-      log.info("Test");
-   }
+   T getOptions();
 }

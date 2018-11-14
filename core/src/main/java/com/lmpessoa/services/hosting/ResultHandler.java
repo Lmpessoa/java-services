@@ -31,9 +31,11 @@ import java.util.Arrays;
 
 import com.lmpessoa.services.core.ContentType;
 import com.lmpessoa.services.core.MediaType;
+import com.lmpessoa.services.logging.NonTraced;
 import com.lmpessoa.services.routing.MatchedRoute;
 import com.lmpessoa.services.routing.content.Serializer;
 
+@NonTraced
 final class ResultHandler {
 
    private NextHandler next;
@@ -46,7 +48,7 @@ final class ResultHandler {
       Object obj = getResultObject();
       int statusCode = getStatusCode(obj);
       HttpResultInputStream is = getContentBody(obj, request, route == null ? null : route.getMethod());
-      return new HttpResult(statusCode, obj, is);
+      return new HttpResult(request, statusCode, obj, is);
    }
 
    private Object getResultObject() {
@@ -68,13 +70,17 @@ final class ResultHandler {
    }
 
    private HttpResultInputStream getContentBody(Object obj, HttpRequest request, Method method) {
-      if (obj == null || obj instanceof HttpException) {
+      Object objx = obj;
+      while (objx instanceof InternalServerError) {
+         objx = ((InternalServerError) obj).getCause();
+      }
+      if (objx instanceof Throwable && !(objx instanceof HttpException)) {
+         objx = ((Throwable) obj).getMessage();
+      }
+      if (objx == null || objx instanceof HttpException) {
          return null;
       }
-      Object result = obj;
-      if (obj instanceof InternalServerError) {
-         result = ((InternalServerError) obj).getCause();
-      }
+      Object result = objx;
       if (result instanceof String) {
          result = ((String) result).getBytes(Charset.forName("UTF-8"));
       } else if (result instanceof ByteArrayOutputStream) {
@@ -90,7 +96,7 @@ final class ResultHandler {
          String contentType;
          if (contentAnn != null) {
             contentType = contentAnn.value();
-         } else if (obj instanceof String) {
+         } else if (objx instanceof String) {
             contentType = MediaType.TEXT;
          } else {
             contentType = MediaType.BINARY;

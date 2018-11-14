@@ -39,7 +39,7 @@ final class RoutePatternParser extends AbstractParser<AbstractRouteType> {
    private final RouteOptions options;
 
    RoutePatternParser(String template, RouteOptions options) {
-      super(template, true);
+      super(template, true, null);
       this.options = options;
    }
 

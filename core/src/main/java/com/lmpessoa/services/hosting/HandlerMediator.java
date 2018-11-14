@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.lmpessoa.services.services.IServiceMap;
+import com.lmpessoa.services.services.NoSingleMethodException;
 import com.lmpessoa.util.ClassUtils;
 
 final class HandlerMediator {
@@ -36,11 +37,8 @@ final class HandlerMediator {
 
    private final List<Class<?>> handlers = new ArrayList<>();
    private final IServiceMap serviceMap;
-   private final Method serviceInvoke;
 
-   HandlerMediator(IServiceMap serviceMap) throws NoSuchMethodException {
-      this.serviceInvoke = serviceMap.getClass().getDeclaredMethod(INVOKE, Object.class, String.class);
-      this.serviceInvoke.setAccessible(true);
+   HandlerMediator(IServiceMap serviceMap) {
       this.serviceMap = serviceMap;
    }
 
@@ -65,14 +63,15 @@ final class HandlerMediator {
       return index >= 0 && index < handlers.size() ? handlers.get(index) : null;
    }
 
-   Object invokeService(Object obj) throws IllegalAccessException, InvocationTargetException {
+   Object invokeService(Object obj) throws IllegalAccessException, InvocationTargetException, NoSingleMethodException {
       try {
-         return serviceInvoke.invoke(serviceMap, obj, INVOKE);
+         return serviceMap.invoke(obj, INVOKE);
       } catch (InvocationTargetException e) {
-         while (e.getCause() instanceof InvocationTargetException) {
-            e = (InvocationTargetException) e.getCause();
+         InvocationTargetException ex = e;
+         while (ex.getCause() instanceof InvocationTargetException) {
+            ex = (InvocationTargetException) ex.getCause();
          }
-         throw e;
+         throw ex;
       }
    }
 

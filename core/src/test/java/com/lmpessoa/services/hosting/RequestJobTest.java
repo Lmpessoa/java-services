@@ -26,6 +26,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.UnknownHostException;
 import java.util.concurrent.Future;
 
 import org.junit.Before;
@@ -36,15 +37,17 @@ import com.lmpessoa.services.core.Route;
 import com.lmpessoa.services.hosting.Application;
 import com.lmpessoa.services.hosting.HttpRequest;
 import com.lmpessoa.services.hosting.RequestHandlerJob;
+import com.lmpessoa.services.logging.ILogger;
+import com.lmpessoa.util.LoggerBridge;
 
 public final class RequestJobTest {
 
+   private ILogger log = LoggerBridge.getNullLogger();
    private Application app;
 
    @Before
-   public void setup() throws NoSuchMethodException, IllegalAccessException {
-      app = new Application(RequestJobTest.class, new String[0]);
-      ApplicationBridge.useNullLogWriter(app);
+   public void setup() throws NoSuchMethodException, IllegalAccessException, UnknownHostException {
+      app = new Application(RequestJobTest.class, new String[0], log);
       app.doConfigure();
       app.getRouteTable().put("", TestResource.class);
    }

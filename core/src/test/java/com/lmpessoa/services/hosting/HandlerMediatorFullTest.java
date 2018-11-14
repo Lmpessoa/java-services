@@ -47,16 +47,19 @@ import com.lmpessoa.services.hosting.HttpResultInputStream;
 import com.lmpessoa.services.hosting.InternalServerError;
 import com.lmpessoa.services.hosting.InvokeHandler;
 import com.lmpessoa.services.hosting.ResultHandler;
+import com.lmpessoa.services.logging.ILogger;
 import com.lmpessoa.services.routing.IRouteTable;
 import com.lmpessoa.services.routing.MatchedRoute;
 import com.lmpessoa.services.routing.RouteTableBridge;
 import com.lmpessoa.services.services.IServiceMap;
+import com.lmpessoa.util.LoggerBridge;
 
 public final class HandlerMediatorFullTest {
 
    @Rule
    public ExpectedException thrown = ExpectedException.none();
 
+   private final ILogger log = LoggerBridge.getNullLogger();
    private HandlerMediator mediator;
    private IServiceMap services;
 
@@ -69,7 +72,7 @@ public final class HandlerMediatorFullTest {
       services = IServiceMap.newInstance();
       services.putTransient(MatchedRoute.class, () -> route);
 
-      routes = RouteTableBridge.get(services);
+      routes = RouteTableBridge.get(services, log);
       routes.put("", TestResource.class);
 
       mediator = new HandlerMediator(services);

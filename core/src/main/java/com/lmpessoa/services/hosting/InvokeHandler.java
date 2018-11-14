@@ -22,8 +22,10 @@
  */
 package com.lmpessoa.services.hosting;
 
+import com.lmpessoa.services.logging.NonTraced;
 import com.lmpessoa.services.routing.MatchedRoute;
 
+@NonTraced
 final class InvokeHandler {
 
    public InvokeHandler(NextHandler next) {

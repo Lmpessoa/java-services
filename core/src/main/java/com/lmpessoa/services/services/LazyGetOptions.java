@@ -22,32 +22,21 @@
  */
 package com.lmpessoa.services.services;
 
-import java.lang.reflect.Method;
 import java.util.function.Supplier;
-
-import com.lmpessoa.services.hosting.InternalServerError;
 
 final class LazyGetOptions<T> implements Supplier<T> {
 
-   private final ServiceMap serviceMap;
-   private final Class<?> serviceClass;
+   private final Class<? extends IConfigurable<T>> serviceClass;
+   private final IServiceMap serviceMap;
 
-   LazyGetOptions(Class<T> configClass, ServiceMap serviceMap, Class<?> serviceClass) {
-      this.serviceMap = serviceMap;
+   LazyGetOptions(Class<? extends IConfigurable<T>> serviceClass, IServiceMap serviceMap) {
       this.serviceClass = serviceClass;
+      this.serviceMap = serviceMap;
    }
 
    @Override
-   @SuppressWarnings("unchecked")
    public T get() {
-      try {
-         Object service = serviceMap.get(serviceClass);
-         Method getOptions = service.getClass().getDeclaredMethod("getOptions");
-         getOptions.setAccessible(true);
-         return (T) getOptions.invoke(service);
-      } catch (Exception e) {
-         throw new InternalServerError(e);
-      }
+      IConfigurable<T> service = serviceMap.get(serviceClass);
+      return service.getOptions();
    }
-
 }

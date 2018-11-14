@@ -29,10 +29,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import com.lmpessoa.services.logging.ILogger;
+import com.lmpessoa.services.logging.NonTraced;
 import com.lmpessoa.services.routing.MatchedRoute;
 import com.lmpessoa.services.services.IServicePoolProvider;
 
-public class RequestHandlerJob implements Runnable {
+@NonTraced
+final class RequestHandlerJob implements Runnable {
 
    private static final Map<Integer, String> statusCodeTexts = new HashMap<>();
    private static final String CRLF = "\r\n";
@@ -40,6 +43,7 @@ public class RequestHandlerJob implements Runnable {
    private final Application app;
    private final HttpRequest request;
    private final OutputStream out;
+   private final ILogger log;
 
    private Socket clientSocket = null;
 
@@ -73,6 +77,7 @@ public class RequestHandlerJob implements Runnable {
 
    RequestHandlerJob(Application app, HttpRequest request, OutputStream out) {
       this.app = Objects.requireNonNull(app);
+      this.log = app.getLogger();
       this.request = Objects.requireNonNull(request);
       this.out = Objects.requireNonNull(out);
    }
@@ -88,10 +93,13 @@ public class RequestHandlerJob implements Runnable {
          MatchedRoute route = app.matches(request);
          pool.put(MatchedRoute.class, route);
          result = app.getMediator().invoke();
-      } catch (HttpException e) {
-         result = new HttpResult(e.getStatusCode(), e, null);
+      } catch (InternalServerError | HttpException e) {
+         result = new HttpResult(request, e.getStatusCode(), e, null);
       }
-
+      log.info(result);
+      if (result.getObject() instanceof InternalServerError) {
+         log.error(((InternalServerError) result.getObject()).getCause());
+      }
       StringBuilder client = new StringBuilder();
       try {
          try {
@@ -106,8 +114,7 @@ public class RequestHandlerJob implements Runnable {
                data = new byte[is.available()];
                int read = is.read(data);
                if (read != data.length) {
-                  app.getLogger().warning(
-                           "Different lengths (expected: " + data.length + " bytes, found: " + read + " bytes)");
+                  log.warning("Different lengths (expected: " + data.length + " bytes, found: " + read + " bytes)");
                }
                client.append("Content-Type: ");
                client.append(is.getContentType());
@@ -129,9 +136,7 @@ public class RequestHandlerJob implements Runnable {
             }
             out.flush();
          } finally {
-            if (clientSocket != null) {
-               clientSocket.close();
-            }
+            clientSocket.close();
          }
       } catch (IOException e) {
          throw new InternalServerError(e);

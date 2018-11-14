@@ -22,19 +22,28 @@
  */
 package com.lmpessoa.services.logging;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 import java.util.Queue;
 
-final class Logger implements ILogger {
+import com.lmpessoa.services.Internal;
+import com.lmpessoa.util.ClassUtils;
 
-   private final Queue<LogEntry> entries = new ArrayDeque<>();
-   private final LoggerOptions options = new LoggerOptions();
+@NonTraced
+final class Logger implements ILogger, Runnable {
 
-   private Thread loggerJob = null;
+   private final Queue<LogEntry> entriesToLog = new ArrayDeque<>();
+   private final LoggerOptions options = new LoggerOptions(this);
+
+   private Collection<LogEntry> cachedEntries = new ArrayList<>();
+   private LogWriter writer = null;
+   private Thread thread = null;
+
+   @Internal
+   Logger() {
+      ClassUtils.checkInternalAccess();
+   }
 
    @Override
    public void fatal(Object message) {
@@ -61,46 +70,60 @@ final class Logger implements ILogger {
       log(Severity.DEBUG, message);
    }
 
-   LoggerOptions getOptions() {
+   @Internal
+   @Override
+   public ILoggerOptions getOptions() {
+      ClassUtils.checkInternalAccess();
       return options;
    }
 
-   private void log(Severity level, Object message) {
-      List<LogEntry> entriesToAdd = new ArrayList<>();
-      if (message instanceof Throwable) {
-         ByteArrayOutputStream out = new ByteArrayOutputStream();
-         ((Throwable) message).printStackTrace(new PrintStream(out));
-         String[] lines = new String(out.toByteArray()).split("\n");
-         entriesToAdd.add(new LogEntry(level, lines[0], 2, options.getLogZone()));
-         for (int i = 1; i < lines.length; ++i) {
-            entriesToAdd.add(new LogEntry(Severity.DEBUG, lines[i], 2, options.getLogZone()));
+   @Override
+   public void run() {
+      try {
+         while (writer != null) {
+            LogEntry entry;
+            synchronized (entriesToLog) {
+               entry = entriesToLog.poll();
+            }
+            if (entry == null) {
+               return;
+            }
+            if (options.shouldLog(entry)) {
+               writer.append(entry);
+            }
+         }
+      } finally {
+         thread = null;
+      }
+   }
+
+   synchronized void configurationEnded() {
+      writer = options.getWriter();
+      entriesToLog.addAll(cachedEntries);
+      cachedEntries = null;
+      runQueue();
+   }
+
+   private synchronized void log(Severity level, Object message) {
+      LogEntry entry = new LogEntry(level, message);
+      if (!options.isConfigured()) {
+         synchronized (cachedEntries) {
+            cachedEntries.add(entry);
          }
       } else {
-         entriesToAdd.add(new LogEntry(level, message.toString(), 2, options.getLogZone()));
-      }
-      synchronized (entries) {
-         entries.addAll(entriesToAdd);
-         if (loggerJob == null) {
-            loggerJob = new Thread(new LoggerJob());
-            loggerJob.setName("logger");
-            loggerJob.start();
+         synchronized (entriesToLog) {
+            entriesToLog.add(entry);
          }
+         runQueue();
       }
    }
 
-   private class LoggerJob implements Runnable {
-
-      @Override
-      public void run() {
-         while (!entries.isEmpty()) {
-            LogEntry entry;
-            synchronized (entries) {
-               entry = entries.poll();
-            }
-            options.process(entry);
+   private void runQueue() {
+      synchronized (this) {
+         if (thread == null) {
+            thread = new Thread(this, "logger");
+            thread.start();
          }
-         loggerJob = null;
       }
    }
-
 }

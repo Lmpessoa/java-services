@@ -26,8 +26,11 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.lmpessoa.services.Internal;
 import com.lmpessoa.services.core.MediaType;
+import com.lmpessoa.services.hosting.Application;
 import com.lmpessoa.services.hosting.HttpResultInputStream;
+import com.lmpessoa.util.ClassUtils;
 
 /**
  * The <code>Serializer</code> class provides an abstraction to transform HTTP content between plain
@@ -51,7 +54,9 @@ public final class Serializer {
     * @param resultClass the class of the object to be returned.
     * @return the content parsed into an object of the given class.
     */
+   @Internal
    public static <T> T parse(String contentType, String content, Class<T> resultClass) {
+      ClassUtils.checkInternalAccess();
       if (handlers.containsKey(contentType)) {
          Class<?> handlerClass = handlers.get(contentType);
          if (IContentParser.class.isAssignableFrom(handlerClass)) {
@@ -66,7 +71,9 @@ public final class Serializer {
       throw new SerializationException("Cannot deserialise from " + contentType);
    }
 
+   @Internal
    public static HttpResultInputStream produce(String[] accepts, Object obj) {
+      ClassUtils.checkInternalAccess();
       for (String contentType : accepts) {
          if (handlers.containsKey(contentType)) {
             Class<?> handlerClass = handlers.get(contentType);
@@ -76,16 +83,20 @@ public final class Serializer {
                   InputStream is = ((IContentProducer) handler).produce(obj);
                   return new HttpResultInputStream(contentType, is);
                } catch (Exception e) {
-                  // Just let SonarQube complain about this
-                  e.printStackTrace();
+                  Application app = Application.currentApp();
+                  if (app != null) {
+                     app.getLogger().debug(e);
+                  }
                }
             }
          }
       }
-      throw new SerializationException("Cannot serialise in any of the requested formats");
+      return null;
    }
 
-   static void enableXml(boolean enable) {
+   @Internal
+   public static void enableXml(boolean enable) {
+      ClassUtils.checkInternalAccess();
       if (enable && !handlers.containsKey(MediaType.XML)) {
          handlers.put(MediaType.XML, XmlSerializer.class);
       } else if (!enable && handlers.containsKey(MediaType.XML)) {

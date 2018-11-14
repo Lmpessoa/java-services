@@ -43,7 +43,7 @@ public final class AbstractParserTest {
 
    @Test
    public void testParseOneVariableNoLiteral() throws ParseException {
-      ITemplatePart[] result = TestParser.parse("{one}", false);
+      ITemplatePart[] result = TestParser.parse("{one}", false, null);
       assertEquals(1, result.length);
       assertTrue(result[0] instanceof TestVariablePart);
       assertEquals("one", ((TestVariablePart) result[0]).value);
@@ -51,7 +51,7 @@ public final class AbstractParserTest {
 
    @Test
    public void testParseLiteralNoVariables() throws ParseException {
-      ITemplatePart[] result = TestParser.parse("literal", false);
+      ITemplatePart[] result = TestParser.parse("literal", false, null);
       assertEquals(1, result.length);
       assertTrue(result[0] instanceof LiteralPart);
       assertEquals("literal", ((LiteralPart) result[0]).getValue());
@@ -59,7 +59,7 @@ public final class AbstractParserTest {
 
    @Test
    public void testParseTwoVariablesOneLiteral() throws ParseException {
-      ITemplatePart[] result = TestParser.parse("{one}literal{two}", false);
+      ITemplatePart[] result = TestParser.parse("{one}literal{two}", false, null);
       assertEquals(3, result.length);
       assertTrue(result[0] instanceof TestVariablePart);
       assertEquals("one", ((TestVariablePart) result[0]).value);
@@ -71,7 +71,7 @@ public final class AbstractParserTest {
 
    @Test
    public void testParseOneVariableTwoLiterals() throws ParseException {
-      ITemplatePart[] result = TestParser.parse("literal{one}literal", false);
+      ITemplatePart[] result = TestParser.parse("literal{one}literal", false, null);
       assertEquals(3, result.length);
       assertTrue(result[0] instanceof LiteralPart);
       assertEquals("literal", ((LiteralPart) result[0]).getValue());
@@ -86,19 +86,19 @@ public final class AbstractParserTest {
    public void testParseVariableError() throws ParseException {
       thrown.expect(ParseException.class);
       thrown.expectMessage("error");
-      TestParser.parse("literal{error}", false);
+      TestParser.parse("literal{error}", false, null);
    }
 
    @Test
    public void testParseNoLiteralBetweenVariables() throws ParseException {
       thrown.expect(ParseException.class);
       thrown.expectMessage("A literal must separate two variables");
-      TestParser.parse("{one}{two}", true);
+      TestParser.parse("{one}{two}", true, null);
    }
 
    @Test
    public void testParseNoLiteralBetweenVariablesAllowed() throws ParseException {
-      ITemplatePart[] result = TestParser.parse("{one}{two}", false);
+      ITemplatePart[] result = TestParser.parse("{one}{two}", false, null);
       assertEquals(2, result.length);
       assertTrue(result[0] instanceof TestVariablePart);
       assertEquals("one", ((TestVariablePart) result[0]).value);
@@ -110,12 +110,12 @@ public final class AbstractParserTest {
    public void testParseUnfinishedVariable() throws ParseException {
       thrown.expect(ParseException.class);
       thrown.expectMessage("Unexpected end of the template");
-      TestParser.parse("{one", false);
+      TestParser.parse("{one", false, null);
    }
 
    @Test
    public void testParseUnopennedVariable() throws ParseException {
-      ITemplatePart[] result = TestParser.parse("one}", false);
+      ITemplatePart[] result = TestParser.parse("one}", false, null);
       assertEquals(1, result.length);
       assertTrue(result[0] instanceof LiteralPart);
       assertEquals("one}", ((LiteralPart) result[0]).getValue());
@@ -123,7 +123,7 @@ public final class AbstractParserTest {
 
    @Test
    public void testParseEscapedVariable() throws ParseException {
-      ITemplatePart[] result = TestParser.parse("\\{literal}", false);
+      ITemplatePart[] result = TestParser.parse("\\{literal}", false, null);
       assertEquals(1, result.length);
       assertTrue(result[0] instanceof LiteralPart);
       assertEquals("{literal}", ((LiteralPart) result[0]).getValue());
@@ -131,20 +131,30 @@ public final class AbstractParserTest {
 
    @Test
    public void testParseNestedBlocks() throws ParseException {
-      ITemplatePart[] result = TestParser.parse("{one{2}}", false);
+      ITemplatePart[] result = TestParser.parse("{one{2}}", false, null);
       assertEquals(1, result.length);
       assertTrue(result[0] instanceof TestVariablePart);
       assertEquals("one{2}", ((TestVariablePart) result[0]).value);
    }
 
+   @Test
+   public void testParseWithVariablePrefix() throws ParseException {
+      ITemplatePart[] result = TestParser.parse("${one}{two}", false, '$');
+      assertEquals(2, result.length);
+      assertTrue(result[0] instanceof TestVariablePart);
+      assertTrue(result[1] instanceof LiteralPart);
+      assertEquals("one", ((TestVariablePart) result[0]).value);
+      assertEquals("{two}", ((LiteralPart) result[1]).getValue());
+   }
+
    public static class TestParser extends AbstractParser<TestVariablePart> {
 
-      public static ITemplatePart[] parse(String template, boolean force) throws ParseException {
-         return new TestParser(template, force).parse().toArray(new ITemplatePart[0]);
+      public static ITemplatePart[] parse(String template, boolean force, Character prefix) throws ParseException {
+         return new TestParser(template, force, prefix).parse().toArray(new ITemplatePart[0]);
       }
 
-      private TestParser(String template, boolean force) {
-         super(template, force);
+      private TestParser(String template, boolean force, Character prefix) {
+         super(template, force, prefix);
       }
 
       @Override

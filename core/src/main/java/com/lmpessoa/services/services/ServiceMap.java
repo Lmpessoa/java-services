@@ -29,8 +29,9 @@ import static com.lmpessoa.services.services.ReuseLevel.TRANSIENT;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
@@ -38,6 +39,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import com.lmpessoa.services.logging.NonTraced;
+import com.lmpessoa.util.ClassUtils;
+
+@NonTraced
 final class ServiceMap implements IServiceMap, IServicePoolProvider {
 
    private final Map<Class<?>, ServiceEntry> entries = new HashMap<>();
@@ -76,11 +81,14 @@ final class ServiceMap implements IServiceMap, IServicePoolProvider {
 
    @Override
    public Map<Class<?>, Object> getPool() {
+      ClassUtils.checkInternalAccess();
       return pool;
    }
 
+   @Override
    @SuppressWarnings("unchecked")
    public <T> T get(Class<T> clazz) {
+      ClassUtils.checkInternalAccess();
       ServiceEntry entry = entries.get(clazz);
       if (entry == null) {
          String className = clazz.isArray() ? clazz.getComponentType().getName() + "[]" : clazz.getName();
@@ -97,41 +105,35 @@ final class ServiceMap implements IServiceMap, IServicePoolProvider {
       return (T) levelPool.get(clazz);
    }
 
-   Object invoke(Object obj, String methodName)
-      throws NoSingleMethodException, IllegalAccessException, InvocationTargetException {
-      Class<?> clazz = obj instanceof Class<?> ? (Class<?>) obj : obj.getClass();
-      Method[] methods = Arrays.stream(clazz.getMethods()).filter(m -> methodName.equals(m.getName())).toArray(
-               Method[]::new);
-      if (methods.length != 1) {
-         throw new NoSingleMethodException(
-                  "Class " + clazz.getName() + " must have exactly one method named '" + methodName + "'",
-                  methods.length);
-      }
-      return invoke(obj, methods[0]);
-   }
-
-   Object invoke(Object obj, Method method) throws IllegalAccessException, InvocationTargetException {
+   @Override
+   public Object invoke(Object obj, Method method) throws IllegalAccessException, InvocationTargetException {
+      ClassUtils.checkInternalAccess();
       Object instance = obj instanceof Class<?> ? null : obj;
       if (Modifier.isStatic(method.getModifiers()) != (instance == null)) {
          throw new IllegalArgumentException("Mismatched static/instance method call");
       }
-      Object[] args = Arrays.stream(method.getParameterTypes()).map(this::get).toArray();
+      List<Object> args = new ArrayList<>();
+      for (Class<?> param : method.getParameterTypes()) {
+         args.add(get(param));
+      }
       method.setAccessible(true);
-      return method.invoke(instance, args);
+      return method.invoke(instance, args.toArray());
    }
 
    @Override
    @SuppressWarnings({ "unchecked", "rawtypes" })
    public IServiceMap getConfigMap() {
+      ClassUtils.checkInternalAccess();
       ServiceMap result = new ServiceMap();
       entries.entrySet()
                .stream() //
                .filter(e -> ReuseLevel.SINGLETON.equals(e.getValue().getLevel())) //
                .map(Entry::getKey) //
-               .filter(c -> c.isAnnotationPresent(ConfiguresWith.class))
+               .filter(IConfigurable.class::isAssignableFrom)
                .forEach(c -> {
-                  ConfiguresWith config = c.getAnnotation(ConfiguresWith.class);
-                  result.putSingleton(config.value(), new LazyGetOptions(config.value(), this, c));
+                  Method getOptions = ClassUtils.getMethod(get(c).getClass(), "getOptions");
+                  final Class<?> type = getOptions.getReturnType();
+                  result.putSingleton(type, new LazyGetOptions(c, this));
                });
       return result;
    }

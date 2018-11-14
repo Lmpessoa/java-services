@@ -33,10 +33,12 @@ final class ClassNameLogVariable extends LogVariable {
    @Override
    public String getValueOf(LogEntry entry) {
       String result = entry.getClassName();
-      if (length > 0) {
-         String[] parts = entry.getClassName().split("\\.");
+      if (result == null) {
+         result = "";
+      } else if (length() > 0) {
+         String[] parts = result.split("\\.");
          int i = 0;
-         while (result.length() > length && i < parts.length - 1) {
+         while (result.length() > length() && i < parts.length - 1) {
             parts[i] = parts[i].substring(0, 1);
             result = String.join(".", parts);
             i += 1;
@@ -44,5 +46,4 @@ final class ClassNameLogVariable extends LogVariable {
       }
       return format(result);
    }
-
 }

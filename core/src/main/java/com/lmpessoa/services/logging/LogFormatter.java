@@ -24,6 +24,8 @@ package com.lmpessoa.services.logging;
 
 import java.text.ParseException;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 
 import com.lmpessoa.util.parsing.ITemplatePart;
 import com.lmpessoa.util.parsing.LiteralPart;
@@ -32,15 +34,24 @@ final class LogFormatter {
 
    private final List<ITemplatePart> parts;
 
-   static LogFormatter parse(String template) throws ParseException {
-      return new LogFormatter(LogFormatParser.parse(template));
+   static LogFormatter parse(String template, Map<String, Function<LogEntry, String>> variable) throws ParseException {
+      return new LogFormatter(LogFormatParser.parse(template, variable));
    }
 
-   public String format(LogEntry entry) {
+   String format(LogEntry entry) {
+      return format(entry, null);
+   }
+
+   String format(LogEntry entry, String message) {
       StringBuilder result = new StringBuilder();
       for (ITemplatePart part : parts) {
          if (part instanceof LogVariable) {
-            result.append(((LogVariable) part).getValueOf(entry));
+            LogVariable var = (LogVariable) part;
+            if (var.isMessage() && message != null) {
+               result.append(message);
+            } else {
+               result.append(var.getValueOf(entry));
+            }
          } else {
             result.append(((LiteralPart) part).getValue());
          }

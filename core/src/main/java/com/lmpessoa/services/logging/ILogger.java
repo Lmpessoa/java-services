@@ -22,7 +22,7 @@
  */
 package com.lmpessoa.services.logging;
 
-import com.lmpessoa.services.services.ConfiguresWith;
+import com.lmpessoa.services.services.IConfigurable;
 
 /**
  * Enables logging messages throughout the application.
@@ -33,8 +33,8 @@ import com.lmpessoa.services.services.ConfiguresWith;
  * the console).
  * </p>
  */
-@ConfiguresWith(ILoggerOptions.class)
-public interface ILogger {
+@NonTraced
+public interface ILogger extends IConfigurable<ILoggerOptions> {
 
    /**
     * Returns a new instance of a logger.
@@ -62,6 +62,10 @@ public interface ILogger {
     */
    void fatal(Object message);
 
+   default void fatal(String message, Object... args) {
+      fatal(String.format(message, args));
+   }
+
    /**
     * Logs an error message.
     *
@@ -73,6 +77,10 @@ public interface ILogger {
     * @param message the message to be logged.
     */
    void error(Object message);
+
+   default void error(String message, Object... args) {
+      error(String.format(message, args));
+   }
 
    /**
     * Logs a warning message.
@@ -86,6 +94,10 @@ public interface ILogger {
     */
    void warning(Object message);
 
+   default void warning(String message, Object... args) {
+      warning(String.format(message, args));
+   }
+
    /**
     * Logs an informative message.
     *
@@ -98,9 +110,13 @@ public interface ILogger {
     */
    void info(Object message);
 
+   default void info(String message, Object... args) {
+      info(String.format(message, args));
+   }
+
    /**
     * Logs a debug message.
-    * 
+    *
     * <p>
     * Debug messages are used to register information about the application execution that can be used
     * to understand if the application behaviour is correct.
@@ -109,4 +125,8 @@ public interface ILogger {
     * @param message the message to be logged.
     */
    void debug(Object message);
+
+   default void debug(String message, Object... args) {
+      debug(String.format(message, args));
+   }
 }

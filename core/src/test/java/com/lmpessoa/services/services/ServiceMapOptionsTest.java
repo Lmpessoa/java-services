@@ -30,8 +30,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.lmpessoa.services.hosting.InternalServerError;
-import com.lmpessoa.services.services.ConfiguresWith;
+import com.lmpessoa.services.services.IConfigurable;
 import com.lmpessoa.services.services.IServiceMap;
 import com.lmpessoa.services.services.ServiceMap;
 
@@ -56,28 +55,6 @@ public final class ServiceMapOptionsTest {
       assertNotNull(options);
    }
 
-   @Test
-   public void testWrongOptions() {
-      thrown.expect(ClassCastException.class);
-      serviceMap.putSingleton(ITestService.class, WrongOptionsService.class);
-      ServiceMap configMap = (ServiceMap) serviceMap.getConfigMap();
-      assertTrue(configMap.contains(ITestOptions.class));
-      configMap.get(ITestOptions.class);
-   }
-
-   @Test
-   public void testNoOptions() throws Throwable {
-      thrown.expect(NoSuchMethodException.class);
-      try {
-         serviceMap.putSingleton(ITestService.class, NoOptionsService.class);
-         ServiceMap configMap = (ServiceMap) serviceMap.getConfigMap();
-         assertTrue(configMap.contains(ITestOptions.class));
-         configMap.get(ITestOptions.class);
-      } catch (InternalServerError e) {
-         throw e.getCause();
-      }
-   }
-
    public static interface ITestOptions {
       // Test type, has nothing
    }
@@ -86,26 +63,15 @@ public final class ServiceMapOptionsTest {
       // Test type, has nothing
    }
 
-   @ConfiguresWith(ITestOptions.class)
-   public static interface ITestService {
+   public static interface ITestService extends IConfigurable<ITestOptions> {
       // Test type, has nothing
    }
 
    public static class TestService implements ITestService {
 
+      @Override
       public ITestOptions getOptions() {
          return new TestOptions();
       }
-   }
-
-   public static class WrongOptionsService implements ITestService {
-
-      public ITestService getOptions() {
-         return this;
-      }
-   }
-
-   public static class NoOptionsService implements ITestService {
-      // Test method, has nothing
    }
 }

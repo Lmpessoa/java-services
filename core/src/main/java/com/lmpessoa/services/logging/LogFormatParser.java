@@ -22,6 +22,9 @@
  */
 package com.lmpessoa.services.logging;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.text.ParseException;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -30,7 +33,6 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.TextStyle;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalField;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -45,10 +47,40 @@ import com.lmpessoa.util.parsing.ITemplatePart;
 final class LogFormatParser extends AbstractParser<LogVariable> {
 
    private static final Pattern VARIABLE_DEF = Pattern
-            .compile("^([A-Z][a-zA-Z0-9]*(?:\\.[A-Z][a-zA-Z0-9]*)*)(?:\\(([<>])(\\d+)\\))?$");
-   private static final Map<String, Function<LogEntry, String>> variables = new HashMap<>();
+            .compile("^([A-Z][a-zA-Z0-9]*(?:\\.[A-Z0-9][a-zA-Z0-9]*)*)(?:\\:([<>])(\\d+))?$");
+   private final Map<String, Function<LogEntry, String>> variables;
+   private static String hostname;
 
-   static {
+   private LogFormatParser(String template, Map<String, Function<LogEntry, String>> variables) {
+      super(template, false, null);
+      this.variables = variables;
+   }
+
+   static List<ITemplatePart> parse(String template, Map<String, Function<LogEntry, String>> variables)
+      throws ParseException {
+      return new LogFormatParser(template, variables).parse();
+   }
+
+   @Override
+   protected LogVariable parseVariable(int pos, String variablePart) throws ParseException {
+      Matcher matcher = VARIABLE_DEF.matcher(variablePart);
+      if (!matcher.find()) {
+         throw new ParseException("Not a valid variable reference: " + variablePart, pos);
+      }
+      final String varName = matcher.group(1);
+      Function<LogEntry, String> func = variables.get(varName);
+      if (func == null && !"Class.Name".equals(varName)) {
+         throw new ParseException("Unknown log variable: " + varName, pos);
+      }
+      boolean rightAlign = ">".equals(matcher.group(2));
+      int length = matcher.group(3) != null ? Integer.valueOf(matcher.group(3)) : -1;
+      if ("Class.Name".equals(varName)) {
+         return new ClassNameLogVariable(varName, rightAlign, length, func);
+      }
+      return new LogVariable(varName, rightAlign, length, func);
+   }
+
+   static void registerVariables(Map<String, Function<LogEntry, String>> variables) {
       variables.put("Time", LogFormatParser::getTime);
       variables.put("Time.Web", LogFormatParser::getTimeWeb);
       variables.put("Time.AmPm", LogFormatParser::getTimeAmPm);
@@ -73,33 +105,7 @@ final class LogFormatParser extends AbstractParser<LogVariable> {
       variables.put("Thread.Name", LogFormatParser::getThreadName);
       variables.put("Remote.Addr", LogFormatParser::getRemoteAddress);
       variables.put("Remote.Host", LogFormatParser::getRemoteHost);
-   }
-
-   private LogFormatParser(String template) {
-      super(template, false);
-   }
-
-   static List<ITemplatePart> parse(String template) throws ParseException {
-      return new LogFormatParser(template).parse();
-   }
-
-   @Override
-   protected LogVariable parseVariable(int pos, String variablePart) throws ParseException {
-      Matcher matcher = VARIABLE_DEF.matcher(variablePart);
-      if (!matcher.find()) {
-         throw new ParseException("Not a valid variable reference: " + variablePart, pos);
-      }
-      final String varName = matcher.group(1);
-      Function<LogEntry, String> func = variables.get(varName);
-      if (func == null && !"Class.Name".equals(varName)) {
-         throw new ParseException("Unknown log variable: " + varName, pos);
-      }
-      boolean rightAlign = ">".equals(matcher.group(2));
-      int length = matcher.group(3) != null ? Integer.valueOf(matcher.group(3)) : -1;
-      if ("Class.Name".equals(varName)) {
-         return new ClassNameLogVariable(varName, rightAlign, length, func);
-      }
-      return new LogVariable(varName, rightAlign, length, func);
+      variables.put("Local.Host", LogFormatParser::getLocalHost);
    }
 
    private static DateTimeFormatter formatterOf(TemporalField field, TextStyle style) {
@@ -246,5 +252,31 @@ final class LogFormatParser extends AbstractParser<LogVariable> {
          return "localhost";
       }
       return conn.getRemoteAddress().getHostName();
+   }
+
+   private static String getLocalHost(LogEntry entry) {
+      if (hostname == null) {
+         if (System.getProperty("os.name").startsWith("Windows")) {
+            hostname = System.getenv("COMPUTERNAME");
+         } else {
+            hostname = System.getenv("HOSTNAME");
+            if (hostname == null) {
+               try {
+                  Process proc = Runtime.getRuntime().exec("hostname");
+                  BufferedReader stdInput = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+                  StringBuilder result = new StringBuilder();
+                  String s;
+                  while ((s = stdInput.readLine()) != null) {
+                     result.append(s);
+                  }
+                  hostname = result.toString().trim();
+               } catch (IOException e) {
+                  // Ignore, should never get here
+                  hostname = "localhost";
+               }
+            }
+         }
+      }
+      return hostname;
    }
 }

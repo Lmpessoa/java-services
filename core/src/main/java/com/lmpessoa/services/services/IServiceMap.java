@@ -26,20 +26,28 @@ import static com.lmpessoa.services.services.ReuseLevel.PER_REQUEST;
 import static com.lmpessoa.services.services.ReuseLevel.SINGLETON;
 import static com.lmpessoa.services.services.ReuseLevel.TRANSIENT;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.Set;
 import java.util.function.Supplier;
+
+import com.lmpessoa.services.Internal;
+import com.lmpessoa.services.logging.NonTraced;
+import com.lmpessoa.util.ClassUtils;
 
 /**
  * A service registry is a registration service used to help locate other services by using a
  * service injection. Registration can be made into the following levels:
  * <ul>
- * <li><b>Singleton</b> services have one single instance respond for the service thoughout the
+ * <li><b>Singleton</b> services have one single instance respond for the service throughout the
  * entire lifetime of the application.</li>
  * <li><b>Per Request</b> services have a different instance respond for the service for each
  * request (or just like singleton but within each request).</li>
- * <li><b>Transient</b> services have one new instance everytime the service is requested.</li>
+ * <li><b>Transient</b> services have one new instance every time the service is requested.</li>
  * </ul>
  */
+@NonTraced
 public interface IServiceMap {
 
    /**
@@ -47,7 +55,9 @@ public interface IServiceMap {
     *
     * @return a new instance of a service map.
     */
+   @Internal
    static IServiceMap newInstance() {
+      ClassUtils.checkInternalAccess();
       return new ServiceMap();
    }
 
@@ -90,7 +100,7 @@ public interface IServiceMap {
     * </p>
     *
     * @param service the class of the service to be registered.
-    * @param provider the function that creates cobjects that supply the service the service for the
+    * @param provider the function that creates objects that supply the service the service for the
     * base class.
     */
    <T> void putSingleton(Class<T> service, Supplier<T> provider);
@@ -149,7 +159,7 @@ public interface IServiceMap {
     * </p>
     *
     * @param service the class of the service to be registered.
-    * @param provider the function that creates cobjects that supply the service the service for the
+    * @param provider the function that creates objects that supply the service the service for the
     * base class.
     */
    <T> void putPerRequest(Class<T> service, Supplier<T> supplier);
@@ -193,7 +203,7 @@ public interface IServiceMap {
     * </p>
     *
     * @param service the class of the service to be registered.
-    * @param provider the function that creates cobjects that supply the service the service for the
+    * @param provider the function that creates objects that supply the service the service for the
     * base class.
     */
    <T> void putTransient(Class<T> service, Supplier<T> supplier);
@@ -201,7 +211,7 @@ public interface IServiceMap {
    // Utils ----------
 
    /**
-    * Returns whether this service map has a egistration for the given service.
+    * Returns whether this service map has a registration for the given service.
     *
     * @param service the service to check if there is a registration on this service map.
     * @return <code>true</code> if this service map has a registration for the given service,
@@ -211,5 +221,26 @@ public interface IServiceMap {
 
    Set<Class<?>> getServices();
 
+   @Internal
    IServiceMap getConfigMap();
+
+   @Internal
+   <T> T get(Class<T> serviceClass);
+
+   @Internal
+   default Object invoke(Object obj, String methodName)
+      throws NoSingleMethodException, IllegalAccessException, InvocationTargetException {
+      Class<?> clazz = obj instanceof Class<?> ? (Class<?>) obj : obj.getClass();
+      Method[] methods = Arrays.stream(clazz.getMethods()).filter(m -> methodName.equals(m.getName())).toArray(
+               Method[]::new);
+      if (methods.length != 1) {
+         throw new NoSingleMethodException(
+                  "Class " + clazz.getName() + " must have exactly one method named '" + methodName + "'",
+                  methods.length);
+      }
+      return invoke(obj, methods[0]);
+   }
+
+   @Internal
+   Object invoke(Object obj, Method method) throws IllegalAccessException, InvocationTargetException;
 }

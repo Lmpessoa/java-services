@@ -27,6 +27,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.SocketTimeoutException;
 import java.net.URLDecoder;
 import java.util.Arrays;
 import java.util.Collections;
@@ -52,18 +53,21 @@ final class HttpRequestImpl implements HttpRequest {
 
    HttpRequestImpl(InputStream clientStream) throws IOException {
       String requestLine = readLine(clientStream);
+      if (requestLine.isEmpty()) {
+         throw new SocketTimeoutException();
+      }
       String[] parts = requestLine.split(" ");
       this.method = parts[0];
       this.protocol = parts[2];
       parts = parts[1].split("\\?", 2);
-      String path = parts[0];
-      Map<String, String> headers = new HashMap<>();
-      if (path.startsWith("http://") || path.startsWith("https://")) {
-         int index = path.indexOf('/', path.indexOf("://") + 3);
-         headers.put("Host", path.substring(0, index));
-         path = path.substring(index);
+      String thePath = parts[0];
+      Map<String, String> headerMap = new HashMap<>();
+      if (thePath.startsWith("http://") || thePath.startsWith("https://")) {
+         int index = thePath.indexOf('/', thePath.indexOf("://") + 3);
+         headerMap.put("Host", thePath.substring(0, index));
+         thePath = thePath.substring(index);
       }
-      this.path = path;
+      this.path = thePath;
       this.queryString = parts.length > 1 ? parts[1] : null;
       String headerLine;
       while ((headerLine = readLine(clientStream)) != null && !headerLine.isEmpty()) {
@@ -71,26 +75,26 @@ final class HttpRequestImpl implements HttpRequest {
          if (head.length != 2) {
             throw new IllegalStateException("Illegal header line: '" + headerLine + "'");
          }
-         headers.put(head[0].trim(), head[1].trim());
+         headerMap.put(head[0].trim(), head[1].trim());
       }
-      this.headers = Collections.unmodifiableMap(headers);
-      if (headers.containsKey("Content-Type")) {
-         if (!headers.containsKey("Content-Length")) {
+      this.headers = Collections.unmodifiableMap(headerMap);
+      if (headerMap.containsKey("Content-Type")) {
+         if (!headerMap.containsKey("Content-Length")) {
             throw new LengthRequiredException();
          }
          if (getContentLength() > Integer.MAX_VALUE || getContentLength() < 0) {
             throw new UnsupportedOperationException("Body content too large");
          }
-         byte[] content = new byte[(int) getContentLength()];
-         while (clientStream.available() < content.length) {
+         byte[] data = new byte[(int) getContentLength()];
+         while (clientStream.available() < data.length) {
             // Do nothing, just sit and wait
          }
-         int read = clientStream.read(content);
-         if (read != content.length) {
+         int read = clientStream.read(data);
+         if (read != data.length) {
             throw new AssertionError(
-                     "Error reading from client (expected: " + content.length + " bytes, found: " + read + " bytes)");
+                     "Error reading from client (expected: " + data.length + " bytes, found: " + read + " bytes)");
          }
-         this.content = content;
+         this.content = data;
       } else {
          this.content = new byte[0];
       }

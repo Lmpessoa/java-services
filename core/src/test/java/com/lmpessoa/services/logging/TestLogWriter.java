@@ -22,48 +22,32 @@
  */
 package com.lmpessoa.services.logging;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
+import com.lmpessoa.services.logging.LogEntry;
+import com.lmpessoa.services.logging.LogWriter;
+import com.lmpessoa.services.logging.Severity;
 
-/**
- * Indicates a file to be used to output log entries.
- * <p>
- * Use an instance of this class to indicate a file to which all log will be output to. This file
- * will be open and closed periodically to update when log files are rotated by the file system.
- * </p>
- */
-public final class FileLogWriter extends FormattedLogWriter {
+final class TestLogWriter implements LogWriter {
 
-   private final File file;
-
-   /**
-    * Creates a new log writer with the given file.
-    *
-    * @param file the file where log entries should be written to.
-    */
-   public FileLogWriter(File file) {
-      this.file = file;
-   }
-
-   /**
-    * Creates a new log writer with the given file name.
-    *
-    * @param filename the name of the file where log entries should be written to.
-    */
-   public FileLogWriter(String filename) {
-      this(new File(filename));
-   }
+   private LogEntry entry;
 
    @Override
-   public void append(Severity severity, String entry) {
-      try {
-         file.createNewFile();
-         try (PrintWriter out = new PrintWriter(file)) {
-            out.println(entry);
-         }
-      } catch (IOException e) {
-         e.printStackTrace();
-      }
+   public void append(LogEntry entry) {
+      this.entry = entry;
+   }
+
+   String[] getLastAdditionalMessages() {
+      return entry != null ? entry.getAdditionalMessages() : new String[0];
+   }
+
+   LogEntry getLastTrace() {
+      return entry != null ? entry.getTraceEntry() : null;
+   }
+
+   String getLastMessage() {
+      return entry != null ? entry.getMessage() : null;
+   }
+
+   Severity getLastSeverity() {
+      return entry != null ? entry.getSeverity() : null;
    }
 }

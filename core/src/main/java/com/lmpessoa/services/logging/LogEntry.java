@@ -22,12 +22,17 @@
  */
 package com.lmpessoa.services.logging;
 
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
+import com.lmpessoa.services.hosting.Application;
 import com.lmpessoa.services.hosting.ConnectionInfo;
 import com.lmpessoa.services.services.IServicePoolProvider;
+import com.lmpessoa.util.ClassUtils;
 
 /**
  * Represents a log entry.
@@ -42,32 +47,19 @@ import com.lmpessoa.services.services.IServicePoolProvider;
  * whenever one of the methods of the {@link ILogger} interface is called.
  * </p>
  */
+@NonTraced
 public final class LogEntry {
 
-   private final ConnectionInfo connection;
    private final ZonedDateTime time;
    private final Severity severity;
-   private final String className;
-   private final String message;
+   private final Object message;
 
+   private final StackTraceElement logPoint;
+   private final ConnectionInfo threadConn;
    private final String threadName;
    private final long threadId;
 
-   LogEntry(Severity severity, String message, int callerIndex, ZoneId zone) {
-      this.time = ZonedDateTime.now(zone);
-      this.severity = Objects.requireNonNull(severity);
-      this.message = Objects.requireNonNull(message);
-      Thread currentThread = Thread.currentThread();
-      StackTraceElement logPoint = currentThread.getStackTrace()[callerIndex + 2];
-      this.className = logPoint.getClassName();
-      this.threadId = currentThread.getId();
-      this.threadName = currentThread.getName();
-      if (currentThread instanceof IServicePoolProvider) {
-         this.connection = (ConnectionInfo) ((IServicePoolProvider) currentThread).getPool().get(ConnectionInfo.class);
-      } else {
-         this.connection = null;
-      }
-   }
+   private Throwable[] throwableStack = null;
 
    /**
     * Returns the date and time when the log entry was created.
@@ -98,7 +90,12 @@ public final class LogEntry {
     * @return the actual message of the log entry event.
     */
    public String getMessage() {
-      return message;
+      if (message instanceof Throwable) {
+         Throwable[] stack = getThrowableStack();
+         return stack[0].toString();
+      } else {
+         return message.toString();
+      }
    }
 
    /**
@@ -112,7 +109,13 @@ public final class LogEntry {
     * @return the name of the class in which the log entry was created.
     */
    public String getClassName() {
-      return className;
+      if (message instanceof Throwable) {
+         Throwable[] stack = getThrowableStack();
+         return stack[0].getStackTrace()[0].getClassName();
+      } else if (logPoint != null) {
+         return logPoint.getClassName();
+      }
+      return Application.currentApp().getStartupClass().getName();
    }
 
    /**
@@ -121,7 +124,7 @@ public final class LogEntry {
     * @return the connection information about the current request.
     */
    public ConnectionInfo getConnection() {
-      return connection;
+      return threadConn;
    }
 
    /**
@@ -140,5 +143,125 @@ public final class LogEntry {
 
    public long getThreadId() {
       return threadId;
+   }
+
+   @Override
+   public String toString() {
+      return String.format("[%s] %s: %s", getSeverity(), getClassName(), getMessage());
+   }
+
+   LogEntry(Severity severity, Object message) {
+      this(ZonedDateTime.now(), severity, message);
+   }
+
+   LogEntry(ZonedDateTime time, Severity severity, Object message) {
+      this.time = time;
+      this.severity = Objects.requireNonNull(severity);
+      this.message = Objects.requireNonNull(message);
+
+      Thread thread = Thread.currentThread();
+      logPoint = getFirstNonTraced(thread.getStackTrace());
+      threadName = thread.getName();
+      threadId = thread.getId();
+      if (thread instanceof IServicePoolProvider) {
+         final Map<Class<?>, Object> pool = ((IServicePoolProvider) thread).getPool();
+         threadConn = (ConnectionInfo) pool.get(ConnectionInfo.class);
+      } else {
+         threadConn = null;
+      }
+   }
+
+   String[] getAdditionalMessages() {
+      if (message instanceof Throwable) {
+         Throwable[] stack = getThrowableStack();
+         List<String> result = new ArrayList<>();
+         for (StackTraceElement element : cleanNonTraced(stack[0].getStackTrace())) {
+            result.add(String.format("...at %s", element.toString()));
+         }
+         return result.toArray(new String[0]);
+      }
+      return new String[0];
+   }
+
+   LogEntry getTraceEntry() {
+      if (message instanceof Throwable) {
+         Throwable[] stack = getThrowableStack();
+         if (stack.length > 1) {
+            return new LogEntry(this, Severity.TRACE, stack[1]);
+         }
+         return null;
+      }
+      if (this.severity != Severity.TRACE) {
+         return new LogEntry(this, Severity.TRACE, "...at " + logPoint);
+      }
+      return null;
+   }
+
+   private LogEntry(LogEntry parentEntry, Severity severity, Object message) {
+      this.time = parentEntry.getTime();
+      this.severity = Objects.requireNonNull(severity);
+      this.message = Objects.requireNonNull(message);
+      this.logPoint = parentEntry.logPoint;
+      this.threadName = parentEntry.threadName;
+      this.threadId = parentEntry.threadId;
+      this.threadConn = parentEntry.threadConn;
+   }
+
+   private static boolean skipNonTraced(StackTraceElement element) {
+      if (element.isNativeMethod()) {
+         return true;
+      }
+      String className = element.getClassName();
+      if (className.startsWith("java.") || className.startsWith("javax.") || className.startsWith("sun.")) {
+         return true;
+      }
+      Class<?> clazz;
+      try {
+         clazz = Class.forName(className);
+      } catch (ClassNotFoundException e) {
+         return true;
+      }
+      if (clazz.isAnnotationPresent(NonTraced.class)) {
+         return true;
+      }
+      final String methodName = element.getMethodName();
+      if ("<cinit>".equals(methodName)) {
+         return false;
+      }
+      Object[] methods;
+      if ("<init>".equals(methodName)) {
+         methods = ClassUtils.findConstructor(clazz, m -> !m.isSynthetic() && !m.isAnnotationPresent(NonTraced.class));
+      } else {
+         methods = ClassUtils.findMethods(clazz,
+                  m -> m.getName().equals(methodName) && !m.isSynthetic() && !m.isAnnotationPresent(NonTraced.class));
+      }
+      return methods.length == 0;
+   }
+
+   private static StackTraceElement getFirstNonTraced(StackTraceElement[] stack) {
+      for (StackTraceElement element : stack) {
+         if (!skipNonTraced(element)) {
+            return element;
+         }
+      }
+      return null;
+   }
+
+   private static StackTraceElement[] cleanNonTraced(StackTraceElement[] stack) {
+      return Arrays.stream(stack).filter(e -> !skipNonTraced(e)).toArray(StackTraceElement[]::new);
+   }
+
+   private Throwable[] getThrowableStack() {
+      if (throwableStack == null) {
+         List<Throwable> tlist = new ArrayList<>();
+         Throwable t = (Throwable) message;
+         tlist.add(t);
+         while (t.getCause() != null && t != t.getCause()) {
+            t = t.getCause();
+            tlist.add(0, t);
+         }
+         throwableStack = tlist.toArray(new Throwable[0]);
+      }
+      return throwableStack;
    }
 }

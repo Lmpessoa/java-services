@@ -22,16 +22,20 @@
  */
 package com.lmpessoa.services.hosting;
 
+import java.io.IOException;
+
 final class HttpResult {
 
-   private final HttpResultInputStream inputStream;
+   private final HttpResultInputStream contentStream;
+   private final HttpRequest request;
    private final Object object;
    private final int statusCode;
 
-   HttpResult(int statusCode, Object contentObject, HttpResultInputStream contentStream) {
+   HttpResult(HttpRequest request, int statusCode, Object contentObject, HttpResultInputStream contentStream) {
+      this.request = request;
       this.statusCode = statusCode;
       this.object = contentObject;
-      this.inputStream = contentStream;
+      this.contentStream = contentStream;
    }
 
    int getStatusCode() {
@@ -43,6 +47,25 @@ final class HttpResult {
    }
 
    HttpResultInputStream getInputStream() {
-      return inputStream;
+      return contentStream;
+   }
+
+   @Override
+   public String toString() {
+      int contentLength = 0;
+      if (contentStream != null) {
+         try {
+            contentLength = contentStream.available();
+         } catch (IOException e) {
+            Application app = Application.currentApp();
+            if (app != null) {
+               app.getLogger().debug(e);
+            }
+         }
+      }
+      String userAgent = request.getHeaders().get("User-Agent");
+      return String.format("\"%s %s %s\" %s %s \"%s\"", request.getMethod(),
+               request.getPath() + (request.getQueryString() != null ? "?" + request.getQueryString() : ""),
+               request.getProtocol(), statusCode, contentLength, userAgent);
    }
 }

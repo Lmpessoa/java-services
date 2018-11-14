@@ -22,6 +22,9 @@
  */
 package com.lmpessoa.services.logging;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
 /**
  * A log writer which outputs formatted log entries.
  *
@@ -32,25 +35,50 @@ package com.lmpessoa.services.logging;
  * </p>
  *
  * <p>
- * Sublasses of this writer should output the result of calling {@link #format(LogEntry)} instead of
+ * Subclasses of this writer should output the result of calling {@link #format(LogEntry)} instead of
  * providing their own to enable the format to be specified by developers.
  * </p>
  */
 public abstract class FormattedLogWriter implements LogWriter {
 
-   private LogFormatter formatter = null;
+   public static final String REMOTED = "{Time}/{Local.Host:<12} {Severity:>7} -- [{Remote.Host:<15}] {Class.Name:<36} : {Message}";
+   public static final String DEFAULT = "{Time} {Severity:>7} -- [{Remote.Host:<15}] {Class.Name:<36} : {Message}";
 
-   /**
-    * Formats the given log entry according to the defined format.
-    * 
-    * @param entry the log entry to be formatted.
-    * @return the formatted log entry.
-    */
-   protected final String format(LogEntry entry) {
-      return formatter.format(entry);
+   private LogFormatter formatter = null;
+   private boolean tracing = false;
+
+   @Override
+   public final void append(LogEntry entry) {
+      append(entry.getSeverity(), format(entry));
    }
+
+   protected abstract void append(Severity severity, String entry);
 
    void setFormatter(LogFormatter formatter) {
       this.formatter = formatter;
+   }
+
+   void setTracing(boolean tracing) {
+      this.tracing = tracing;
+   }
+
+   /**
+    * Formats the given log entry according to the defined format.
+    *
+    * @param entry the log entry to be formatted.
+    * @return the formatted log entry.
+    */
+   private String format(LogEntry entry) {
+      StringWriter buffer = new StringWriter();
+      PrintWriter result = new PrintWriter(buffer);
+      LogEntry n = entry;
+      while (n != null) {
+         result.println(formatter.format(n));
+         for (String message : n.getAdditionalMessages()) {
+            result.println(formatter.format(n, message));
+         }
+         n = tracing ? n.getTraceEntry() : null;
+      }
+      return buffer.toString();
    }
 }

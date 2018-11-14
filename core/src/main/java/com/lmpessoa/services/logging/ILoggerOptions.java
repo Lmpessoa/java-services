@@ -23,7 +23,7 @@
 package com.lmpessoa.services.logging;
 
 import java.text.ParseException;
-import java.time.ZoneId;
+import java.util.function.Function;
 
 /**
  * Describes the configuration options for logging.
@@ -35,7 +35,7 @@ import java.time.ZoneId;
  */
 public interface ILoggerOptions {
 
-   public static final String DEFAULT = "{Time} {Severity(<7)} -- [{Thread.Name(<12)}] {Class.Name(<40)} : {Message}";
+   void addVariable(String label, Function<LogEntry, String> func);
 
    /**
     * Sets the default logging level for the application.
@@ -120,13 +120,6 @@ public interface ILoggerOptions {
     * @param writer the writer which will be used to store log entries.
     */
    void useWriter(LogWriter writer);
-
-   /**
-    * Sets the time zone in which log entry dates are to be registered.
-    * 
-    * @param zone the time zone in which log entry dates are to be registered.
-    */
-   void useTimeZone(ZoneId zone);
 
    /**
     * Sets the writer which will be used to store log entries.

@@ -25,12 +25,11 @@ package com.lmpessoa.services.logging;
 final class ConsoleLogWriter extends FormattedLogWriter {
 
    @Override
-   public void append(LogEntry entry) {
-      String message = format(entry);
-      if (Severity.ERROR.compareTo(entry.getSeverity()) >= 0) {
-         System.err.println(message);
+   public void append(Severity severity, String entry) {
+      if (Severity.ERROR.compareTo(severity) >= 0) {
+         System.err.print(entry);
       } else {
-         System.out.println(message);
+         System.out.print(entry);
       }
    }
 }

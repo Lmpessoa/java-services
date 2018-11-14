@@ -33,50 +33,6 @@ package com.lmpessoa.services.hosting;
 public interface IApplicationOptions {
 
    /**
-    * Sets the port to use to listen to requests for this application.
-    *
-    * <p>
-    * Default port is <u>5617</u>.
-    * </p>
-    *
-    * @param port the port to use for this application.
-    */
-   void usePort(int port);
-
-   /**
-    * Binds the application to the localhost.
-    *
-    * <p>
-    * Binding the application to the localhost will make the application to respond only to requests on
-    * the localhost. Request on other network interfaces will be ignored. Use this configuration when
-    * the application is to be run behind a relay HTTP server.
-    * </p>
-    */
-   default void bindToLocalhost() {
-      bindToAddress("localhost");
-   }
-
-   /**
-    * Binds the application to the given address.
-    *
-    * <p>
-    * Binding the application to a given address will make the application to respond only to requests
-    * on that address. If this method is given the address of '0.0.0.0' it will respond to requests
-    * made in all network interfaces available on the machine. A different address will bind the
-    * application to respond only to request from the associated network interface.
-    * </p>
-    *
-    * <p>
-    * Although this method exists, it is highly recommended it is not used to configure applications as
-    * the address of network interfaces is likely to change. Instead either call only
-    * {@link #bindToLocalhost()} or provide the desired IP address when starting the application.
-    * </p>
-    *
-    * @param addr the address of the interface to bind the application to.
-    */
-   void bindToAddress(String addr);
-
-   /**
     * Declares the application will accept requests made using XML.
     *
     * <p>
@@ -105,17 +61,4 @@ public interface IApplicationOptions {
     * @param handlerClass the class of the handler to add.
     */
    void addHandler(Class<?> handlerClass);
-
-   /**
-    * Limits the maximum number of jobs the application should execute in parallel.
-    *
-    * <p>
-    * By default, an application will handle as many jobs as it is tasked with. In a development
-    * environment this usually not an issue but may be in staging and production environments. This
-    * method allows developers to limit how many concurrent jobs can be executed by the application.
-    * </p>
-    *
-    * @param maxJobs the maximum number of jobs that the application should execute in parallel.
-    */
-   void limitConcurrentJobs(int maxJobs);
 }

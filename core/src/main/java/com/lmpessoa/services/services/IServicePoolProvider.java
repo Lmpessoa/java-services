@@ -24,6 +24,8 @@ package com.lmpessoa.services.services;
 
 import java.util.Map;
 
+import com.lmpessoa.services.Internal;
+
 /**
  * Represents an object which can provide a service pool for request level injection.
  * <p>
@@ -37,5 +39,6 @@ public interface IServicePoolProvider {
     *
     * @return the pool of service responders for this object.
     */
+   @Internal
    Map<Class<?>, Object> getPool();
 }

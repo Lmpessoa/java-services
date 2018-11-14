@@ -23,16 +23,10 @@
 package com.lmpessoa.services.hosting;
 
 import com.lmpessoa.services.hosting.Application;
-import com.lmpessoa.services.logging.LoggerBridge;
 
 public final class ApplicationBridge {
 
    public static Object parseIpAddress(String addr) {
       return Application.parseIpAddress(addr);
    }
-
-   public static void useNullLogWriter(Application app) {
-      LoggerBridge.useNullLogWriter(app.getLogger());
-   }
-
 }

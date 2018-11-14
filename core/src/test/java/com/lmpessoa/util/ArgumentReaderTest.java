@@ -51,7 +51,7 @@ public class ArgumentReaderTest {
 
    @Test
    public void testLongWithIntArgument() throws IllegalAccessException {
-      reader.setOption("port", Integer::valueOf);
+      reader.setOption('p', "port", Integer::valueOf);
       Map<String, Object> result = reader.parse(new String[] { "--port", "5617" });
       assertTrue(result.containsKey("port"));
       assertEquals(5617, result.get("port"));
@@ -59,7 +59,7 @@ public class ArgumentReaderTest {
 
    @Test
    public void testShortFromLongName() throws IllegalAccessException {
-      reader.setOption("port", Integer::valueOf);
+      reader.setOption('p', "port", Integer::valueOf);
       Map<String, Object> result = reader.parse(new String[] { "-p", "5617" });
       assertTrue(result.containsKey("port"));
       assertEquals(5617, result.get("port"));
@@ -68,30 +68,30 @@ public class ArgumentReaderTest {
    @Test
    public void testLongNameMissingArgument() throws IllegalAccessException {
       thrown.expect(IllegalStateException.class);
-      thrown.expectMessage("Option requires an argument: port");
-      reader.setOption("port", Integer::valueOf);
+      thrown.expectMessage("Option requires an argument: --port");
+      reader.setOption(null, "port", Integer::valueOf);
       reader.parse(new String[] { "--port" });
    }
 
    @Test
    public void testWrongArgumentType() throws Throwable {
       thrown.expect(IllegalArgumentException.class);
-      thrown.expectMessage("Invalid value for port: 'xxx'");
-      reader.setOption("port", Integer::valueOf);
+      thrown.expectMessage("Invalid value for --port: 'xxx'");
+      reader.setOption(null, "port", Integer::valueOf);
       reader.parse(new String[] { "--port", "xxx" });
    }
 
    @Test
    public void testNonExistantArgument() throws IllegalAccessException {
       thrown.expect(IllegalArgumentException.class);
-      thrown.expectMessage("Invalid option: --xport");
-      reader.setOption("port", Integer::valueOf);
+      thrown.expectMessage("Unknown option: --xport");
+      reader.setOption(null, "port", Integer::valueOf);
       reader.parse(new String[] { "--xport" });
    }
 
    @Test
    public void testLongFlagArgument() throws IllegalAccessException {
-      reader.setFlag("enable");
+      reader.setFlag(null, "enable");
       Map<String, Object> result = reader.parse(new String[] { "--enable" });
       assertTrue(result.containsKey("enable"));
       assertTrue((Boolean) result.get("enable"));
@@ -99,7 +99,7 @@ public class ArgumentReaderTest {
 
    @Test
    public void testShortFlagArgument() throws IllegalAccessException {
-      reader.setFlag("enable", 'X');
+      reader.setFlag('X', "enable");
       Map<String, Object> result = reader.parse(new String[] { "-X" });
       assertTrue(result.containsKey("enable"));
       assertTrue((Boolean) result.get("enable"));
@@ -108,22 +108,22 @@ public class ArgumentReaderTest {
    @Test
    public void testShortFlagWithWrongCase() throws IllegalAccessException {
       thrown.expect(IllegalArgumentException.class);
-      thrown.expectMessage("Invalid option: -x");
-      reader.setFlag("enable", 'X');
+      thrown.expectMessage("Unknown option: -x");
+      reader.setFlag('X', "enable");
       reader.parse(new String[] { "-x" });
    }
 
    @Test
    public void testFlagsExpectNoArgument() throws IllegalAccessException {
       thrown.expect(IllegalArgumentException.class);
-      thrown.expectMessage("Invalid option: false");
-      reader.setFlag("enable", 'X');
+      thrown.expectMessage("Unknown option: false");
+      reader.setFlag('X', "enable");
       reader.parse(new String[] { "-X", "false" });
    }
 
    @Test
    public void testAddressByIP() throws IllegalAccessException, UnknownHostException {
-      reader.setOption("bind", ApplicationBridge::parseIpAddress);
+      reader.setOption(null, "bind", ApplicationBridge::parseIpAddress);
       Map<String, Object> result = reader.parse(new String[] { "--bind", "0.0.0.0" });
       assertTrue(result.containsKey("bind"));
       assertTrue(result.get("bind") instanceof InetAddress);
@@ -132,7 +132,7 @@ public class ArgumentReaderTest {
 
    @Test
    public void testAddressLocalhost() throws IllegalAccessException, UnknownHostException {
-      reader.setOption("bind", ApplicationBridge::parseIpAddress);
+      reader.setOption(null, "bind", ApplicationBridge::parseIpAddress);
       Map<String, Object> result = reader.parse(new String[] { "--bind", "localhost" });
       assertTrue(result.containsKey("bind"));
       assertTrue(result.get("bind") instanceof InetAddress);
@@ -142,8 +142,8 @@ public class ArgumentReaderTest {
    @Test
    public void testAddressByName() throws IllegalAccessException {
       thrown.expect(IllegalArgumentException.class);
-      thrown.expectMessage("Invalid value for bind: 'server'");
-      reader.setOption("bind", ApplicationBridge::parseIpAddress);
+      thrown.expectMessage("Invalid value for --bind: 'server'");
+      reader.setOption(null, "bind", ApplicationBridge::parseIpAddress);
       reader.parse(new String[] { "--bind", "server" });
    }
 }

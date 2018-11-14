@@ -25,8 +25,8 @@ package com.lmpessoa.services.routing;
 import java.util.Arrays;
 import java.util.Collection;
 
-import com.lmpessoa.services.services.ConfiguresWith;
-import com.lmpessoa.services.services.IServiceMap;
+import com.lmpessoa.services.hosting.HttpRequest;
+import com.lmpessoa.services.services.IConfigurable;
 
 /**
  * Represents a map of routes of the application.
@@ -36,11 +36,10 @@ import com.lmpessoa.services.services.IServiceMap;
  * application.
  * </p>
  */
-@ConfiguresWith(IRouteOptions.class)
-public interface IRouteTable {
+public interface IRouteTable extends IConfigurable<IRouteOptions> {
 
-   static IRouteTable newInstance(IServiceMap serviceMap) throws NoSuchMethodException {
-      return new RouteTable(serviceMap);
+   static Class<? extends IRouteTable> getServiceClass() {
+      return RouteTable.class;
    }
 
    /**
@@ -85,10 +84,12 @@ public interface IRouteTable {
 
    /**
     * Returns the name of the area classes in the given package name should belong to.
-    * 
+    *
     * @param packageName the name of the package to check.
     * @return the name of the area classes in the given package name should belong to, or
     * <code>null</code> if no area captures classes in the given package name.
     */
    String findArea(String packageName);
+
+   MatchedRoute matches(HttpRequest request);
 }

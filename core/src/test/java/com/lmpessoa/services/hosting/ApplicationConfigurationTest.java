@@ -31,10 +31,13 @@ import org.junit.Test;
 
 import com.lmpessoa.services.hosting.Application;
 import com.lmpessoa.services.hosting.IHostEnvironment;
+import com.lmpessoa.services.logging.ILogger;
 import com.lmpessoa.services.services.IServiceMap;
+import com.lmpessoa.util.LoggerBridge;
 
 public final class ApplicationConfigurationTest {
 
+   private static ILogger log = LoggerBridge.getNullLogger();
    private static String servicesResult;
    private static String configResult;
 
@@ -47,7 +50,7 @@ public final class ApplicationConfigurationTest {
 
    @Test
    public void testConfigMultipleEnvironments() throws NoSuchMethodException, IllegalAccessException, IOException {
-      app = new Application(CommonEnv.class, new String[0]);
+      app = new Application(CommonEnv.class, new String[0], log);
       app.doConfigure();
       assertEquals("common", servicesResult);
       assertEquals("common", configResult);
@@ -55,7 +58,7 @@ public final class ApplicationConfigurationTest {
 
    @Test
    public void testConfigDefaultEnvironment() throws NoSuchMethodException, IllegalAccessException, IOException {
-      app = new Application(DefaultEnv.class, new String[0]);
+      app = new Application(DefaultEnv.class, new String[0], log);
       app.doConfigure();
       assertEquals("common", servicesResult);
       assertEquals("dev", configResult);
@@ -63,7 +66,7 @@ public final class ApplicationConfigurationTest {
 
    @Test
    public void testConfigSpecificEnvironment() throws NoSuchMethodException, IllegalAccessException, IOException {
-      app = new Application(SpecificEnv.class, new String[] { "-e", "Staging" });
+      app = new Application(SpecificEnv.class, new String[] { "-e", "Staging" }, log);
       app.doConfigure();
       assertEquals("staging", servicesResult);
       assertEquals("staging", configResult);

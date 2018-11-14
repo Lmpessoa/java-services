@@ -43,23 +43,23 @@ import com.lmpessoa.services.hosting.HttpRequestBuilder;
 import com.lmpessoa.services.hosting.MethodNotAllowedException;
 import com.lmpessoa.services.hosting.NotFoundException;
 import com.lmpessoa.services.hosting.NotImplementedException;
-import com.lmpessoa.services.routing.HttpMethod;
-import com.lmpessoa.services.routing.MatchedRoute;
-import com.lmpessoa.services.routing.RouteTable;
+import com.lmpessoa.services.logging.ILogger;
 import com.lmpessoa.services.services.IServiceMap;
+import com.lmpessoa.util.LoggerBridge;
 
 public final class RouteTableMatcherTest {
 
    @Rule
    public ExpectedException thrown = ExpectedException.none();
 
+   private final ILogger log = LoggerBridge.getNullLogger();
    private IServiceMap serviceMap;
    private RouteTable table;
 
    @Before
    public void setup() throws NoSuchMethodException {
       serviceMap = IServiceMap.newInstance();
-      table = new RouteTable(serviceMap);
+      table = new RouteTable(serviceMap, log);
       table.put("", TestResource.class);
    }
 
@@ -79,6 +79,27 @@ public final class RouteTableMatcherTest {
       assertEquals(TestResource.class.getMethod("get", int.class), result.getMethod());
       assertArrayEquals(new Object[] { 7 }, result.getMethodArgs());
       assertEquals("GET/7", result.invoke());
+   }
+
+   @Test
+   public void testMatchesConstrainedRoute() throws NoSuchMethodException, HttpException {
+      MatchedRoute result = table.matches(HttpMethod.GET, "/test/abcd");
+      assertEquals(TestResource.class, result.getResourceClass());
+      assertEquals(TestResource.class.getMethod("get", String.class), result.getMethod());
+      assertArrayEquals(new Object[] { "abcd" }, result.getMethodArgs());
+      assertEquals("GET/abcd", result.invoke());
+   }
+
+   @Test
+   public void testMatchesConstrainedRouteTooShort() throws NoSuchMethodException, HttpException {
+      thrown.expect(NotFoundException.class);
+      table.matches(HttpMethod.GET, "/test/ab");
+   }
+
+   @Test
+   public void testMatchesConstrainedRouteTooLong() throws NoSuchMethodException, HttpException {
+      thrown.expect(NotFoundException.class);
+      table.matches(HttpMethod.GET, "/test/abcdefg");
    }
 
    @Test
@@ -151,7 +172,8 @@ public final class RouteTableMatcherTest {
                .build();
       MatchedRoute result = table.matches(request);
       assertEquals(TestResource.class, result.getResourceClass());
-      assertEquals(TestResource.class.getMethod("put", int.class, ContentObject.class), result.getMethod());
+      assertEquals(TestResource.class.getMethod("put", int.class, ContentObject.class),
+               result.getMethod());
       assertEquals(2, result.getMethodArgs().length);
       assertEquals(12, result.getMethodArgs()[0]);
       Object obj = result.getMethodArgs()[1];
@@ -181,6 +203,11 @@ public final class RouteTableMatcherTest {
 
       public String get(int i) {
          return "GET/" + i;
+      }
+
+      @Route("{alpha(3..6)}")
+      public String get(String s) {
+         return "GET/" + s;
       }
 
       public String get(int i, int j) {

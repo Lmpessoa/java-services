@@ -22,7 +22,10 @@
  */
 package com.lmpessoa.services.hosting;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -35,12 +38,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.Future;
 import java.util.regex.Pattern;
 
+import com.lmpessoa.services.Internal;
 import com.lmpessoa.services.core.NonResource;
 import com.lmpessoa.services.core.Resource;
 import com.lmpessoa.services.logging.ILogger;
+import com.lmpessoa.services.logging.NonTraced;
+import com.lmpessoa.services.logging.Severity;
 import com.lmpessoa.services.routing.IRouteTable;
 import com.lmpessoa.services.routing.MatchedRoute;
 import com.lmpessoa.services.services.IConfigurationLifecycle;
@@ -89,6 +96,7 @@ import com.lmpessoa.util.ClassUtils;
  * may enable configurations to be further changed after these methods are called.
  * </p>
  */
+@NonTraced
 public final class Application {
 
    private static final String ACCEPT_XML = "accept-xml";
@@ -99,15 +107,14 @@ public final class Application {
 
    private final ApplicationOptions options = new ApplicationOptions(this);
    private final Map<String, Object> argMap;
+   private final StartupLogMessages startup;
    private final HandlerMediator mediator;
    private final IServiceMap serviceMap;
-   private final IRouteTable routeTable;
    private final Class<?> startupClass;
    private final IHostEnvironment env;
    private final ILogger log;
 
    private ServerSocket serverSocket;
-   private Method tableMatches;
    private InetAddress addr;
    private int port;
 
@@ -125,10 +132,12 @@ public final class Application {
     * @throws IllegalAccessException
     * @throws NoSuchMethodException
     */
-   public static synchronized void startWith(String[] args)
-      throws IOException, IllegalAccessException, NoSuchMethodException {
+   public static synchronized void startWith(String[] args) throws IOException {
       Thread.currentThread().setName("main");
-      currentApp = new Application(findStartupClass(), args);
+      Class<?> startupClass = findStartupClass();
+      ILogger log = ILogger.newInstance();
+      outputBanner(startupClass);
+      currentApp = new Application(startupClass, args, log);
       currentApp.run();
       currentApp = null;
    }
@@ -165,15 +174,44 @@ public final class Application {
       }
    }
 
-   Application(Class<?> startupClass, String[] args) throws IllegalAccessException, NoSuchMethodException {
+   public static String getVersion() {
+      try {
+         Properties properties = new Properties();
+         properties.load(Application.class.getResourceAsStream("/project.properties"));
+         return properties.getProperty("project.version");
+      } catch (IOException e) {
+         throw new IllegalStateException(e);
+      }
+   }
+
+   @Internal
+   public static Application currentApp() {
+      ClassUtils.checkInternalAccess();
+      return currentApp;
+   }
+
+   @Internal
+   public ILogger getLogger() {
+      ClassUtils.checkInternalAccess();
+      return log;
+   }
+
+   public Class<?> getStartupClass() {
+      return startupClass;
+   }
+
+   Application(Class<?> startupClass, String[] args, ILogger logger) {
+      this.log = logger;
+      startup = new StartupLogMessages(log, startupClass);
       this.argMap = readArguments(args);
-      String envName = (String) argMap.getOrDefault("env", System.getenv("SERVICES_ENVIRONMENT_NAME"));
-      this.env = () -> envName != null ? formatEnvName(envName) : "Development";
-      this.serviceMap = IServiceMap.newInstance();
-      this.routeTable = IRouteTable.newInstance(serviceMap);
-      this.mediator = new HandlerMediator(serviceMap);
-      this.log = ILogger.newInstance();
+      String envName = (String) argMap.getOrDefault("env",
+               System.getenv().getOrDefault("SERVICES_ENVIRONMENT_NAME", "Development"));
+      this.env = () -> formatEnvName(envName);
+      startup.logStartingMessage(env);
       this.startupClass = startupClass;
+      this.serviceMap = IServiceMap.newInstance();
+      this.mediator = new HandlerMediator(getServiceMap());
+      registerInitialServices();
    }
 
    static Class<?> findStartupClass() {
@@ -181,7 +219,7 @@ public final class Application {
       try {
          return Class.forName(trace[3].getClassName());
       } catch (Exception e) {
-         throw new IllegalStateException("Could not find startup class", e);
+         throw new IllegalStateException("Could not find a startup class", e);
       }
    }
 
@@ -198,6 +236,12 @@ public final class Application {
       }
    }
 
+   void run() throws IOException {
+      doConfigure();
+      getRouteTable().putAll(scanResourcesFromStartup());
+      listen();
+   }
+
    void stop(boolean graceful) {
       if (graceful) {
          options.getThreadPool().shutdown();
@@ -211,49 +255,20 @@ public final class Application {
       }
    }
 
-   void run() throws IOException {
-      doConfigure();
-      routeTable.putAll(scanResourcesFromStartup());
-      listen();
-   }
-
    IServiceMap getServiceMap() {
       return serviceMap;
    }
 
    IRouteTable getRouteTable() {
-      return routeTable;
+      return serviceMap.get(IRouteTable.class);
    }
 
    HandlerMediator getMediator() {
       return mediator;
    }
 
-   ILogger getLogger() {
-      return log;
-   }
-
    MatchedRoute matches(HttpRequest request) {
-      if (tableMatches == null) {
-         tableMatches = ClassUtils.getDeclaredMethod(routeTable.getClass(), "matches", HttpRequest.class);
-      }
-      if (tableMatches == null) {
-         return null;
-      }
-      tableMatches.setAccessible(true);
-      try {
-         return (MatchedRoute) tableMatches.invoke(routeTable, request);
-      } catch (InvocationTargetException e) {
-         if (e.getCause() instanceof RuntimeException) {
-            throw (RuntimeException) e.getCause();
-         } else if (e.getCause() instanceof Error) {
-            throw (Error) e.getCause();
-         }
-         log.error(e);
-      } catch (IllegalAccessException | IllegalArgumentException e) {
-         log.error(e);
-      }
-      return null;
+      return getRouteTable().matches(request);
    }
 
    Collection<Class<?>> scanResourcesFromStartup() throws IOException {
@@ -263,7 +278,7 @@ public final class Application {
       for (String className : classes) {
          String[] pckgs = className.split("\\.");
          String pckg = String.join(".", Arrays.copyOf(pckgs, pckgs.length - 1));
-         if (routeTable.findArea(pckg) == null) {
+         if (getRouteTable().findArea(pckg) == null) {
             continue;
          }
          try {
@@ -286,7 +301,6 @@ public final class Application {
    }
 
    void doConfigure() {
-      populateServiceMap();
       configureServices();
       IServiceMap configMap = serviceMap.getConfigMap();
       configMap.putSingleton(IApplicationOptions.class, options);
@@ -302,17 +316,18 @@ public final class Application {
       if (argMap.containsKey(ACCEPT_XML)) {
          options.acceptXmlRequests();
       }
+      if (argMap.containsKey("trace")) {
+         log.getOptions().setDefaultLevel(Severity.TRACE);
+      } else if (argMap.containsKey("debug")) {
+         log.getOptions().setDefaultLevel(Severity.DEBUG);
+      }
    }
 
-   private static String formatEnvName(String envName) {
-      return envName == null ? null : Character.toUpperCase(envName.charAt(0)) + envName.substring(1).toLowerCase();
-   }
-
-   private void populateServiceMap() {
+   void registerInitialServices() {
       // Singleton
-      serviceMap.putSingleton(IServiceMap.class, this.serviceMap);
-      serviceMap.putSingleton(IRouteTable.class, this.routeTable);
       serviceMap.putSingleton(ILogger.class, this.log);
+      serviceMap.putSingleton(IServiceMap.class, this.serviceMap);
+      serviceMap.putSingleton(IRouteTable.class, IRouteTable.getServiceClass());
       serviceMap.putSingleton(IHostEnvironment.class, env);
 
       // Per Request
@@ -321,35 +336,59 @@ public final class Application {
       serviceMap.putPerRequest(ConnectionInfo.class, () -> null);
    }
 
+   private static void outputBanner(Class<?> startupClass) {
+      InputStream bannerIS = startupClass.getResourceAsStream("/banner.txt");
+      if (bannerIS == null) {
+         bannerIS = Application.class.getResourceAsStream("/banner.txt");
+      }
+      if (bannerIS == null) {
+         return;
+      }
+      BufferedReader banner = new BufferedReader(new InputStreamReader(bannerIS));
+      banner.lines() //
+               .map(s -> s.replaceAll("\\$\\{project.version\\}", Application.getVersion())) //
+               .forEach(System.out::println);
+   }
+
+   private static String formatEnvName(String envName) {
+      return envName == null ? null : Character.toUpperCase(envName.charAt(0)) + envName.substring(1).toLowerCase();
+   }
+
    private Map<String, Object> readArguments(String[] args) {
       ArgumentReader reader = new ArgumentReader();
-      reader.setOption("port", Integer::valueOf);
-      reader.setOption("bind", Application::parseIpAddress);
-      reader.setOption("env", s -> s);
-      reader.setOption(MAX_JOBS, 'j', Integer::valueOf);
-      reader.setFlag(ACCEPT_XML, 'X');
-      reader.setFlag("debug");
-      return reader.parse(args);
+      reader.setFlag('X', ACCEPT_XML);
+      reader.setOption('b', "bind", Application::parseIpAddress);
+      reader.setFlag('d', "debug");
+      reader.setOption('e', "env", s -> s);
+      reader.setOption('j', MAX_JOBS, Integer::valueOf);
+      reader.setOption('p', "port", Integer::valueOf);
+      reader.setFlag('t', "trace");
+      try {
+         return reader.parse(args);
+      } catch (Exception e) {
+         System.out.println(e.getMessage());
+         System.exit(1);
+      }
+      return null;
    }
 
    private void configure(IServiceMap configMap) {
       mediator.addHandler(ResultHandler.class);
       try {
          String envSpecific = CONFIGURE + env.getName();
-         Method[] methods = ClassUtils.findMethods(startupClass, m -> envSpecific.equals(m.getName()));
+         Method[] methods = ClassUtils.findMethods(startupClass,
+                  m -> envSpecific.equals(m.getName()) && Modifier.isStatic(m.getModifiers()));
          if (methods.length != 1) {
-            methods = ClassUtils.findMethods(startupClass, m -> CONFIGURE.equals(m.getName()));
-            if (methods.length != 1) {
-               log.info("Could not find a configuration method");
-               return;
-            }
+            methods = ClassUtils.findMethods(startupClass,
+                     m -> CONFIGURE.equals(m.getName()) && Modifier.isStatic(m.getModifiers()));
          }
-
-         Method mapInvoke = ClassUtils.getDeclaredMethod(configMap.getClass(), "invoke", Object.class, Method.class);
-         mapInvoke.setAccessible(true);
+         startup.logConfiguration(methods);
+         if (methods.length != 1) {
+            return;
+         }
          try {
-            mapInvoke.invoke(configMap, startupClass, methods[0]);
-         } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+            configMap.invoke(startupClass, methods[0]);
+         } catch (IllegalAccessException | InvocationTargetException e) {
             log.debug(e);
          }
       } finally {
@@ -361,48 +400,41 @@ public final class Application {
       String envSpecific = CONFIGURE + env.getName() + "Services";
       Method configServices = ClassUtils.getMethod(startupClass, envSpecific, IServiceMap.class);
       Object[] args = new Object[] { serviceMap };
-      if (configServices == null) {
+      if (configServices == null || !Modifier.isStatic(configServices.getModifiers())) {
          configServices = ClassUtils.getMethod(startupClass, "configureServices", IServiceMap.class,
                   IHostEnvironment.class);
          args = new Object[] { serviceMap, env };
-         if (configServices == null) {
-            configServices = ClassUtils.getMethod(startupClass, "configureServices", IServiceMap.class);
-            args = new Object[] { serviceMap };
-         }
       }
-      if (configServices != null && Modifier.isStatic(configServices.getModifiers())) {
-         try {
-            configServices.invoke(null, args);
-         } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-            log.debug(e);
-         }
-      } else {
-         log.info("Could not find a service configuration method");
+      if (configServices == null || !Modifier.isStatic(configServices.getModifiers())) {
+         configServices = ClassUtils.getMethod(startupClass, "configureServices", IServiceMap.class);
+         args = new Object[] { serviceMap };
+      }
+      startup.logServicesConfiguration(configServices);
+      if (configServices == null || !Modifier.isStatic(configServices.getModifiers())) {
+         return;
+      }
+      try {
+         configServices.invoke(null, args);
+      } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+         log.debug(e);
       }
    }
 
    private void endConfiguration(IServiceMap configMap) {
-      Method getter = ClassUtils.getDeclaredMethod(configMap.getClass(), "get", Class.class);
-      if (getter == null) {
-         return;
-      }
-      getter.setAccessible(true);
-      for (Class<?> service : configMap.getServices()) {
-         if (IConfigurationLifecycle.class.isAssignableFrom(service)) {
-            try {
-               Object obj = getter.invoke(configMap, service);
-               ((IConfigurationLifecycle) obj).configurationEnded();
-            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-               log.warning(e);
-            }
+      for (Class<?> config : configMap.getServices()) {
+         Object obj = configMap.get(config);
+         if (obj != null && obj instanceof IConfigurationLifecycle) {
+            ((IConfigurationLifecycle) obj).configurationEnded();
          }
       }
    }
 
    private void listen() throws IOException {
       try (ServerSocket server = new ServerSocket(port, 0, addr)) {
+         startup.logServerUp(port);
          this.serverSocket = server;
          server.setSoTimeout(1);
+         startup.logStartedMessage();
          while (!server.isClosed()) {
             try {
                Socket socket = server.accept();

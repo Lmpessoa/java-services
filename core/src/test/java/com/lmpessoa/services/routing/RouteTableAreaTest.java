@@ -31,18 +31,21 @@ import java.util.Arrays;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.lmpessoa.services.logging.ILogger;
 import com.lmpessoa.services.routing.RouteTable;
 import com.lmpessoa.services.services.IServiceMap;
+import com.lmpessoa.util.LoggerBridge;
 
 public final class RouteTableAreaTest {
 
+   private final ILogger log = LoggerBridge.getNullLogger();
    private IServiceMap services;
    private RouteTable table;
 
    @Before
    public void setup() throws NoSuchMethodException {
       services = IServiceMap.newInstance();
-      table = new RouteTable(services);
+      table = new RouteTable(services, log);
    }
 
    @Test

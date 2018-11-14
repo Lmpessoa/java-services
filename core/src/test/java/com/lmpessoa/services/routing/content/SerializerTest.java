@@ -25,6 +25,7 @@ package com.lmpessoa.services.routing.content;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -93,9 +94,8 @@ public final class SerializerTest {
 
    @Test
    public void testProduceXmlFails() throws IOException {
-      thrown.expect(SerializationException.class);
       Serializer.enableXml(false);
-      Serializer.produce(new String[] { MediaType.XML }, "Test");
+      assertNull(Serializer.produce(new String[] { MediaType.XML }, "Test"));
    }
 
    @Test

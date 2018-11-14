@@ -28,6 +28,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -37,6 +38,9 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+
+import com.lmpessoa.services.hosting.Application;
+import com.lmpessoa.services.logging.ILogger;
 
 /**
  * Class used to hold several useful methods when dealing with classes.
@@ -53,6 +57,10 @@ public final class ClassUtils {
     */
    public static Method[] findMethods(Class<?> clazz, Predicate<? super Method> predicate) {
       return Arrays.stream(clazz.getMethods()).filter(predicate).toArray(Method[]::new);
+   }
+
+   public static Constructor<?>[] findConstructor(Class<?> clazz, Predicate<? super Constructor<?>> predicate) {
+      return Arrays.stream(clazz.getConstructors()).filter(predicate).toArray(Constructor<?>[]::new);
    }
 
    /**
@@ -99,6 +107,7 @@ public final class ClassUtils {
       return Arrays.stream(clazz.getMethods())
                .filter(m -> methodName.equals(m.getName()))
                .filter(m -> Arrays.equals(parameterTypes, m.getParameterTypes()))
+               .filter(m -> !m.isSynthetic())
                .findFirst()
                .orElse(null);
    }
@@ -126,6 +135,7 @@ public final class ClassUtils {
       return Arrays.stream(clazz.getDeclaredMethods())
                .filter(m -> methodName.equals(m.getName()))
                .filter(m -> Arrays.equals(parameterTypes, m.getParameterTypes()))
+               .filter(m -> !m.isSynthetic())
                .findFirst()
                .orElse(null);
    }
@@ -169,24 +179,99 @@ public final class ClassUtils {
     */
    public static Collection<String> scanInProjectOf(Class<?> clazz) throws IOException {
       String location = findClassLocation(clazz);
-      return location.startsWith("jar:") ? findClassesInJar(location.substring(9))
+      return location.startsWith("jar:") ? findClassesInJar(location.substring(9, location.length() - 1))
                : findClassesInPath(location.substring(5) + "/", "");
    }
 
+   /**
+    * Creates a new instance of the given class using the given argument list.
+    *
+    * <p>
+    * Objects created with this method must have a constructor that matches exactly the type of the
+    * arguments given. To use a constructor with specific argument types, use
+    * {@link #newInstance(Class, Class[], Object...)}.
+    * </p>
+    *
+    * <p>
+    * If any error occurs while creating the object, this method will simply return null.
+    * </p>
+    *
+    * @param clazz the class to be instantiated.
+    * @param params the list of arguments to be used to create the instance.
+    * @return the newly created object or <code>null</code> if it was not possible to create it.
+    */
    public static <T> T newInstance(Class<T> clazz, Object... params) {
       Class<?>[] paramTypes = Arrays.stream(params).map(Object::getClass).toArray(Class<?>[]::new);
       return newInstance(clazz, paramTypes, params);
    }
 
+   /**
+    * Creates a new instance of the given class using the given argument list.
+    *
+    * <p>
+    * Objects created with this method must have a constructor that matches the list of argument types
+    * given. The values in the argument list may be subclasses of the effective argument types.
+    * </p>
+    *
+    * <p>
+    * If any error occurs while creating the object, this method will simply return null.
+    * </p>
+    *
+    * @param clazz the class to be instantiated.
+    * @param paramTypes the list of the argument types of the desired constructor.
+    * @param params the list of arguments to be used to create the instance.
+    * @return the newly created object or <code>null</code> if it was not possible to create it.
+    */
    public static <T> T newInstance(Class<T> clazz, Class<?>[] paramTypes, Object... params) {
       try {
          Constructor<T> construct = clazz.getDeclaredConstructor(paramTypes);
          construct.setAccessible(true);
          return construct.newInstance(params);
-      } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
-         e.printStackTrace();
+      } catch (InvocationTargetException e) {
+         getAppLogger().debug(e.getCause());
+      } catch (NoSuchMethodException | InstantiationException | IllegalAccessException e) {
+         getAppLogger().debug(e);
       }
       return null;
+   }
+
+   /**
+    * Prevents access to an internal method.
+    *
+    * <p>
+    * The <code>@Internal</code> annotation is useful only for documentation purposes and will be shown
+    * in generated Javadoc. This, however, does not ensure the annotated method or classes cannot be
+    * called outside the project they are declared. Calling this method as the first line of a method
+    * creates a fence that ensures only methods declared in the same project can call the protected
+    * method.
+    * </p>
+    *
+    * @throws SecurityException if the caller method cannot access the called method.
+    */
+   public static void checkInternalAccess() {
+      try {
+         StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+         String calledLocation = new File(findClassLocation(Class.forName(stack[2].getClassName()))).getParent();
+         String callerLocation = new File(findClassLocation(Class.forName(stack[3].getClassName()))).getParent();
+         if (!calledLocation.equals(callerLocation)) {
+            SecurityException ex = new AccessControlException("Cannot call an internal class");
+            stack = Arrays.copyOfRange(stack, 3, stack.length);
+            ex.setStackTrace(stack);
+            throw ex;
+         }
+      } catch (ClassNotFoundException e) {
+         getAppLogger().debug(e);
+      }
+   }
+
+   private static ILogger getAppLogger() {
+      Application app = Application.currentApp();
+      if (app != null) {
+         return app.getLogger();
+      } else {
+         return new NullLogger();
+      }
+
    }
 
    private static String findClassLocation(Class<?> clazz) {
@@ -197,11 +282,14 @@ public final class ClassUtils {
 
    private static Collection<String> findClassesInJar(String location) throws IOException {
       List<String> result = new ArrayList<>();
-      try (JarFile jar = new JarFile(location.substring(9, location.length() - 1))) {
+      try (JarFile jar = new JarFile(location)) {
          Enumeration<JarEntry> entries = jar.entries();
          while (entries.hasMoreElements()) {
             JarEntry entry = entries.nextElement();
             String className = entry.getName().replace('/', '.');
+            if (!className.endsWith(".class")) {
+               continue;
+            }
             className = className.substring(0, className.length() - 6);
             result.add(className);
          }
@@ -228,5 +316,4 @@ public final class ClassUtils {
    private ClassUtils() {
       // Does nothing
    }
-
 }

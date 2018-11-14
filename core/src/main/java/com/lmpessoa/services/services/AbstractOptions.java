@@ -22,12 +22,17 @@
  */
 package com.lmpessoa.services.services;
 
+import com.lmpessoa.services.Internal;
+import com.lmpessoa.util.ClassUtils;
+
 public abstract class AbstractOptions implements IConfigurationLifecycle {
 
    private boolean configEnded = false;
 
+   @Internal
    @Override
-   public final void configurationEnded() {
+   public void configurationEnded() {
+      ClassUtils.checkInternalAccess();
       configEnded = true;
    }
 
@@ -35,5 +40,9 @@ public abstract class AbstractOptions implements IConfigurationLifecycle {
       if (configEnded) {
          throw new IllegalStateException("Configuration cannot be changed here");
       }
+   }
+
+   public boolean isConfigured() {
+      return configEnded;
    }
 }

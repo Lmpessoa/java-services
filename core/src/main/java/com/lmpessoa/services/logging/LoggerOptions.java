@@ -23,25 +23,31 @@
 package com.lmpessoa.services.logging;
 
 import java.text.ParseException;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 
 import com.lmpessoa.services.services.AbstractOptions;
 
 class LoggerOptions extends AbstractOptions implements ILoggerOptions {
 
-   private ZoneId zone = ZonedDateTime.now().getZone();
-   private LogWriter writer = new ConsoleLogWriter();
+   static final LogWriter CONSOLE = new ConsoleLogWriter();
+
+   private final Map<String, Function<LogEntry, String>> variables = new HashMap<>();
+   private final Logger parent;
+
    private Map<String, Severity> packageLevels = new HashMap<>();
    private Severity defaultLevel = Severity.INFO;
+   private LogWriter writer = CONSOLE;
    private LogFormatter formatter;
 
-   LoggerOptions() {
+   LoggerOptions(Logger parent) {
+      this.parent = parent;
+      LogFormatParser.registerVariables(variables);
       try {
-         useTemplate(ILoggerOptions.DEFAULT);
+         useTemplate(FormattedLogWriter.DEFAULT);
       } catch (ParseException e) {
          // Ignore as it should never happen
          e.printStackTrace();
@@ -49,12 +55,29 @@ class LoggerOptions extends AbstractOptions implements ILoggerOptions {
    }
 
    @Override
+   public void addVariable(String label, Function<LogEntry, String> func) {
+      protectConfiguration();
+      if (Objects.requireNonNull(label.isEmpty())) {
+         throw new IllegalArgumentException("Variables must have a defined label");
+      }
+      if (variables.containsKey(label)) {
+         throw new IllegalArgumentException("Cannot replace an existing variable");
+      }
+      variables.put(label, Objects.requireNonNull(func));
+   }
+
+   @Override
    public void setDefaultLevel(Severity level) {
+      protectConfiguration();
       defaultLevel = Objects.requireNonNull(level);
+      if (writer instanceof FormattedLogWriter) {
+         ((FormattedLogWriter) writer).setTracing(defaultLevel == Severity.TRACE);
+      }
    }
 
    @Override
    public void setPackageLevel(String packageName, Severity level) {
+      protectConfiguration();
       Objects.requireNonNull(packageName);
       if (packageName.isEmpty() || packageName.matches("\\s")) {
          throw new IllegalArgumentException("Not a valid package name: " + packageName);
@@ -64,8 +87,9 @@ class LoggerOptions extends AbstractOptions implements ILoggerOptions {
 
    @Override
    public void useTemplate(String template) throws ParseException {
+      protectConfiguration();
       Objects.requireNonNull(template);
-      formatter = LogFormatter.parse(template);
+      formatter = LogFormatter.parse(template, variables);
       if (writer instanceof FormattedLogWriter) {
          ((FormattedLogWriter) writer).setFormatter(formatter);
       }
@@ -73,36 +97,39 @@ class LoggerOptions extends AbstractOptions implements ILoggerOptions {
 
    @Override
    public void useWriter(LogWriter writer) {
+      protectConfiguration();
       this.writer = Objects.requireNonNull(writer);
       if (writer instanceof FormattedLogWriter) {
+         ((FormattedLogWriter) writer).setTracing(defaultLevel == Severity.DEBUG);
          ((FormattedLogWriter) writer).setFormatter(formatter);
       }
    }
 
    @Override
-   public void useTimeZone(ZoneId zone) {
-      this.zone = Objects.requireNonNull(zone);
+   public void configurationEnded() {
+      super.configurationEnded();
+      parent.configurationEnded();
    }
 
-   void process(LogEntry entry) {
-      if (shouldLog(entry) && writer != null) {
-         writer.append(entry);
-      }
+   Map<String, Function<LogEntry, String>> getVariables() {
+      return Collections.unmodifiableMap(variables);
    }
 
-   ZoneId getLogZone() {
-      return zone;
+   LogWriter getWriter() {
+      return writer;
    }
 
-   private boolean shouldLog(LogEntry entry) {
+   boolean shouldLog(LogEntry entry) {
       String pckg = entry.getClassName();
-      while (pckg.lastIndexOf('.') > 0) {
-         pckg = pckg.substring(0, pckg.lastIndexOf('.'));
-         if (packageLevels.containsKey(pckg)) {
-            Severity pckgLevel = packageLevels.get(pckg);
-            return entry.getSeverity().compareTo(pckgLevel) >= 0;
+      if (pckg != null) {
+         while (pckg.lastIndexOf('.') > 0) {
+            pckg = pckg.substring(0, pckg.lastIndexOf('.'));
+            if (packageLevels.containsKey(pckg)) {
+               Severity pckgLevel = packageLevels.get(pckg);
+               return entry.getSeverity().compareTo(pckgLevel) <= 0;
+            }
          }
       }
-      return defaultLevel.compareTo(entry.getSeverity()) >= 0;
+      return entry.getSeverity().compareTo(defaultLevel) <= 0;
    }
 }

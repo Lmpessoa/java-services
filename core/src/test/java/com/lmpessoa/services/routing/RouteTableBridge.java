@@ -23,6 +23,7 @@
 package com.lmpessoa.services.routing;
 
 import com.lmpessoa.services.hosting.HttpRequest;
+import com.lmpessoa.services.logging.ILogger;
 import com.lmpessoa.services.routing.IRouteTable;
 import com.lmpessoa.services.routing.MatchedRoute;
 import com.lmpessoa.services.routing.RouteTable;
@@ -30,8 +31,8 @@ import com.lmpessoa.services.services.IServiceMap;
 
 public final class RouteTableBridge {
 
-   public static IRouteTable get(IServiceMap serviceMap) throws NoSuchMethodException {
-      return new RouteTable(serviceMap);
+   public static IRouteTable get(IServiceMap serviceMap, ILogger log) throws NoSuchMethodException {
+      return new RouteTable(serviceMap, log);
    }
 
    public static MatchedRoute match(IRouteTable routes, HttpRequest request) {

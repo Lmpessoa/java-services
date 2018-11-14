@@ -65,6 +65,7 @@ public abstract class AbstractParser<T extends IVariablePart> {
    private static final Map<Character, Character> BLOCKS;
 
    private final boolean forceLiteralSeparator;
+   private final String variablePrefix;
    private final String template;
    private int pos;
 
@@ -94,9 +95,10 @@ public abstract class AbstractParser<T extends IVariablePart> {
     * @param forceLiteralSeparator whether the template must force a literal separator between two
     * variables.
     */
-   protected AbstractParser(String template, boolean forceLiteralSeparator) {
+   protected AbstractParser(String template, boolean forceLiteralSeparator, Character forceVariablePrefix) {
       this.template = template;
       this.forceLiteralSeparator = forceLiteralSeparator;
+      this.variablePrefix = forceVariablePrefix != null ? forceVariablePrefix + "{" : "{";
    }
 
    /**
@@ -111,7 +113,7 @@ public abstract class AbstractParser<T extends IVariablePart> {
       ITemplatePart lastPart = null;
       while (pos < template.length()) {
          ITemplatePart part;
-         if (template.charAt(pos) == '{') {
+         if (template.startsWith(variablePrefix, pos)) {
             if (forceLiteralSeparator && lastPart != null && lastPart instanceof IVariablePart) {
                throw new ParseException("A literal must separate two variables", pos);
             }
@@ -151,6 +153,9 @@ public abstract class AbstractParser<T extends IVariablePart> {
 
    private IVariablePart parseVariable() throws ParseException {
       int varPos = pos;
+      if (variablePrefix.length() == 2) {
+         pos += 1;
+      }
       String variablePart = readWithBlock('}');
       pos += 1;
       return parseVariable(varPos, variablePart);
@@ -182,7 +187,7 @@ public abstract class AbstractParser<T extends IVariablePart> {
    private LiteralPart parseLiteral() {
       StringBuilder result = new StringBuilder();
       while (pos < template.length()) {
-         int varPos = template.indexOf('{', pos);
+         int varPos = template.indexOf(variablePrefix, pos);
          if (varPos > 0 && "\\{".equals(template.substring(varPos - 1, varPos + 1))) {
             result.append(template.substring(pos, varPos - 1));
             result.append('{');

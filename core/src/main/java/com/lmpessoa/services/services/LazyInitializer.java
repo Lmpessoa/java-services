@@ -24,7 +24,8 @@ package com.lmpessoa.services.services;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 
 import com.lmpessoa.util.ClassUtils;
@@ -38,7 +39,7 @@ final class LazyInitializer<T> implements Supplier<T> {
       if (!ClassUtils.isConcreteClass(provider)) {
          throw new IllegalArgumentException("Provider class must be a concrete class");
       }
-      final Constructor<?>[] constructors = provider.getConstructors();
+      final Constructor<?>[] constructors = provider.getDeclaredConstructors();
       if (constructors.length != 1) {
          throw new IllegalArgumentException(
                   new NoSingleMethodException("Provider class must have only one constructor", constructors.length));
@@ -60,10 +61,14 @@ final class LazyInitializer<T> implements Supplier<T> {
    @Override
    @SuppressWarnings("unchecked")
    public T get() {
-      Constructor<?> constructor = provider.getConstructors()[0];
-      Object[] params = Arrays.stream(constructor.getParameterTypes()).map(serviceMap::get).toArray(Object[]::new);
+      Constructor<?> constructor = provider.getDeclaredConstructors()[0];
+      constructor.setAccessible(true);
+      List<Object> params = new ArrayList<>();
+      for (Class<?> param : constructor.getParameterTypes()) {
+         params.add(serviceMap.get(param));
+      }
       try {
-         return (T) constructor.newInstance(params);
+         return (T) constructor.newInstance(params.toArray());
       } catch (InvocationTargetException e) {
          throw new LazyInstatiationException(e.getCause());
       } catch (Exception e) {
