@@ -80,7 +80,8 @@ final class Logger implements ILogger, Runnable {
    @Override
    public void run() {
       try {
-         while (writer != null) {
+         writer.prepare();
+         while (true) {
             LogEntry entry;
             synchronized (entriesToLog) {
                entry = entriesToLog.poll();
@@ -93,6 +94,7 @@ final class Logger implements ILogger, Runnable {
             }
          }
       } finally {
+         writer.finish();
          thread = null;
       }
    }

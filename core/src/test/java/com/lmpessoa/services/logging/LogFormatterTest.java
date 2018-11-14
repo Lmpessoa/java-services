@@ -37,14 +37,20 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import com.lmpessoa.services.logging.FormattedLogWriter;
+import com.lmpessoa.services.logging.LogEntry;
+import com.lmpessoa.services.logging.LogFormatParser;
+import com.lmpessoa.services.logging.LogFormatter;
+import com.lmpessoa.services.logging.Severity;
+
 public final class LogFormatterTest {
 
    @Rule
    public ExpectedException thrown = ExpectedException.none();
 
-   private final LogEntry entry = new LogEntry(ZonedDateTime
-            .of(LocalDateTime.of(2017, 6, 5, 5, 42, 7), ZoneId.of("America/Sao_Paulo")),
-            Severity.ERROR, "Test");
+   private final LogEntry entry = new LogEntry(
+            ZonedDateTime.of(LocalDateTime.of(2017, 6, 5, 5, 42, 7), ZoneId.of("America/Sao_Paulo")), Severity.ERROR,
+            "Test");
    private Map<String, Function<LogEntry, String>> variables;
 
    @Before

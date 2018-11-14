@@ -37,6 +37,8 @@ public final class FileLogWriter extends FormattedLogWriter {
 
    private final File file;
 
+   private PrintWriter out;
+
    /**
     * Creates a new log writer with the given file.
     *
@@ -56,14 +58,26 @@ public final class FileLogWriter extends FormattedLogWriter {
    }
 
    @Override
-   public void append(Severity severity, String entry) {
+   public void prepare() {
       try {
          file.createNewFile();
-         try (PrintWriter out = new PrintWriter(file)) {
-            out.println(entry);
-         }
+         out = new PrintWriter(file, "UTF-8");
       } catch (IOException e) {
          e.printStackTrace();
       }
+   }
+
+   @Override
+   public void append(Severity severity, String entry) {
+      if (out != null) {
+         out.println(entry);
+      }
+   }
+
+   @Override
+   public void finish() {
+      out.flush();
+      out.close();
+      out = null;
    }
 }

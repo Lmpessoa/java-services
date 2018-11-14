@@ -104,7 +104,7 @@ public final class LogWriterTest {
 
       useWriter(new FileLogWriter(tmp));
       log.warning("Test");
-      Thread.sleep(100);
+      Thread.sleep(300);
       try (BufferedReader buffer = new BufferedReader(new FileReader(tmp))) {
          assertEquals("[WARNING] Test", buffer.readLine());
       }

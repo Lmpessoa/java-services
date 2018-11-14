@@ -33,10 +33,18 @@ package com.lmpessoa.services.logging;
 @FunctionalInterface
 public interface LogWriter {
 
+   default void prepare() {
+      // Nothing to do here
+   }
+
    /**
-    * Appends the given log entry to the undelying log storage.
-    * 
+    * Appends the given log entry to the underlying log storage.
+    *
     * @param entry the log entry to be stored.
     */
    void append(LogEntry entry);
+
+   default void finish() {
+      // Nothing to do here
+   }
 }
