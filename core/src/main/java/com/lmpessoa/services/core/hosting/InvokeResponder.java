@@ -20,11 +20,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.services;
+package com.lmpessoa.services.core.hosting;
 
-import java.util.Map;
+import com.lmpessoa.services.core.routing.RouteMatch;
 
-interface IServiceLevelPool {
+final class InvokeResponder {
 
-   Map<Class<?>, Object> getPool(ServiceMap map);
+   public InvokeResponder(NextResponder next) { // NOSONAR
+      // Last handler, no need for next
+   }
+
+   public Object invoke(RouteMatch route) {
+      if (route == null) {
+         throw new NotFoundException();
+      }
+      return route.invoke();
+   }
 }

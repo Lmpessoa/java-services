@@ -88,8 +88,7 @@ final class SimpleFormSerializer extends Serializer {
       return result;
    }
 
-   private void setValueToField(Object value, Field field, Object result)
-      throws IllegalArgumentException, IllegalAccessException {
+   private void setValueToField(Object value, Field field, Object result) throws IllegalAccessException {
       if (field != null && !isStaticOrTransientOrVolatile(field)) {
          if (value instanceof String[]) {
             value = String.join(",", (String[]) value);

@@ -38,15 +38,21 @@ import org.junit.Test;
 
 import com.lmpessoa.services.core.concurrent.ExecutionService;
 import com.lmpessoa.services.core.hosting.ApplicationContext;
-import com.lmpessoa.services.core.hosting.ApplicationResponder;
+import com.lmpessoa.services.core.hosting.ApplicationRequestJob;
 import com.lmpessoa.services.core.hosting.ApplicationServer;
 import com.lmpessoa.services.core.hosting.ApplicationSettings;
 import com.lmpessoa.services.core.hosting.ContentType;
+import com.lmpessoa.services.core.hosting.Headers;
 import com.lmpessoa.services.core.hosting.HttpInputStream;
 import com.lmpessoa.services.core.routing.HttpGet;
 import com.lmpessoa.services.core.routing.IRouteTable;
 import com.lmpessoa.services.core.routing.Route;
 import com.lmpessoa.services.core.routing.RouteTable;
+import com.lmpessoa.services.core.security.Authorize;
+import com.lmpessoa.services.core.security.ClaimType;
+import com.lmpessoa.services.core.security.GenericIdentity;
+import com.lmpessoa.services.core.security.IIdentity;
+import com.lmpessoa.services.core.security.IIdentityProvider;
 import com.lmpessoa.services.util.logging.Logger;
 import com.lmpessoa.services.util.logging.NullHandler;
 
@@ -63,10 +69,22 @@ public final class ApplicationResponseTest {
       when(settings.getLogger()).thenReturn(log);
       when(settings.getJobExecutor()).thenReturn(new ExecutionService(0, log));
       ApplicationServer server = new ApplicationServer(settings);
-      RouteTable routes = new RouteTable(server.getServices(), log);
+      server.getOptions().useIdentity(new IIdentityProvider() {
+
+         @Override
+         public IIdentity getIdentity(String format, String token) {
+            if (token == null) {
+               return null;
+            }
+            GenericIdentity id = new GenericIdentity();
+            id.addClaim(ClaimType.DISPLAY_NAME, "Jane Doe");
+            return id;
+         }
+      });
+      RouteTable routes = server.getOptions().getRoutes();
       routes.put("", TestResource.class);
       context = new ApplicationContext(server, 5617, "test", routes);
-      server.getServices().putRequestValue(IRouteTable.class, routes);
+      server.getOptions().getServices().putRequestValue(IRouteTable.class, routes);
    }
 
    @Test
@@ -92,8 +110,8 @@ public final class ApplicationResponseTest {
       String[] result = runJob("GET", "/test");
       assertArrayEquals(new String[] { //
                "HTTP/1.1 200 OK", //
-               "Content-Length: 4", //
                "Content-Type: text/plain; charset=\"utf-8\"", //
+               "Content-Length: 4", //
                "", //
                "Test" }, result);
    }
@@ -103,9 +121,31 @@ public final class ApplicationResponseTest {
       String[] result = runJob("GET", "/test/download");
       assertArrayEquals(new String[] { //
                "HTTP/1.1 200 OK", //
-               "Content-Disposition: attachment; filename=\"test.txt\"", //
-               "Content-Length: 4", //
                "Content-Type: text/plain; charset=\"utf-8\"", //
+               "Content-Length: 4", //
+               "Content-Disposition: attachment; filename=\"test.txt\"", //
+               "", //
+               "Test" }, result);
+   }
+
+   @Test
+   public void testJobRequestAllowed() throws InterruptedException, IOException {
+      String[] result = runJob("GET", "/test/empty", true);
+      assertEquals("HTTP/1.1 204 No Content", result[0]);
+   }
+
+   @Test
+   public void testJobRequestUnauthenticated() throws InterruptedException, IOException {
+      String[] result = runJob("POST", "/test");
+      assertEquals("HTTP/1.1 401 Unauthorized", result[0]);
+   }
+
+   @Test
+   public void testJobRequestAuthenticated() throws InterruptedException, IOException {
+      String[] result = runJob("POST", "/test", true);
+      assertArrayEquals(new String[] { "HTTP/1.1 200 OK", //
+               "Content-Type: text/plain; charset=\"utf-8\"", //
+               "Content-Length: 4", //
                "", //
                "Test" }, result);
    }
@@ -130,15 +170,28 @@ public final class ApplicationResponseTest {
          result.setDownloadable(true);
          return result;
       }
+
+      @Authorize
+      public String post() {
+         return "Test";
+      }
    }
 
    private String[] runJob(String method, String path) throws InterruptedException, IOException {
-      InputStream request = new HttpRequestBuilder().setMethod(method).setPath(path).buildAsStream();
+      return runJob(method, path, false);
+   }
+
+   private String[] runJob(String method, String path, boolean useIdentity) throws InterruptedException, IOException {
+      HttpRequestBuilder builder = new HttpRequestBuilder().setMethod(method).setPath(path);
+      if (useIdentity) {
+         builder.addHeader(Headers.AUTHORIZATION, "Token sample");
+      }
+      InputStream request = builder.buildAsStream();
       ByteArrayOutputStream result = new ByteArrayOutputStream();
       Socket socket = mock(Socket.class);
       when(socket.getInputStream()).thenReturn(request);
       when(socket.getOutputStream()).thenReturn(result);
-      ApplicationResponder app = new ApplicationResponder(context, socket);
+      ApplicationRequestJob app = new ApplicationRequestJob(context, socket);
       app.run();
       return new String(result.toByteArray()).split("\r\n");
    }

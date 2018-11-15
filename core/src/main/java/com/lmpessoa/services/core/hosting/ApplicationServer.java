@@ -45,11 +45,11 @@ import com.lmpessoa.services.core.concurrent.IExecutionService;
 import com.lmpessoa.services.core.routing.IRouteTable;
 import com.lmpessoa.services.core.routing.NonResource;
 import com.lmpessoa.services.core.routing.Resource;
+import com.lmpessoa.services.core.routing.RouteEntry;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.routing.RouteTable;
+import com.lmpessoa.services.core.security.IIdentity;
 import com.lmpessoa.services.core.serializing.Serializer;
-import com.lmpessoa.services.core.services.IServiceMap;
-import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.util.ClassUtils;
 import com.lmpessoa.services.util.logging.ILogger;
 
@@ -77,13 +77,11 @@ public final class ApplicationServer {
 
    private static ApplicationServer instance;
 
-   private final ApplicationOptions options = new ApplicationOptions();
    private final Instant startupTime = Instant.now();
    private final ApplicationSettings settings;
 
-   private Collection<Class<?>> resources;
+   private ApplicationOptions options;
    private ApplicationContext context;
-   private ServiceMap services;
 
    /**
     * Starts the Application Server.
@@ -163,79 +161,85 @@ public final class ApplicationServer {
       return settings;
    }
 
-   NextHandler getFirstResponder() {
-      return options.getFirstResponder(services);
-   }
-
-   synchronized Collection<Class<?>> getResources() {
-      if (resources == null) {
-         Collection<String> classes = null;
-         try {
-            classes = ClassUtils.scanInProjectOf(settings.getStartupClass());
-         } catch (IOException e) {
-            settings.getLogger().error(e);
-            System.exit(1);
-         }
-         Collection<Class<?>> result = new ArrayList<>();
-         final Pattern endsInResource = Pattern.compile("[a-zA-Z0-9]Resource$");
-         for (String className : classes) {
-            try {
-               Class<?> clazz = Class.forName(className);
-               if (ClassUtils.isConcreteClass(clazz) && Modifier.isPublic(clazz.getModifiers())
-                        && (endsInResource.matcher(clazz.getSimpleName()).find()
-                                 || clazz.isAnnotationPresent(Resource.class))
-                        && !clazz.isAnnotationPresent(NonResource.class)) {
-                  result.add(clazz);
-               }
-            } catch (ClassNotFoundException e) {
-               // Should never get here since we fetched existing class names
-               settings.getLogger().debug(e);
-            }
-         }
-         resources = Collections.unmodifiableCollection(result);
-      }
-      return resources;
-   }
-
-   synchronized ServiceMap getServices() {
-      if (services == null) {
-         services = new ServiceMap();
-
-         // Registers Singleton services
-         services.put(IServiceMap.class, Wrapper.wrap(services));
-         services.put(ILogger.class, Wrapper.wrap(settings.getLogger()));
-         services.put(IApplicationSettings.class, Wrapper.wrap(settings));
-         services.put(IApplicationOptions.class, Wrapper.wrap(options));
-         services.put(IHostEnvironment.class, settings.getEnvironment());
-         services.put(IExecutionService.class, Wrapper.wrap(settings.getJobExecutor()));
-
-         // Registers PerRequest services
-         services.put(IRouteTable.class, (Supplier<IRouteTable>) () -> null);
-         services.put(ConnectionInfo.class, (Supplier<ConnectionInfo>) () -> null);
-         services.put(HttpRequest.class, (Supplier<HttpRequest>) () -> null);
-         services.put(RouteMatch.class, (Supplier<RouteMatch>) () -> null);
-         services.put(HeaderMap.class);
-
-         // Runs used defined service registration
-         configureServices(services);
-         final ServiceMap configMap = getConfigServiceMap(services);
-         configureApp(configMap);
-         endConfiguration(configMap);
-      }
-      return services;
+   ApplicationOptions getOptions() {
+      return options;
    }
 
    synchronized ApplicationContext getContext() {
       if (context == null) {
-         RouteTable routes = new RouteTable(services, settings.getLogger());
-         routes.putAll(getResources());
+         RouteTable routes = options.getRoutes();
+         Collection<RouteEntry> result = routes.putAll(getResources());
+         for (RouteEntry entry : result) {
+            if (entry.getError() != null) {
+               settings.getLogger().warning(entry.getError());
+            } else if (entry.getDuplicateOf() != null) {
+               settings.getLogger().info("Route '%s' is already assigned to another method; ignored", entry.getRoute());
+            } else {
+               settings.getLogger().info("Mapped route '%s' to method %s", entry.getRoute(), entry.getMethod());
+            }
+         }
          context = new ApplicationContext(this, settings.getHttpPort(), "http", routes);
       }
       return context;
    }
 
    ConnectionInfo getConnectionInfo() {
-      return getServices().get(ConnectionInfo.class);
+      return options.getServices().get(ConnectionInfo.class);
+   }
+
+   Collection<Class<?>> getResources() {
+      Collection<String> classes = null;
+      try {
+         classes = ClassUtils.scanInProjectOf(settings.getStartupClass());
+      } catch (IOException e) {
+         settings.getLogger().error(e);
+         System.exit(1);
+      }
+      Collection<Class<?>> result = new ArrayList<>();
+      final Pattern endsInResource = Pattern.compile("[a-zA-Z0-9]Resource$");
+      for (String className : classes) {
+         try {
+            Class<?> clazz = Class.forName(className);
+            if (ClassUtils.isConcreteClass(clazz) && Modifier.isPublic(clazz.getModifiers())
+                     && (endsInResource.matcher(clazz.getSimpleName()).find()
+                              || clazz.isAnnotationPresent(Resource.class))
+                     && !clazz.isAnnotationPresent(NonResource.class)) {
+               result.add(clazz);
+            }
+         } catch (ClassNotFoundException e) {
+            // Should never get here since we fetched existing class names
+            settings.getLogger().debug(e);
+         }
+      }
+      return Collections.unmodifiableCollection(result);
+   }
+
+   void configureServices() {
+      IHostEnvironment env = settings.getEnvironment();
+      Class<?> startupClass = settings.getStartupClass();
+      String envSpecific = CONFIGURE + env.getName() + "Services";
+      Method configMethod = ClassUtils.getMethod(startupClass, envSpecific, IApplicationOptions.class);
+      Object[] args = new Object[] { options };
+      if (configMethod == null || !Modifier.isStatic(configMethod.getModifiers())) {
+         configMethod = ClassUtils.getMethod(startupClass, CONFIGURE_SERVICES, IApplicationOptions.class,
+                  IHostEnvironment.class);
+         args = new Object[] { options, env };
+      }
+      if (configMethod == null || !Modifier.isStatic(configMethod.getModifiers())) {
+         configMethod = ClassUtils.getMethod(startupClass, CONFIGURE_SERVICES, IApplicationOptions.class);
+         args = new Object[] { options };
+      }
+      if (configMethod == null || !Modifier.isStatic(configMethod.getModifiers())) {
+         settings.getLogger().info("Application has no service configuration method");
+         return;
+      } else if (!CONFIGURE_SERVICES.equals(configMethod.getName())) {
+         settings.getLogger().info("Using service configuration specific for the environment");
+      }
+      try {
+         configMethod.invoke(null, args);
+      } catch (IllegalAccessException | InvocationTargetException e) {
+         settings.getLogger().debug(e);
+      }
    }
 
    private static Class<?> findStartupClass() {
@@ -275,95 +279,26 @@ public final class ApplicationServer {
 
    private void initServer() {
       logStartupMessage(settings.getStartupClass(), settings.getApplicationName());
+      AsyncResponder.setExecutor(settings.getJobExecutor());
       Serializer.enableXml(settings.isXmlEnabled());
-      AsyncHandler.setExecutor(settings.getJobExecutor());
-   }
+      options = new ApplicationOptions(services -> {
+         // Registers Singleton services
+         services.put(ILogger.class, Wrapper.wrap(settings.getLogger()));
+         services.put(IApplicationSettings.class, Wrapper.wrap(settings));
+         services.put(IHostEnvironment.class, settings.getEnvironment());
+         services.put(IExecutionService.class, Wrapper.wrap(settings.getJobExecutor()));
 
-   private void configureServices(IServiceMap services) {
-      IHostEnvironment env = settings.getEnvironment();
-      Class<?> startupClass = settings.getStartupClass();
-      String envSpecific = CONFIGURE + env.getName() + "Services";
-      Method configMethod = ClassUtils.getMethod(startupClass, envSpecific, IServiceMap.class);
-      Object[] args = new Object[] { services };
-      if (configMethod == null || !Modifier.isStatic(configMethod.getModifiers())) {
-         configMethod = ClassUtils.getMethod(startupClass, CONFIGURE_SERVICES, IServiceMap.class,
-                  IHostEnvironment.class);
-         args = new Object[] { services, env };
-      }
-      if (configMethod == null || !Modifier.isStatic(configMethod.getModifiers())) {
-         configMethod = ClassUtils.getMethod(startupClass, CONFIGURE_SERVICES, IServiceMap.class);
-         args = new Object[] { services };
-      }
-      if (configMethod == null) {
-         settings.getLogger().info("Application has no service configuration method");
-      } else if (!CONFIGURE_SERVICES.equals(configMethod.getName())) {
-         settings.getLogger().info("Using service configuration specific for the environment");
-      }
-      if (configMethod == null || !Modifier.isStatic(configMethod.getModifiers())) {
-         return;
-      }
-      try {
-         configMethod.invoke(null, args);
-      } catch (IllegalAccessException | InvocationTargetException e) {
-         settings.getLogger().debug(e);
-      }
-   }
-
-   @SuppressWarnings({ "unchecked", "rawtypes" })
-   private ServiceMap getConfigServiceMap(ServiceMap services) {
-      ServiceMap configMap = new ServiceMap();
-      configMap.put(IApplicationOptions.class, Wrapper.wrap(options));
-      for (Class<?> c : services.getServices()) {
-         Object o = services.get(c);
-         if (o != null && o instanceof Configurable<?>) {
-            Method m = ClassUtils.getMethod(o.getClass(), "getOptions");
-            if (m != null) {
-               Class<?> configOptions = m.getReturnType();
-               if (configOptions != Object.class) {
-                  configMap.put(configOptions, new LazyGetOptions(c, services));
-               }
-            }
-         }
-      }
-      return configMap;
-   }
-
-   private void configureApp(ServiceMap configMap) {
-      IHostEnvironment env = settings.getEnvironment();
-      Class<?> startupClass = settings.getStartupClass();
-      String envSpecific = CONFIGURE + env.getName();
-      Method[] methods = ClassUtils.findMethods(startupClass,
-               m -> envSpecific.equals(m.getName()) && Modifier.isStatic(m.getModifiers()));
-      if (methods.length != 1) {
-         methods = ClassUtils.findMethods(startupClass,
-                  m -> CONFIGURE.equals(m.getName()) && Modifier.isStatic(m.getModifiers()));
-      }
-      if (methods.length != 1) {
-         settings.getLogger().info("Application has no configuration method");
-      } else if (!CONFIGURE.equals(methods[0].getName())) {
-         settings.getLogger().info("Using application configuration specific for the environment");
-      }
-      if (methods.length != 1) {
-         return;
-      }
-      try {
-         configMap.invoke(startupClass, methods[0]);
-      } catch (IllegalAccessException | InvocationTargetException | InstantiationException e) {
-         settings.getLogger().debug(e);
-      }
-   }
-
-   private void endConfiguration(ServiceMap configMap) {
-      for (Class<?> config : configMap.getServices()) {
-         Object obj = configMap.get(config);
-         if (obj != null && obj instanceof AbstractOptions) {
-            ((AbstractOptions) obj).doConfigurationEnded();
-         }
-      }
+         // Registers PerRequest services
+         services.put(IRouteTable.class, (Supplier<IRouteTable>) () -> null);
+         services.put(ConnectionInfo.class, (Supplier<ConnectionInfo>) () -> null);
+         services.put(HttpRequest.class, (Supplier<HttpRequest>) () -> null);
+         services.put(RouteMatch.class, (Supplier<RouteMatch>) () -> null);
+         services.put(IIdentity.class, (Supplier<IIdentity>) () -> null);
+      });
    }
 
    private void run() {
-      getServices();
+      configureServices();
       Thread ct = new Thread(getContext());
       ct.start();
       logCreatedContext(getContext());

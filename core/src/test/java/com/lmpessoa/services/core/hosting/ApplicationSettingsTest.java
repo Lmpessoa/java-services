@@ -35,7 +35,6 @@ import java.util.function.Predicate;
 import org.junit.Test;
 
 import com.lmpessoa.services.core.concurrent.ExecutionService;
-import com.lmpessoa.services.core.services.IServiceMap;
 import com.lmpessoa.services.util.Property;
 import com.lmpessoa.services.util.PropertyBuilder;
 import com.lmpessoa.services.util.logging.Handler;
@@ -47,7 +46,6 @@ public final class ApplicationSettingsTest {
 
    private static Logger log = new Logger(new NullHandler());
    private static String servicesResult;
-   private static String configResult;
    private static String logResult;
 
    private ApplicationServer server;
@@ -63,7 +61,7 @@ public final class ApplicationSettingsTest {
       when(settings.getJobExecutor()).thenReturn(new ExecutionService(0, log));
       when(settings.getLogger()).thenReturn(log);
       server = new ApplicationServer(settings);
-      server.getServices();
+      server.configureServices();
    }
 
    @Test
@@ -80,21 +78,18 @@ public final class ApplicationSettingsTest {
    public void testConfigMultipleEnvironments() {
       setup(CommonEnv.class);
       assertEquals("common", servicesResult);
-      assertEquals("common", configResult);
    }
 
    @Test
    public void testConfigDefaultEnvironment() {
       setup(DefaultEnv.class);
       assertEquals("common", servicesResult);
-      assertEquals("dev", configResult);
    }
 
    @Test
    public void testConfigSpecificEnvironment() {
       setup(SpecificEnv.class, "Staging");
       assertEquals("staging", servicesResult);
-      assertEquals("staging", configResult);
    }
 
    @Test
@@ -120,30 +115,17 @@ public final class ApplicationSettingsTest {
 
    public static class CommonEnv {
 
-      public static void configureServices(IServiceMap services, IHostEnvironment env) {
+      public static void configureServices(IApplicationOptions app, IHostEnvironment env) {
          servicesResult = "common";
       }
-
-      public static void configure() {
-         configResult = "common";
-      }
    }
 
-   public static class DefaultEnv extends CommonEnv {
-
-      public static void configureDevelopment() {
-         configResult = "dev";
-      }
-   }
+   public static class DefaultEnv extends CommonEnv {}
 
    public static class SpecificEnv extends CommonEnv {
 
-      public static void configureStagingServices(IServiceMap services) {
+      public static void configureStagingServices(IApplicationOptions app) {
          servicesResult = "staging";
-      }
-
-      public static void configureStaging() {
-         configResult = "staging";
       }
    }
 

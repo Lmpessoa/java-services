@@ -47,7 +47,7 @@ public interface IRouteTable {
     * @param clazz the class to add to the route table.
     * @return a list of exceptions raised during this call.
     */
-   void put(Class<?> clazz);
+   Collection<RouteEntry> put(Class<?> clazz);
 
    /**
     * Adds the methods of the given resource class to this route table under the given area. If any
@@ -57,8 +57,8 @@ public interface IRouteTable {
     * @param clazz the class to add to the route table.
     * @return a list of exceptions raised during this call.
     */
-   default void put(String area, Class<?> clazz) {
-      putAll(area, Arrays.asList(clazz));
+   default Collection<RouteEntry> put(String area, Class<?> clazz) {
+      return putAll(area, Arrays.asList(clazz));
    }
 
    /**
@@ -68,7 +68,7 @@ public interface IRouteTable {
     * @param classes the collection of classes to add to the route table.
     * @return a list of exceptions raised during this call.
     */
-   void putAll(Collection<Class<?>> classes);
+   Collection<RouteEntry> putAll(Collection<Class<?>> classes);
 
    /**
     * Adds the methods of all the given resource class to this route table under the given area. If any
@@ -78,7 +78,7 @@ public interface IRouteTable {
     * @param classes the collection of classes to add to the route table.
     * @return a list of exceptions raised during this call.
     */
-   void putAll(String area, Collection<Class<?>> classes);
+   Collection<RouteEntry> putAll(String area, Collection<Class<?>> classes);
 
    /**
     * Returns the name of the area classes in the given package name should belong to.

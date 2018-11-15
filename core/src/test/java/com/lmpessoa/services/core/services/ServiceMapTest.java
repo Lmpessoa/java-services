@@ -36,7 +36,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.lmpessoa.services.core.services.IServiceMap;
 import com.lmpessoa.services.core.services.NoSingleMethodException;
 import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.test.services.AbstractTestService;
@@ -61,7 +60,6 @@ public class ServiceMapTest {
    @Before
    public void setup() {
       map = new ServiceMap();
-      map.put(IServiceMap.class, map);
    }
 
    @Test

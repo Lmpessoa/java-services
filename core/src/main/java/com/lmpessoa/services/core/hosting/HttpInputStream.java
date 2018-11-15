@@ -150,7 +150,7 @@ public final class HttpInputStream extends InputStream {
     * @param filename a suggested file name for when saving this stream to a file.
     */
    public HttpInputStream(String contentType, InputStream stream, Charset charset, String filename) {
-      Map<String, String> values = HeaderMap.split(contentType);
+      Map<String, String> values = Headers.split(contentType);
       contentType = values.get("");
       if (values.containsKey("charset")) {
          charset = Charset.forName(values.get("charset"));

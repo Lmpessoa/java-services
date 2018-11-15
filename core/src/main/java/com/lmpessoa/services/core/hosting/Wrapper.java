@@ -28,33 +28,21 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import com.lmpessoa.services.core.concurrent.IExecutionService;
+import com.lmpessoa.services.core.routing.IRouteOptions;
 import com.lmpessoa.services.core.routing.IRouteTable;
-import com.lmpessoa.services.core.services.IServiceMap;
+import com.lmpessoa.services.core.routing.RouteEntry;
+import com.lmpessoa.services.core.security.IIdentityOptions;
+import com.lmpessoa.services.core.security.IIdentityProvider;
 import com.lmpessoa.services.util.logging.ILogger;
 
 // The issue with wrappers is that every method in the wrapped interface has to be overridden,
 // including defaults because we have no idea when a default method will be overridden in the
 // wrapped class.
 final class Wrapper {
-
-   static IServiceMap wrap(IServiceMap original) {
-      Objects.requireNonNull(original);
-      return new IServiceMap() {
-
-         @Override
-         public <T> void put(Class<T> service, Supplier<T> supplier) {
-            original.put(service, supplier);
-         }
-
-         @Override
-         public <T> void put(Class<T> service, T instance) {
-            original.put(service, instance);
-         }
-      };
-   }
 
    static ILogger wrap(ILogger original) {
       Objects.requireNonNull(original);
@@ -139,18 +127,53 @@ final class Wrapper {
       return new IApplicationOptions() {
 
          @Override
-         public void useHandler(Class<?> handlerClass) {
-            original.useHandler(handlerClass);
+         public void useResponder(Class<?> responderClass) {
+            original.useResponder(responderClass);
          }
 
          @Override
-         public String getAsyncFeedbackPath() {
-            return original.getAsyncFeedbackPath();
+         public void useRoutes(Consumer<IRouteOptions> options) {
+            original.useRoutes(options);
          }
 
          @Override
-         public void setAsyncFeedbackPath(String path) {
-            original.setAsyncFeedbackPath(path);
+         public <T> void useService(Class<T> serviceClass) {
+            original.useService(serviceClass);
+         }
+
+         @Override
+         public <T> void useService(Class<T> serviceClass, Class<? extends T> implementationClass) {
+            original.useService(serviceClass, implementationClass);
+         }
+
+         @Override
+         public <T> void useService(Class<T> serviceClass, Supplier<T> supplier) {
+            original.useService(serviceClass, supplier);
+         }
+
+         @Override
+         public <T> void useService(Class<T> serviceClass, T instance) {
+            original.useService(serviceClass, instance);
+         }
+
+         @Override
+         public void userAsync() {
+            original.userAsync();
+         }
+
+         @Override
+         public void useAsyncWithFeedbackPath(String feedbackPath) {
+            original.useAsyncWithFeedbackPath(feedbackPath);
+         }
+
+         @Override
+         public void useIdentity(IIdentityProvider identityProvider) {
+            original.useIdentity(identityProvider);
+         }
+
+         @Override
+         public void useIdentity(IIdentityProvider identityProvider, Consumer<IIdentityOptions> options) {
+            original.useIdentity(identityProvider, options);
          }
       };
    }
@@ -216,13 +239,23 @@ final class Wrapper {
          }
 
          @Override
-         public HeaderMap getHeaders() {
-            return original.getHeaders();
+         public String[] getHeaderNames() {
+            return original.getHeaderNames();
          }
 
          @Override
          public String getHeader(String headerName) {
             return original.getHeader(headerName);
+         }
+
+         @Override
+         public String[] getHeaderValues(String headerName) {
+            return original.getHeaderValues(headerName);
+         }
+
+         @Override
+         public boolean containsHeaders(String headerName) {
+            return original.containsHeaders(headerName);
          }
 
          @Override
@@ -237,23 +270,23 @@ final class Wrapper {
       return new IRouteTable() {
 
          @Override
-         public void put(Class<?> clazz) {
-            original.put(clazz);
+         public Collection<RouteEntry> put(Class<?> clazz) {
+            return original.put(clazz);
          }
 
          @Override
-         public void put(String area, Class<?> clazz) {
-            original.put(area, clazz);
+         public Collection<RouteEntry> put(String area, Class<?> clazz) {
+            return original.put(area, clazz);
          }
 
          @Override
-         public void putAll(Collection<Class<?>> classes) {
-            original.putAll(classes);
+         public Collection<RouteEntry> putAll(Collection<Class<?>> classes) {
+            return original.putAll(classes);
          }
 
          @Override
-         public void putAll(String area, Collection<Class<?>> classes) {
-            original.putAll(area, classes);
+         public Collection<RouteEntry> putAll(String area, Collection<Class<?>> classes) {
+            return original.putAll(area, classes);
          }
 
          @Override

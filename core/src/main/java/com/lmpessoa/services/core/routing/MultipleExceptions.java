@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,25 +20,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.hosting;
+package com.lmpessoa.services.core.routing;
 
-import java.util.function.Supplier;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 
-import com.lmpessoa.services.core.services.ServiceMap;
+public final class MultipleExceptions extends Exception {
 
-final class LazyGetOptions<T> implements Supplier<T> {
+   private static final long serialVersionUID = 1L;
 
-   private final Class<? extends Configurable<T>> serviceClass;
-   private final ServiceMap serviceMap;
+   private final Collection<? extends Throwable> causes;
 
-   LazyGetOptions(Class<? extends Configurable<T>> serviceClass, ServiceMap serviceMap) {
-      this.serviceClass = serviceClass;
-      this.serviceMap = serviceMap;
+   public MultipleExceptions(List<? extends Throwable> causes) {
+      this.causes = Objects.requireNonNull(causes);
    }
 
-   @Override
-   public T get() {
-      Configurable<T> service = serviceMap.get(serviceClass);
-      return service.getOptions();
+   public Collection<Throwable> getCauses() {
+      return Collections.unmodifiableCollection(causes);
    }
 }

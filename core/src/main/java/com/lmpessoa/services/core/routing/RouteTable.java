@@ -33,15 +33,16 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
-import com.lmpessoa.services.core.hosting.Configurable;
 import com.lmpessoa.services.core.hosting.InternalServerError;
 import com.lmpessoa.services.core.hosting.MethodNotAllowedException;
 import com.lmpessoa.services.core.hosting.NotFoundException;
@@ -49,7 +50,6 @@ import com.lmpessoa.services.core.serializing.Serializer;
 import com.lmpessoa.services.core.services.NoSingleMethodException;
 import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.util.ClassUtils;
-import com.lmpessoa.services.util.logging.ILogger;
 
 /**
  * Maps methods to routes of the application.
@@ -79,14 +79,11 @@ import com.lmpessoa.services.util.logging.ILogger;
  * {@code RouteTable}.
  * </p>
  */
-public final class RouteTable implements IRouteTable, Configurable<IRouteOptions> {
+public final class RouteTable implements IRouteTable {
 
    private final Map<RoutePattern, Map<HttpMethod, MethodEntry>> endpoints = new ConcurrentHashMap<>();
    private final RouteOptions options = new RouteOptions();
    private final ServiceMap services;
-   private final ILogger log;
-
-   private Collection<Exception> lastExceptions;
 
    /**
     * Creates a new {@code RouteTable} with the given arguments.
@@ -94,25 +91,24 @@ public final class RouteTable implements IRouteTable, Configurable<IRouteOptions
     * @param services a service map used to resolve arguments to resource construction.
     * @param log a logger for error messages.
     */
-   public RouteTable(ServiceMap services, ILogger log) {
+   public RouteTable(ServiceMap services) {
       this.services = Objects.requireNonNull(services);
-      this.log = Objects.requireNonNull(log);
    }
 
    @Override
-   public void put(Class<?> clazz) {
-      putAll(options.findArea(clazz), Arrays.asList(clazz));
+   public Collection<RouteEntry> put(Class<?> clazz) {
+      return putAll(options.findArea(clazz), Arrays.asList(clazz));
    }
 
    @Override
-   public void putAll(Collection<Class<?>> classes) {
-      putClasses(classes.stream().filter(c -> options.findArea(c) != null).collect(
+   public Collection<RouteEntry> putAll(Collection<Class<?>> classes) {
+      return putClasses(classes.stream().filter(c -> options.findArea(c) != null).collect(
                Collectors.toMap(c -> c, options::findArea)));
    }
 
    @Override
-   public void putAll(String area, Collection<Class<?>> classes) {
-      putClasses(classes.stream().filter(c -> area != null).collect(Collectors.toMap(c -> c, c -> area)));
+   public Collection<RouteEntry> putAll(String area, Collection<Class<?>> classes) {
+      return putClasses(classes.stream().filter(c -> area != null).collect(Collectors.toMap(c -> c, c -> area)));
    }
 
    @Override
@@ -120,7 +116,6 @@ public final class RouteTable implements IRouteTable, Configurable<IRouteOptions
       return options.findArea(packageName);
    }
 
-   @Override
    public IRouteOptions getOptions() {
       return options;
    }
@@ -230,10 +225,6 @@ public final class RouteTable implements IRouteTable, Configurable<IRouteOptions
       return map.get(method);
    }
 
-   Collection<Exception> getLastExceptions() {
-      return lastExceptions;
-   }
-
    private Object parseContentBody(IRouteRequest request, Class<?> contentClass) {
       InputStream body = request.getBody();
       byte[] content = readContentBody(body);
@@ -257,12 +248,12 @@ public final class RouteTable implements IRouteTable, Configurable<IRouteOptions
       return output.toByteArray();
    }
 
-   private void putClasses(Map<Class<?>, String> classes) {
-      List<Exception> exceptions = new ArrayList<>();
+   private Collection<RouteEntry> putClasses(Map<Class<?>, String> classes) {
+      List<RouteEntry> result = new ArrayList<>();
       synchronized (this) {
          for (Entry<Class<?>, String> entry : classes.entrySet()) {
+            Class<?> clazz = entry.getKey();
             try {
-               Class<?> clazz = entry.getKey();
                if (clazz.isAnnotationPresent(NonResource.class)) {
                   continue;
                }
@@ -270,26 +261,26 @@ public final class RouteTable implements IRouteTable, Configurable<IRouteOptions
                String area = entry.getValue();
                RoutePattern classPat = RoutePattern.build(area, clazz, services, options);
                for (Method method : clazz.getMethods()) {
-                  putMethod(clazz, classPat, method, exceptions);
+                  result.addAll(putMethod(clazz, classPat, method));
                }
             } catch (Exception e) {
-               exceptions.add(e);
+               result.add(new RouteEntry(clazz, e));
             }
          }
       }
-      this.lastExceptions = exceptions;
-      exceptions.forEach(log::warning);
+      return Collections.unmodifiableCollection(result);
    }
 
-   private void putMethod(Class<?> clazz, RoutePattern classPat, Method method, List<Exception> exceptions) {
+   private Collection<RouteEntry> putMethod(Class<?> clazz, RoutePattern classPat, Method method) {
+      if (method.getDeclaringClass() == Object.class) {
+         return Collections.emptyList();
+      }
+      HttpMethod[] methodNames = findMethod(method);
+      if (methodNames.length == 0) {
+         return Collections.emptyList();
+      }
+      List<RouteEntry> result = new ArrayList<>();
       try {
-         if (method.getDeclaringClass() == Object.class) {
-            return;
-         }
-         HttpMethod[] methodNames = findMethod(method);
-         if (methodNames.length == 0) {
-            return;
-         }
          RoutePattern methodPat = RoutePattern.build(classPat, method, options);
          if (!endpoints.containsKey(methodPat)) {
             endpoints.put(methodPat, new ConcurrentHashMap<>());
@@ -297,40 +288,20 @@ public final class RouteTable implements IRouteTable, Configurable<IRouteOptions
          Map<HttpMethod, MethodEntry> map = endpoints.get(methodPat);
          for (HttpMethod methodName : methodNames) {
             if (map.containsKey(methodName)) {
-               log.info("Route '%s %s' is already assigned to another method; ignored", methodName, methodPat);
-               exceptions.add(new DuplicateMethodException(methodName, methodPat, clazz));
+               MethodEntry entry = map.get(methodName);
+               result.add(new RouteEntry(method, String.format("%s %s", methodName, methodPat), entry.getMethod()));
                continue;
             }
             Constructor<?> constructor = clazz.getConstructors()[0];
             map.put(methodName,
                      new MethodEntry(clazz, method, constructor.getParameterCount(), methodPat.getContentClass()));
-            log.info("Mapped route '%s %s' to method %s", methodName, methodPat, getMethodString(method));
+            result.add(new RouteEntry(method, String.format("%s %s", methodName, methodPat)));
 
          }
       } catch (Exception e) {
-         exceptions.add(e);
+         result.add(new RouteEntry(method, e));
       }
-   }
-
-   private String getMethodString(Method method) {
-      StringBuilder result = new StringBuilder();
-      result.append(method.getDeclaringClass().getTypeName());
-      result.append('.');
-      result.append(method.getName());
-      result.append('(');
-      for (Class<?> param : method.getParameterTypes()) {
-         if (result.charAt(result.length() - 1) != '(') {
-            result.append(", ");
-         }
-         result.append(param.getTypeName());
-      }
-      result.append(')');
-      if (void.class != method.getReturnType()) {
-         result.append(": ");
-         result.append(method.getReturnType().getTypeName());
-      }
-
-      return result.toString();
+      return result;
    }
 
    private HttpMethod[] findMethod(Method method) {
@@ -346,12 +317,11 @@ public final class RouteTable implements IRouteTable, Configurable<IRouteOptions
          return result;
       }
       String methodName = method.getName();
-      for (HttpMethod value : HttpMethod.values()) {
-         // TO SONARQUBE: This is actually meant to be this way and behaves differently
-         // from what SonarQube is suggesting that should be implemented. Ignore SonarQube here.
-         if (value.name().toLowerCase().equals(methodName)) { // NOSONAR
-            return new HttpMethod[] { value };
-         }
+      Optional<HttpMethod> optionalResult = Arrays.stream(HttpMethod.values())
+               .filter(m -> m.name().equalsIgnoreCase(methodName))
+               .findFirst();
+      if (optionalResult.isPresent()) {
+         return new HttpMethod[] { optionalResult.get() };
       }
       return new HttpMethod[0];
    }

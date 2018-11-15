@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.lmpessoa.services.core.hosting.BadRequestException;
-import com.lmpessoa.services.core.hosting.HeaderMap;
+import com.lmpessoa.services.core.hosting.Headers;
 import com.lmpessoa.services.core.hosting.HttpInputStream;
 import com.lmpessoa.services.core.hosting.InternalServerError;
 import com.lmpessoa.services.util.ClassUtils;
@@ -87,14 +87,14 @@ final class MultipartFormSerializer extends Serializer {
       throws InstantiationException, IllegalAccessException {
       T result = resultClass.newInstance();
       for (MultipartEntry entry : entries) {
-         Map<String, String> disp = getHeaderValues(entry.headers.get(HeaderMap.CONTENT_DISPOSITION));
+         Map<String, String> disp = Headers.split(entry.headers.get(Headers.CONTENT_DISPOSITION));
          if (!"form-data".equals(disp.get(""))) {
             throw new BadRequestException();
          }
          if (!disp.containsKey("name")) {
             throw new BadRequestException();
          }
-         String contentType = entry.headers.get(HeaderMap.CONTENT_TYPE);
+         String contentType = entry.headers.get(Headers.CONTENT_TYPE);
          Object value = null;
          if (contentType == null) {
             value = new String(entry.content);
@@ -126,17 +126,17 @@ final class MultipartFormSerializer extends Serializer {
    }
 
    private Collection<InputStream> parseMixedMultipart(MultipartEntry entry, String contentType) {
-      Map<String, String> mixedDisp = getHeaderValues(contentType);
+      Map<String, String> mixedDisp = Headers.split(contentType);
       String mixedBoundary = mixedDisp.get("boundary");
       Collection<MultipartEntry> mixedEntries = parseMultipart(entry.content, mixedBoundary);
       List<InputStream> result = new ArrayList<>();
       for (MultipartEntry mixedEntry : mixedEntries) {
-         Map<String, String> mixedEntryDisp = getHeaderValues(mixedEntry.headers.get(HeaderMap.CONTENT_DISPOSITION));
+         Map<String, String> mixedEntryDisp = Headers.split(mixedEntry.headers.get(Headers.CONTENT_DISPOSITION));
          if (!"file".equals(mixedEntryDisp.get(""))) {
             throw new BadRequestException();
          }
          String mixedFilename = mixedEntryDisp.get("filename");
-         String mixedContentType = mixedEntry.headers.get(HeaderMap.CONTENT_TYPE);
+         String mixedContentType = mixedEntry.headers.get(Headers.CONTENT_TYPE);
          result.add(new HttpInputStream(mixedContentType, mixedEntry.content, mixedFilename));
       }
       return result;

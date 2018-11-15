@@ -22,7 +22,30 @@
  */
 package com.lmpessoa.services.core.hosting;
 
-public interface Configurable<T> {
+/**
+ * Wraps the call to the next handler in the application.
+ *
+ * <p>
+ * A proxy to the next handler is created automatically by the application for each handler class
+ * registered. This proxy ensures each handler is instantiated only when required (when a the
+ * previous handler explicitly {@link #invoke}s the next handler).
+ * </p>
+ *
+ * <p>
+ * The proxy can only be invoked once per request.
+ * </p>
+ */
+interface NextResponder {
 
-   T getOptions();
+   /**
+    * Calls the next handler registered in the application.
+    * <p>
+    * New handlers must be aware that they are expected to return a result of their execution after
+    * completion. Implementors of new handlers may receive that result from the return of calling this
+    * function.
+    * </p>
+    *
+    * @return the result returned by the next handler.
+    */
+   Object invoke();
 }

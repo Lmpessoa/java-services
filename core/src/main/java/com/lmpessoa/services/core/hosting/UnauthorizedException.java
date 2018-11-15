@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,11 +20,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.services;
+package com.lmpessoa.services.core.hosting;
 
-import java.util.Map;
+/**
+ * Thrown when a non-identified user tries to access a protected resource method.
+ */
+public final class UnauthorizedException extends HttpException {
 
-interface IServiceLevelPool {
+   private static final long serialVersionUID = 1L;
 
-   Map<Class<?>, Object> getPool(ServiceMap map);
+   /**
+    * Creates a new instance of {@code UnauthorizedException}.
+    */
+   public UnauthorizedException() {
+      super(401);
+   }
+
+   /**
+    * Creates a new instance of {@code UnauthorizedException} with the given detail message.
+    *
+    * @param message the detail message.
+    */
+   public UnauthorizedException(String message) {
+      super(401, message);
+   }
 }

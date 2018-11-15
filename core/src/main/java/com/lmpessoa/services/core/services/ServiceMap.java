@@ -57,27 +57,87 @@ import java.util.function.Supplier;
  * @see Service
  * @see Reuse
  */
-public final class ServiceMap implements IServiceMap {
+public final class ServiceMap {
 
+   private static final String SPECIFY_REUSE_LEVEL = "Service does not specify reuse level: ";
    private final ThreadLocal<Map<Class<?>, Object>> threadPool = ThreadLocal.withInitial(HashMap::new);
    private final Map<Class<?>, ServiceEntry> entries = new HashMap<>();
    private final Map<Class<?>, Object> globalPool = new HashMap<>();
 
-   @Override
+   /**
+    * Registers a service for the given class on the service map.
+    *
+    * <p>
+    * The given class must be a concrete class and is used both for service discovery and instantiation
+    * of the service responder.
+    * </p>
+    *
+    * @param service the class of the service to be registered.
+    */
+   public <T> void put(Class<T> service) {
+      Service ann = service.getAnnotation(Service.class);
+      if (ann == null) {
+         throw new IllegalArgumentException(SPECIFY_REUSE_LEVEL + service.getName());
+      }
+      put(service, new LazyInitializer<>(service, ann.value(), this));
+   }
+
+   /**
+    * Registers a service for the given class on the service map.
+    *
+    * <p>
+    * The given {@code service} class is used for service discovery while the {@code provided} class
+    * must be a concrete class and is used to create the instance object that will respond to service
+    * requests.
+    * </p>
+    *
+    * @param service the class of the service to be registered.
+    * @param provided the class from which service instances for the base class are created.
+    */
+   public <T> void put(Class<T> service, Class<? extends T> provided) {
+      Service ann = service.getAnnotation(Service.class);
+      if (ann == null) {
+         throw new IllegalArgumentException(SPECIFY_REUSE_LEVEL + service.getName());
+      }
+      put(service, new LazyInitializer<>(provided, ann.value(), this));
+   }
+
+   /**
+    * Registers a service for the given class on the service map.
+    *
+    * <p>
+    * The given {@code service} class is used for service discovery and the {@code supplier} function
+    * is used to create the instance object that will respond to service requests.
+    * </p>
+    *
+    * @param service the class of the service to be registered.
+    * @param supplier the function that supplies new instances of the service.
+    */
    public <T> void put(Class<T> service, Supplier<T> supplier) {
       Service ann = service.getAnnotation(Service.class);
       if (ann == null) {
-         throw new IllegalArgumentException("Service does not specify reuse level");
+         throw new IllegalArgumentException(SPECIFY_REUSE_LEVEL + service.getName());
       }
       put(ann.value(), service, Objects.requireNonNull(supplier));
 
    }
 
-   @Override
+   /**
+    * Registers a service for the given class on the service map.
+    *
+    * <p>
+    * The given instance will be used to respond to any requests for this service. No other instances
+    * of the responder will be created through this call. Only services with reuse level {@link ALWAYS}
+    * can be registered with a single instance through this method.
+    * </p>
+    *
+    * @param service the class of the service to be registered.
+    * @param instance the instance to be used to respond to service requests.
+    */
    public <T> void put(Class<T> service, T instance) {
       Service ann = service.getAnnotation(Service.class);
       if (ann == null) {
-         throw new IllegalArgumentException("Service does not specify reuse level");
+         throw new IllegalArgumentException(SPECIFY_REUSE_LEVEL + service.getName());
       }
       if (ann.value() != Reuse.ALWAYS) {
          throw new IllegalArgumentException("Service instances can only be used if reuse is ALWAYS");
@@ -111,7 +171,7 @@ public final class ServiceMap implements IServiceMap {
     * Returns an instance of the given service type.
     *
     * <p>
-    * This method will handle creating any intermediary services required to fullfil the required
+    * This method will handle creating any intermediary services required to fulfil the required
     * service and returning the appropriate instance for the context (see {@link Reuse}).
     * </p>
     *

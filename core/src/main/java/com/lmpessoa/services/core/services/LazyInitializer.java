@@ -31,10 +31,10 @@ import com.lmpessoa.services.util.ClassUtils;
 final class LazyInitializer<T> implements Supplier<T> {
 
    private final Class<? extends T> provider;
-   private final ServiceMap services;
+   private final ServiceMap serviceMap;
 
-   public LazyInitializer(Class<? extends T> provider, Reuse level, IServiceMap serviceMap) {
-      this.services = (ServiceMap) serviceMap;
+   public LazyInitializer(Class<? extends T> provider, Reuse level, ServiceMap serviceMap) {
+      this.serviceMap = serviceMap;
       this.provider = provider;
       if (!ClassUtils.isConcreteClass(provider)) {
          throw new IllegalArgumentException("Provider class must be a concrete class");
@@ -45,7 +45,7 @@ final class LazyInitializer<T> implements Supplier<T> {
                   new NoSingleMethodException("Provider class must have only one constructor", constructors.length));
       }
       for (Class<?> paramType : constructors[0].getParameterTypes()) {
-         ServiceEntry entry = this.services.getEntry(paramType);
+         ServiceEntry entry = this.serviceMap.getEntry(paramType);
          if (entry == null) {
             throw new IllegalArgumentException("Dependent service " + paramType.getName() + " is not registered");
          }
@@ -61,7 +61,7 @@ final class LazyInitializer<T> implements Supplier<T> {
    public T get() {
       try {
          Constructor<?> constructor = provider.getDeclaredConstructors()[0];
-         return (T) services.invoke(null, constructor);
+         return (T) serviceMap.invoke(null, constructor);
       } catch (InvocationTargetException e) {
          throw new LazyInstatiationException(e.getCause());
       } catch (Exception e) {

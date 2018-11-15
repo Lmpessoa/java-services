@@ -33,6 +33,7 @@ import java.lang.reflect.Method;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Optional;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -40,7 +41,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import com.lmpessoa.services.core.routing.AbstractRouteType;
-import com.lmpessoa.services.core.routing.DuplicateMethodException;
 import com.lmpessoa.services.core.routing.HttpGet;
 import com.lmpessoa.services.core.routing.HttpMethod;
 import com.lmpessoa.services.core.routing.HttpPatch;
@@ -48,12 +48,11 @@ import com.lmpessoa.services.core.routing.HttpPost;
 import com.lmpessoa.services.core.routing.HttpPut;
 import com.lmpessoa.services.core.routing.IRouteTable;
 import com.lmpessoa.services.core.routing.Route;
+import com.lmpessoa.services.core.routing.RouteEntry;
 import com.lmpessoa.services.core.routing.RouteTable;
 import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.test.services.Singleton;
 import com.lmpessoa.services.test.services.SingletonImpl;
-import com.lmpessoa.services.util.logging.Logger;
-import com.lmpessoa.services.util.logging.NullHandler;
 import com.lmpessoa.services.util.parsing.TypeMismatchException;
 
 public final class RouteTableTest {
@@ -61,21 +60,20 @@ public final class RouteTableTest {
    @Rule
    public ExpectedException thrown = ExpectedException.none();
 
-   private final Logger log = new Logger(new NullHandler());
    private ServiceMap serviceMap;
    private RouteTable table;
 
    @Before
    public void setup() throws NoSuchMethodException {
       serviceMap = new ServiceMap();
-      table = new RouteTable(serviceMap, log);
+      table = new RouteTable(serviceMap);
    }
 
    @Test
    public void testRoutesMapped() throws ParseException {
-      table.put("", TestResource.class);
-      Collection<Exception> result = table.getLastExceptions();
-      assertEquals(0, result.size());
+      Collection<RouteEntry> result = table.put("", TestResource.class);
+      assertFalse(hasDuplicate(result));
+      assertFalse(hasException(result).isPresent());
       assertTrue(table.hasRoute("/test"));
       HttpMethod[] methods = table.listMethodsOf("/test");
       Arrays.sort(methods);
@@ -88,13 +86,12 @@ public final class RouteTableTest {
 
    @Test
    public void testRoutesDuplicated() throws ParseException, NoSuchMethodException {
-      table.put("", TestResource.class);
-      Collection<Exception> result = table.getLastExceptions();
-      assertEquals(0, result.size());
-      table.put("", AnotherTestResource.class);
-      result = table.getLastExceptions();
-      assertEquals(1, result.size());
-      assertTrue(result.toArray()[0] instanceof DuplicateMethodException);
+      Collection<RouteEntry> result = table.put("", TestResource.class);
+      assertFalse(hasDuplicate(result));
+      assertFalse(hasException(result).isPresent());
+      result = table.put("", AnotherTestResource.class);
+      assertTrue(hasDuplicate(result));
+      assertFalse(hasException(result).isPresent());
       HttpMethod[] methods = table.listMethodsOf("/test/{int}");
       Arrays.sort(methods);
       assertArrayEquals(new HttpMethod[] { HttpMethod.GET, HttpMethod.POST, HttpMethod.PATCH }, methods);
@@ -104,57 +101,57 @@ public final class RouteTableTest {
 
    @Test
    public void testRoutesWithEnum() {
-      table.put("", HttpMethod.class);
-      Collection<Exception> result = table.getLastExceptions();
-      assertEquals(1, result.size());
-      assertTrue(result.toArray()[0] instanceof IllegalArgumentException);
+      Collection<RouteEntry> result = table.put("", HttpMethod.class);
+      Optional<Exception> e = hasException(result);
+      assertTrue(e.isPresent());
+      assertTrue(e.get() instanceof IllegalArgumentException);
    }
 
    @Test
    public void testRoutesWithArray() {
-      table.put("", String[].class);
-      Collection<Exception> result = table.getLastExceptions();
-      assertEquals(1, result.size());
-      assertTrue(result.toArray()[0] instanceof IllegalArgumentException);
+      Collection<RouteEntry> result = table.put("", String[].class);
+      Optional<Exception> e = hasException(result);
+      assertTrue(e.isPresent());
+      assertTrue(e.get() instanceof IllegalArgumentException);
    }
 
    @Test
    public void testRoutesWithInterface() {
-      table.put("", IRouteTable.class);
-      Collection<Exception> result = table.getLastExceptions();
-      assertEquals(1, result.size());
-      assertTrue(result.toArray()[0] instanceof IllegalArgumentException);
+      Collection<RouteEntry> result = table.put("", IRouteTable.class);
+      Optional<Exception> e = hasException(result);
+      assertTrue(e.isPresent());
+      assertTrue(e.get() instanceof IllegalArgumentException);
    }
 
    @Test
    public void testRoutesWithAnnotation() {
-      table.put("", Route.class);
-      Collection<Exception> result = table.getLastExceptions();
-      assertEquals(1, result.size());
-      assertTrue(result.toArray()[0] instanceof IllegalArgumentException);
+      Collection<RouteEntry> result = table.put("", Route.class);
+      Optional<Exception> e = hasException(result);
+      assertTrue(e.isPresent());
+      assertTrue(e.get() instanceof IllegalArgumentException);
    }
 
    @Test
    public void testRoutesWithPrimitive() {
-      table.put("", int.class);
-      Collection<Exception> result = table.getLastExceptions();
-      assertEquals(1, result.size());
-      assertTrue(result.toArray()[0] instanceof IllegalArgumentException);
+      Collection<RouteEntry> result = table.put("", int.class);
+      Optional<Exception> e = hasException(result);
+      assertTrue(e.isPresent());
+      assertTrue(e.get() instanceof IllegalArgumentException);
    }
 
    @Test
    public void testRoutesWithAbstractClass() {
-      table.put("", AbstractRouteType.class);
-      Collection<Exception> result = table.getLastExceptions();
-      assertEquals(1, result.size());
-      assertTrue(result.toArray()[0] instanceof IllegalArgumentException);
+      Collection<RouteEntry> result = table.put("", AbstractRouteType.class);
+      Optional<Exception> e = hasException(result);
+      assertTrue(e.isPresent());
+      assertTrue(e.get() instanceof IllegalArgumentException);
    }
 
    @Test
    public void testRoutesAnnotated() throws ParseException {
-      table.put("", AnnotatedResource.class);
-      Collection<Exception> result = table.getLastExceptions();
-      assertEquals(0, result.size());
+      Collection<RouteEntry> result = table.put("", AnnotatedResource.class);
+      assertFalse(hasDuplicate(result));
+      assertFalse(hasException(result).isPresent());
       assertTrue(table.hasRoute("/test"));
       HttpMethod[] methods = table.listMethodsOf("/test");
       Arrays.sort(methods);
@@ -169,17 +166,16 @@ public final class RouteTableTest {
 
    @Test
    public void testRouteDuplicated() throws ParseException {
-      table.put("", DuplicateTestResource.class);
-      Collection<Exception> result = table.getLastExceptions();
-      assertEquals(1, result.size());
-      assertTrue(result.toArray()[0] instanceof DuplicateMethodException);
+      Collection<RouteEntry> result = table.put("", DuplicateTestResource.class);
+      assertTrue(hasDuplicate(result));
+      assertFalse(hasException(result).isPresent());
    }
 
    @Test
    public void testRouteWithContent() throws ParseException {
-      table.put("", ContentTestResource.class);
-      Collection<Exception> result = table.getLastExceptions();
-      assertEquals(0, result.size());
+      Collection<RouteEntry> result = table.put("", ContentTestResource.class);
+      assertFalse(hasDuplicate(result));
+      assertFalse(hasException(result).isPresent());
       assertTrue(table.hasRoute("/test"));
       assertArrayEquals(new HttpMethod[] { HttpMethod.POST }, table.listMethodsOf("/test"));
       assertEquals(AnotherTestResource.class, table.getRouteMethod(HttpMethod.POST, "/test").getContentClass());
@@ -187,10 +183,11 @@ public final class RouteTableTest {
 
    @Test
    public void testRouteWithUnregisteredService() throws ParseException {
-      table.put("", ServiceTestResource.class);
-      Collection<Exception> result = table.getLastExceptions();
-      assertEquals(1, result.size());
-      assertTrue(result.toArray()[0] instanceof TypeMismatchException);
+      Collection<RouteEntry> result = table.put("", ServiceTestResource.class);
+      assertFalse(hasDuplicate(result));
+      Optional<Exception> e = hasException(result);
+      assertTrue(e.isPresent());
+      assertTrue(e.get() instanceof TypeMismatchException);
       assertFalse(table.hasRoute("/test"));
    }
 
@@ -198,9 +195,9 @@ public final class RouteTableTest {
    public void testRouteWithInjectedService() throws ParseException {
       Singleton o = new SingletonImpl();
       serviceMap.put(Singleton.class, o);
-      table.put("", ServiceTestResource.class);
-      Collection<Exception> result = table.getLastExceptions();
-      assertEquals(0, result.size());
+      Collection<RouteEntry> result = table.put("", ServiceTestResource.class);
+      assertFalse(hasDuplicate(result));
+      assertFalse(hasException(result).isPresent());
       assertTrue(table.hasRoute("/test"));
       assertArrayEquals(new HttpMethod[] { HttpMethod.GET }, table.listMethodsOf("/test"));
    }
@@ -223,6 +220,14 @@ public final class RouteTableTest {
    public void testRouteProduceNoMethod() {
       table.put("", TestResource.class);
       assertNull(table.findPathTo(TestResource.class, "post", 1));
+   }
+
+   private boolean hasDuplicate(Collection<RouteEntry> entries) {
+      return entries.stream().anyMatch(r -> r.getDuplicateOf() != null);
+   }
+
+   private Optional<Exception> hasException(Collection<RouteEntry> entries) {
+      return entries.stream().map(RouteEntry::getError).filter(e -> e != null).findAny();
    }
 
    public static class TestResource {

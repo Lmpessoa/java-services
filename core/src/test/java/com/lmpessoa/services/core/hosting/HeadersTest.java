@@ -22,29 +22,20 @@
  */
 package com.lmpessoa.services.core.hosting;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Map;
 
-import org.junit.Before;
 import org.junit.Test;
 
-import com.lmpessoa.services.core.hosting.HeaderMap;
+import com.lmpessoa.services.core.hosting.Headers;
 
-public final class HeaderMapTest {
-
-   private HeaderMap subject;
-
-   @Before
-   public void setup() {
-      subject = new HeaderMap();
-   }
+public final class HeadersTest {
 
    @Test
    public void testSplitSimpleValue() {
-      Map<String, String> result = HeaderMap.split("text/plain");
+      Map<String, String> result = Headers.split("text/plain");
       assertEquals(1, result.size());
       assertTrue(result.containsKey(""));
       assertEquals("text/plain", result.get(""));
@@ -52,7 +43,7 @@ public final class HeaderMapTest {
 
    @Test
    public void testSplitMultipleValues() {
-      Map<String, String> result = HeaderMap.split("text/plain; charset=\"utf-8\"");
+      Map<String, String> result = Headers.split("text/plain; charset=\"utf-8\"");
       assertEquals(2, result.size());
       assertTrue(result.containsKey(""));
       assertTrue(result.containsKey("charset"));
@@ -62,50 +53,11 @@ public final class HeaderMapTest {
 
    @Test
    public void testSplitWithSemicolon() {
-      Map<String, String> result = HeaderMap.split("text/plain; filename=\"text;1.txt\"");
+      Map<String, String> result = Headers.split("text/plain; filename=\"text;1.txt\"");
       assertEquals(2, result.size());
       assertTrue(result.containsKey(""));
       assertTrue(result.containsKey("filename"));
       assertEquals("text/plain", result.get(""));
       assertEquals("text;1.txt", result.get("filename"));
-   }
-
-   @Test
-   public void testAddValue1() {
-      subject.add("X", "1", "2");
-      assertEquals("1", subject.get("X"));
-      assertArrayEquals(new String[] { "1", "2" }, subject.getAll("X").toArray(new String[0]));
-   }
-
-   @Test
-   public void testAddValue2() {
-      subject.add("X", "1");
-      subject.add("X", "2");
-      assertEquals("1", subject.get("X"));
-      assertArrayEquals(new String[] { "1", "2" }, subject.getAll("X").toArray(new String[0]));
-   }
-
-   @Test
-   public void testSetReplacesAdd() {
-      subject.add("X", "1");
-      subject.set("X", "2");
-      assertEquals("2", subject.get("X"));
-      assertArrayEquals(new String[] { "2" }, subject.getAll("X").toArray(new String[0]));
-   }
-
-   @Test
-   public void testAddAfterSet() {
-      subject.add("X", "1");
-      subject.set("X", "2");
-      subject.add("X", "3");
-      assertEquals("2", subject.get("X"));
-      assertArrayEquals(new String[] { "2", "3" }, subject.getAll("X").toArray(new String[0]));
-   }
-
-   @Test(expected = UnsupportedOperationException.class)
-   public void testFrozenMap() {
-      subject.add("X", "1");
-      subject.freeze();
-      subject.set("X", "2");
    }
 }

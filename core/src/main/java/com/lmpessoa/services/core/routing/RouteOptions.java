@@ -27,9 +27,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
-import com.lmpessoa.services.core.hosting.AbstractOptions;
-
-final class RouteOptions extends AbstractOptions implements IRouteOptions {
+final class RouteOptions implements IRouteOptions {
 
    private final Map<String, Class<? extends AbstractRouteType>> types = new HashMap<>();
    private final Map<String, Pattern> packages = new HashMap<>();
@@ -45,7 +43,6 @@ final class RouteOptions extends AbstractOptions implements IRouteOptions {
 
    @Override
    public void addArea(String areaPath, String packageExpr, String defaultResource) {
-      protectConfiguration();
       if (!Pattern.matches("^([a-zA-Z0-9]+(\\/[a-zA-Z0-9]+)?)?$", areaPath)) {
          throw new IllegalArgumentException("Invalid area path: " + areaPath);
       }
@@ -62,7 +59,6 @@ final class RouteOptions extends AbstractOptions implements IRouteOptions {
 
    @Override
    public void addType(String typeLabel, Class<? extends AbstractRouteType> typeClass) {
-      protectConfiguration();
       types.put(typeLabel, typeClass);
    }
 

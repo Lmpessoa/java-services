@@ -50,7 +50,7 @@ public final class HttpRequestTest {
       HttpRequest request = getRequest("simple_get_request.txt");
       assertEquals("GET", request.getMethod());
       assertEquals("/path/file.html", request.getPath());
-      assertEquals("someuser@jmarshall.com", request.getHeaders().get("From"));
+      assertEquals("someuser@jmarshall.com", request.getHeader("From"));
    }
 
    @Test

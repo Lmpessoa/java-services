@@ -30,13 +30,11 @@ import com.lmpessoa.services.core.routing.RouteTable;
 
 /**
  * Represents a redirection of the client to another location.
- *
  * <p>
  * In the HTTP protocol, redirections indicate that further action needs to be taken by the user
- * agent in order to fulfill the request. The action required may be carried out by the user agent
+ * agent in order to fulfil the request. The action required may be carried out by the user agent
  * without interaction with the user.
  * </p>
- *
  * <p>
  * Redirection objects cannot be modified once created and must be returned by the resource method
  * to be effectively sent as response to a request.
@@ -52,8 +50,8 @@ public final class Redirect {
    // 201 Created
 
    /**
-    * Returns a redirection that indicates a resource was successfully created at the given location.
-    *
+    * Returns a redirection that indicates a resource was successfully created at the given
+    * location.
     * <p>
     * The value of this location may be a root path (beginning with a '/') instead of a full URL. In
     * this case, the given path is assumed to be relative to the current application and a full URL
@@ -68,7 +66,8 @@ public final class Redirect {
    }
 
    /**
-    * Returns a redirection that indicates a resource was successfully created at the given location.
+    * Returns a redirection that indicates a resource was successfully created at the given
+    * location.
     *
     * @param url the location of the created resource.
     * @return an object representing this redirection.
@@ -78,12 +77,13 @@ public final class Redirect {
    }
 
    /**
-    * Returns a redirection that indicates a resource was successfully created at the given location.
-    *
+    * Returns a redirection that indicates a resource was successfully created at the given
+    * location.
     * <p>
-    * Redirections created through this method will return an URL on the current application where the
-    * given method of the given class will be called with the given arguments. Note that the appointed
-    * method may not be published by the application (or even not exist at all) and thus have no URL.
+    * Redirections created through this method will return an URL on the current application where
+    * the given method of the given class will be called with the given arguments. Note that the
+    * appointed method may not be published by the application (or even not exist at all) and thus
+    * have no URL.
     * </p>
     *
     * @param clazz the class which contains the method with the given name.
@@ -99,11 +99,10 @@ public final class Redirect {
 
    /**
     * Returns a redirection to the given location.
-    *
     * <p>
-    * The value of this location may be a root path (beginning in '/') instead of a full URL. In this
-    * case, the given path is assumed to be relative to the current application and a full URL will be
-    * sent to the client using the current server information.
+    * The value of this location may be a root path (beginning in '/') instead of a full URL. In
+    * this case, the given path is assumed to be relative to the current application and a full URL
+    * will be sent to the client using the current server information.
     * </p>
     *
     * @param url the location the client should redirect to.
@@ -125,11 +124,11 @@ public final class Redirect {
 
    /**
     * Returns a redirection to the given location.
-    *
     * <p>
-    * Redirections created through this method will return an URL on the current application where the
-    * given method of the given class will be called with the given arguments. Note that the appointed
-    * method may not be published by the application (or even not exist at all) and thus have no URL.
+    * Redirections created through this method will return an URL on the current application where
+    * the given method of the given class will be called with the given arguments. Note that the
+    * appointed method may not be published by the application (or even not exist at all) and thus
+    * have no URL.
     * </p>
     *
     * @param clazz the class which contains the method with the given name.
@@ -145,11 +144,10 @@ public final class Redirect {
 
    /**
     * Returns a temporary redirection to the given location.
-    *
     * <p>
-    * The value of this location may be a root path (beginning in '/') instead of a full URL. In this
-    * case, the given path is assumed to be relative to the current application and a full URL will be
-    * sent to the client using the current server information.
+    * The value of this location may be a root path (beginning in '/') instead of a full URL. In
+    * this case, the given path is assumed to be relative to the current application and a full URL
+    * will be sent to the client using the current server information.
     * </p>
     *
     * @param url the location the client should redirect to.
@@ -171,11 +169,11 @@ public final class Redirect {
 
    /**
     * Returns a temporary redirection to the given location.
-    *
     * <p>
-    * Redirections created through this method will return an URL on the current application where the
-    * given method of the given class will be called with the given arguments. Note that the appointed
-    * method may not be published by the application (or even not exist at all) and thus have no URL.
+    * Redirections created through this method will return an URL on the current application where
+    * the given method of the given class will be called with the given arguments. Note that the
+    * appointed method may not be published by the application (or even not exist at all) and thus
+    * have no URL.
     * </p>
     *
     * @param clazz the class which contains the method with the given name.
@@ -191,11 +189,10 @@ public final class Redirect {
 
    /**
     * Returns a permanent redirection to the given location.
-    *
     * <p>
-    * The value of this location may be a root path (beginning in '/') instead of a full URL. In this
-    * case, the given path is assumed to be relative to the current application and a full URL will be
-    * sent to the client using the current server information.
+    * The value of this location may be a root path (beginning in '/') instead of a full URL. In
+    * this case, the given path is assumed to be relative to the current application and a full URL
+    * will be sent to the client using the current server information.
     * </p>
     *
     * @param url the location the client should redirect to.
@@ -217,11 +214,11 @@ public final class Redirect {
 
    /**
     * Returns a permanent redirection to the given location.
-    *
     * <p>
-    * Redirections created through this method will return an URL on the current application where the
-    * given method of the given class will be called with the given arguments. Note that the appointed
-    * method may not be published by the application (or even not exist at all) and thus have no URL.
+    * Redirections created through this method will return an URL on the current application where
+    * the given method of the given class will be called with the given arguments. Note that the
+    * appointed method may not be published by the application (or even not exist at all) and thus
+    * have no URL.
     * </p>
     *
     * @param clazz the class which contains the method with the given name.

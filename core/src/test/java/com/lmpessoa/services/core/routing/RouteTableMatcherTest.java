@@ -49,22 +49,19 @@ import com.lmpessoa.services.core.routing.RouteTable;
 import com.lmpessoa.services.core.services.Reuse;
 import com.lmpessoa.services.core.services.Service;
 import com.lmpessoa.services.core.services.ServiceMap;
-import com.lmpessoa.services.util.logging.Logger;
-import com.lmpessoa.services.util.logging.NullHandler;
 
 public final class RouteTableMatcherTest {
 
    @Rule
    public ExpectedException thrown = ExpectedException.none();
 
-   private final Logger log = new Logger(new NullHandler());
    private ServiceMap serviceMap;
    private RouteTable table;
 
    @Before
    public void setup() throws NoSuchMethodException {
       serviceMap = new ServiceMap();
-      table = new RouteTable(serviceMap, log);
+      table = new RouteTable(serviceMap);
       table.put("", TestResource.class);
    }
 

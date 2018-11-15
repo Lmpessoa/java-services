@@ -43,11 +43,10 @@ import org.junit.Test;
 
 import com.lmpessoa.services.core.concurrent.Async;
 import com.lmpessoa.services.core.concurrent.ExecutionService;
-import com.lmpessoa.services.core.hosting.ApplicationOptions;
-import com.lmpessoa.services.core.hosting.AsyncHandler;
+import com.lmpessoa.services.core.hosting.AsyncResponder;
 import com.lmpessoa.services.core.hosting.ConnectionInfo;
 import com.lmpessoa.services.core.hosting.HttpRequest;
-import com.lmpessoa.services.core.hosting.NextHandler;
+import com.lmpessoa.services.core.hosting.NextResponder;
 import com.lmpessoa.services.core.hosting.NotFoundException;
 import com.lmpessoa.services.core.hosting.Redirect;
 import com.lmpessoa.services.core.routing.RouteMatch;
@@ -55,24 +54,24 @@ import com.lmpessoa.services.util.logging.ILogger;
 import com.lmpessoa.services.util.logging.Logger;
 import com.lmpessoa.services.util.logging.NullHandler;
 
-public final class AsyncHandlerTest {
+public final class AsyncResponderTest {
 
    private static final ILogger log = new Logger(new NullHandler());
    private static final ExecutionService executor = new ExecutionService(1, log);
-   private static final ApplicationOptions options = new ApplicationOptions();
-   private static final String baseUrl = "https://lmpessoa.com" + options.getAsyncFeedbackPath();
+   private static final String baseUrl = "https://lmpessoa.com/feedback/";
 
-   private AsyncHandler handler;
+   private AsyncResponder handler;
    private ConnectionInfo connect;
    private HttpRequest request;
-   private NextHandler next;
+   private NextResponder next;
    private RouteMatch match;
 
    private String runnableResult;
 
    @BeforeClass
    public static void classSetup() {
-      AsyncHandler.setExecutor(executor);
+      AsyncResponder.setFeedbackPath("/feedback/");
+      AsyncResponder.setExecutor(executor);
    }
 
    @Before
@@ -82,7 +81,7 @@ public final class AsyncHandlerTest {
       when(request.getPath()).thenReturn("/test");
       runnableResult = null;
       next = () -> match.invoke();
-      handler = new AsyncHandler(next);
+      handler = new AsyncResponder(next);
    }
 
    @Test
@@ -90,7 +89,7 @@ public final class AsyncHandlerTest {
       ExecutionException, IllegalAccessException, InvocationTargetException {
       match = matchOfMethod("asyncMethod");
 
-      Object result = handler.invoke(options, request, match);
+      Object result = handler.invoke(request, match);
       assertTrue(result instanceof Redirect);
       Redirect redirect = (Redirect) result;
       assertEquals(202, redirect.getStatusCode());
@@ -105,7 +104,7 @@ public final class AsyncHandlerTest {
       ExecutionException, IllegalAccessException, InvocationTargetException {
       match = matchOfMethod("callableResult");
 
-      Object result = handler.invoke(options, request, match);
+      Object result = handler.invoke(request, match);
       assertTrue(result instanceof Redirect);
       Redirect redirect = (Redirect) result;
       assertEquals(202, redirect.getStatusCode());
@@ -120,7 +119,7 @@ public final class AsyncHandlerTest {
       ExecutionException, IllegalAccessException, InvocationTargetException {
       match = matchOfMethod("runnableResult");
 
-      Object result = handler.invoke(options, request, match);
+      Object result = handler.invoke(request, match);
       assertTrue(result instanceof Redirect);
       Redirect redirect = (Redirect) result;
       assertEquals(202, redirect.getStatusCode());
@@ -136,14 +135,14 @@ public final class AsyncHandlerTest {
       throws NoSuchMethodException, MalformedURLException, InterruptedException, ExecutionException {
       match = matchOfMethod("sleeper");
 
-      Object result = handler.invoke(options, request, match);
+      Object result = handler.invoke(request, match);
       assertTrue(result instanceof Redirect);
       Redirect redirect = (Redirect) result;
       String url = redirect.getUrl(connect).getPath();
 
       match = null;
       when(request.getPath()).thenReturn(url);
-      result = handler.invoke(options, request, match);
+      result = handler.invoke(request, match);
       assertTrue(result instanceof Future);
       Future<?> fresult = (Future<?>) result;
       assertFalse(fresult.isDone());
@@ -154,17 +153,17 @@ public final class AsyncHandlerTest {
    @Test(expected = NotFoundException.class)
    public void testNonExistentResult() {
       when(request.getPath()).thenReturn("/feedback/test");
-      handler.invoke(options, request, match);
+      handler.invoke(request, match);
    }
 
    private RouteMatch matchOfMethod(String methodName) throws NoSuchMethodException {
-      final Method method = AsyncHandlerTest.class.getMethod(methodName);
+      final Method method = AsyncResponderTest.class.getMethod(methodName);
       return new RouteMatch() {
 
          @Override
          public Object invoke() {
             try {
-               return method.invoke(AsyncHandlerTest.this);
+               return method.invoke(AsyncResponderTest.this);
             } catch (IllegalAccessException | InvocationTargetException e) {
                throw new RuntimeException(e);
             }

@@ -30,8 +30,8 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.lmpessoa.services.core.hosting.NextHandler;
-import com.lmpessoa.services.core.hosting.NextHandlerImpl;
+import com.lmpessoa.services.core.hosting.NextResponder;
+import com.lmpessoa.services.core.hosting.NextResponderImpl;
 import com.lmpessoa.services.core.services.Reuse;
 import com.lmpessoa.services.core.services.Service;
 import com.lmpessoa.services.core.services.ServiceMap;
@@ -57,7 +57,7 @@ public final class NextHandlerTest {
    @Test
    public void testRespondingChain() {
       request.code = 0;
-      NextHandler handler = new NextHandlerImpl(services, handlers);
+      NextResponder handler = new NextResponderImpl(services, handlers);
       Result result = (Result) handler.invoke();
       assertEquals("OK", result.message);
       assertEquals(2, result.code);
@@ -66,7 +66,7 @@ public final class NextHandlerTest {
    @Test
    public void testRejectingChain() {
       request.code = 2;
-      NextHandler handler = new NextHandlerImpl(services, handlers);
+      NextResponder handler = new NextResponderImpl(services, handlers);
       Result result = (Result) handler.invoke();
       assertEquals("Error", result.message);
       assertEquals(4, result.code);
@@ -75,7 +75,7 @@ public final class NextHandlerTest {
    @Test
    public void testTransformingChain() {
       request.code = 1;
-      NextHandler handler = new NextHandlerImpl(services, handlers);
+      NextResponder handler = new NextResponderImpl(services, handlers);
       Result result = (Result) handler.invoke();
       assertEquals("OK Computer", result.message);
       assertEquals(2, result.code);
@@ -100,7 +100,7 @@ public final class NextHandlerTest {
 
    public static class RespondingHandler {
 
-      public RespondingHandler(NextHandler next) {
+      public RespondingHandler(NextResponder next) {
          // Ignore, will never forward
       }
 
@@ -111,9 +111,9 @@ public final class NextHandlerTest {
 
    public static class RejectingHandler {
 
-      private final NextHandler next;
+      private final NextResponder next;
 
-      public RejectingHandler(NextHandler next) {
+      public RejectingHandler(NextResponder next) {
          this.next = next;
       }
 
@@ -128,9 +128,9 @@ public final class NextHandlerTest {
 
    public static class TransformingHandler {
 
-      private final NextHandler next;
+      private final NextResponder next;
 
-      public TransformingHandler(NextHandler next) {
+      public TransformingHandler(NextResponder next) {
          this.next = next;
       }
 

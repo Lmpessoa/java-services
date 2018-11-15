@@ -32,6 +32,8 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -39,27 +41,27 @@ import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.serializing.Serializer;
 import com.lmpessoa.services.util.logging.ILogger;
 
-final class ResultHandler {
+final class SerializerResponder {
 
-   private NextHandler next;
+   private NextResponder next;
 
-   public ResultHandler(NextHandler next) {
+   public SerializerResponder(NextResponder next) {
       this.next = next;
    }
 
-   public HttpResult invoke(HttpRequest request, RouteMatch route, ConnectionInfo connect, ILogger log)
-      throws IOException {
+   public HttpResult invoke(HttpRequest request, RouteMatch route, ConnectionInfo connect,
+      ILogger log) throws IOException {
       Object obj = getResultObject();
       int statusCode = getStatusCode(obj);
       HttpInputStream is;
       try {
          is = getContentBody(obj, request, route != null ? route.getMethod() : null);
       } catch (Throwable e) { // NOSONAR
-         obj = new InternalServerError(e);
+         obj = e instanceof HttpException ? e : new InternalServerError(e); // NOSONAR
          statusCode = getStatusCode(obj);
          is = getContentBody(obj, request, null);
       }
-      HeaderMap headers = getExtraHeaders(obj, is, connect);
+      Collection<HeaderEntry> headers = getExtraHeaders(obj, is, connect);
       if (obj instanceof Throwable && !(obj instanceof Redirect)) {
          Throwable t = (Throwable) obj;
          if (t instanceof InternalServerError) {
@@ -79,9 +81,10 @@ final class ResultHandler {
          return result;
       } catch (Throwable t) { // NOSONAR
          // This is correct; we capture every kind of exception here
-         // We also know that Sonar wants us to have each type of exception treated in its own catch block
-         // but that would cause too many code duplications we'd rather ignore these warnings
-         while (t instanceof InvocationTargetException || t instanceof InternalServerError && t.getCause() != null) { // NOSONAR
+         // We also know that Sonar wants us to have each type of exception treated in its own catch
+         // block but that would cause too many code duplications we'd rather ignore these warnings
+         while (t instanceof InvocationTargetException
+                  || t instanceof InternalServerError && t.getCause() != null) { // NOSONAR
             t = t.getCause();
          }
          if (t instanceof HttpException) { // NOSONAR
@@ -104,26 +107,28 @@ final class ResultHandler {
       return 200;
    }
 
-   private HeaderMap getExtraHeaders(Object obj, HttpInputStream content, ConnectionInfo connect) throws IOException {
-      HeaderMap result = new HeaderMap();
+   private Collection<HeaderEntry> getExtraHeaders(Object obj, HttpInputStream content,
+      ConnectionInfo connect) throws IOException {
+      List<HeaderEntry> result = new ArrayList<>();
       if (content != null) {
          String contentType = content.getType();
          if (isTextual(contentType) && content.getEncoding() != null) {
-            contentType += String.format("; charset=\"%s\"", content.getEncoding().name().toLowerCase());
+            contentType += String.format("; charset=\"%s\"",
+                     content.getEncoding().name().toLowerCase());
          }
-         result.set(HeaderMap.CONTENT_TYPE, contentType);
-         result.set(HeaderMap.CONTENT_LENGTH, String.valueOf(content.available()));
+         result.add(new HeaderEntry(Headers.CONTENT_TYPE, contentType));
+         result.add(new HeaderEntry(Headers.CONTENT_LENGTH, String.valueOf(content.available())));
          if (content.getFilename() != null) {
             String disposition = content.isDownloadable() ? "attachment" : "inline";
-            result.set(HeaderMap.CONTENT_DISPOSITION,
-                     String.format("%s; filename=\"%s\"", disposition, content.getFilename()));
+            result.add(new HeaderEntry(Headers.CONTENT_DISPOSITION,
+                     String.format("%s; filename=\"%s\"", disposition, content.getFilename())));
          }
       }
       if (obj instanceof Redirect) {
          Redirect redirect = (Redirect) obj;
-         result.set(HeaderMap.LOCATION, redirect.getUrl(connect).toExternalForm());
+         result.add(new HeaderEntry(Headers.LOCATION, redirect.getUrl(connect).toExternalForm()));
       }
-      return result;
+      return Collections.unmodifiableCollection(result);
    }
 
    private HttpInputStream getContentBody(Object obj, HttpRequest request, Method method) {
@@ -134,7 +139,8 @@ final class ResultHandler {
       if (object == null || object instanceof Redirect) {
          return null;
       }
-      if (object instanceof InternalServerError && ((InternalServerError) object).getCause() != null) {
+      if (object instanceof InternalServerError
+               && ((InternalServerError) object).getCause() != null) {
          object = ((InternalServerError) obj).getCause();
       }
       if (object instanceof Throwable) {
@@ -165,9 +171,9 @@ final class ResultHandler {
          return new HttpInputStream(contentType, (InputStream) result);
       }
       String[] accepts;
-      if (request.getHeaders().contains("Accept")) {
+      if (request.containsHeaders(Headers.ACCEPT)) {
          List<String> acceptList = new ArrayList<>();
-         request.getHeaders().getAll("Accept").stream().map(s -> s.split(",")).forEach(
+         Arrays.stream(request.getHeaderValues(Headers.ACCEPT)).map(s -> s.split(",")).forEach(
                   s -> Arrays.stream(s).map(String::trim).forEach(acceptList::add));
          accepts = acceptList.toArray(new String[0]);
       } else {
@@ -179,7 +185,7 @@ final class ResultHandler {
    private Charset getCharsetFromMethodOrUTF8(Method method) {
       if (method != null && method.isAnnotationPresent(ContentType.class)) {
          ContentType ctype = method.getAnnotation(ContentType.class);
-         Map<String, String> ctypeMap = HeaderMap.split(ctype.value());
+         Map<String, String> ctypeMap = Headers.split(ctype.value());
          if (ctypeMap.containsKey("charset")) {
             return Charset.forName(ctypeMap.get("charset"));
          }
@@ -188,8 +194,9 @@ final class ResultHandler {
    }
 
    static boolean isTextual(String contentType) {
-      List<String> extraTextTypes = Arrays.asList(ContentType.ATOM, ContentType.JS, ContentType.JSON, ContentType.RSS,
-               ContentType.SVG, ContentType.WSDL, ContentType.XHTML, ContentType.XML);
+      List<String> extraTextTypes = Arrays.asList(ContentType.ATOM, ContentType.JS,
+               ContentType.JSON, ContentType.RSS, ContentType.SVG, ContentType.WSDL,
+               ContentType.XHTML, ContentType.XML);
       return contentType.startsWith("text/") || extraTextTypes.contains(contentType);
    }
 }

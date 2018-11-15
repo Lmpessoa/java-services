@@ -36,13 +36,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 final class HttpRequestImpl implements HttpRequest {
 
    private static final String UTF8 = "UTF-8";
 
+   private final Map<String, List<String>> headers;
    private final String queryString;
-   private final HeaderMap headers;
    private final String protocol;
    private final byte[] content;
    private final String method;
@@ -72,13 +73,13 @@ final class HttpRequestImpl implements HttpRequest {
 
    @Override
    public long getContentLength() {
-      String length = headers.get("Content-Length");
+      String length = getHeader("Content-Length");
       return length != null ? Long.parseLong(length) : 0;
    }
 
    @Override
    public String getContentType() {
-      return headers.get("Content-Type");
+      return getHeader("Content-Type");
    }
 
    @Override
@@ -90,13 +91,26 @@ final class HttpRequestImpl implements HttpRequest {
    }
 
    @Override
-   public HeaderMap getHeaders() {
-      return headers;
+   public String[] getHeaderNames() {
+      return headers.keySet().toArray(new String[0]);
    }
 
    @Override
    public String getHeader(String headerName) {
-      return headers.get(headerName);
+      List<String> header = headers.get(headerName);
+      return header != null ? header.get(0) : null;
+   }
+
+   @Override
+   public String[] getHeaderValues(String headerName) {
+      List<String> header = headers.get(headerName);
+      String[] emptyResult = new String[0];
+      return header != null ? header.toArray(emptyResult) : emptyResult;
+   }
+
+   @Override
+   public boolean containsHeaders(String headerName) {
+      return headers.containsKey(headerName);
    }
 
    @Override
@@ -136,26 +150,19 @@ final class HttpRequestImpl implements HttpRequest {
       this.protocol = parts[2];
       parts = parts[1].split("\\?", 2);
       String thePath = parts[0];
-      HeaderMap headerMap = new HeaderMap();
+      Map<String, List<String>> headerMap = new HashMap<>();
       if (thePath.startsWith("http://") || thePath.startsWith("https://")) {
          int index = thePath.indexOf('/', thePath.indexOf("://") + 3);
-         headerMap.add("Host", thePath.substring(0, index));
+         List<String> hostList = new ArrayList<>();
+         hostList.add(thePath.substring(0, index));
+         headerMap.put(Headers.HOST, hostList);
          thePath = thePath.substring(index);
       }
       this.path = thePath;
       this.queryString = parts.length > 1 ? parts[1] : null;
-      String headerLine;
-      while ((headerLine = readLine(clientStream)) != null && !headerLine.isEmpty()) {
-         String[] head = headerLine.split(":", 2);
-         if (head.length != 2) {
-            throw new IllegalStateException("Illegal header line: '" + headerLine + "'");
-         }
-         headerMap.add(head[0].trim(), head[1].trim());
-      }
-      headerMap.freeze();
-      this.headers = headerMap;
-      if (headerMap.contains("Content-Type")) {
-         if (!headerMap.contains("Content-Length")) {
+      this.headers = extractHeaders(clientStream, headerMap);
+      if (headerMap.containsKey(Headers.CONTENT_TYPE)) {
+         if (!headerMap.containsKey(Headers.CONTENT_LENGTH)) {
             throw new LengthRequiredException();
          }
          long contentLength = getContentLength();
@@ -175,6 +182,24 @@ final class HttpRequestImpl implements HttpRequest {
       } else {
          this.content = new byte[0];
       }
+   }
+
+   private Map<String, List<String>> extractHeaders(InputStream clientStream, Map<String, List<String>> headerMap)
+      throws IOException {
+      String headerLine;
+      while ((headerLine = readLine(clientStream)) != null && !headerLine.isEmpty()) {
+         String[] head = headerLine.split(":", 2);
+         if (head.length != 2) {
+            throw new IllegalStateException("Illegal header line: '" + headerLine + "'");
+         }
+         String headerName = Headers.normalise(head[0]);
+         if (!headerMap.containsKey(headerName)) {
+            headerMap.put(headerName, new ArrayList<>());
+         }
+         headerMap.get(headerName).add(head[1].trim());
+      }
+      return headerMap.entrySet().stream().collect(
+               Collectors.toMap(Map.Entry::getKey, e -> Collections.unmodifiableList(e.getValue())));
    }
 
    private String readLine(InputStream input) throws IOException {

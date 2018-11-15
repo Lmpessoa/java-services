@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Leonardo Pessoa
+ * Copyright (c) 2017 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -29,7 +29,7 @@ import java.util.List;
 import com.lmpessoa.services.core.services.NoSingleMethodException;
 import com.lmpessoa.services.core.services.ServiceMap;
 
-final class NextHandlerImpl implements NextHandler {
+final class NextResponderImpl implements NextResponder {
 
    private final List<Class<?>> handlers;
    private final ServiceMap services;
@@ -46,9 +46,9 @@ final class NextHandlerImpl implements NextHandler {
       if (handlerClass == null) {
          return null;
       }
-      NextHandler next = new NextHandlerImpl(services, handlers.subList(1, handlers.size()));
+      NextResponder next = new NextResponderImpl(services, handlers.subList(1, handlers.size()));
       try {
-         Constructor<?> constructor = handlerClass.getConstructor(NextHandler.class);
+         Constructor<?> constructor = handlerClass.getConstructor(NextResponder.class);
          Object handler = constructor.newInstance(next);
          return invokeService(handler);
       } catch (InvocationTargetException e) {
@@ -64,7 +64,7 @@ final class NextHandlerImpl implements NextHandler {
       }
    }
 
-   NextHandlerImpl(ServiceMap services, List<Class<?>> handlers) {
+   NextResponderImpl(ServiceMap services, List<Class<?>> handlers) {
       this.services = services;
       this.handlers = handlers;
    }

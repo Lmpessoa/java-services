@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.lmpessoa.services.core.hosting.ContentType;
+import com.lmpessoa.services.core.hosting.Headers;
 import com.lmpessoa.services.core.hosting.HttpInputStream;
 import com.lmpessoa.services.core.hosting.InternalServerError;
 import com.lmpessoa.services.core.hosting.NotAcceptableException;
@@ -69,12 +70,15 @@ public abstract class Serializer {
     * @throws UnsupportedMediaTypeException if the content type or encoding are not supported.
     */
    public static <T> T toObject(byte[] content, String contentType, Class<T> type) {
-      Map<String, String> contentTypeMap = getHeaderValues(contentType);
+      Map<String, String> contentTypeMap = Headers.split(contentType);
       String realContentType = contentTypeMap.get("");
       if (!handlers.containsKey(realContentType)) {
          throw new UnsupportedMediaTypeException("Cannot read from type: " + realContentType);
       }
       Serializer ser = instanceOf(realContentType);
+      if (ser == null) {
+         throw new UnsupportedMediaTypeException("Cannot read from type: " + realContentType);
+      }
       try {
          return ser.read(content, type, contentTypeMap);
       } catch (Exception e) {
@@ -134,21 +138,6 @@ public abstract class Serializer {
    }
 
    protected abstract String write(Object object);
-
-   protected static final Map<String, String> getHeaderValues(String header) {
-      String[] parts = header.split(";");
-      Map<String, String> result = new HashMap<>();
-      result.put("", parts[0].trim());
-      for (int i = 1; i < parts.length; ++i) {
-         String[] subparts = parts[i].split("=", 2);
-         subparts[1] = subparts[1].trim();
-         if (subparts[1].startsWith("\"")) {
-            subparts[1] = subparts[1].substring(1, subparts[1].length() - 1);
-         }
-         result.put(subparts[0].trim(), subparts[1].trim());
-      }
-      return result;
-   }
 
    protected static final Field findField(String fieldName, Class<?> type) {
       Class<?> superType = type;

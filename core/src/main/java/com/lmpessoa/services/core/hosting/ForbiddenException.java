@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -23,29 +23,25 @@
 package com.lmpessoa.services.core.hosting;
 
 /**
- * Wraps the call to the next handler in the application.
- *
- * <p>
- * A proxy to the next handler is created automatically by the application for each handler class
- * registered. This proxy ensures each handler is instantiated only when required (when a the
- * previous handler explicitly {@link #invoke}s the next handler).
- * </p>
- *
- * <p>
- * The proxy can only be invoked once per request.
- * </p>
+ * Thrown when the current user does not have credentials to access a protected resource method.
  */
-interface NextHandler {
+public final class ForbiddenException extends HttpException {
+
+   private static final long serialVersionUID = 1L;
 
    /**
-    * Calls the next handler registered in the application.
-    * <p>
-    * New handlers must be aware that they are expected to return a result of their execution aftr
-    * completion. Implementors of new handlers may receive that result from the return of calling this
-    * function.
-    * </p>
-    *
-    * @return the result returned by the next handler.
+    * Creates a new instance of {@code ForbiddenException}.
     */
-   Object invoke();
+   public ForbiddenException() {
+      super(403);
+   }
+
+   /**
+    * Creates a new instance of {@code ForbiddenException} with the given detail message.
+    * 
+    * @param message the detail message.
+    */
+   public ForbiddenException(String message) {
+      super(403, message);
+   }
 }

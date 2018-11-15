@@ -28,7 +28,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import com.lmpessoa.services.core.hosting.ApplicationOptions;
-import com.lmpessoa.services.core.hosting.NextHandler;
+import com.lmpessoa.services.core.hosting.NextResponder;
 
 public final class ApplicationOptionsTest {
 
@@ -39,47 +39,47 @@ public final class ApplicationOptionsTest {
 
    @Before
    public void setup() {
-      app = new ApplicationOptions();
+      app = new ApplicationOptions(null);
    }
 
    @Test
    public void testRejectAbstractClass() {
       thrown.expect(IllegalArgumentException.class);
-      thrown.expectMessage("Handler must be a concrete class");
-      app.useHandler(AbstractTestHandler.class);
+      thrown.expectMessage("Responder must be a concrete class");
+      app.useResponder(AbstractTestResponder.class);
    }
 
    @Test
    public void testRejectWrongConstructor() {
       thrown.expect(IllegalArgumentException.class);
-      thrown.expectMessage("Handler must implement a required constructor");
-      app.useHandler(WrongConstructorHandler.class);
+      thrown.expectMessage("Responder must implement a required constructor");
+      app.useResponder(WrongConstructorResponder.class);
    }
 
    @Test
    public void testRejectMultipleMethods() {
       thrown.expect(IllegalArgumentException.class);
-      thrown.expectMessage("Handler must have exaclty one method named 'invoke'");
-      app.useHandler(MultipleInvokeHandler.class);
+      thrown.expectMessage("Responder must have exaclty one method named 'invoke'");
+      app.useResponder(MultipleInvokeResponder.class);
    }
 
-   public static abstract class AbstractTestHandler {
+   public static abstract class AbstractTestResponder {
 
       public void invoke() {
          // Test method, does nothing
       }
    }
 
-   public static class WrongConstructorHandler extends AbstractTestHandler {
+   public static class WrongConstructorResponder extends AbstractTestResponder {
 
-      public WrongConstructorHandler(int i, NextHandler next) {
+      public WrongConstructorResponder(int i, NextResponder next) {
          // Test method, does nothing
       }
    }
 
-   public static class MultipleInvokeHandler extends AbstractTestHandler {
+   public static class MultipleInvokeResponder extends AbstractTestResponder {
 
-      public MultipleInvokeHandler(NextHandler next) {
+      public MultipleInvokeResponder(NextResponder next) {
          // Test method, does nothing
       }
 

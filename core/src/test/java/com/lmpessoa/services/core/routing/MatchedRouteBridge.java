@@ -24,23 +24,10 @@ package com.lmpessoa.services.core.routing;
 
 import java.lang.reflect.Method;
 
-import com.lmpessoa.services.core.hosting.HttpRequest;
-import com.lmpessoa.services.core.routing.IRouteTable;
 import com.lmpessoa.services.core.routing.MatchedRoute;
 import com.lmpessoa.services.core.routing.RouteMatch;
-import com.lmpessoa.services.core.routing.RouteTable;
-import com.lmpessoa.services.core.services.ServiceMap;
-import com.lmpessoa.services.util.logging.ILogger;
 
-public final class RouteTableBridge {
-
-   public static IRouteTable get(ServiceMap serviceMap, ILogger log) throws NoSuchMethodException {
-      return new RouteTable(serviceMap, log);
-   }
-
-   public static RouteMatch match(IRouteTable routes, HttpRequest request) {
-      return ((RouteTable) routes).matches(request);
-   }
+public final class MatchedRouteBridge {
 
    public static boolean isMatchedRoute(RouteMatch route) {
       return route instanceof MatchedRoute;

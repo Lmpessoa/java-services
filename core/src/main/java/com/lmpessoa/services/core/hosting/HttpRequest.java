@@ -57,7 +57,7 @@ public interface HttpRequest extends IRouteRequest {
     *
     * @return a map with the headers of this HTTP request.
     */
-   HeaderMap getHeaders();
+   String[] getHeaderNames();
 
    /**
     * Returns the first value associated with the given header name of this HTTP request.
@@ -67,6 +67,10 @@ public interface HttpRequest extends IRouteRequest {
     * value exists.
     */
    String getHeader(String headerName);
+
+   String[] getHeaderValues(String headerName);
+
+   boolean containsHeaders(String headerName);
 
    /**
     * Returns a map with the parsed values of the query string of this HTTP request.

@@ -22,10 +22,12 @@
  */
 package com.lmpessoa.services.core.hosting;
 
+import java.util.Collection;
+
 final class HttpResult {
 
+   private final Collection<HeaderEntry> headers;
    private final HttpInputStream stream;
-   private final HeaderMap headers;
    private final int statusCode;
    private final int length;
 
@@ -33,7 +35,7 @@ final class HttpResult {
       return statusCode;
    }
 
-   public HeaderMap getHeaders() {
+   public Collection<HeaderEntry> getHeaders() {
       return headers;
    }
 
@@ -47,7 +49,7 @@ final class HttpResult {
       return String.format("%s %s %s", statusCode, length, resultType);
    }
 
-   HttpResult(int statusCode, HeaderMap headers, HttpInputStream stream) {
+   HttpResult(int statusCode, Collection<HeaderEntry> headers, HttpInputStream stream) {
       this.statusCode = statusCode;
       this.headers = headers;
       this.stream = stream;

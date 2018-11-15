@@ -20,28 +20,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.hosting;
+package com.lmpessoa.services.core.security;
+
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
 /**
- * Thrown when the target resource cannot be represented in a format accepted by the user agent.
+ * Identifies a method or type that can be accessed by anonymous users.
+ * <p>
+ * Methods marked by this annotation will ignore any further requirement for authorisation before
+ * allowing a request to be fulfilled, even allowing non-identified users to call such methods.
+ * </p>
+ * <p>
+ * If a resource class is marked with this annotation, then every method in it will be callable
+ * without a user identity. Note that this even ignores any possible {@link Authorize} marks in
+ * them. To correctly protect a single method of a resource class it is sufficient to mark that
+ * given method with the required {@code Authorize} annotation; there is no need to apply any
+ * annotations to the resource class itself.
+ * </p>
  */
-public final class NotAcceptableException extends HttpException {
-
-   private static final long serialVersionUID = 1L;
-
-   /**
-    * Creates a new instance of {@code NotAcceptableException}.
-    */
-   public NotAcceptableException() {
-      super(406);
-   }
-
-   /**
-    * Creates a new instance of {@code NotAcceptableException} with the given detail message.
-    * 
-    * @param message the detail message.
-    */
-   public NotAcceptableException(String message) {
-      super(406, message);
-   }
-}
+@Retention(RUNTIME)
+@Target({ METHOD, TYPE })
+public @interface AllowAnonymous {}

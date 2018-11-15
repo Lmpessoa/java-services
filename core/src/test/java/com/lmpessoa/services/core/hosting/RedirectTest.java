@@ -36,13 +36,8 @@ import com.lmpessoa.services.core.hosting.ConnectionInfo;
 import com.lmpessoa.services.core.hosting.Redirect;
 import com.lmpessoa.services.core.routing.RouteTable;
 import com.lmpessoa.services.core.services.ServiceMap;
-import com.lmpessoa.services.util.logging.ILogger;
-import com.lmpessoa.services.util.logging.Logger;
-import com.lmpessoa.services.util.logging.NullHandler;
 
 public final class RedirectTest {
-
-   private ILogger log = new Logger(new NullHandler());
 
    private ConnectionInfo connect;
    private ServiceMap services;
@@ -55,7 +50,7 @@ public final class RedirectTest {
 
       services = new ServiceMap();
 
-      routes = new RouteTable(services, log);
+      routes = new RouteTable(services);
       Redirect.setRoutes(routes);
    }
 
@@ -86,7 +81,7 @@ public final class RedirectTest {
 
    @Test
    public void testRedirectMethodWithRoute() throws MalformedURLException {
-      Class<?> testClass = com.lmpessoa.services.core.hosting.NextHandlerFullTest.TestResource.class;
+      Class<?> testClass = com.lmpessoa.services.core.hosting.NextResponderFullTest.TestResource.class;
       routes.put("", testClass);
       Redirect redirect = Redirect.to(testClass, "empty");
       URL result = redirect.getUrl(connect);

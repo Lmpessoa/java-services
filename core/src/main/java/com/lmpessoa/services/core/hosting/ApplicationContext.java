@@ -31,6 +31,7 @@ import java.util.Objects;
 
 import com.lmpessoa.services.core.concurrent.ExecutionService;
 import com.lmpessoa.services.core.routing.RouteTable;
+import com.lmpessoa.services.core.security.IIdentityProvider;
 import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.util.logging.Logger;
 
@@ -86,19 +87,23 @@ class ApplicationContext implements Runnable {
    }
 
    ServiceMap getServices() {
-      return server.getServices();
+      return server.getOptions().getServices();
    }
 
    ExecutionService getExecutor() {
       return server.getSettings().getMainExecutor();
    }
 
-   NextHandler getFirstResponder() {
-      return server.getFirstResponder();
+   NextResponder getFirstResponder() {
+      return server.getOptions().getFirstResponder();
    }
 
    RouteTable getRouteTable() {
       return routes;
+   }
+
+   IIdentityProvider getIdenityProvider() {
+      return server.getOptions().getIdentityProvider();
    }
 
    int getPort() {
@@ -112,7 +117,7 @@ class ApplicationContext implements Runnable {
    private void acceptClientToHandle() {
       try {
          Socket client = socket.accept();
-         ApplicationResponder job = new ApplicationResponder(this, client);
+         ApplicationRequestJob job = new ApplicationRequestJob(this, client);
          getExecutor().submit(job, "request");
       } catch (SocketTimeoutException e) {
          // just ignore

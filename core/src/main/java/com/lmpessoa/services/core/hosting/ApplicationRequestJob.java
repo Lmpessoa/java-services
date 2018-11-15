@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Leonardo Pessoa
+ * Copyright (c) 2017 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -37,10 +37,11 @@ import java.util.Objects;
 import com.lmpessoa.services.core.routing.IRouteTable;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.routing.RouteTable;
+import com.lmpessoa.services.core.security.IIdentity;
 import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.util.logging.ILogger;
 
-final class ApplicationResponder implements Runnable {
+final class ApplicationRequestJob implements Runnable {
 
    private static final Map<Integer, String> STATUSES = new HashMap<>();
    private static final String CRLF = "\r\n";
@@ -54,7 +55,7 @@ final class ApplicationResponder implements Runnable {
       try (Socket socket = this.client) {
          HttpRequest request = new HttpRequestImpl(socket.getInputStream());
 
-         String host = request.getHeader(HeaderMap.HOST);
+         String host = request.getHeader(Headers.HOST);
          if (host == null) {
             host = String.format("localhost:%d", context.getPort());
          }
@@ -62,7 +63,7 @@ final class ApplicationResponder implements Runnable {
 
          HttpResult result = resolveRequest(request, connection);
 
-         log.info("\"%s\" %s \"%s\"", request, result, request.getHeader(HeaderMap.USER_AGENT));
+         log.info("\"%s\" %s \"%s\"", request, result, request.getHeader(Headers.USER_AGENT));
 
          int statusCode = result.getStatusCode();
          StringBuilder response = new StringBuilder();
@@ -88,7 +89,7 @@ final class ApplicationResponder implements Runnable {
       }
    }
 
-   ApplicationResponder(ApplicationContext context, Socket client) {
+   ApplicationRequestJob(ApplicationContext context, Socket client) {
       this.log = context.getLogger();
       this.context = context;
       this.client = client;
@@ -96,7 +97,7 @@ final class ApplicationResponder implements Runnable {
 
    static {
       try {
-         final URI uri = ApplicationResponder.class.getResource("/status.codes").toURI();
+         final URI uri = ApplicationRequestJob.class.getResource("/status.codes").toURI();
          List<String> statuses = Files.readAllLines(Paths.get(uri));
          for (String line : statuses) {
             String[] parts = line.split("=", 2);
@@ -124,7 +125,12 @@ final class ApplicationResponder implements Runnable {
       services.putRequestValue(IRouteTable.class, Wrapper.wrap(routes));
       RouteMatch route = routes.matches(request);
       services.putRequestValue(RouteMatch.class, route);
-      NextHandler chain = context.getFirstResponder();
+      IIdentity identity = null;
+      if (context.getIdenityProvider() != null) {
+         identity = context.getIdenityProvider().getIdentity(request);
+      }
+      services.putRequestValue(IIdentity.class, identity);
+      NextResponder chain = context.getFirstResponder();
       Object result = chain.invoke();
       if (result instanceof HttpResult) {
          return (HttpResult) result;

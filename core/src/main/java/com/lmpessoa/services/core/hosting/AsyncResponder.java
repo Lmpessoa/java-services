@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Leonardo Pessoa
+ * Copyright (c) 2017 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -33,31 +33,39 @@ import com.lmpessoa.services.core.concurrent.Async;
 import com.lmpessoa.services.core.concurrent.ExecutionService;
 import com.lmpessoa.services.core.routing.RouteMatch;
 
-final class AsyncHandler {
+final class AsyncResponder {
 
    private static ExecutionService executor;
+   private static String feedbackPath;
 
-   private final NextHandler next;
+   private final NextResponder next;
 
-   public AsyncHandler(NextHandler next) {
+   public AsyncResponder(NextResponder next) {
       this.next = next;
    }
 
    public static void setExecutor(ExecutionService executor) {
-      AsyncHandler.executor = Objects.requireNonNull(executor);
+      AsyncResponder.executor = Objects.requireNonNull(executor);
    }
 
-   public Object invoke(IApplicationOptions app, HttpRequest request, RouteMatch route) {
+   public Object invoke(HttpRequest request, RouteMatch route) {
       if (executor != null) {
-         String asyncPath = app.getAsyncFeedbackPath();
-         if (request.getPath().startsWith(asyncPath)) {
-            return respondToStatusRequest(request, asyncPath);
+         if (request.getPath().startsWith(feedbackPath)) {
+            return respondToStatusRequest(request, feedbackPath);
          }
          if (route != null && (isCallableResult(route) || isAsync(route))) {
-            return respondToAsyncCall(route, asyncPath);
+            return respondToAsyncCall(route, feedbackPath);
          }
       }
       return next.invoke();
+   }
+
+   static String getFeedbackPath() {
+      return feedbackPath;
+   }
+
+   static void setFeedbackPath(String feedbackPath) {
+      AsyncResponder.feedbackPath = feedbackPath;
    }
 
    private Object respondToAsyncCall(RouteMatch route, String asyncPath) {

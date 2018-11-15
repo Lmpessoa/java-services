@@ -38,19 +38,20 @@ import org.junit.Test;
 
 import com.lmpessoa.services.core.hosting.ConnectionInfo;
 import com.lmpessoa.services.core.hosting.ContentType;
-import com.lmpessoa.services.core.hosting.HeaderMap;
+import com.lmpessoa.services.core.hosting.HeaderEntry;
+import com.lmpessoa.services.core.hosting.Headers;
 import com.lmpessoa.services.core.hosting.HttpRequest;
 import com.lmpessoa.services.core.hosting.HttpResult;
-import com.lmpessoa.services.core.hosting.NextHandler;
+import com.lmpessoa.services.core.hosting.NextResponder;
 import com.lmpessoa.services.core.hosting.NotFoundException;
 import com.lmpessoa.services.core.hosting.Redirect;
-import com.lmpessoa.services.core.hosting.ResultHandler;
+import com.lmpessoa.services.core.hosting.SerializerResponder;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.util.logging.ILogger;
 import com.lmpessoa.services.util.logging.Logger;
 import com.lmpessoa.services.util.logging.NullHandler;
 
-public class ResultHandlerTest {
+public class SerializerResponderTest {
 
    private static final String TEST_URL = "https://lmpessoa.com/test";
    private static final ConnectionInfo connect = new ConnectionInfo(mock(Socket.class), "https://lmpessoa.com/");
@@ -58,8 +59,8 @@ public class ResultHandlerTest {
 
    private HttpRequest request;
 
-   private ResultHandler handler;
-   private NextHandler next;
+   private SerializerResponder handler;
+   private NextResponder next;
 
    @Before
    public void setup() {
@@ -69,7 +70,7 @@ public class ResultHandlerTest {
    @Test
    public void testStringResult() throws IOException {
       next = () -> "success";
-      handler = new ResultHandler(next);
+      handler = new SerializerResponder(next);
       HttpResult result = handler.invoke(request, null, connect, log);
       assertEquals(200, result.getStatusCode());
       assertEquals(ContentType.TEXT, result.getInputStream().getType());
@@ -81,10 +82,8 @@ public class ResultHandlerTest {
    @Test
    public void testIntResult() throws IOException {
       next = () -> 7;
-      handler = new ResultHandler(next);
-      HeaderMap headers = new HeaderMap();
-      headers.set(HeaderMap.ACCEPT, ContentType.JSON);
-      when(request.getHeaders()).thenReturn(headers);
+      handler = new SerializerResponder(next);
+      when(request.getHeaderValues(Headers.ACCEPT)).thenReturn(new String[] { ContentType.JSON });
       HttpResult result = handler.invoke(request, null, connect, log);
       assertEquals(200, result.getStatusCode());
       assertEquals(ContentType.JSON, result.getInputStream().getType());
@@ -95,7 +94,7 @@ public class ResultHandlerTest {
    @Test
    public void testBinaryResult() throws IOException {
       next = () -> new byte[] { 115, 117, 99, 99, 101, 115, 115 };
-      handler = new ResultHandler(next);
+      handler = new SerializerResponder(next);
       HttpResult result = handler.invoke(request, null, connect, log);
       assertEquals(200, result.getStatusCode());
       assertEquals(ContentType.BINARY, result.getInputStream().getType());
@@ -107,9 +106,9 @@ public class ResultHandlerTest {
    @ContentType(ContentType.TEXT)
    public void testBinaryResultWithContentType() throws IOException, NoSuchMethodException {
       next = () -> new byte[] { 115, 117, 99, 99, 101, 115, 115 };
-      handler = new ResultHandler(next);
+      handler = new SerializerResponder(next);
       RouteMatch route = mock(RouteMatch.class);
-      when(route.getMethod()).thenReturn(ResultHandlerTest.class.getMethod("testBinaryResultWithContentType"));
+      when(route.getMethod()).thenReturn(SerializerResponderTest.class.getMethod("testBinaryResultWithContentType"));
       HttpResult result = handler.invoke(request, route, connect, log);
       assertEquals(200, result.getStatusCode());
       assertEquals(ContentType.TEXT, result.getInputStream().getType());
@@ -120,7 +119,8 @@ public class ResultHandlerTest {
    @Test
    public void testErrorProducingContent() throws IOException {
       next = () -> 7;
-      handler = new ResultHandler(next);
+      handler = new SerializerResponder(next);
+      when(request.containsHeaders(Headers.ACCEPT)).thenReturn(true);
       HttpResult result = handler.invoke(request, null, connect, log);
       assertEquals(500, result.getStatusCode());
       assertEquals(ContentType.TEXT, result.getInputStream().getType());
@@ -138,42 +138,60 @@ public class ResultHandlerTest {
             return null;
          }
       };
-      handler = new ResultHandler(next);
+      handler = new SerializerResponder(next);
       HttpResult result = handler.invoke(request, null, connect, log);
       assertEquals(302, result.getStatusCode());
-      assertEquals(TEST_URL, result.getHeaders().get(HeaderMap.LOCATION));
+      for (HeaderEntry entry : result.getHeaders()) {
+         if (entry.getKey().equals(Headers.LOCATION)) {
+            assertEquals(TEST_URL, entry.getValue());
+         }
+      }
    }
 
    @Test
    public void testRedirectWithPath() throws IOException {
       next = () -> Redirect.createdAt("/test");
-      handler = new ResultHandler(next);
+      handler = new SerializerResponder(next);
       HttpResult result = handler.invoke(request, null, connect, log);
       assertEquals(201, result.getStatusCode());
-      assertEquals(TEST_URL, result.getHeaders().get(HeaderMap.LOCATION));
+      for (HeaderEntry entry : result.getHeaders()) {
+         if (entry.getKey().equals(Headers.LOCATION)) {
+            assertEquals(TEST_URL, entry.getValue());
+         }
+      }
    }
 
    @Test
-   public void tesNotFoundException() throws IOException {
+   public void testNotFoundException() throws IOException {
       next = () -> {
          throw new NotFoundException();
       };
-      handler = new ResultHandler(next);
+      handler = new SerializerResponder(next);
       HttpResult result = handler.invoke(request, null, connect, log);
       assertEquals(404, result.getStatusCode());
    }
 
    @Test
-   public void tesNullPointerException() throws IOException {
+   public void testNullPointerException() throws IOException {
       next = () -> {
          throw new NullPointerException();
       };
-      handler = new ResultHandler(next);
+      handler = new SerializerResponder(next);
       HttpResult result = handler.invoke(request, null, connect, log);
       assertEquals(500, result.getStatusCode());
       assertEquals(ContentType.TEXT, result.getInputStream().getType());
       String str = new String(readStreamContent(result.getInputStream()));
       assertEquals("java.lang.NullPointerException", str);
+   }
+
+   @Test
+   public void testNotAcceptableContent() throws IOException {
+      next = () -> 7;
+      handler = new SerializerResponder(next);
+      when(request.containsHeaders(Headers.ACCEPT)).thenReturn(true);
+      when(request.getHeaderValues(Headers.ACCEPT)).thenReturn(new String[] { ContentType.HTML });
+      HttpResult result = handler.invoke(request, null, connect, log);
+      assertEquals(406, result.getStatusCode());
    }
 
    private byte[] readStreamContent(InputStream input) throws IOException {

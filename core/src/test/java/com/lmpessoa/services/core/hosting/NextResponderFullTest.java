@@ -47,27 +47,27 @@ import com.lmpessoa.services.core.hosting.ApplicationOptions;
 import com.lmpessoa.services.core.hosting.ApplicationServer;
 import com.lmpessoa.services.core.hosting.ConnectionInfo;
 import com.lmpessoa.services.core.hosting.ContentType;
-import com.lmpessoa.services.core.hosting.HeaderMap;
+import com.lmpessoa.services.core.hosting.HeaderEntry;
+import com.lmpessoa.services.core.hosting.Headers;
 import com.lmpessoa.services.core.hosting.HttpInputStream;
 import com.lmpessoa.services.core.hosting.HttpRequest;
 import com.lmpessoa.services.core.hosting.HttpRequestImpl;
 import com.lmpessoa.services.core.hosting.HttpResult;
-import com.lmpessoa.services.core.hosting.IApplicationOptions;
 import com.lmpessoa.services.core.hosting.IApplicationSettings;
 import com.lmpessoa.services.core.hosting.NotImplementedException;
 import com.lmpessoa.services.core.hosting.Redirect;
 import com.lmpessoa.services.core.routing.HttpGet;
 import com.lmpessoa.services.core.routing.HttpPost;
-import com.lmpessoa.services.core.routing.IRouteTable;
+import com.lmpessoa.services.core.routing.MatchedRouteBridge;
 import com.lmpessoa.services.core.routing.Route;
 import com.lmpessoa.services.core.routing.RouteMatch;
-import com.lmpessoa.services.core.routing.RouteTableBridge;
+import com.lmpessoa.services.core.routing.RouteTable;
 import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.util.logging.ILogger;
 import com.lmpessoa.services.util.logging.Logger;
 import com.lmpessoa.services.util.logging.NullHandler;
 
-public final class NextHandlerFullTest {
+public final class NextResponderFullTest {
 
    @Rule
    public ExpectedException thrown = ExpectedException.none();
@@ -78,30 +78,27 @@ public final class NextHandlerFullTest {
    private ServiceMap services;
 
    private HttpRequest request;
-   private IRouteTable routes;
+   private RouteTable routes;
    private RouteMatch route;
 
-   public NextHandlerFullTest() {
+   public NextResponderFullTest() {
       Socket socket = mock(Socket.class);
-      connect = new ConnectionInfo(socket, "https://lmpessoa.com/");
+      connect = new ConnectionInfo(socket, "https://leeow.io/");
    }
 
    @Before
    public void setup() throws NoSuchMethodException {
-      services = new ServiceMap();
+      app = new ApplicationOptions(null);
+      services = app.getServices();
       services.put(ILogger.class, log);
       services.put(ConnectionInfo.class, (Supplier<ConnectionInfo>) () -> connect);
       IApplicationSettings settings = mock(IApplicationSettings.class);
-      when(settings.getStartupClass()).then(n -> NextHandlerFullTest.class);
+      when(settings.getStartupClass()).then(n -> NextResponderFullTest.class);
       services.put(IApplicationSettings.class, settings);
-      services.put(HeaderMap.class);
       services.put(RouteMatch.class, (Supplier<RouteMatch>) () -> route);
 
-      routes = RouteTableBridge.get(services, log);
+      routes = app.getRoutes();
       routes.put("", TestResource.class);
-
-      app = new ApplicationOptions();
-      services.put(IApplicationOptions.class, app);
    }
 
    public String readAll(InputStream is) throws IOException {
@@ -160,10 +157,10 @@ public final class NextHandlerFullTest {
       String content = readAll(result.getInputStream());
       assertEquals("12", content);
 
-      assertTrue(RouteTableBridge.isMatchedRoute(route));
+      assertTrue(MatchedRouteBridge.isMatchedRoute(route));
       assertEquals(TestResource.class.getMethod("object", TestObject.class),
-               RouteTableBridge.getMatchedRouteMethod(route));
-      Object[] args = RouteTableBridge.getMatchedRouteMethodArgs(route);
+               MatchedRouteBridge.getMatchedRouteMethod(route));
+      Object[] args = MatchedRouteBridge.getMatchedRouteMethodArgs(route);
       assertEquals(1, args.length);
 
       assertTrue(args[0] instanceof TestObject);
@@ -224,9 +221,11 @@ public final class NextHandlerFullTest {
       HttpResult result = perform("/test/redirect");
       assertEquals(302, result.getStatusCode());
       assertNull(result.getInputStream());
-      HeaderMap headers = result.getHeaders();
-      assertTrue(headers.contains(HeaderMap.LOCATION));
-      assertEquals("https://lmpessoa.com/test/7", headers.get(HeaderMap.LOCATION));
+      for (HeaderEntry entry : result.getHeaders()) {
+         if (entry.getKey().equals(Headers.LOCATION)) {
+            assertEquals("https://leeow.io/test/7", entry.getValue());
+         }
+      }
    }
 
    private HttpResult perform(String path) throws IOException {
@@ -235,16 +234,16 @@ public final class NextHandlerFullTest {
                .setPath(path) //
                .build();
       services.put(HttpRequest.class, (Supplier<HttpRequest>) () -> request);
-      route = RouteTableBridge.match(routes, request);
-      return (HttpResult) app.getFirstResponder(services).invoke();
+      route = routes.matches(request);
+      return (HttpResult) app.getFirstResponder().invoke();
    }
 
    private HttpResult performFile(String resource) throws IOException {
-      try (InputStream res = NextHandlerFullTest.class.getResourceAsStream(resource)) {
+      try (InputStream res = NextResponderFullTest.class.getResourceAsStream(resource)) {
          request = new HttpRequestImpl(res);
          services.put(HttpRequest.class, (Supplier<HttpRequest>) () -> request);
-         route = RouteTableBridge.match(routes, request);
-         return (HttpResult) app.getFirstResponder(services).invoke();
+         route = routes.matches(request);
+         return (HttpResult) app.getFirstResponder().invoke();
       }
    }
 

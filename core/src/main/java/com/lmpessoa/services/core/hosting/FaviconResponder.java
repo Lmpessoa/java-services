@@ -22,18 +22,38 @@
  */
 package com.lmpessoa.services.core.hosting;
 
-import com.lmpessoa.services.core.routing.RouteMatch;
+import java.io.IOException;
+import java.net.URL;
 
-final class InvokeHandler {
+import com.lmpessoa.services.util.logging.ILogger;
 
-   public InvokeHandler(NextHandler next) { // NOSONAR
-      // Last handler, no need for next
+final class FaviconResponder {
+
+   private static final String FAVICON = "/favicon.ico";
+   private final NextResponder next;
+
+   public FaviconResponder(NextResponder next) {
+      this.next = next;
    }
 
-   public Object invoke(RouteMatch route) {
-      if (route == null) {
-         throw new NotFoundException();
+   public Object invoke(HttpRequest request, IApplicationSettings settings, ILogger log) {
+      if (request.getPath().endsWith(FAVICON)) {
+         Class<?> startupClass = settings.getStartupClass();
+         URL iconUrl = null;
+         if (startupClass != null) {
+            iconUrl = startupClass.getResource(FAVICON);
+         }
+         if (iconUrl == null) {
+            iconUrl = FaviconResponder.class.getResource(FAVICON);
+         }
+         if (iconUrl != null) {
+            try {
+               return new HttpInputStream(ContentType.ICO, iconUrl.openStream());
+            } catch (IOException e) {
+               log.error(e);
+            }
+         }
       }
-      return route.invoke();
+      return next.invoke();
    }
 }

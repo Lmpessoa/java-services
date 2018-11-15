@@ -28,13 +28,13 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.lmpessoa.services.core.hosting.HeaderMap;
+import com.lmpessoa.services.core.hosting.Headers;
 import com.lmpessoa.services.core.hosting.HttpRequest;
 
 public final class HttpRequestBuilder {
 
+   private Map<String, String> headers = new HashMap<>();
    private Map<String, String> cookies = new HashMap<>();
-   private HeaderMap headers = new HeaderMap();
    private String method = "GET";
    private String query = null;
    private String path = null;
@@ -59,23 +59,23 @@ public final class HttpRequestBuilder {
    }
 
    public HttpRequestBuilder setContentType(String contentType) {
-      this.headers.set("Content-Type", contentType);
+      headers.put(Headers.CONTENT_TYPE, contentType);
       return this;
    }
 
    public HttpRequestBuilder setHost(String host) {
-      this.headers.set("Host", host);
+      headers.put(Headers.HOST, host);
       return this;
    }
 
    public HttpRequestBuilder setBody(String body) {
-      this.headers.set("Content-Length", String.valueOf(body.length()));
+      headers.put(Headers.CONTENT_LENGTH, String.valueOf(body.length()));
       this.body = body;
       return this;
    }
 
    public HttpRequestBuilder addHeader(String name, String value) {
-      this.headers.set(name, value);
+      this.headers.put(Headers.normalise(name), value);
       return this;
    }
 
@@ -94,7 +94,7 @@ public final class HttpRequestBuilder {
          result.append(query);
       }
       result.append(" HTTP/1.1\r\n");
-      headers.stream().forEach(e -> {
+      headers.entrySet().stream().forEach(e -> {
          result.append(e.getKey());
          result.append(": ");
          result.append(e.getValue());
@@ -133,7 +133,7 @@ public final class HttpRequestBuilder {
          @Override
          public long getContentLength() {
             try {
-               return Long.parseLong(headers.get("Content-Length"));
+               return Long.parseLong(headers.get(Headers.CONTENT_LENGTH));
             } catch (Exception e) {
                return 0;
             }
@@ -141,7 +141,7 @@ public final class HttpRequestBuilder {
 
          @Override
          public String getContentType() {
-            return headers.get("Content-Type");
+            return headers.get(Headers.CONTENT_TYPE);
          }
 
          @Override
@@ -150,13 +150,26 @@ public final class HttpRequestBuilder {
          }
 
          @Override
-         public HeaderMap getHeaders() {
-            return headers;
+         public String[] getHeaderNames() {
+            return headers.keySet().toArray(new String[0]);
          }
 
          @Override
          public String getHeader(String headerName) {
             return headers.get(headerName);
+         }
+
+         @Override
+         public String[] getHeaderValues(String headerName) {
+            if (headers.containsKey(headerName)) {
+               return new String[] { headers.get(headerName) };
+            }
+            return new String[0];
+         }
+
+         @Override
+         public boolean containsHeaders(String headerName) {
+            return headers.containsKey(headerName);
          }
 
          @Override
