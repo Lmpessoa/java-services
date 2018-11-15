@@ -43,19 +43,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.lmpessoa.services.core.hosting.ApplicationOptions;
-import com.lmpessoa.services.core.hosting.ApplicationServer;
-import com.lmpessoa.services.core.hosting.ConnectionInfo;
-import com.lmpessoa.services.core.hosting.ContentType;
-import com.lmpessoa.services.core.hosting.HeaderEntry;
-import com.lmpessoa.services.core.hosting.Headers;
-import com.lmpessoa.services.core.hosting.HttpInputStream;
-import com.lmpessoa.services.core.hosting.HttpRequest;
-import com.lmpessoa.services.core.hosting.HttpRequestImpl;
-import com.lmpessoa.services.core.hosting.HttpResult;
-import com.lmpessoa.services.core.hosting.IApplicationSettings;
-import com.lmpessoa.services.core.hosting.NotImplementedException;
-import com.lmpessoa.services.core.hosting.Redirect;
 import com.lmpessoa.services.core.routing.HttpGet;
 import com.lmpessoa.services.core.routing.HttpPost;
 import com.lmpessoa.services.core.routing.MatchedRouteBridge;
@@ -83,7 +70,7 @@ public final class NextResponderFullTest {
 
    public NextResponderFullTest() {
       Socket socket = mock(Socket.class);
-      connect = new ConnectionInfo(socket, "https://leeow.io/");
+      connect = new ConnectionInfo(socket, "https://lmpessoa.com/");
    }
 
    @Before
@@ -135,7 +122,8 @@ public final class NextResponderFullTest {
       assertEquals(ContentType.TEXT, is.getType());
       ByteArrayOutputStream out = new ByteArrayOutputStream();
       is.sendTo(out);
-      assertEquals("java.lang.IllegalStateException: Test", new String(out.toByteArray(), is.getEncoding()));
+      assertEquals("java.lang.IllegalStateException: Test",
+               new String(out.toByteArray(), is.getEncoding()));
    }
 
    @Test
@@ -223,7 +211,7 @@ public final class NextResponderFullTest {
       assertNull(result.getInputStream());
       for (HeaderEntry entry : result.getHeaders()) {
          if (entry.getKey().equals(Headers.LOCATION)) {
-            assertEquals("https://leeow.io/test/7", entry.getValue());
+            assertEquals("https://lmpessoa.com/test/7", entry.getValue());
          }
       }
    }

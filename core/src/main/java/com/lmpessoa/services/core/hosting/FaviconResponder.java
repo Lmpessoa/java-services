@@ -37,7 +37,7 @@ final class FaviconResponder {
    }
 
    public Object invoke(HttpRequest request, IApplicationSettings settings, ILogger log) {
-      if (request.getPath().endsWith(FAVICON)) {
+      if ("GET".equals(request.getMethod()) && request.getPath().endsWith(FAVICON)) {
          Class<?> startupClass = settings.getStartupClass();
          URL iconUrl = null;
          if (startupClass != null) {

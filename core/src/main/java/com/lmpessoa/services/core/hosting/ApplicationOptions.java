@@ -109,7 +109,7 @@ final class ApplicationOptions implements IApplicationOptions {
    // Async
 
    @Override
-   public void userAsync() {
+   public void useAsync() {
       useAsyncWithFeedbackPath("/feedback/");
    }
 
@@ -130,6 +130,32 @@ final class ApplicationOptions implements IApplicationOptions {
          throw new IllegalArgumentException("Given path is not valid");
       }
       AsyncResponder.setFeedbackPath(feedbackPath);
+   }
+
+   // Static files
+
+   @Override
+   public void useStaticFiles() {
+      useStaticFilesAtPath("/static");
+   }
+
+   @Override
+   public void useStaticFilesAtPath(String staticPath) {
+      lockConfiguration();
+      Objects.requireNonNull(staticPath);
+      if (StaticResponder.getStaticPath() != null) {
+         throw new IllegalStateException("Static files is already configured");
+      }
+      if (!staticPath.startsWith("/")) {
+         staticPath = "/" + staticPath;// NOSONAR
+      }
+      while (staticPath.endsWith("/")) {
+         staticPath = staticPath.substring(0, staticPath.length() - 1);
+      }
+      if (!staticPath.matches("(/[a-zA-Z0-9.-_]+)+")) {
+         throw new IllegalArgumentException("Given path is not valid");
+      }
+      StaticResponder.setStaticPath(staticPath);
    }
 
    // Identity
@@ -172,6 +198,9 @@ final class ApplicationOptions implements IApplicationOptions {
       List<Class<?>> result = new ArrayList<>();
       result.add(SerializerResponder.class);
       result.add(FaviconResponder.class);
+      if (StaticResponder.getStaticPath() != null) {
+         result.add(StaticResponder.class);
+      }
 
       result.addAll(this.responders);
 

@@ -1,0 +1,154 @@
+application/atom+xml   atom
+application/epub+zip   epub
+application/gzip   gz gzip tgz
+application/javascript   js
+application/json   json
+application/mac-binhex40   hqx
+application/mathml+xml   mml
+application/msword   doc dot
+application/oebps-package+xml   opf
+application/ogg   ogx
+application/pdf   pdf
+application/pgp-encrypted   pgp
+application/pgp-signature   sig
+application/pkcs10   p10
+application/pkcs12   p12 pxf
+application/pkcs7-mime   p7c p7m
+application/pkcs7-signature   p7s
+application/pkcs8   p8
+application/pkix-cert   cer
+application/pkix-crl   crl
+application/postscript   ai eps ps
+application/rdf+xml   rdf
+application/rss+xml   rss
+application/rtf   rtf
+application/smil+xml   smi smil sml
+application/vnd.adobe.xdp+xml   xdp
+application/vnd.amazon.ebook   azw
+application/vnd.amazon.mobi8-ebook   azw3
+application/vnd.android.package-archive   apk
+application/vnd.apple-diskimage   dmg
+application/vnd.apple.installer+xml   pkg mpkg dist distz
+application/vnd.coffeescript   coffee
+application/vnd.comicbook+zip   cbr cbz
+application/vnd.debian.binary-package   deb udeb
+application/vnd.google-earth.kml+xml   kml
+application/vnd.google-earth.kmz   kmz
+application/vnd.hp-PCL   pcl
+application/vnd.iccprofile   icc icm
+application/vnd.mozilla.xul+xml   xul
+application/vnd.ms-excel   xla xlc xlm xls xlt xlw
+application/vnd.ms-fontobject   eot
+application/vnd.ms-powerpoint   ppt pps pot
+application/vnd.ms-project   mpp mpt mpx
+application/vnd.ms-xpsdocument   xps
+application/vnd.oasis.opendocument.database   odb
+application/vnd.oasis.opendocument.chart   odc
+application/vnd.oasis.opendocument.chart-template   otc
+application/vnd.oasis.opendocument.formula   odf
+application/vnd.oasis.opendocument.graphics   odg
+application/vnd.oasis.opendocument.graphics-template   otg
+application/vnd.oasis.opendocument.image   odi
+application/vnd.oasis.opendocument.image-template   oti
+application/vnd.oasis.opendocument.presentation   odp
+application/vnd.oasis.opendocument.presentation-template   otp
+application/vnd.oasis.opendocument.spreadsheet   ods
+application/vnd.oasis.opendocument.spreadsheet-template   ots
+application/vnd.oasis.opendocument.text   odt
+application/vnd.oasis.opendocument.text-master   odm
+application/vnd.oasis.opendocument.text-template   ott
+application/vnd.oasis.opendocument.text-web   oth
+application/vnd.openxmlformats-officedocument.presentationml.presentation   pptx
+application/vnd.openxmlformats-officedocument.presentationml.slide   sldx
+application/vnd.openxmlformats-officedocument.presentationml.slideshow   ppsx
+application/vnd.openxmlformats-officedocument.presentationml.template   potx
+application/vnd.openxmlformats-officedocument.spreadsheetml.sheet   xlsx
+application/vnd.openxmlformats-officedocument.spreadsheetml.template   xltx
+application/vnd.openxmlformats-officedocument.wordprocessingml.document   docx
+application/vnd.openxmlformats-officedocument.wordprocessingml.template   dotx
+application/vnd.palm   prc pdb
+application/vnd.Quark.QuarkXPress   qwd qwt qxb qxd qxl qxt
+application/vnd.rar   rar
+application/x-7z-compressed   7z
+application/x-bittorrent   torrent
+application/x-bytecode.python   pyc
+application/x-bzip2   bz2
+application/x-compressed   z
+application/x-java-archive   jar war ear
+application/x-pkcs7-certificates   spc
+application/x-rpm   rpm
+application/x-stuffit   sit
+application/x-stuffitx   sitx
+application/x-tar   tar
+application/x-x509-ca-cert   der
+application/xhtml+xml   xht xhtm xhtml
+application/xml-dtd   dtd
+application/xslt+xml   xsl xslt
+application/wsdl+xml   wsdl
+application/zip   zip
+
+
+
+audio/ac3   ac3
+audio/aiff   aif aiff aifc
+audio/basic   au snd
+audio/midi   mid midi
+audio/mp4   m4a mp4a
+audio/mpeg   mp3 mpga
+audio/ogg   oga ogg
+audio/x-flac   flac
+audio/x-mpegurl   m3u
+audio/x-ms-wma   wma
+audio/x-pn-realaudio   rm ram
+audio/x-realaudio   ra
+audio/x-wav wav
+
+
+
+font/otf   otf
+font/ttf   ttf
+font/woff   woff
+font/woff2   woff2
+
+
+
+image/bmp   bmp dib
+image/gif   gif
+image/jp2   jp2 jpg2
+image/jpeg   jfif jpe jpeg jpg
+image/png   png
+image/svg+xml   svg svgz
+image/tiff   tif tiff
+image/vnd.adobe.photoshop   psd
+image/vnd.djvu   djv djvu
+image/vnd.dwg   dwg
+image/vnd.dxf   dxf
+image/x-icon   ico
+image/webp   webp
+
+
+
+text/calendar   ics ifb
+text/css   css
+text/csv   csv
+text/html   htm html
+text/markdown   markdown md
+text/plain   asc asm c cc cpp conf cxx def el f90 h hh hxx java list log m pas pl pm pp py s sh sql swift tex text txt
+text/x-vcalendar   vcs
+text/x-vcard   vcard vcf
+text/xml   xml xsd
+text/yaml   yaml yml
+
+
+
+video/3gpp   3gp 3gpp
+video/3gpp2   3g2 3gpp2
+video/mpeg   m4v mp4 mpe mpeg mpg mpg4
+video/ogg   ogv
+video/quicktime   mov qt
+video/vnd.mpegurl   m4u
+video/x-flv   flv
+video/x-matroska   mkv
+video/x-msvideo   avi
+video/webm   webm
+

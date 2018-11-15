@@ -141,7 +141,7 @@ public interface IApplicationOptions {
     * prevent that resource from ever being called.
     * </p>
     */
-   void userAsync();
+   void useAsync();
 
    /**
     * Enables the use of asynchronous requests using the given feedback path to return information
@@ -159,6 +159,50 @@ public interface IApplicationOptions {
     * @param feedbackPath the path to be used to poll asynchronous execution results.
     */
    void useAsyncWithFeedbackPath(String feedbackPath);
+
+   /**
+    * Enables the application server to publish static files from the default resource path.
+    * <p>
+    * By default, applications will serve any files in the {@code '/static'} folder located at the
+    * project's main resource folder (in a Maven project, that means the path must exist under
+    * {@code 'src/main/resources'}).
+    * </p>
+    * <p>
+    * Mime-types for the files served through this feature are given solely by the file's last
+    * extension part (that means a file name ending in {@code '.tar.gz'} will only be typed based on
+    * the {@code '.gz'} part). Additional mime-types used by an application can be provided by adding
+    * them to a file named {@code 'mime.types'} at the root of the main resources folder of the
+    * application project.
+    * </p>
+    * <p>
+    * To use a folder at a different path than the default, call {@link #useStaticFilesAtPath(String)}
+    * with the desired path instead.
+    * </p>
+    */
+   void useStaticFiles();
+
+   /**
+    * Enables the application server to publish static files from the given resource path.
+    * <p>
+    * By default, applications will serve any files in the given folder located at the project's main
+    * resource folder. The path to the folder must be relative to the main resources folder of the
+    * project (in a Maven project, that means the given path must exist under
+    * {@code 'src/main/resources'}).
+    * </p>
+    * <p>
+    * Mime-types for the files served through this feature are given solely by the file's last
+    * extension part (that means a file name ending in {@code '.tar.gz'} will only be typed based on
+    * the {@code '.gz'} part). Additional mime-types used by an application can be provided by adding
+    * them to a file named {@code 'mime.types'} at the root of the main resources folder of the
+    * application project.
+    * </p>
+    * <p>
+    * To use a folder at the default path, call {@link #useStaticFiles()} instead.
+    * </p>
+    *
+    * @param staticPath the path to the folder the application will publish resources from.
+    */
+   void useStaticFilesAtPath(String staticPath);
 
    /**
     * Enables the use of identities in requests using the given identity provider.

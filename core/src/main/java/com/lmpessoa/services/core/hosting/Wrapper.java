@@ -39,8 +39,8 @@ import com.lmpessoa.services.core.security.IIdentityOptions;
 import com.lmpessoa.services.core.security.IIdentityProvider;
 import com.lmpessoa.services.util.logging.ILogger;
 
-// The issue with wrappers is that every method in the wrapped interface has to be overridden,
-// including defaults because we have no idea when a default method will be overridden in the
+// The issue with wrappers is that every method in the wrapped interface has to be overriden,
+// including defaults because we have no idea when a default method will be overriden in the
 // wrapped class.
 final class Wrapper {
 
@@ -157,13 +157,23 @@ final class Wrapper {
          }
 
          @Override
-         public void userAsync() {
-            original.userAsync();
+         public void useAsync() {
+            original.useAsync();
          }
 
          @Override
          public void useAsyncWithFeedbackPath(String feedbackPath) {
             original.useAsyncWithFeedbackPath(feedbackPath);
+         }
+
+         @Override
+         public void useStaticFiles() {
+            original.useStaticFiles();
+         }
+
+         @Override
+         public void useStaticFilesAtPath(String staticPath) {
+            original.useStaticFilesAtPath(staticPath);
          }
 
          @Override

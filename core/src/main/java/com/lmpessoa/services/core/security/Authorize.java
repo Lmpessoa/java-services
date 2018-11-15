@@ -59,7 +59,7 @@ public @interface Authorize {
    String[] roles() default {};
 
    /**
-    * The name of the policy an identity must fulfill in order to be authorised to access a method
+    * The name of the policy an identity must fulfil in order to be authorised to access a method
     * protected by this annotation.
     */
    String policy() default "";

@@ -56,7 +56,7 @@ import java.util.Objects;
  * assumed to be UTF-8. The charset is ignored for content types that are not textual.
  * </p>
  */
-public final class HttpInputStream extends InputStream {
+public final class HttpInputStream extends InputStream implements AutoCloseable {
 
    private final InputStream stream;
    private final String contentType;
