@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core;
+package com.lmpessoa.services.core.routing;
 
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
@@ -34,7 +34,7 @@ import java.lang.annotation.Target;
  *
  * <p>
  * Classes don't usually need to be annotated with this to be recognised as resources by the engine
- * as long as their names end with the "Resource" suffix and that is not the complete name of the
+ * as long as their names end with the "Resource" sufix and that is not the complete name of the
  * class. To have classes recognised as resources without following this convention, classes must be
  * annotated with <code>@Resource</code>.
  * </p>

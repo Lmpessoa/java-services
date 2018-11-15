@@ -22,8 +22,6 @@
  */
 package com.lmpessoa.services.core.hosting;
 
-import com.lmpessoa.services.core.HttpInputStream;
-
 final class HttpResult {
 
    private final HttpInputStream stream;

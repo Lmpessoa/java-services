@@ -48,7 +48,6 @@ final class HttpRequestImpl implements HttpRequest {
    private final String method;
    private final String path;
 
-   private Map<String, String> cookies;
    private Map<String, Collection<String>> query;
 
    @Override
@@ -120,22 +119,6 @@ final class HttpRequestImpl implements HttpRequest {
          query = Collections.unmodifiableMap(result);
       }
       return query;
-   }
-
-   @Override
-   public synchronized Map<String, String> getCookies() {
-      if (cookies == null && headers.contains("Cookie")) {
-         Map<String, String> result = new HashMap<>();
-         String tmp = headers.get("Cookie");
-         if (tmp != null) {
-            Arrays.asList(tmp.split(";"))
-                     .stream() //
-                     .map(s -> s.split("=", 2)) //
-                     .forEach(s -> result.put(s[0].trim(), s[1].trim()));
-         }
-         this.cookies = Collections.unmodifiableMap(result);
-      }
-      return cookies;
    }
 
    @Override

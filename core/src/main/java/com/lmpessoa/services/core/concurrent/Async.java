@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core;
+package com.lmpessoa.services.core.concurrent;
 
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
@@ -29,20 +29,33 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * Identifies a method that responds for an HTTP <code>GET</code> request.
+ * Identifies methods that should be executed asynchronously.
  *
  * <p>
- * Methods annotated with this will override the default behaviour of the engine, which is to
- * identify the HTTP method from the name of the method.
+ * Usually user agents usually drop waiting for a server response after 20 seconds on average.
+ * Unfortunately some methods may take considerable time to return their effective result and user
+ * agents are most likely to stop waiting before the result is actually ready.
  * </p>
  *
  * <p>
- * A method can be combined with others HTTP method annotations, thus a method can respond to more
- * than one HTTP method request.
+ * By marking a method (or a whole resource class) as asynchronous, upon calling the method, the
+ * user agent is given another link where it can check back later if the method execution has
+ * finished and its effective result once completed. The link can be checked as many times desired
+ * until the result is available.
+ * </p>
+ *
+ * <p>
+ * If an entire class is marker <code>@Async</code> each and every method call in that class will be
+ * executed asynchronously.
+ * </p>
+ *
+ * <p>
+ * For deployers, note that the execution of asynchronous methods shares the same thread pool used
+ * to handle request received by the application, thus if limited it should be taken into
+ * consideration that too many asynchronous methods being called concurrently may block the server
+ * ability to respond to newer request.
  * </p>
  */
 @Target(METHOD)
 @Retention(RUNTIME)
-public @interface HttpGet {
-
-}
+public @interface Async {}

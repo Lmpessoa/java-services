@@ -20,20 +20,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.test.resources;
+package com.lmpessoa.services.core.routing;
 
-import com.lmpessoa.services.core.routing.HttpGet;
-import com.lmpessoa.services.core.routing.Route;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-public final class IndexResource {
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-   public void get() {
-      // Test method, does nothing
-   }
+/**
+ * Identifies a method that responds for an HTTP <code>PUT</code> request.
+ *
+ * <p>
+ * Methods annotated with this will override the default behaviour of the engine, which is to
+ * identify the HTTP method from the name of the method.
+ * </p>
+ *
+ * <p>
+ * A method can be combined with others HTTP method annotations, thus a method can respond to more
+ * than one HTTP method request.
+ * </p>
+ */
+@Target(METHOD)
+@Retention(RUNTIME)
+public @interface HttpPut {
 
-   @HttpGet
-   @Route("test")
-   public void test() {
-      // Test method, does nothing
-   }
 }

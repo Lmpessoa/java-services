@@ -32,10 +32,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.lmpessoa.services.Internal;
-import com.lmpessoa.services.core.ContentType;
-import com.lmpessoa.services.core.HttpInputStream;
-import com.lmpessoa.services.util.ClassUtils;
+import com.lmpessoa.services.core.hosting.ContentType;
+import com.lmpessoa.services.core.hosting.HttpInputStream;
 
 /**
  * The <code>Serializer</code> class provides an abstraction to transform HTTP content between plain
@@ -62,9 +60,7 @@ public final class Serializer {
     * @param resultClass the class of the object to be returned.
     * @return the content parsed into an object of the given class.
     */
-   @Internal
    public static <T> T read(String contentType, byte[] content, Class<T> resultClass) {
-      ClassUtils.checkInternalAccess();
       String realType = contentType.split(";")[0];
       if (handlers.containsKey(realType)) {
          Class<?> handlerClass = handlers.get(realType);
@@ -80,10 +76,8 @@ public final class Serializer {
       throw new SerializationException("Cannot deserialise from " + contentType);
    }
 
-   @Internal
    public static HttpInputStream produce(String[] accepts, Object obj)
       throws InstantiationException, IllegalAccessException {
-      ClassUtils.checkInternalAccess();
       for (String contentType : accepts) {
          if (handlers.containsKey(contentType)) {
             Class<?> handlerClass = handlers.get(contentType);
@@ -97,9 +91,7 @@ public final class Serializer {
       return null;
    }
 
-   @Internal
    public static void enableXml(boolean enable) {
-      ClassUtils.checkInternalAccess();
       if (enable && !handlers.containsKey(ContentType.XML)) {
          handlers.put(ContentType.XML, XmlSerializer.class);
       } else if (!enable && handlers.containsKey(ContentType.XML)) {

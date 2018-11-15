@@ -29,19 +29,26 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import java.util.NoSuchElementException;
-import java.util.Observable;
-import java.util.Observer;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.lmpessoa.services.BrokerObserver;
-import com.lmpessoa.services.core.routing.AbstractRouteType;
 import com.lmpessoa.services.core.services.IServiceMap;
 import com.lmpessoa.services.core.services.NoSingleMethodException;
 import com.lmpessoa.services.core.services.ServiceMap;
+import com.lmpessoa.services.test.services.AbstractTestService;
+import com.lmpessoa.services.test.services.Requested;
+import com.lmpessoa.services.test.services.RequestedImpl;
+import com.lmpessoa.services.test.services.Singleton;
+import com.lmpessoa.services.test.services.SingletonDependent;
+import com.lmpessoa.services.test.services.SingletonImpl;
+import com.lmpessoa.services.test.services.TestService;
+import com.lmpessoa.services.test.services.Transient;
+import com.lmpessoa.services.test.services.TransientDependent;
+import com.lmpessoa.services.test.services.TransientImpl;
+import com.lmpessoa.services.test.services.TwoConstructorsService;
 
 public class ServiceMapTest {
 
@@ -53,59 +60,58 @@ public class ServiceMapTest {
    @Before
    public void setup() {
       map = new ServiceMap();
-      map.useSingleton(IServiceMap.class, map);
+      map.put(IServiceMap.class, map);
    }
 
    @Test
    public void testRegisterPrimitive() {
       thrown.expect(IllegalArgumentException.class);
-      thrown.expectMessage("Provider class must be a concrete class");
-      map.useSingleton(int.class);
+      thrown.expectMessage("Service does not specify reuse level");
+      map.put(int.class);
    }
 
    @Test
    public void testRegisterAbstractClass() {
       thrown.expect(IllegalArgumentException.class);
       thrown.expectMessage("Provider class must be a concrete class");
-      map.useSingleton(AbstractRouteType.class);
-
+      map.put(AbstractTestService.class);
    }
 
    @Test
    public void testTooManyConstructors() {
       thrown.expect(IllegalArgumentException.class);
       thrown.expectMessage("Provider class must have only one constructor (found: 2)");
-      map.useSingleton(TwoConstructorsClass.class);
+      map.put(TwoConstructorsService.class);
    }
 
    @Test
    public void testSameSingleton() {
-      map.useSingleton(Observable.class);
-      Observable o1 = map.get(Observable.class);
-      Observable o2 = map.get(Observable.class);
+      map.put(TestService.class);
+      TestService o1 = map.get(TestService.class);
+      TestService o2 = map.get(TestService.class);
       assertSame(o1, o2);
    }
 
    @Test
    public void testSingletonWithSubclass() {
-      map.useSingleton(Observer.class, BrokerObserver.class);
-      Observer o = map.get(Observer.class);
-      assertTrue(o instanceof BrokerObserver);
+      map.put(Singleton.class, SingletonImpl.class);
+      Singleton o = map.get(Singleton.class);
+      assertTrue(o instanceof SingletonImpl);
    }
 
    @Test
    public void testDifferentTransient() {
-      map.useTransient(Observer.class, BrokerObserver.class);
-      Observer o1 = map.get(Observer.class);
-      Observer o2 = map.get(Observer.class);
+      map.put(Transient.class, TransientImpl.class);
+      Transient o1 = map.get(Transient.class);
+      Transient o2 = map.get(Transient.class);
       assertNotSame(o1, o2);
    }
 
    @Test
    public void testSingletonUsingUnregistered() {
       thrown.expect(IllegalArgumentException.class);
-      thrown.expectMessage("Dependent service " + Observer.class.getName() + " is not registered");
-      map.useSingleton(TransientDependent.class);
+      thrown.expectMessage("Dependent service " + Transient.class.getName() + " is not registered");
+      map.put(TransientDependent.class);
    }
 
    @Test
@@ -113,75 +119,75 @@ public class ServiceMapTest {
       thrown.expect(IllegalArgumentException.class);
       thrown.expectMessage(
                "Class " + TransientDependent.class.getName() + " has a lower lifetime than one of its dependencies");
-      map.useTransient(Observer.class, BrokerObserver.class);
-      map.useSingleton(TransientDependent.class);
+      map.put(Transient.class, TransientImpl.class);
+      map.put(TransientDependent.class);
    }
 
    @Test
    public void testTransientUsingSingleton() {
-      map.useSingleton(Observer.class, BrokerObserver.class);
-      map.useTransient(SingletonDependent.class);
+      map.put(Singleton.class, SingletonImpl.class);
+      map.put(SingletonDependent.class);
       assertNotNull(map.get(SingletonDependent.class));
    }
 
    @Test
    public void testSecondRegistration() {
       thrown.expect(IllegalArgumentException.class);
-      thrown.expectMessage("Service " + Observer.class.getName() + " is already registered");
-      map.useSingleton(Observer.class, BrokerObserver.class);
-      assertNotNull(map.get(Observer.class));
-      map.useTransient(Observer.class, BrokerObserver.class);
+      thrown.expectMessage("Service " + Singleton.class.getName() + " is already registered");
+      map.put(Singleton.class, SingletonImpl.class);
+      assertNotNull(map.get(Singleton.class));
+      map.put(Singleton.class, SingletonImpl.class);
    }
 
    @Test
    public void testInvokeStaticCorrect() throws Exception {
-      map.useSingleton(Observer.class, new BrokerObserver());
-      Observer o = map.get(Observer.class);
+      map.put(Singleton.class, new SingletonImpl());
+      Singleton o = map.get(Singleton.class);
       String str = (String) map.invoke(ServiceMapTest.class, "getRegistryToString");
       assertEquals(o.toString(), str);
    }
 
    @Test
    public void testInvokeInstanceCorrect() throws Exception {
-      map.useSingleton(Observer.class, new BrokerObserver());
-      Observer o = map.get(Observer.class);
+      map.put(Singleton.class, new SingletonImpl());
+      Singleton o = map.get(Singleton.class);
       String str = (String) map.invoke(this, "getObserverToString");
       assertEquals(o.toString(), str);
    }
 
    @Test
    public void testInvokeStaticWithInstance() throws Exception {
-      thrown.expect(IllegalArgumentException.class);
-      thrown.expectMessage("Mismatched static/instance method call");
-      map.useSingleton(Observer.class, new BrokerObserver());
-      map.invoke(this, "getRegistryToString");
+      map.put(Singleton.class, new SingletonImpl());
+      Singleton o = map.get(Singleton.class);
+      String result = (String) map.invoke(this, "getRegistryToString");
+      assertEquals(o.toString(), result);
    }
 
    @Test
    public void testInvokeInstanceWithStatic() throws Exception {
       thrown.expect(IllegalArgumentException.class);
       thrown.expectMessage("Mismatched static/instance method call");
-      map.useSingleton(Observer.class, new BrokerObserver());
+      map.put(Singleton.class, new SingletonImpl());
       map.invoke(ServiceMapTest.class, "getObserverToString");
    }
 
    public void testInjectRequestOutOfHandlerJob() {
       thrown.expect(IllegalStateException.class);
       thrown.expectMessage("Cannot locate object pool for this service map");
-      map.usePerRequest(Object.class);
-      map.get(Object.class);
+      map.put(TestService.class);
+      map.get(TestService.class);
    }
 
    @Test
    public void testInjectPerRequest() throws InterruptedException {
-      final BrokerObserver[] objs = new BrokerObserver[2];
-      map.usePerRequest(BrokerObserver.class);
+      final RequestedImpl[] objs = new RequestedImpl[2];
+      map.put(RequestedImpl.class);
       Thread t0 = new Thread(() -> {
-         objs[0] = map.get(BrokerObserver.class);
+         objs[0] = map.get(RequestedImpl.class);
       });
       t0.start();
       Thread t1 = new Thread(() -> {
-         objs[1] = map.get(BrokerObserver.class);
+         objs[1] = map.get(RequestedImpl.class);
       });
       t1.start();
       t0.join();
@@ -191,15 +197,15 @@ public class ServiceMapTest {
 
    @Test
    public void testInjectWithInstancing() throws InterruptedException {
-      final Observer[] objs = new Observer[3];
-      map.usePerRequest(Observer.class, BrokerObserver.class);
+      final Requested[] objs = new Requested[3];
+      map.put(Requested.class, RequestedImpl.class);
       Thread t0 = new Thread(() -> {
-         objs[0] = map.get(Observer.class);
-         objs[1] = map.get(Observer.class);
+         objs[0] = map.get(Requested.class);
+         objs[1] = map.get(Requested.class);
       });
       t0.start();
       Thread t1 = new Thread(() -> {
-         objs[2] = map.get(Observer.class);
+         objs[2] = map.get(Requested.class);
       });
       t1.start();
       t0.join();
@@ -231,38 +237,45 @@ public class ServiceMapTest {
       map.invoke(this, "existing");
    }
 
+   @Test
+   public void testRegisterWithSupplier() {
+      map.put(Singleton.class, () -> new SingletonImpl());
+      Singleton o1 = map.get(Singleton.class);
+      Singleton o2 = map.get(Singleton.class);
+      assertNotNull(o1);
+      assertSame(o1, o2);
+   }
+
+   @Test
+   public void testRegisterSingletonInstance() {
+      map.put(Singleton.class, new SingletonImpl());
+      Singleton o1 = map.get(Singleton.class);
+      Singleton o2 = map.get(Singleton.class);
+      assertNotNull(o1);
+      assertSame(o1, o2);
+   }
+
+   @Test
+   public void testRegisterTransientInstance() {
+      thrown.expect(IllegalArgumentException.class);
+      thrown.expectMessage("Service instances can only be used if reuse is ALWAYS");
+      map.put(Transient.class, new TransientImpl());
+   }
+
+   @Test
+   public void testRegisterStringInstance() {
+      thrown.expect(IllegalArgumentException.class);
+      thrown.expectMessage("Service does not specify reuse level");
+      map.put(String.class, "test");
+   }
+
    // Test data ----------
 
-   public static class TransientDependent {
-
-      public TransientDependent(Observer observable) {
-         // Test method, does nothing
-      }
-   }
-
-   public static class SingletonDependent {
-
-      public SingletonDependent(Observer observable) {
-         // Test method, does nothing
-      }
-   }
-
-   public static class TwoConstructorsClass {
-
-      public TwoConstructorsClass() {
-         // Test method, does nothing
-      }
-
-      public TwoConstructorsClass(int i) {
-         // Test method, does nothing
-      }
-   }
-
-   public static String getRegistryToString(Observer observer) {
+   public static String getRegistryToString(Singleton observer) {
       return observer.toString();
    }
 
-   public String getObserverToString(Observer observer) {
+   public String getObserverToString(Singleton observer) {
       return observer.toString();
    }
 

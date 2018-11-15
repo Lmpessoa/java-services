@@ -31,6 +31,8 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.lmpessoa.services.core.hosting.HeaderMap;
+
 public final class HeaderMapTest {
 
    private HeaderMap subject;

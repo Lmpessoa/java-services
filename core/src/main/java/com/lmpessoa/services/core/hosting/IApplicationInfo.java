@@ -22,9 +22,13 @@
  */
 package com.lmpessoa.services.core.hosting;
 
+import com.lmpessoa.services.core.services.Reuse;
+import com.lmpessoa.services.core.services.Service;
+
 /**
  * Provides an interface for retrieving information about the current application.
  */
+@Service(Reuse.ALWAYS)
 public interface IApplicationInfo {
 
    /**

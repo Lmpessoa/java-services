@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core;
+package com.lmpessoa.services.core.hosting;
 
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
@@ -39,7 +39,7 @@ import java.lang.annotation.Target;
  * </p>
  *
  * <p>
- * Methods which return input stream and byte arrays may choose to annotate the method with
+ * Methods which return input streams and byte arrays may choose to annotate the method with
  * <code>ContentType</code> to indicate all content returned from this method should be returned
  * with the given content type.
  * </p>

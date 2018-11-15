@@ -125,8 +125,8 @@ public final class ExecutionService implements IExecutionService {
     *
     * <p>
     * After this method is executed, an {@code ExecutionService} will cancel any tasks not yet in
-    * executions and refuse any new tasks but will not attempt to interrupt any already running
-    * tasks pending completion.
+    * executions and refuse any new tasks but will not attemp to interrupt any already running tasks
+    * pending completion.
     * </p>
     *
     * <p>
@@ -147,9 +147,9 @@ public final class ExecutionService implements IExecutionService {
     *
     * <p>
     * After this method is executed, an {@code ExecutionService} will cancel any tasks not yet in
-    * executions and refuse any new tasks. If the value of {@code mayInterrupRunning} is
-    * {@code true}, it will attempt to interrupt any tasks currently running, but there is no
-    * guarantee they will be terminated.
+    * executions and refuse any new tasks. If the value of {@code mayInterrupRunning} is {@code true},
+    * it will attempt to interrupt any tasks currently running, but there is no guarantee they will be
+    * terminated.
     * </p>
     *
     * <p>
@@ -161,16 +161,15 @@ public final class ExecutionService implements IExecutionService {
     * After this call, results of tasks not yet purged will still be available until they expire.
     * </p>
     *
-    * @param mayInterruptRunning {@code true} if the execution service should attempt to interrupt
-    *           any running tasks, or {@code false} to allow running tasks to complete on their own.
+    * @param mayInterruptRunning {@code true} if the execution service should attempt to interrupt any
+    * running tasks, or {@code false} to allow running tasks to complete on their own.
     */
    public void shutdown(boolean mayInterruptRunning) {
       if (shutdown.get()) {
          return;
       }
       shutdown.set(true);
-      tasks.values().stream().filter(j -> j.status == Status.QUEUED).forEach(
-               j -> j.status = Status.CANCELLED);
+      tasks.values().stream().filter(j -> j.status == Status.QUEUED).forEach(j -> j.status = Status.CANCELLED);
       if (mayInterruptRunning) {
          tasks.values().stream().filter(j -> j.status == Status.RUNNING).forEach(j -> {
             j.status = Status.INTERRUPTED;
@@ -183,8 +182,8 @@ public final class ExecutionService implements IExecutionService {
     * Submits a Runnable task for execution and returns an identifier for that task.
     *
     * <p>
-    * The returned identifier can be used at any moment to obtain that task's Future result, which
-    * in turn can be used to check if the task has been completed and what result it returned.
+    * The returned identifier can be used at any moment to obtain that task's Future result, which in
+    * turn can be used to check if the task has been completed and what result it returned.
     * </p>
     *
     * @param task the task to be executed.
@@ -200,9 +199,9 @@ public final class ExecutionService implements IExecutionService {
     * Submits a Runnable task for execution and returns an identifier for that task.
     *
     * <p>
-    * The returned identifier is composed of a sequential number with the given prefix and can be
-    * used at any moment to obtain that task's Future result, which in turn can be used to check if
-    * the task has been completed and what result it returned.
+    * The returned identifier is composed of a sequential number with the given prefix and can be used
+    * at any moment to obtain that task's Future result, which in turn can be used to check if the task
+    * has been completed and what result it returned.
     * </p>
     *
     * @param task the task to be executed.
@@ -219,9 +218,9 @@ public final class ExecutionService implements IExecutionService {
     * Submits a Callable task for execution and returns an identifier for that task.
     *
     * <p>
-    * The returned identifier is composed of a sequential number with the given prefix and can be
-    * used at any moment to obtain that task's Future result, which in turn can be used to check if
-    * the task has been completed and what result it returned.
+    * The returned identifier is composed of a sequential number with the given prefix and can be used
+    * at any moment to obtain that task's Future result, which in turn can be used to check if the task
+    * has been completed and what result it returned.
     * </p>
     *
     * @param task the task to be executed.
@@ -243,9 +242,9 @@ public final class ExecutionService implements IExecutionService {
     * Submits a Callable task for execution and returns an identifier for that task.
     *
     * <p>
-    * The returned identifier is composed of a sequential number with the given prefix and can be
-    * used at any moment to obtain that task's Future result, which in turn can be used to check if
-    * the task has been completed and what result it returned.
+    * The returned identifier is composed of a sequential number with the given prefix and can be used
+    * at any moment to obtain that task's Future result, which in turn can be used to check if the task
+    * has been completed and what result it returned.
     * </p>
     *
     * @param task the task to be executed.
@@ -289,7 +288,7 @@ public final class ExecutionService implements IExecutionService {
     * </p>
     *
     * @param timeout the time to wait. A time value of zero will cause excess threads to terminate
-    *           immediately after executing tasks.
+    * immediately after executing tasks.
     * @param unit the time unit of the {@code timeout} argument.
     * @throws IllegalArgumentException if {@code timeout} os less than zero.
     * @see #getKeepAliveTime(TimeUnit)
@@ -320,8 +319,8 @@ public final class ExecutionService implements IExecutionService {
    /**
     * Sets the time limit for which results will be retained before being purged.
     *
-    * @param timeout the time to wait. A time value of zero will cause results to be purged
-    *           immediately after executing tasks.
+    * @param timeout the time to wait. A time value of zero will cause results to be purged immediately
+    * after executing tasks.
     * @param unit the time unit of the {@code timeout} argument.
     * @throws IllegalArgumentException if {@code timeout} is less than zero.
     */
@@ -353,7 +352,7 @@ public final class ExecutionService implements IExecutionService {
    }
 
    private void executeOrQueue(Task<?> task) {
-      if (workers.stream().anyMatch(w -> w.task == null) || workers.size() >= maxWorkerCount) {
+      if (workers.stream().anyMatch(w -> w.task == null) || maxWorkerCount > 0 && workers.size() >= maxWorkerCount) {
          queue.add(task);
       } else {
          Worker worker = new Worker(task);
@@ -377,10 +376,10 @@ public final class ExecutionService implements IExecutionService {
    private final class Task<T> implements Future<T> {
 
       // Fields are marked transient so they do not get serialised
-      private final transient Callable<T> job;
-      private transient Worker worker = null;
-      private transient Throwable exception = null;
-      private transient Instant completed;
+      private final transient Callable<T> job; // NOSONAR
+      private transient Worker worker = null; // NOSONAR
+      private transient Throwable exception = null; // NOSONAR
+      private transient Instant completed; // NOSONAR
 
       // Used only by serialisation to JSON/XML
       @SuppressWarnings("unused")
@@ -433,8 +432,7 @@ public final class ExecutionService implements IExecutionService {
       }
 
       @Override
-      public T get(long timeout, TimeUnit unit)
-         throws InterruptedException, ExecutionException, TimeoutException {
+      public T get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
          Instant end = Instant.now().plusNanos(unit.toNanos(timeout));
          while (!isDone()) {
             if (end.isBefore(Instant.now())) {
@@ -506,7 +504,7 @@ public final class ExecutionService implements IExecutionService {
             try {
                Thread.sleep(60);
             } catch (InterruptedException e) {
-               Thread.interrupted();
+               Thread.currentThread().interrupt();
                return null;
             }
          }

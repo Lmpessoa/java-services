@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -37,8 +36,6 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-
-import com.lmpessoa.services.Internal;
 
 /**
  * Class used to hold several useful methods when dealing with classes.
@@ -96,8 +93,8 @@ public final class ClassUtils {
     *
     * @param clazz the class to search for methods.
     * @param predicate the condition used to evaluate methods.
-    * @return an array of all methods that match the given predicate. Note that the list may be empty
-    * if no methods match the given predicate.
+    * @return an array of all methods that match the given predicate. Note that the list may be
+    *         empty if no methods match the given predicate.
     */
    public static Method[] findMethods(Class<?> clazz, Predicate<? super Method> predicate) {
       return Arrays.stream(clazz.getMethods()).filter(predicate).toArray(Method[]::new);
@@ -109,15 +106,17 @@ public final class ClassUtils {
     * @param clazz the class from which to find the constructors.
     * @param predicate a predicate used to filter constructors.
     * @return a list of <code>Constructor</code> objects that match the given predicate or an empty
-    * list if none match the predicate.
+    *         list if none match the predicate.
     */
-   public static Constructor<?>[] findConstructor(Class<?> clazz, Predicate<? super Constructor<?>> predicate) {
-      return Arrays.stream(clazz.getConstructors()).filter(predicate).toArray(Constructor<?>[]::new);
+   public static Constructor<?>[] findConstructor(Class<?> clazz,
+      Predicate<? super Constructor<?>> predicate) {
+      return Arrays.stream(clazz.getConstructors()).filter(predicate).toArray(
+               Constructor<?>[]::new);
    }
 
    /**
-    * Returns a <code>Constructor</code> object that reflects the specified public constructor of the
-    * given class.
+    * Returns a <code>Constructor</code> object that reflects the specified public constructor of
+    * the given class.
     *
     * <p>
     * This method behaves exactly like {@link Class#getConstructor(Class...)} except that if no such
@@ -126,8 +125,8 @@ public final class ClassUtils {
     *
     * @param clazz the class from which to find the constructor.
     * @param parameterTypes the list of parameter types of the desired constructor.
-    * @return the <code>Constructor</code> object of the public constructor that matches the specified
-    * list of parameter types.
+    * @return the <code>Constructor</code> object of the public constructor that matches the
+    *         specified list of parameter types.
     */
    @SuppressWarnings("unchecked")
    public static <T> Constructor<T> getConstructor(Class<T> clazz, Class<?>... parameterTypes) {
@@ -150,8 +149,8 @@ public final class ClassUtils {
     * @param clazz the class from which to find the method.
     * @param methodName the name of the desired method.
     * @param parameterTypes the list of parameter types of the desired method.
-    * @return the <code>Method</code> object of the public method that matches the specified name and
-    * list of parameter types.
+    * @return the <code>Method</code> object of the public method that matches the specified name
+    *         and list of parameter types.
     */
    public static Method getMethod(Class<?> clazz, String methodName, Class<?>... parameterTypes) {
       Objects.requireNonNull(clazz);
@@ -168,8 +167,8 @@ public final class ClassUtils {
     * Returns whether the given class is a concrete class.
     *
     * <p>
-    * A concrete class is an actual class (not an array, enum, primitive, interface, etc.) which is not
-    * abstract and thus can be instantiated.
+    * A concrete class is an actual class (not an array, enum, primitive, interface, etc.) which is
+    * not abstract and thus can be instantiated.
     * </p>
     *
     * @param clazz the type to check.
@@ -182,19 +181,19 @@ public final class ClassUtils {
    }
 
    /**
-    * Scans the project the given class belongs to and returns a list of all classes that exist in the
-    * same project as the given class.
+    * Scans the project the given class belongs to and returns a list of all classes that exist in
+    * the same project as the given class.
     *
     * <p>
     * The returned list will contain all names of the existing classes in the project, not the
-    * {@link Class} objects for the classes themselves. Any code using this method is responsible for
-    * converting the names into class objects as they see fit.
+    * {@link Class} objects for the classes themselves. Any code using this method is responsible
+    * for converting the names into class objects as they see fit.
     * </p>
     *
     * <p>
-    * One must also note that this list will contain both public and non-public classes in the project
-    * of the given class. Any distinction between public and non-public classes must also be performed
-    * by the code calling this method.
+    * One must also note that this list will contain both public and non-public classes in the
+    * project of the given class. Any distinction between public and non-public classes must also be
+    * performed by the code calling this method.
     * </p>
     *
     * @param clazz a class in the project to be scanned.
@@ -212,63 +211,12 @@ public final class ClassUtils {
       return findClassesInPath(location.substring(5) + "/", "");
    }
 
-   /**
-    * Prevents access to an internal method.
-    *
-    * <p>
-    * The <code>@Internal</code> annotation is useful only for documentation purposes and will be shown
-    * in generated Javadoc. This, however, does not ensure the annotated method or classes cannot be
-    * called outside the project they are declared. Calling this method as the first line of a method
-    * creates a fence that ensures only methods declared in the same project can call the protected
-    * method.
-    * </p>
-    *
-    * @param class1 a class to compare if on the same project as the other
-    * @param class2 a class to compare if on the same project as the other
-    * @throws SecurityException if the caller method cannot access the called method.
-    */
-   public static void checkInternalAccess(Class<?> class1, Class<?> class2) {
-      String calledLocation = new File(findLocation(class1)).getParent();
-      String callerLocation = new File(findLocation(class2)).getParent();
-      if (!calledLocation.equals(callerLocation)) {
-         SecurityException ex = new AccessControlException("Cannot call an internal class");
-         StackTraceElement[] stack = ex.getStackTrace();
-         stack = Arrays.stream(stack) //
-                  .filter(t -> t.getClassName() != ClassUtils.class.getName()) //
-                  .toArray(StackTraceElement[]::new);
-         ex.setStackTrace(stack);
-         throw ex;
-      }
-   }
-
-   /**
-    * Prevents access to an internal method.
-    *
-    * <p>
-    * The <code>@Internal</code> annotation is useful only for documentation purposes and will be shown
-    * in generated Javadoc. This, however, does not ensure the annotated method or classes cannot be
-    * called outside the project they are declared. Calling this method as the first line of a method
-    * creates a fence that ensures only methods declared in the same project can call the protected
-    * method.
-    * </p>
-    *
-    * @throws SecurityException if the caller method cannot access the called method.
-    */
-   public static void checkInternalAccess() {
-      try {
-         StackTraceElement[] stack = Thread.currentThread().getStackTrace();
-         checkInternalAccess(Class.forName(stack[2].getClassName()), Class.forName(stack[3].getClassName()));
-      } catch (ClassNotFoundException e) {
-         // Should not happen; ignore for now
-      }
-   }
-
-   @Internal
    public static String findLocation(Class<?> clazz) {
       if (clazz == null) {
          return null;
       }
-      String pathOfClass = File.separator + clazz.getName().replaceAll("\\.", File.separator) + ".class";
+      String pathOfClass = File.separator + clazz.getName().replaceAll("\\.", File.separator)
+               + ".class";
       String location = clazz.getResource(pathOfClass).toString();
       return location.substring(0, location.length() - pathOfClass.length());
    }
@@ -295,7 +243,8 @@ public final class ClassUtils {
       File currentRoot = new File(root + currentPackage.replace('.', '/'));
       for (File entry : currentRoot.listFiles()) {
          if (entry.isDirectory()) {
-            String newPackage = (currentPackage.length() > 0 ? currentPackage + '.' : "") + entry.getName();
+            String newPackage = (currentPackage.length() > 0 ? currentPackage + '.' : "")
+                     + entry.getName();
             result.addAll(findClassesInPath(root, newPackage));
          } else {
             String className = entry.getName();

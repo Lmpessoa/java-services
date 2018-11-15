@@ -32,6 +32,8 @@ import org.junit.Test;
 
 import com.lmpessoa.services.core.hosting.NextHandler;
 import com.lmpessoa.services.core.hosting.NextHandlerImpl;
+import com.lmpessoa.services.core.services.Reuse;
+import com.lmpessoa.services.core.services.Service;
 import com.lmpessoa.services.core.services.ServiceMap;
 
 public final class NextHandlerTest {
@@ -49,7 +51,7 @@ public final class NextHandlerTest {
 
       request = new Request();
       services = new ServiceMap();
-      services.useSingleton(Request.class, request);
+      services.put(Request.class, request);
    }
 
    @Test
@@ -79,6 +81,7 @@ public final class NextHandlerTest {
       assertEquals(2, result.code);
    }
 
+   @Service(Reuse.ALWAYS)
    public static class Request {
 
       public int code;

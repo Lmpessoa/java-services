@@ -32,6 +32,7 @@ import java.net.URL;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.lmpessoa.services.core.hosting.Redirect;
 import com.lmpessoa.services.core.routing.RouteTable;
 import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.util.ConnectionInfo;

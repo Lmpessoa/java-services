@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import com.lmpessoa.services.core.HttpInputStream;
 import com.lmpessoa.services.core.routing.IRouteTable;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.routing.RouteTable;
@@ -121,9 +120,9 @@ final class ApplicationResponder implements Runnable {
    private HttpResult resolveRequest(HttpRequest request, ConnectionInfo connection) {
       final ServiceMap services = context.getServices();
       services.putRequestValue(ConnectionInfo.class, Objects.requireNonNull(connection));
-      services.putRequestValue(HttpRequest.class, Objects.requireNonNull(request));
+      services.putRequestValue(HttpRequest.class, Wrapper.wrap(request));
       RouteTable routes = context.getRouteTable();
-      services.putRequestValue(IRouteTable.class, routes);
+      services.putRequestValue(IRouteTable.class, Wrapper.wrap(routes));
       RouteMatch route = routes.matches(request);
       services.putRequestValue(RouteMatch.class, route);
       NextHandler chain = context.getFirstResponder();

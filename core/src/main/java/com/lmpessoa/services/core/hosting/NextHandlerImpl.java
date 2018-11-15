@@ -69,8 +69,8 @@ final class NextHandlerImpl implements NextHandler {
       this.handlers = handlers;
    }
 
-   private Object invokeService(Object obj) throws IllegalAccessException,
-      InvocationTargetException, NoSingleMethodException, InstantiationException {
+   private Object invokeService(Object obj)
+      throws IllegalAccessException, InvocationTargetException, NoSingleMethodException, InstantiationException {
       try {
          return services.invoke(obj, "invoke");
       } catch (InvocationTargetException e) {

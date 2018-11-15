@@ -35,20 +35,18 @@ import java.io.InputStream;
 import java.net.Socket;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
+import java.util.function.Supplier;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.lmpessoa.services.core.ContentType;
-import com.lmpessoa.services.core.HttpGet;
-import com.lmpessoa.services.core.HttpInputStream;
-import com.lmpessoa.services.core.HttpPost;
-import com.lmpessoa.services.core.Route;
 import com.lmpessoa.services.core.hosting.ApplicationOptions;
 import com.lmpessoa.services.core.hosting.ApplicationServer;
+import com.lmpessoa.services.core.hosting.ContentType;
 import com.lmpessoa.services.core.hosting.HeaderMap;
+import com.lmpessoa.services.core.hosting.HttpInputStream;
 import com.lmpessoa.services.core.hosting.HttpRequest;
 import com.lmpessoa.services.core.hosting.HttpRequestImpl;
 import com.lmpessoa.services.core.hosting.HttpResult;
@@ -56,7 +54,10 @@ import com.lmpessoa.services.core.hosting.IApplicationInfo;
 import com.lmpessoa.services.core.hosting.IApplicationOptions;
 import com.lmpessoa.services.core.hosting.NotImplementedException;
 import com.lmpessoa.services.core.hosting.Redirect;
+import com.lmpessoa.services.core.routing.HttpGet;
+import com.lmpessoa.services.core.routing.HttpPost;
 import com.lmpessoa.services.core.routing.IRouteTable;
+import com.lmpessoa.services.core.routing.Route;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.routing.RouteTableBridge;
 import com.lmpessoa.services.core.services.ServiceMap;
@@ -83,27 +84,21 @@ public final class NextHandlerFullTest {
       Socket socket = mock(Socket.class);
       connect = new ConnectionInfo(socket, "https://lmpessoa.com/");
    }
-   
+
    @Before
    public void setup() throws NoSuchMethodException {
       services = new ServiceMap();
-      services.useSingleton(ILogger.class, log);
-      services.useSingleton(ConnectionInfo.class, connect);
-      services.useSingleton(IApplicationInfo.class, new IApplicationInfo() {
-
-         @Override
-         public Class<?> getStartupClass() {
-            return NextHandlerFullTest.class;
-         }
-      });
-      services.useSingleton(HeaderMap.class);
-      services.useTransient(RouteMatch.class, () -> route);
+      services.put(ILogger.class, log);
+      services.put(ConnectionInfo.class, () -> connect);
+      services.put(IApplicationInfo.class, (IApplicationInfo) () -> NextHandlerFullTest.class);
+      services.put(HeaderMap.class);
+      services.put(RouteMatch.class, (Supplier<RouteMatch>) () -> route);
 
       routes = RouteTableBridge.get(services, log);
       routes.put("", TestResource.class);
 
       app = new ApplicationOptions();
-      services.useSingleton(IApplicationOptions.class, app);
+      services.put(IApplicationOptions.class, app);
    }
 
    public String readAll(InputStream is) throws IOException {
@@ -220,7 +215,7 @@ public final class NextHandlerFullTest {
       File favicon = new File(ApplicationServer.class.getResource("/favicon.ico").toURI());
       assertEquals(favicon.length(), result.getInputStream().available());
    }
-   
+
    @Test
    public void testMediatorWithRedirect() throws IOException {
       HttpResult result = perform("/test/redirect");
@@ -236,7 +231,7 @@ public final class NextHandlerFullTest {
                .setMethod("GET") //
                .setPath(path) //
                .build();
-      services.useSingleton(HttpRequest.class, request);
+      services.put(HttpRequest.class, () -> request);
       route = RouteTableBridge.match(routes, request);
       return (HttpResult) app.getFirstResponder(services).invoke();
    }
@@ -244,7 +239,7 @@ public final class NextHandlerFullTest {
    private HttpResult performFile(String resource) throws IOException {
       try (InputStream res = NextHandlerFullTest.class.getResourceAsStream(resource)) {
          request = new HttpRequestImpl(res);
-         services.useSingleton(HttpRequest.class, request);
+         services.put(HttpRequest.class, () -> request);
          route = RouteTableBridge.match(routes, request);
          return (HttpResult) app.getFirstResponder(services).invoke();
       }
@@ -322,7 +317,7 @@ public final class NextHandlerFullTest {
       public InputStream result() {
          return new HttpInputStream(ContentType.YAML, "Test".getBytes());
       }
-      
+
       @HttpGet
       @Route("redirect")
       public Redirect redirect() {

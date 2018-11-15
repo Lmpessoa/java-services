@@ -33,52 +33,70 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.function.Function;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
-import com.lmpessoa.services.Internal;
-import com.lmpessoa.services.core.HttpDelete;
-import com.lmpessoa.services.core.HttpGet;
-import com.lmpessoa.services.core.HttpOptions;
-import com.lmpessoa.services.core.HttpPatch;
-import com.lmpessoa.services.core.HttpPost;
-import com.lmpessoa.services.core.HttpPut;
-import com.lmpessoa.services.core.NonResource;
-import com.lmpessoa.services.core.hosting.HeaderMap;
-import com.lmpessoa.services.core.hosting.HttpRequest;
+import com.lmpessoa.services.core.hosting.IConfigurable;
 import com.lmpessoa.services.core.hosting.InternalServerError;
 import com.lmpessoa.services.core.hosting.MethodNotAllowedException;
 import com.lmpessoa.services.core.hosting.NotFoundException;
 import com.lmpessoa.services.core.hosting.content.Serializer;
-import com.lmpessoa.services.core.services.IServiceMap;
 import com.lmpessoa.services.core.services.NoSingleMethodException;
 import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.util.ClassUtils;
 import com.lmpessoa.services.util.logging.ILogger;
 
-@Internal
-public final class RouteTable implements IRouteTable {
+/**
+ * Maps methods to routes of the application.
+ *
+ * <p>
+ * A {@code RouteTable} will hold information about certain methods of a class and create routes
+ * that can be used to retrieve those methods thus creating a map between methods and routes.
+ * </p>
+ *
+ * <p>
+ * Routes are registered for a whole class instead of individual methods. However only methods whose
+ * name match one of the HTTP methods will be registered. Methods with other names can also be
+ * registered to respond to an HTTP method by using one of the {@code @Http...} annotations. Methods
+ * can bear multiple {@code Http...} method annotations, meaning the method will respond for any of
+ * the methods annotated.
+ * </p>
+ *
+ * <p>
+ * The route produced by the {@code RouteTable} itself can be customised by using the {@link Route}
+ * annotation in classes and methods. If a route table finds that a method has the same route path
+ * and method of an already registered method, the second registration will be ignored and an
+ * informative log entry will be registered.
+ * </p>
+ *
+ * <p>
+ * Classes and methods annotated with {@code @NonResource} will not be registered by a
+ * {@code RouteTable}.
+ * </p>
+ */
+public final class RouteTable implements IRouteTable, IConfigurable<IRouteOptions> {
 
-   private static final Map<Class<?>, Function<String, ?>> specialCases;
-
-   private final Map<RoutePattern, Map<HttpMethod, MethodEntry>> endpoints = new HashMap<>();
+   private final Map<RoutePattern, Map<HttpMethod, MethodEntry>> endpoints = new ConcurrentHashMap<>();
    private final RouteOptions options = new RouteOptions();
    private final ServiceMap services;
    private final ILogger log;
 
    private Collection<Exception> lastExceptions;
 
-   public RouteTable(IServiceMap services, ILogger log) {
-      ClassUtils.checkInternalAccess();
-      this.services = (ServiceMap) services;
-      this.log = log;
+   /**
+    * Creates a new {@code RouteTable} with the given arguments.
+    *
+    * @param services a service map used to resolve arguments to resource construction.
+    * @param log a logger for error messages.
+    */
+   public RouteTable(ServiceMap services, ILogger log) {
+      this.services = Objects.requireNonNull(services);
+      this.log = Objects.requireNonNull(log);
    }
 
    @Override
@@ -99,19 +117,29 @@ public final class RouteTable implements IRouteTable {
 
    @Override
    public String findArea(String packageName) {
-      ClassUtils.checkInternalAccess();
       return options.findArea(packageName);
    }
 
    @Override
    public IRouteOptions getOptions() {
-      ClassUtils.checkInternalAccess();
       return options;
    }
 
-   @Internal
-   public RouteMatch matches(HttpRequest request) {
-      ClassUtils.checkInternalAccess();
+   /**
+    * Returns a route match for the given request.
+    *
+    * <p>
+    * In other words, this method is responsible for reading information from a request and return an
+    * object that can be used to invoke the target method with the parameters extracted from such
+    * request. Note that this method, instead of throwing an exception if there is no match for the
+    * request, returns the intended exceptions as route matches. Invoking those route matches raises
+    * the respective exception.
+    * </p>
+    *
+    * @param request the information from the request.
+    * @return an object that represents the matched route.
+    */
+   public RouteMatch matches(IRouteRequest request) {
       boolean found = false;
       for (Entry<RoutePattern, Map<HttpMethod, MethodEntry>> entry : endpoints.entrySet()) { // NOSONAR
          RoutePattern route = entry.getKey();
@@ -149,8 +177,26 @@ public final class RouteTable implements IRouteTable {
       }
    }
 
+   /**
+    * Returns the path to a method in this route table.
+    *
+    * <p>
+    * This method does the inverse of {@link #matches(IRouteRequest)}. It receives information about a
+    * method (including arguments) and returns a path in this route table that leads to that method.
+    * </p>
+    *
+    * <p>
+    * Note however that there is no guarantee the method will be reached through the returned path
+    * since other factors during the call to {@code matches(...)} can lead to a different method (such
+    * as the HTTP method used and body arguments).
+    * </p>
+    *
+    * @param clazz
+    * @param methodName
+    * @param args
+    * @return
+    */
    public String findPathTo(Class<?> clazz, String methodName, Object... args) {
-      ClassUtils.checkInternalAccess();
       Objects.requireNonNull(clazz);
       Objects.requireNonNull(methodName);
       for (Entry<RoutePattern, Map<HttpMethod, MethodEntry>> endpoint : endpoints.entrySet()) {
@@ -188,23 +234,11 @@ public final class RouteTable implements IRouteTable {
       return lastExceptions;
    }
 
-   static {
-      Map<Class<?>, Function<String, ?>> special = new HashMap<>();
-      special.put(long.class, Long::valueOf);
-      special.put(int.class, Integer::valueOf);
-      special.put(short.class, Short::valueOf);
-      special.put(byte.class, Byte::valueOf);
-      special.put(float.class, Float::valueOf);
-      special.put(double.class, Double::valueOf);
-      special.put(boolean.class, Boolean::valueOf);
-      specialCases = Collections.unmodifiableMap(special);
-   }
-
-   private Object parseContentBody(HttpRequest request, Class<?> contentClass) {
+   private Object parseContentBody(IRouteRequest request, Class<?> contentClass) {
       InputStream body = request.getBody();
       byte[] content = readContentBody(body);
       if (request.getContentType() != null && content != null && request.getContentLength() > 0) {
-         return Serializer.read(request.getHeader(HeaderMap.CONTENT_TYPE), content, contentClass);
+         return Serializer.read(request.getContentType(), content, contentClass);
       }
       return null;
    }
@@ -258,7 +292,7 @@ public final class RouteTable implements IRouteTable {
          }
          RoutePattern methodPat = RoutePattern.build(classPat, method, options);
          if (!endpoints.containsKey(methodPat)) {
-            endpoints.put(methodPat, new HashMap<>());
+            endpoints.put(methodPat, new ConcurrentHashMap<>());
          }
          Map<HttpMethod, MethodEntry> map = endpoints.get(methodPat);
          for (HttpMethod methodName : methodNames) {
@@ -352,13 +386,12 @@ public final class RouteTable implements IRouteTable {
       if (clazz == String.class) {
          return value;
       }
-      if (specialCases.containsKey(clazz)) {
-         Function<String, ?> valueOf = specialCases.get(clazz);
-         return valueOf.apply(value);
-      } else {
-         Method valueOf = clazz.getMethod("valueOf", String.class);
-         return valueOf.invoke(null, value);
+      clazz = ClassUtils.box(clazz);
+      if (clazz == Character.class) {
+         return value;
       }
+      Method valueOf = clazz.getMethod("valueOf", String.class);
+      return valueOf.invoke(null, value);
    }
 
    private boolean isMethodArgsCompatible(MethodEntry methodEntry, String methodName, Object[] args) {

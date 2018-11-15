@@ -22,6 +22,9 @@
  */
 package com.lmpessoa.services.core.hosting;
 
+import com.lmpessoa.services.core.services.Reuse;
+import com.lmpessoa.services.core.services.Service;
+
 /**
  * Represents the hosting environment information.
  * <p>
@@ -46,6 +49,7 @@ package com.lmpessoa.services.core.hosting;
  * is not used since the Application Server is not started.
  * </p>
  */
+@Service(Reuse.ALWAYS)
 public interface IHostEnvironment {
 
    /**

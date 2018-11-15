@@ -24,6 +24,9 @@ package com.lmpessoa.services.core.routing;
 
 import java.lang.reflect.Method;
 
+import com.lmpessoa.services.core.services.Reuse;
+import com.lmpessoa.services.core.services.Service;
+
 /**
  * A <code>RouteMatch</code> represents a set of information about a matched request route to enable
  * the resolved route method to be executed.
@@ -34,11 +37,12 @@ import java.lang.reflect.Method;
  * HTTP protocol.
  * </p>
  */
+@Service(Reuse.REQUEST)
 public interface RouteMatch {
 
    /**
     * Returns the resource class that contains the method matched by this route.
-    * 
+    *
     * @return the resource class that contains the method matched by this route.
     */
    default Class<?> getResourceClass() {

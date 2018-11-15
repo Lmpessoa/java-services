@@ -38,9 +38,7 @@ import java.util.Properties;
 import com.esotericsoftware.yamlbeans.YamlReader;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import com.lmpessoa.services.Internal;
 
-@Internal
 class ApplicationServerInfo {
 
    private final Map<String, String> properties;

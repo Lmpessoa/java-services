@@ -33,7 +33,7 @@ final class LazyInitializer<T> implements Supplier<T> {
    private final Class<? extends T> provider;
    private final ServiceMap services;
 
-   public LazyInitializer(Class<? extends T> provider, ReuseLevel level, IServiceMap serviceMap) {
+   public LazyInitializer(Class<? extends T> provider, Reuse level, IServiceMap serviceMap) {
       this.services = (ServiceMap) serviceMap;
       this.provider = provider;
       if (!ClassUtils.isConcreteClass(provider)) {

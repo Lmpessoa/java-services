@@ -20,29 +20,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.services;
+package com.lmpessoa.services.core.hosting;
 
-import com.lmpessoa.services.Internal;
-import com.lmpessoa.services.util.ClassUtils;
-
-public abstract class AbstractOptions implements IConfigurationLifecycle {
+/**
+ * <p>
+ * Configuration classes might be interested in freezing certain options or even performing
+ * additional tasks after configuration of the application has finished. Options classes may choose
+ * to extend this class in order to be notified when the configuration of the application has
+ * finished.
+ * </p>
+ *
+ * <p>
+ * Subclasses may use two protected methods:
+ * </p>
+ *
+ * <ul>
+ * <li>The {@link #configurationEnded()} method is called once after the configuration of the
+ * application is done and may be used to perform any operations exactly after the configuration has
+ * finished; and</li>
+ * <li>The {@link #protectConfiguration()} method can be used as the first call of configuration
+ * methods that should not be allowed to change after the configuration stage has finished.</li>
+ * </ul>
+ */
+public abstract class AbstractOptions {
 
    private boolean configEnded = false;
 
-   @Internal
-   @Override
-   public void configurationEnded() {
-      ClassUtils.checkInternalAccess();
+   void doConfigurationEnded() {
       configEnded = true;
+      configurationEnded();
+   }
+
+   protected void configurationEnded() {
+      // Does nothing, may be overridden in subclasses
    }
 
    protected final void protectConfiguration() {
       if (configEnded) {
          throw new IllegalStateException("Configuration cannot be changed here");
       }
-   }
-
-   public boolean isConfigured() {
-      return configEnded;
    }
 }

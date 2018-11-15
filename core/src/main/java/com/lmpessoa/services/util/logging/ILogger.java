@@ -22,7 +22,8 @@
  */
 package com.lmpessoa.services.util.logging;
 
-import com.lmpessoa.services.Internal;
+import com.lmpessoa.services.core.services.Reuse;
+import com.lmpessoa.services.core.services.Service;
 
 /**
  * Enables logging messages throughout the application.
@@ -33,6 +34,7 @@ import com.lmpessoa.services.Internal;
  * the console).
  * </p>
  */
+@Service(Reuse.ALWAYS)
 public interface ILogger {
 
    /**
@@ -194,7 +196,4 @@ public interface ILogger {
    default void debug(String message, Object... args) {
       debug(String.format(message, args));
    }
-
-   @Internal
-   void join();
 }

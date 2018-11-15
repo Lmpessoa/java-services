@@ -36,7 +36,14 @@ import java.net.URL;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.lmpessoa.services.core.ContentType;
+import com.lmpessoa.services.core.hosting.ContentType;
+import com.lmpessoa.services.core.hosting.HeaderMap;
+import com.lmpessoa.services.core.hosting.HttpRequest;
+import com.lmpessoa.services.core.hosting.HttpResult;
+import com.lmpessoa.services.core.hosting.NextHandler;
+import com.lmpessoa.services.core.hosting.NotFoundException;
+import com.lmpessoa.services.core.hosting.Redirect;
+import com.lmpessoa.services.core.hosting.ResultHandler;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.util.ConnectionInfo;
 import com.lmpessoa.services.util.logging.ILogger;
@@ -46,8 +53,7 @@ import com.lmpessoa.services.util.logging.NullLogWriter;
 public class ResultHandlerTest {
 
    private static final String TEST_URL = "https://lmpessoa.com/test";
-   private static final ConnectionInfo connect = new ConnectionInfo(mock(Socket.class),
-            "https://lmpessoa.com/");
+   private static final ConnectionInfo connect = new ConnectionInfo(mock(Socket.class), "https://lmpessoa.com/");
    private static final ILogger log = new Logger(ResultHandlerTest.class, new NullLogWriter());
 
    private HttpRequest request;
@@ -68,8 +74,7 @@ public class ResultHandlerTest {
       assertEquals(200, result.getStatusCode());
       assertEquals(ContentType.TEXT, result.getInputStream().getType());
       assertEquals("UTF-8", result.getInputStream().getEncoding().name());
-      String str = new String(readStreamContent(result.getInputStream()),
-               result.getInputStream().getEncoding());
+      String str = new String(readStreamContent(result.getInputStream()), result.getInputStream().getEncoding());
       assertEquals("success", str);
    }
 
@@ -104,8 +109,7 @@ public class ResultHandlerTest {
       next = () -> new byte[] { 115, 117, 99, 99, 101, 115, 115 };
       handler = new ResultHandler(next);
       RouteMatch route = mock(RouteMatch.class);
-      when(route.getMethod())
-               .thenReturn(ResultHandlerTest.class.getMethod("testBinaryResultWithContentType"));
+      when(route.getMethod()).thenReturn(ResultHandlerTest.class.getMethod("testBinaryResultWithContentType"));
       HttpResult result = handler.invoke(request, route, connect, log);
       assertEquals(200, result.getStatusCode());
       assertEquals(ContentType.TEXT, result.getInputStream().getType());

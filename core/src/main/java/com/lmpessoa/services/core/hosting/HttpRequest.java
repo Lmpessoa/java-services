@@ -22,43 +22,18 @@
  */
 package com.lmpessoa.services.core.hosting;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Collection;
 import java.util.Map;
 
+import com.lmpessoa.services.core.routing.IRouteRequest;
+import com.lmpessoa.services.core.services.Reuse;
+import com.lmpessoa.services.core.services.Service;
+
 /**
- * Captures the raw HTTP request data.
+ * Represents the raw HTTP request data.
  */
-public interface HttpRequest {
-
-   /**
-    * Returns the method of this HTTP request.
-    *
-    * <p>
-    * Usually the value returned here will be one of GET, POST, PUT, DELETE or HEAD but other values
-    * may be returned.
-    * </p>
-    *
-    * @return the method of this HTTP request.
-    */
-   String getMethod();
-
-   /**
-    * Returns the path of this HTTP request.
-    *
-    * <p>
-    * Note that the engine makes no distinction between a requested path and path info, as in other
-    * platforms as it does not work with partial matches.
-    * </p>
-    * <p>
-    * To have access to query parameters of this HTTP request, refer to {@see #getQuery()) and
-    * {@see #getQueryString()}.
-    * </p>
-    *
-    * @return the path of this HTTP request.
-    */
-   String getPath();
+@Service(Reuse.REQUEST)
+public interface HttpRequest extends IRouteRequest {
 
    /**
     * Returns the protocol used with this HTTP request.
@@ -76,34 +51,6 @@ public interface HttpRequest {
     * @return the query parameters of this HTTP request.
     */
    String getQueryString();
-
-   /**
-    * Returns the content length of the body of this HTTP request.
-    *
-    * <p>
-    * Note that this method will not return effectively how many bytes are there in the request body
-    * but only the value send with the request headers.
-    * </p>
-    *
-    * @return the content length of the body of this HTTP request, or <code>0</code> if this value is
-    * not present.
-    */
-   long getContentLength();
-
-   /**
-    * Returns the content type of the body of this HTTP request.
-    *
-    * @return the content type of the body of this HTTP request.
-    */
-   String getContentType();
-
-   /**
-    * Returns a stream with the content of this HTTP request.
-    *
-    * @return a stream with the content of this HTTP request.
-    * @throws IOException
-    */
-   InputStream getBody();
 
    /**
     * Returns a map with the headers of this HTTP request.
@@ -127,11 +74,4 @@ public interface HttpRequest {
     * @return a map with the parsed values of the query string of this HTTP request.
     */
    Map<String, Collection<String>> getQuery();
-
-   /**
-    * Returns a map of the cookies sent with this HTTP request.
-    *
-    * @return a map of the cookies sent with this HTTP request.
-    */
-   Map<String, String> getCookies();
 }

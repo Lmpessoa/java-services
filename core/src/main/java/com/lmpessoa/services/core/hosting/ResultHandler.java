@@ -35,8 +35,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import com.lmpessoa.services.core.ContentType;
-import com.lmpessoa.services.core.HttpInputStream;
 import com.lmpessoa.services.core.hosting.content.Serializer;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.util.ConnectionInfo;

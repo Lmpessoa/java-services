@@ -35,8 +35,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.lmpessoa.services.core.ContentType;
-import com.lmpessoa.services.core.Route;
+import com.lmpessoa.services.core.hosting.ContentType;
 import com.lmpessoa.services.core.hosting.HttpException;
 import com.lmpessoa.services.core.hosting.HttpRequest;
 import com.lmpessoa.services.core.hosting.HttpRequestBuilder;
@@ -44,8 +43,11 @@ import com.lmpessoa.services.core.hosting.MethodNotAllowedException;
 import com.lmpessoa.services.core.hosting.NotFoundException;
 import com.lmpessoa.services.core.hosting.NotImplementedException;
 import com.lmpessoa.services.core.routing.MatchedRoute;
+import com.lmpessoa.services.core.routing.Route;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.routing.RouteTable;
+import com.lmpessoa.services.core.services.Reuse;
+import com.lmpessoa.services.core.services.Service;
 import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.util.logging.Logger;
 import com.lmpessoa.services.util.logging.NullLogWriter;
@@ -174,7 +176,7 @@ public final class RouteTableMatcherTest {
    @Test
    public void testMatchesWithService() throws NoSuchMethodException, HttpException, IOException {
       Message message = new Message();
-      serviceMap.useSingleton(Message.class, message);
+      serviceMap.put(Message.class, message);
       table.put("", ServiceTestResource.class);
       RouteMatch result = table.matches(new HttpRequestBuilder().setPath("/service").build());
       assertTrue(result instanceof MatchedRoute);
@@ -254,6 +256,7 @@ public final class RouteTableMatcherTest {
       }
    }
 
+   @Service(Reuse.ALWAYS)
    static class Message implements Supplier<String> {
 
       @Override

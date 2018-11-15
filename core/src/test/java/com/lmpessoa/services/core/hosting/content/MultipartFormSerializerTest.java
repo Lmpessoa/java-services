@@ -34,8 +34,8 @@ import java.util.Collection;
 
 import org.junit.Test;
 
-import com.lmpessoa.services.core.ContentType;
-import com.lmpessoa.services.core.HttpInputStream;
+import com.lmpessoa.services.core.hosting.ContentType;
+import com.lmpessoa.services.core.hosting.HttpInputStream;
 import com.lmpessoa.services.core.hosting.content.MultipartSerializer;
 
 public final class MultipartFormSerializerTest {

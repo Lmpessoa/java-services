@@ -92,7 +92,7 @@ public final class ApplicationSettingsTest {
    }
 
    @Test
-   public void testLoggerCreation() {
+   public void testLoggerCreation() throws InterruptedException {
       ApplicationServerInfo info = mock(ApplicationServerInfo.class);
       Map<String, String> settings = new HashMap<>();
       settings.put("type", TestLogWriter.class.getName());

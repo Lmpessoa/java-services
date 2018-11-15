@@ -22,9 +22,13 @@
  */
 package com.lmpessoa.services.core.hosting;
 
+import com.lmpessoa.services.core.services.Reuse;
+import com.lmpessoa.services.core.services.Service;
+
 /**
  * Provides an interface to configure the behaviour of applications.
  */
+@Service(Reuse.ALWAYS)
 public interface IApplicationOptions {
 
    /**

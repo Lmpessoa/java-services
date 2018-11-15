@@ -22,15 +22,7 @@
  */
 package com.lmpessoa.services.util.logging;
 
-import com.lmpessoa.services.Internal;
-import com.lmpessoa.services.util.ClassUtils;
-
 public final class ConsoleLogWriter extends FormattedLogWriter {
-
-   @Internal
-   public ConsoleLogWriter() {
-      ClassUtils.checkInternalAccess();
-   }
 
    @Override
    public void append(Severity severity, String entry) {

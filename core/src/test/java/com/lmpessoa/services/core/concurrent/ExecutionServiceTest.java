@@ -38,6 +38,7 @@ import java.util.concurrent.TimeoutException;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.lmpessoa.services.core.concurrent.ExecutionService;
 import com.lmpessoa.services.util.logging.ILogger;
 import com.lmpessoa.services.util.logging.Logger;
 import com.lmpessoa.services.util.logging.NullLogWriter;
@@ -125,8 +126,7 @@ public class ExecutionServiceTest {
    }
 
    @Test(expected = TimeoutException.class)
-   public void testTimeoutWaitingResult()
-      throws InterruptedException, ExecutionException, TimeoutException {
+   public void testTimeoutWaitingResult() throws InterruptedException, ExecutionException, TimeoutException {
       String id = service.submit(() -> {
          Thread.sleep(2000);
          return "finished";

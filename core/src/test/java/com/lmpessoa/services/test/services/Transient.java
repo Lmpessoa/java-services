@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,29 +20,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core;
+package com.lmpessoa.services.test.services;
 
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import com.lmpessoa.services.core.services.Reuse;
+import com.lmpessoa.services.core.services.Service;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-
-/**
- * Identifies a method that responds for an HTTP <code>DELETE</code> request.
- *
- * <p>
- * Methods annotated with this will override the default behaviour of the engine, which is to
- * identify the HTTP method from the name of the method.
- * </p>
- *
- * <p>
- * A method can be combined with others HTTP method annotations, thus a method can respond to more
- * than one HTTP method request.
- * </p>
- */
-@Target(METHOD)
-@Retention(RUNTIME)
-public @interface HttpDelete {
+@Service(Reuse.NEVER)
+public interface Transient {
 
 }

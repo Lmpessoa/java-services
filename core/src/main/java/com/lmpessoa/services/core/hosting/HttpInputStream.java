@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core;
+package com.lmpessoa.services.core.hosting;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -29,8 +29,6 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.Objects;
-
-import com.lmpessoa.services.core.hosting.HeaderMap;
 
 /**
  * Represents an input stream with HTTP context information.

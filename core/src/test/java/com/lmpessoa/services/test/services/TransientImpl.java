@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,29 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services;
+package com.lmpessoa.services.test.services;
 
-import static java.lang.annotation.ElementType.CONSTRUCTOR;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.TYPE;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+public class TransientImpl implements Transient {
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-
-/**
- * Indicates an internal class or method.
- *
- * <p>
- * Internal methods (as well as methods from internal classes) may be public but should not be
- * called directly by your application. They are meant to be used only internally by the engine and
- * the Application Server.
- * </p>
- */
-@Inherited
-@Documented
-@Retention(RUNTIME)
-@Target({ TYPE, METHOD, CONSTRUCTOR })
-public @interface Internal {}
+}

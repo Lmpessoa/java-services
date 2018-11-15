@@ -41,8 +41,14 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.lmpessoa.services.core.Async;
+import com.lmpessoa.services.core.concurrent.Async;
 import com.lmpessoa.services.core.concurrent.ExecutionService;
+import com.lmpessoa.services.core.hosting.ApplicationOptions;
+import com.lmpessoa.services.core.hosting.AsyncHandler;
+import com.lmpessoa.services.core.hosting.HttpRequest;
+import com.lmpessoa.services.core.hosting.NextHandler;
+import com.lmpessoa.services.core.hosting.NotFoundException;
+import com.lmpessoa.services.core.hosting.Redirect;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.util.ConnectionInfo;
 import com.lmpessoa.services.util.logging.ILogger;
@@ -80,8 +86,8 @@ public final class AsyncHandlerTest {
    }
 
    @Test
-   public void testAsyncMethod() throws NoSuchMethodException, MalformedURLException,
-      InterruptedException, ExecutionException, IllegalAccessException, InvocationTargetException {
+   public void testAsyncMethod() throws NoSuchMethodException, MalformedURLException, InterruptedException,
+      ExecutionException, IllegalAccessException, InvocationTargetException {
       match = matchOfMethod("asyncMethod");
 
       Object result = handler.invoke(options, request, match);
@@ -95,8 +101,8 @@ public final class AsyncHandlerTest {
    }
 
    @Test
-   public void testCallableResult() throws NoSuchMethodException, MalformedURLException,
-      InterruptedException, ExecutionException, IllegalAccessException, InvocationTargetException {
+   public void testCallableResult() throws NoSuchMethodException, MalformedURLException, InterruptedException,
+      ExecutionException, IllegalAccessException, InvocationTargetException {
       match = matchOfMethod("callableResult");
 
       Object result = handler.invoke(options, request, match);
@@ -110,8 +116,8 @@ public final class AsyncHandlerTest {
    }
 
    @Test
-   public void testRunnableResult() throws NoSuchMethodException, MalformedURLException,
-      InterruptedException, ExecutionException, IllegalAccessException, InvocationTargetException {
+   public void testRunnableResult() throws NoSuchMethodException, MalformedURLException, InterruptedException,
+      ExecutionException, IllegalAccessException, InvocationTargetException {
       match = matchOfMethod("runnableResult");
 
       Object result = handler.invoke(options, request, match);
@@ -126,8 +132,8 @@ public final class AsyncHandlerTest {
    }
 
    @Test
-   public void testCheckExecutionResult() throws NoSuchMethodException, MalformedURLException,
-      InterruptedException, ExecutionException {
+   public void testCheckExecutionResult()
+      throws NoSuchMethodException, MalformedURLException, InterruptedException, ExecutionException {
       match = matchOfMethod("sleeper");
 
       Object result = handler.invoke(options, request, match);

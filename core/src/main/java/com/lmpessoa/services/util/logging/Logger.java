@@ -29,12 +29,33 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.function.Supplier;
 
-import com.lmpessoa.services.Internal;
-import com.lmpessoa.services.util.ClassUtils;
 import com.lmpessoa.services.util.ConnectionInfo;
 
-@Internal
-public final class Logger implements ILogger, Runnable {
+/**
+ * A Logger is used to register information about the execution of an application.
+ *
+ * <p>
+ * Messages sent to be logged my be of any type of object (beware they provide meaningful
+ * information from their {@link #toString()} method) or a string to be formatted using any number
+ * of variables (messages to be formatted behave exactly like
+ * {@link String#format(String, Object...)}).
+ * </p>
+ *
+ * <p>
+ * In order to decide what to do with the message to be logger, all Loggers use a {@link LogWriter}
+ * which implement the effective operation to store the logged message. By default all messages are
+ * sent to the console but it is also possible to send messages to a file or to a remote service
+ * using a different {@code LogWriter}.
+ * </p>
+ *
+ * <p>
+ * Loggers can be further configured to ignore certain messages based on the level of the message
+ * (meaning that only messages on that level or above are important to the operation of the
+ * application) and further by level and package of the source of the message (meaning for messages
+ * originated from that specific package another level of messages are important).
+ * </p>
+ */
+public final class Logger implements ILogger {
 
    private final Queue<LogEntry> entriesToLog = new ArrayDeque<>();
 
@@ -48,13 +69,24 @@ public final class Logger implements ILogger, Runnable {
    private Map<String, Severity> packageLevels = new HashMap<>();
    private Severity defaultLevel = Severity.INFO;
 
+   /**
+    * Creates a new {@code Logger} using the default output.
+    *
+    * @param defaultClass the class that should be associated with log entries when the source of the
+    * message cannot be determined.
+    */
    public Logger(Class<?> defaultClass) {
       this(defaultClass, new ConsoleLogWriter());
-      ClassUtils.checkInternalAccess();
    }
 
+   /**
+    * Creates a new {@code Logger} using the given log writer.
+    *
+    * @param defaultClass the class that should be associated with log entries when the source of the
+    * message cannot be determined.
+    * @param writer a writer that defines what to do with logged messages.
+    */
    public Logger(Class<?> defaultClass, LogWriter writer) {
-      ClassUtils.checkInternalAccess();
       this.defaultClass = defaultClass;
       this.writer = writer;
    }
@@ -84,58 +116,106 @@ public final class Logger implements ILogger, Runnable {
       log(Severity.DEBUG, message);
    }
 
-   @Override
-   public void run() {
-      writer.prepare();
-      while (!entriesToLog.isEmpty()) {
-         LogEntry entry;
-         synchronized (entriesToLog) {
-            entry = entriesToLog.poll();
-         }
-         while (entry != null) {
-            writer.append(entry);
-            entry = tracing ? entry.getTraceEntry() : null;
-         }
-      }
-      writer.finished();
-      thread = null;
-   }
-
-   @Override
-   public void join() {
-      ClassUtils.checkInternalAccess();
-      if (thread != null) {
-         try {
-            thread.join();
-         } catch (InterruptedException e) {
-            thread.interrupt();
-            // Just ignore
-         }
-      }
-   }
-
+   /**
+    * Sets the default log level for this {@code Logger}.
+    *
+    * <p>
+    * After calling this method, the Logger will ignore any messages whose level is below that of the
+    * argument of this method. For example, if this method is called with {@link Severity#WARNING}, any
+    * messages logged using {@code info(...)} or {@code debug(...)} will not be registered by the
+    * Logger.
+    * </p>
+    *
+    * @param level the default log level for this Logger.
+    */
    public void setDefaultLevel(Severity level) {
-      ClassUtils.checkInternalAccess();
       this.defaultLevel = Objects.requireNonNull(level);
    }
 
+   /**
+    * Sets a specific log level for classes of the given package.
+    *
+    * <p>
+    * The behaviour of this method is similar to {@link #setDefaultLevel(Severity)} except that it
+    * applies only to classes of the given package. After a call to this method, messages to be logged
+    * coming from classes in the given package will be filtered using the specified severity as filter
+    * while all other classes will still be subject to the default level.
+    * </p>
+    *
+    * <p>
+    * This method can be called several times with as many different packages as desired. Calling this
+    * method a second time for a previously registered package will change that the log level for that
+    * package only. Calling this method with a null level will reset log level for the package will
+    * reset it to use the default log level.
+    * </p>
+    *
+    * @param packageName
+    * @param level
+    */
    public void setPackageLevel(String packageName, Severity level) {
-      ClassUtils.checkInternalAccess();
       Objects.requireNonNull(packageName);
       if (packageName.isEmpty() || packageName.matches("\\s")) {
          throw new IllegalArgumentException("Not a valid package name: " + packageName);
       }
-      packageLevels.put(packageName, level);
+      if (packageLevels.containsKey(packageName) && level == null) {
+         packageLevels.remove(packageName);
+      } else if (level != null) {
+         packageLevels.put(packageName, level);
+      }
    }
 
+   /**
+    * Sets the a supplier of {@link ConnectionInfo} to be used with this logger.
+    *
+    * <p>
+    * Logged messages may be comprised of information from the connection/request the message is
+    * associated with. But in order to obtain this information it is required that the Logger has means
+    * to obtain this information.
+    * </p>
+    *
+    * <p>
+    * If the logger has no supplier for {@code ConnectionInfo}, then no information about a connection
+    * will be available.
+    * </p>
+    *
+    * @param supplier
+    */
    public void setConnectionSupplier(Supplier<ConnectionInfo> supplier) {
-      ClassUtils.checkInternalAccess();
       this.connSupplier = supplier;
    }
 
+   /**
+    * Sets whether this Logger should enable further tracing.
+    *
+    * <p>
+    * When tracing is enabled, additional details from logged messages will be logged. Specifically,
+    * logged exceptions will register all causes for the exception instead of just the original
+    * exception, and any other message types will register the method where the log entry was called.
+    * </p>
+    *
+    * @param tracing {@code true} if this logger should register additional information for each
+    * entry, {@code false} otherwise.
+    */
    public void enableTracing(boolean tracing) {
-      ClassUtils.checkInternalAccess();
       this.tracing = tracing;
+   }
+
+   /**
+    * Waits for the logger task to finish handling the message queue.
+    *
+    * <p>
+    * Log messages are not handled by the main thread to prevent a long operation from blocking the
+    * application response due to a request to log a message. This method will wait for the internal
+    * message queue of the logger to be emptied before returning.
+    * </p>
+    *
+    * @throws InterruptedException if the thread calling this method was interrupted by another thread.
+    * The interrupted status of the current thread is cleared when this exception is thrown.
+    */
+   public void join() throws InterruptedException {
+      while (thread != null) {
+         Thread.sleep(100);
+      }
    }
 
    private void log(Severity level, Object message) {
@@ -165,7 +245,21 @@ public final class Logger implements ILogger, Runnable {
 
    private synchronized void runLoggerJob() {
       if (thread == null || !thread.isAlive()) {
-         thread = new Thread(this, "logger");
+         thread = new Thread((Runnable) () -> {
+            writer.prepare();
+            while (!entriesToLog.isEmpty()) {
+               LogEntry entry;
+               synchronized (entriesToLog) {
+                  entry = entriesToLog.poll();
+               }
+               while (entry != null) {
+                  writer.append(entry);
+                  entry = tracing ? entry.getTraceEntry() : null;
+               }
+            }
+            writer.finished();
+            thread = null;
+         }, "logger");
          thread.start();
       }
    }

@@ -20,20 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.test.resources;
+package com.lmpessoa.services.core.hosting;
 
-import com.lmpessoa.services.core.routing.HttpGet;
-import com.lmpessoa.services.core.routing.Route;
+public interface IConfigurable<T> {
 
-public final class IndexResource {
-
-   public void get() {
-      // Test method, does nothing
-   }
-
-   @HttpGet
-   @Route("test")
-   public void test() {
-      // Test method, does nothing
-   }
+   T getOptions();
 }

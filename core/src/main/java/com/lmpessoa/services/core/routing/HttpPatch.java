@@ -20,9 +20,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.services;
+package com.lmpessoa.services.core.routing;
 
-public interface IConfigurationLifecycle {
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-   void configurationEnded();
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+
+/**
+ * Identifies a method that responds for an HTTP <code>PATCH</code> request.
+ *
+ * <p>
+ * Methods annotated with this will override the default behaviour of the engine, which is to
+ * identify the HTTP method from the name of the method.
+ * </p>
+ *
+ * <p>
+ * A method can be combined with others HTTP method annotations, thus a method can respond to more
+ * than one HTTP method request.
+ * </p>
+ */
+@Target(METHOD)
+@Retention(RUNTIME)
+public @interface HttpPatch {
+
 }

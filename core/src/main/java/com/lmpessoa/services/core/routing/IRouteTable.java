@@ -25,7 +25,8 @@ package com.lmpessoa.services.core.routing;
 import java.util.Arrays;
 import java.util.Collection;
 
-import com.lmpessoa.services.core.services.IConfigurable;
+import com.lmpessoa.services.core.services.Reuse;
+import com.lmpessoa.services.core.services.Service;
 
 /**
  * Represents a map of routes of the application.
@@ -36,7 +37,8 @@ import com.lmpessoa.services.core.services.IConfigurable;
  * application.
  * </p>
  */
-public interface IRouteTable extends IConfigurable<IRouteOptions> {
+@Service(Reuse.REQUEST)
+public interface IRouteTable {
 
    /**
     * Adds the methods of the given resource class to this route table. If any method provides a route

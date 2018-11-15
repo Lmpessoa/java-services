@@ -20,42 +20,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core;
+package com.lmpessoa.services.core.services;
 
-import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * Identifies methods that should be executed asynchronously.
+ * Enables a class or interface to be registered as a service.
  *
  * <p>
- * Usually user agents usually drop waiting for a server response after 20 seconds on average.
- * Unfortunately some methods may take considerable time to return their effective result and user
- * agents are most likely to stop waiting before the result is actually ready.
- * </p>
- *
- * <p>
- * By marking a method (or a whole resource class) as asynchronous, upon calling the method, the
- * user agent is given another link where it can check back later if the method execution has
- * finished and its effective result once completed. The link can be checked as many times desired
- * until the result is available.
- * </p>
- *
- * <p>
- * If an entire class is marker <code>@Async</code> each and every method call in that class will be
- * executed asynchronously.
- * </p>
- *
- * <p>
- * For deployers, note that the execution of asynchronous methods shares the same thread pool used
- * to handle request received by the application, thus if limited it should be taken into
- * consideration that too many asynchronous methods being called concurrently may block the server
- * ability to respond to newer request.
+ * In order to ensure applications might behave the same in any environment (<i>Development</i>,
+ * <i>Production</i>, etc.) services must be identified beforehand along with how their instances
+ * are to be reused by the service manager. This prevents random types from being registered and
+ * ensures the reuse level is the same in all environments it is registered.
  * </p>
  */
-@Target(METHOD)
+@Target(TYPE)
 @Retention(RUNTIME)
-public @interface Async {}
+public @interface Service {
+
+   Reuse value();
+}

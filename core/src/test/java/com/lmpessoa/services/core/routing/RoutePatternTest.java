@@ -29,7 +29,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.text.ParseException;
 import java.time.DayOfWeek;
-import java.util.Observer;
 import java.util.regex.Matcher;
 
 import org.junit.Before;
@@ -37,13 +36,14 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.lmpessoa.services.BrokerObserver;
-import com.lmpessoa.services.core.Route;
 import com.lmpessoa.services.core.routing.AbstractRouteType;
+import com.lmpessoa.services.core.routing.Route;
 import com.lmpessoa.services.core.routing.RouteOptions;
 import com.lmpessoa.services.core.routing.RoutePattern;
 import com.lmpessoa.services.core.services.NoSingleMethodException;
 import com.lmpessoa.services.core.services.ServiceMap;
+import com.lmpessoa.services.test.services.Singleton;
+import com.lmpessoa.services.test.services.SingletonImpl;
 import com.lmpessoa.services.util.parsing.TypeMismatchException;
 
 public final class RoutePatternTest {
@@ -140,7 +140,7 @@ public final class RoutePatternTest {
 
    @Test
    public void testClassServiceNoArguments() throws NoSingleMethodException, ParseException {
-      serviceMap.useSingleton(Observer.class, BrokerObserver.class);
+      serviceMap.put(Singleton.class, SingletonImpl.class);
       RoutePattern pat = RoutePattern.build("", ServicedTestResource.class, serviceMap, options);
       assertNotNull(pat);
       assertEquals("/test", pat.toString());
@@ -148,7 +148,7 @@ public final class RoutePatternTest {
 
    @Test
    public void testClassServiceOneArgument() throws NoSingleMethodException, ParseException {
-      serviceMap.useSingleton(Observer.class, BrokerObserver.class);
+      serviceMap.put(Singleton.class, SingletonImpl.class);
       RoutePattern pat = RoutePattern.build("", MixedServiceTestResource.class, serviceMap, options);
       assertNotNull(pat);
       assertEquals("/test/{int}", pat.toString());
@@ -157,7 +157,7 @@ public final class RoutePatternTest {
    @Test
    public void testClassServiceNotRegistered() throws NoSingleMethodException, ParseException {
       thrown.expect(TypeMismatchException.class);
-      thrown.expectMessage(Observer.class.getName() + " is not an acceptable route part");
+      thrown.expectMessage(Singleton.class.getName() + " is not an acceptable route part");
       RoutePattern.build("", ServicedTestResource.class, serviceMap, options);
    }
 
@@ -515,7 +515,7 @@ public final class RoutePatternTest {
    @Route("test")
    public static class ServicedTestResource {
 
-      public ServicedTestResource(Observer observer) {
+      public ServicedTestResource(Singleton observer) {
          // Test method, does nothing
       }
    }
@@ -523,7 +523,7 @@ public final class RoutePatternTest {
    @Route("test/{int}")
    public static class MixedServiceTestResource {
 
-      public MixedServiceTestResource(int i, Observer observer) {
+      public MixedServiceTestResource(int i, Singleton observer) {
          // Test method, does nothing
       }
    }

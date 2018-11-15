@@ -87,15 +87,6 @@ public final class HttpRequestTest {
    }
 
    @Test
-   public void testCookiesGetRequest() throws IOException {
-      HttpRequest request = getRequest("cookies_get_request.txt");
-      assertEquals("GET", request.getMethod());
-      assertEquals("/", request.getPath());
-      assertEquals("false", request.getCookies().get("toggle"));
-      assertEquals("id=0", request.getQueryString());
-   }
-
-   @Test
    public void testPayloadTooLargeRequest() throws IOException {
       thrown.expect(PayloadTooLargeException.class);
       getRequest("large_payload_request.txt");

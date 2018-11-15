@@ -31,9 +31,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.lmpessoa.services.core.HttpInputStream;
 import com.lmpessoa.services.core.hosting.BadRequestException;
 import com.lmpessoa.services.core.hosting.HeaderMap;
+import com.lmpessoa.services.core.hosting.HttpInputStream;
 import com.lmpessoa.services.core.hosting.InternalServerError;
 
 final class MultipartSerializer implements IContentReader {

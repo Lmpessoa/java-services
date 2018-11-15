@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
-import com.lmpessoa.services.core.services.AbstractOptions;
+import com.lmpessoa.services.core.hosting.AbstractOptions;
 
 final class RouteOptions extends AbstractOptions implements IRouteOptions {
 

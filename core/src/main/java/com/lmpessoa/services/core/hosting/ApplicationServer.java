@@ -41,18 +41,17 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
-import com.lmpessoa.services.core.NonResource;
-import com.lmpessoa.services.core.Resource;
 import com.lmpessoa.services.core.concurrent.ExecutionService;
 import com.lmpessoa.services.core.concurrent.IExecutionService;
 import com.lmpessoa.services.core.hosting.content.Serializer;
 import com.lmpessoa.services.core.routing.IRouteTable;
+import com.lmpessoa.services.core.routing.NonResource;
+import com.lmpessoa.services.core.routing.Resource;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.routing.RouteTable;
-import com.lmpessoa.services.core.services.IConfigurable;
-import com.lmpessoa.services.core.services.IConfigurationLifecycle;
 import com.lmpessoa.services.core.services.IServiceMap;
 import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.util.ClassUtils;
@@ -296,19 +295,19 @@ public final class ApplicationServer implements IApplicationInfo {
          services = new ServiceMap();
 
          // Registers Singleton services
-         services.useSingleton(IServiceMap.class, services);
-         services.useSingleton(ILogger.class, log);
-         services.useSingleton(IApplicationInfo.class, this);
-         services.useSingleton(IApplicationOptions.class, options);
-         services.useSingleton(IHostEnvironment.class, environment);
-         services.useSingleton(IExecutionService.class, executor);
+         services.put(IServiceMap.class, Wrapper.wrap(services));
+         services.put(ILogger.class, Wrapper.wrap(log));
+         services.put(IApplicationInfo.class, Wrapper.wrap(this));
+         services.put(IApplicationOptions.class, Wrapper.wrap(options));
+         services.put(IHostEnvironment.class, environment);
+         services.put(IExecutionService.class, Wrapper.wrap(executor));
 
          // Registers PerRequest services
-         services.usePerRequest(IRouteTable.class, () -> null);
-         services.usePerRequest(ConnectionInfo.class, () -> null);
-         services.usePerRequest(HttpRequest.class, () -> null);
-         services.usePerRequest(RouteMatch.class, () -> null);
-         services.usePerRequest(HeaderMap.class);
+         services.put(IRouteTable.class, (Supplier<IRouteTable>) () -> null);
+         services.put(ConnectionInfo.class, (Supplier<ConnectionInfo>) () -> null);
+         services.put(HttpRequest.class, (Supplier<HttpRequest>) () -> null);
+         services.put(RouteMatch.class, (Supplier<RouteMatch>) () -> null);
+         services.put(HeaderMap.class);
 
          // Runs used defined service registration
          configureServices(services);
@@ -408,7 +407,7 @@ public final class ApplicationServer implements IApplicationInfo {
    @SuppressWarnings({ "unchecked", "rawtypes" })
    private ServiceMap getConfigServiceMap(ServiceMap services) {
       ServiceMap configMap = new ServiceMap();
-      configMap.useSingleton(IApplicationOptions.class, options);
+      configMap.put(IApplicationOptions.class, Wrapper.wrap(options));
       for (Class<?> c : services.getServices()) {
          Object o = services.get(c);
          if (o != null && o instanceof IConfigurable<?>) {
@@ -416,7 +415,7 @@ public final class ApplicationServer implements IApplicationInfo {
             if (m != null) {
                Class<?> configOptions = m.getReturnType();
                if (configOptions != Object.class) {
-                  configMap.useSingleton(configOptions, new LazyGetOptions(c, services));
+                  configMap.put(configOptions, new LazyGetOptions(c, services));
                }
             }
          }
@@ -450,8 +449,8 @@ public final class ApplicationServer implements IApplicationInfo {
    private void endConfiguration(ServiceMap configMap) {
       for (Class<?> config : configMap.getServices()) {
          Object obj = configMap.get(config);
-         if (obj != null && obj instanceof IConfigurationLifecycle) {
-            ((IConfigurationLifecycle) obj).configurationEnded();
+         if (obj != null && obj instanceof AbstractOptions) {
+            ((AbstractOptions) obj).doConfigurationEnded();
          }
       }
    }
@@ -460,16 +459,22 @@ public final class ApplicationServer implements IApplicationInfo {
       getServices();
       Thread ct = new Thread(getContext());
       ct.start();
+      logCreatedContext(getContext());
       logStartedMessage();
       try {
          ct.join();
       } catch (InterruptedException e) {
          log.warning(e);
-         ct.interrupt();
+         Thread.currentThread().interrupt();
       }
       executor.shutdown();
       logShutdownMessage();
-      log.join();
+      try {
+         log.join();
+      } catch (InterruptedException e) {
+         log.warning(e);
+         Thread.currentThread().interrupt();
+      }
    }
 
    private int getRequestLimit(ApplicationServerInfo info) {
@@ -502,6 +507,10 @@ public final class ApplicationServer implements IApplicationInfo {
       message.append(getEnvironment().getName());
       message.append("' environment");
       log.info(message);
+   }
+
+   private void logCreatedContext(ApplicationContext context) {
+      log.info("Application is now listening on ports: %d [%s]", context.getPort(), context.getName());
    }
 
    private void logStartedMessage() {

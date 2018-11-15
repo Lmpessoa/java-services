@@ -25,8 +25,6 @@ package com.lmpessoa.services.core.hosting;
 import java.io.IOException;
 import java.net.URL;
 
-import com.lmpessoa.services.core.ContentType;
-import com.lmpessoa.services.core.HttpInputStream;
 import com.lmpessoa.services.util.logging.ILogger;
 
 final class FaviconHandler {

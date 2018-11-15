@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,20 +20,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.test.resources;
+package com.lmpessoa.services.test.services;
 
-import com.lmpessoa.services.core.routing.HttpGet;
-import com.lmpessoa.services.core.routing.Route;
+import com.lmpessoa.services.core.services.Reuse;
+import com.lmpessoa.services.core.services.Service;
 
-public final class IndexResource {
+@Service(Reuse.ALWAYS)
+public interface Singleton {
 
-   public void get() {
-      // Test method, does nothing
-   }
-
-   @HttpGet
-   @Route("test")
-   public void test() {
-      // Test method, does nothing
-   }
 }

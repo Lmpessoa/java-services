@@ -45,7 +45,7 @@ class ApplicationContext implements Runnable {
 
    @Override
    public void run() {
-      Thread.currentThread().setName(name);
+      Thread.currentThread().setName(name + "-context");
       try (ServerSocket serverSocket = new ServerSocket(port, 0, InetAddress.getLoopbackAddress())) {
          socket = serverSocket;
          socket.setSoTimeout(1);
@@ -103,6 +103,10 @@ class ApplicationContext implements Runnable {
 
    int getPort() {
       return port;
+   }
+
+   String getName() {
+      return name;
    }
 
    private void acceptClientToHandle() {

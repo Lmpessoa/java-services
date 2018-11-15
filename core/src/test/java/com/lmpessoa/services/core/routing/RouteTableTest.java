@@ -33,25 +33,25 @@ import java.lang.reflect.Method;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Observer;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.lmpessoa.services.BrokerObserver;
-import com.lmpessoa.services.core.HttpGet;
-import com.lmpessoa.services.core.HttpPatch;
-import com.lmpessoa.services.core.HttpPost;
-import com.lmpessoa.services.core.HttpPut;
-import com.lmpessoa.services.core.Route;
 import com.lmpessoa.services.core.routing.AbstractRouteType;
 import com.lmpessoa.services.core.routing.DuplicateMethodException;
+import com.lmpessoa.services.core.routing.HttpGet;
 import com.lmpessoa.services.core.routing.HttpMethod;
+import com.lmpessoa.services.core.routing.HttpPatch;
+import com.lmpessoa.services.core.routing.HttpPost;
+import com.lmpessoa.services.core.routing.HttpPut;
 import com.lmpessoa.services.core.routing.IRouteTable;
+import com.lmpessoa.services.core.routing.Route;
 import com.lmpessoa.services.core.routing.RouteTable;
 import com.lmpessoa.services.core.services.ServiceMap;
+import com.lmpessoa.services.test.services.Singleton;
+import com.lmpessoa.services.test.services.SingletonImpl;
 import com.lmpessoa.services.util.logging.Logger;
 import com.lmpessoa.services.util.logging.NullLogWriter;
 import com.lmpessoa.services.util.parsing.TypeMismatchException;
@@ -196,8 +196,8 @@ public final class RouteTableTest {
 
    @Test
    public void testRouteWithInjectedService() throws ParseException {
-      Observer o = new BrokerObserver();
-      serviceMap.useSingleton(Observer.class, o);
+      Singleton o = new SingletonImpl();
+      serviceMap.put(Singleton.class, o);
       table.put("", ServiceTestResource.class);
       Collection<Exception> result = table.getLastExceptions();
       assertEquals(0, result.size());
@@ -299,7 +299,7 @@ public final class RouteTableTest {
    @Route("test")
    public static class ServiceTestResource {
 
-      public ServiceTestResource(Observer observer) {
+      public ServiceTestResource(Singleton observer) {
          // Test method, does nothing
       }
 

@@ -27,6 +27,10 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Arrays;
 
+import com.lmpessoa.services.core.services.Reuse;
+import com.lmpessoa.services.core.services.Service;
+
+@Service(Reuse.REQUEST)
 public final class ConnectionInfo {
 
    private final boolean secure;
@@ -131,7 +135,7 @@ public final class ConnectionInfo {
 
    /**
     * Creates a new <code>ConnectionInfo</code> for the given socket.
-    * 
+    *
     * @param socket the socket connection used to receive data from a user agent.
     * @param hostValue the host information of the application server.
     */

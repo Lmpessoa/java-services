@@ -37,6 +37,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import com.lmpessoa.services.core.services.Reuse;
+import com.lmpessoa.services.core.services.Service;
+
 /**
  * Represents a map of HTTP header values.
  *
@@ -63,6 +66,7 @@ import java.util.stream.Stream;
  * the names of most common HTTP headers are also provided for convenience.
  * </p>
  */
+@Service(Reuse.REQUEST)
 public final class HeaderMap {
 
    public static final String ACCEPT = "Accept";

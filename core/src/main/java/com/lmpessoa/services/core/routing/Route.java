@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core;
+package com.lmpessoa.services.core.routing;
 
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.TYPE;
@@ -31,17 +31,74 @@ import java.lang.annotation.Target;
 
 /**
  * Enables a resource or end-point to be associated with a non-conventional route.
+ *
  * <p>
- * Routes defined through this annotation will still be checked for consistency (i.e. right number
- * of variables) and uniqueness in its context.
+ * The {@code @Route} annotation can be applied to both resource classes and methods to alter the
+ * route produced to reach them. Thus it is possible to have multiple resource classes responding
+ * for the same base path. Consider the following example:
+ * </p>
+ *
+ * <pre>
+ * public class SampleResource {
+ *
+ *    public String get() {
+ *       // ...
+ *    }
+ * }
+ *
+ * &#64;Route("sample")
+ * public class AnotherResource {
+ *
+ *    public void post() {
+ *       // ...
+ *    }
+ * }
+ * </pre>
+ *
+ * <p>
+ * In this example, a request for {@code 'GET /sample'} will be responded by the
+ * {@code SampleResource} class while {@code 'POST /sample'} will be responde by the
+ * {@code AnotherResource} class.
  * </p>
  *
  * <p>
- * Using the <code>@Route</code> annotation also enables route variables to be constrained to an
- * length that can be specified around parenthesis after the name of the route variable type. The
- * following list presents the accepted forms in which the size of a route variable segment can be
+ * In methods, the {@code @Route} annotation can change how arguments are meant to be read from the
+ * path as well as creating a sub-path for the route in order to distinguish paths with the same set
+ * or arguments, for example:
+ * </p>
+ *
+ * <pre>
+ * public class SampleResource {
+ *
+ *    public String get() {
+ *       // ...
+ *    }
+ *
+ *    &#64;HttpGet
+ *    &#64;Route("test")
+ *    public String test() {
+ *       // ...
+ *    }
+ * }
+ * </pre>
+ *
+ * <p>
+ * In this example, a request for {@code 'GET /sample'} will be handled by the {@code get()} method
+ * while the method {@code test()} will be reached through a request to {@code 'GET /sample/test'}.
+ * </p>
+ *
+ * <p>
+ * Routes defined this way will still be checked for consistency (i.e. right number and type of
+ * variables present) and uniqueness in its context.
+ * </p>
+ *
+ * <p>
+ * Using the {@code @Route} annotation also enables route variables to be constrained to an length
+ * that can be specified around parenthesis after the name of the route variable type. The following
+ * list presents the accepted forms in which the size of a route variable segment can be
  * constrained.
  * </p>
+ *
  * <ul>
  * <li><strong>xxx</strong> - accepts a value of any size</li>
  * <li><strong>xxx(6)</strong> - accepts only values with the exact size of 6 characters</li>

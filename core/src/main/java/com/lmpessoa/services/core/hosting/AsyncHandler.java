@@ -29,7 +29,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import com.lmpessoa.services.core.Async;
+import com.lmpessoa.services.core.concurrent.Async;
 import com.lmpessoa.services.core.concurrent.ExecutionService;
 import com.lmpessoa.services.core.routing.RouteMatch;
 
@@ -51,35 +51,43 @@ final class AsyncHandler {
       if (executor != null) {
          String asyncPath = app.getAsyncFeedbackPath();
          if (request.getPath().startsWith(asyncPath)) {
-            UUID id;
-            try {
-               id = UUID.fromString(request.getPath().substring(asyncPath.length()));
-            } catch (IllegalArgumentException e) {
-               throw new NotFoundException();
-            }
-            Future<?> result = executor.get(id.toString());
-            if (result == null) {
-               throw new NotFoundException();
-            }
-            return result;
+            return respondToStatusRequest(request, asyncPath);
          }
          if (route != null && (isCallableResult(route) || isAsync(route))) {
-            Callable<?> job = null;
-            if (isCallableResult(route)) {
-               Object result = next.invoke();
-               if (result instanceof Callable) {
-                  job = (Callable<?>) result;
-               } else if (result instanceof Runnable) {
-                  job = Executors.callable((Runnable) result);
-               }
-            } else if (isAsync(route)) {
-               job = route::invoke;
-            }
-            String id = executor.submit(job);
-            return Redirect.accepted(asyncPath + id);
+            return respondToAsyncCall(route, asyncPath);
          }
       }
       return next.invoke();
+   }
+
+   private Object respondToAsyncCall(RouteMatch route, String asyncPath) {
+      Callable<?> job = null;
+      if (isCallableResult(route)) {
+         Object result = next.invoke();
+         if (result instanceof Callable) {
+            job = (Callable<?>) result;
+         } else if (result instanceof Runnable) {
+            job = Executors.callable((Runnable) result);
+         }
+      } else if (isAsync(route)) {
+         job = route::invoke;
+      }
+      String id = executor.submit(job);
+      return Redirect.accepted(asyncPath + id);
+   }
+
+   private Object respondToStatusRequest(HttpRequest request, String asyncPath) {
+      UUID id;
+      try {
+         id = UUID.fromString(request.getPath().substring(asyncPath.length()));
+      } catch (IllegalArgumentException e) {
+         throw new NotFoundException();
+      }
+      Future<?> result = executor.get(id.toString());
+      if (result == null) {
+         throw new NotFoundException();
+      }
+      return result;
    }
 
    private boolean isAsync(RouteMatch match) {

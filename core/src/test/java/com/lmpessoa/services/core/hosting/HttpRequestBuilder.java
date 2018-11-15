@@ -164,11 +164,6 @@ public final class HttpRequestBuilder {
             // TODO Auto-generated method stub
             return null;
          }
-
-         @Override
-         public Map<String, String> getCookies() {
-            return cookies;
-         }
       };
    }
 }

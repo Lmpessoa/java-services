@@ -26,15 +26,15 @@ import java.util.function.Supplier;
 
 final class ServiceEntry {
 
-   private final ReuseLevel level;
+   private final Reuse level;
    private final Supplier<?> supplier;
 
-   ServiceEntry(ReuseLevel level, Supplier<?> supplier) {
+   ServiceEntry(Reuse level, Supplier<?> supplier) {
       this.supplier = supplier;
       this.level = level;
    }
 
-   ReuseLevel getLevel() {
+   Reuse getLevel() {
       return level;
    }
 

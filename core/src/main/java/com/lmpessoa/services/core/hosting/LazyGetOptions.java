@@ -24,7 +24,6 @@ package com.lmpessoa.services.core.hosting;
 
 import java.util.function.Supplier;
 
-import com.lmpessoa.services.core.services.IConfigurable;
 import com.lmpessoa.services.core.services.ServiceMap;
 
 final class LazyGetOptions<T> implements Supplier<T> {
