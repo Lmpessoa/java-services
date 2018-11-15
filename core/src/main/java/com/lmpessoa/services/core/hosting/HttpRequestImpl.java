@@ -170,8 +170,9 @@ final class HttpRequestImpl implements HttpRequest {
          if (!headerMap.contains("Content-Length")) {
             throw new LengthRequiredException();
          }
-         if (getContentLength() > Integer.MAX_VALUE || getContentLength() < 0) {
-            throw new UnsupportedOperationException("Body content too large");
+         long contentLength = getContentLength();
+         if (contentLength < 0 || contentLength > Integer.MAX_VALUE) {
+            throw new PayloadTooLargeException();
          }
          byte[] data = new byte[(int) getContentLength()];
          while (clientStream.available() < data.length) {

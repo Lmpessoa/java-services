@@ -22,10 +22,7 @@
  */
 package com.lmpessoa.services.core.hosting;
 
-/**
- * Thrown when the request indicates the existence of a content body but did not inform its length.
- */
-public class LengthRequiredException extends HttpException {
+final class LengthRequiredException extends HttpException {
 
    private static final long serialVersionUID = 1L;
 

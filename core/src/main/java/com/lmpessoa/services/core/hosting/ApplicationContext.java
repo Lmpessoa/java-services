@@ -187,7 +187,7 @@ class ApplicationContext implements ServletContext, Runnable, Supplier<Connectio
       return null;
    }
 
-   // NOTE: The remaining methods are required by the servlet spevification but are not
+   // NOTE: The remaining methods are required by the servlet specification but are not
    // required by the implementation of the engine (at least for the moment). All of them throw
    // UnsupportedOperationException so we can notice when one method is used without
    // implementation.
@@ -389,7 +389,7 @@ class ApplicationContext implements ServletContext, Runnable, Supplier<Connectio
    private void acceptClient(ServerSocket socket) {
       try {
          Socket client = socket.accept();
-         ApplicationServlet servlet = (ApplicationServlet) servlets.get("service");
+         ApplicationServlet servlet = (ApplicationServlet) servlets.get("leeow");
          Runnable job = new HttpRequestJob(servlet, client);
          server.queueJob(job);
       } catch (SocketTimeoutException e) {

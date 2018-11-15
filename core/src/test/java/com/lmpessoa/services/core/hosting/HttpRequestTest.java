@@ -34,6 +34,7 @@ import org.junit.rules.ExpectedException;
 import com.lmpessoa.services.core.hosting.HttpRequest;
 import com.lmpessoa.services.core.hosting.HttpRequestImpl;
 import com.lmpessoa.services.core.hosting.LengthRequiredException;
+import com.lmpessoa.services.core.hosting.PayloadTooLargeException;
 
 public final class HttpRequestTest {
 
@@ -92,5 +93,11 @@ public final class HttpRequestTest {
       assertEquals("/", request.getPath());
       assertEquals("false", request.getCookies().get("toggle"));
       assertEquals("id=0", request.getQueryString());
+   }
+
+   @Test
+   public void testPayloadTooLargeRequest() throws IOException {
+      thrown.expect(PayloadTooLargeException.class);
+      getRequest("large_payload_request.txt");
    }
 }

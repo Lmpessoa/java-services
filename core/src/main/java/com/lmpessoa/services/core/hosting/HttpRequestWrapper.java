@@ -66,14 +66,28 @@ final class HttpRequestWrapper implements HttpRequest {
          headers.add(header, request.getHeader(header));
       }
       headers.freeze();
-      try (InputStream is = request.getInputStream()) {
-         ByteArrayOutputStream os = new ByteArrayOutputStream();
-         byte[] buffer = new byte[1024];
-         int len;
-         while ((len = is.read(buffer)) > 0) {
-            os.write(buffer, 0, len);
+      if (headers.contains("Content-Type")) {
+         if (!headers.contains("Content-Length")) {
+            throw new LengthRequiredException();
          }
-         content = os.toByteArray();
+         long contentLength = getContentLength();
+         if (getContentLength() > Integer.MAX_VALUE || getContentLength() < 0) {
+            throw new PayloadTooLargeException();
+         }
+         try (InputStream is = request.getInputStream()) {
+            while (is.available() < contentLength) {
+               // Does nothing, just wait
+            }
+            ByteArrayOutputStream os = new ByteArrayOutputStream();
+            byte[] buffer = new byte[4096];
+            while (os.size() < contentLength) {
+               int len = is.read(buffer, 0, Math.min(4096, (int) contentLength - os.size()));
+               os.write(buffer, 0, len);
+            }
+            this.content = os.toByteArray();
+         }
+      } else {
+         this.content = new byte[0];
       }
       String encoding = request.getCharacterEncoding();
       if (encoding == null) {

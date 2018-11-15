@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,29 +20,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services;
+package com.lmpessoa.services.core.hosting;
 
-import static java.lang.annotation.ElementType.CONSTRUCTOR;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.TYPE;
-import static java.lang.annotation.RetentionPolicy.SOURCE;
+final class PayloadTooLargeException extends HttpException {
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+   private static final long serialVersionUID = 1L;
 
-/**
- * Indicates an internal class or method.
- *
- * <p>
- * Internal methods (as well as methods from internal classes) may be public but should not be
- * called directly by your application. They are meant to be used only internally by the Leeow
- * engine and the Leeow Application Server.
- * </p>
- */
-@Inherited
-@Documented
-@Retention(SOURCE)
-@Target({ TYPE, METHOD, CONSTRUCTOR })
-public @interface Internal {}
+   @Override
+   public int getStatusCode() {
+      return 413;
+   }
+
+}
