@@ -48,6 +48,8 @@ import com.lmpessoa.services.util.ConnectionInfo;
 @NonTraced
 public final class LogEntry {
 
+   private static final String AT = "...at ";
+
    private final StackTraceElement logPoint;
    private final ConnectionInfo connInfo;
    private final String defaultClass;
@@ -56,8 +58,6 @@ public final class LogEntry {
    private final String threadName;
    private final Object message;
    private final long threadId;
-
-   private Throwable[] throwableStack = null;
 
    /**
     * Returns the date and time when the log entry was created.
@@ -88,12 +88,7 @@ public final class LogEntry {
     * @return the actual message of the log entry event.
     */
    public String getMessage() {
-      if (message instanceof Throwable) {
-         Throwable[] stack = getThrowableStack();
-         return stack[0].toString();
-      } else {
-         return message.toString();
-      }
+      return message.toString();
    }
 
    /**
@@ -108,8 +103,8 @@ public final class LogEntry {
     */
    public String getClassName() {
       if (message instanceof Throwable) {
-         Throwable[] stack = getThrowableStack();
-         return stack[0].getStackTrace()[0].getClassName();
+         Throwable t = (Throwable) message;
+         return t.getStackTrace()[0].getClassName();
       } else if (logPoint != null) {
          return logPoint.getClassName();
       }
@@ -187,10 +182,10 @@ public final class LogEntry {
 
    String[] getAdditionalMessages() {
       if (message instanceof Throwable) {
-         Throwable[] stack = getThrowableStack();
          List<String> result = new ArrayList<>();
-         for (StackTraceElement element : cleanNonTraced(stack[0].getStackTrace())) {
-            result.add(String.format("...at %s", element.toString()));
+         Throwable t = (Throwable) message;
+         for (StackTraceElement element : cleanNonTraced(t.getStackTrace())) {
+            result.add(AT + element);
          }
          return result.toArray(new String[0]);
       }
@@ -199,22 +194,22 @@ public final class LogEntry {
 
    LogEntry getTraceEntry() {
       if (message instanceof Throwable) {
-         Throwable[] stack = getThrowableStack();
-         if (stack.length > 1) {
-            return new LogEntry(this, Severity.TRACE, stack[1]);
+         Throwable t = (Throwable) message;
+         if (t.getCause() != null) {
+            return new LogEntry(this, t.getCause());
          }
          return null;
       }
-      if (this.severity != Severity.TRACE) {
-         return new LogEntry(this, Severity.TRACE, "...at " + logPoint);
+      if (!getMessage().startsWith(AT) && logPoint != null) {
+         return new LogEntry(this, AT + logPoint);
       }
       return null;
    }
 
-   private LogEntry(LogEntry parentEntry, Severity severity, Object message) {
+   private LogEntry(LogEntry parentEntry, Object message) {
       this.time = parentEntry.getTime();
-      this.severity = Objects.requireNonNull(severity);
       this.message = Objects.requireNonNull(message);
+      this.severity = parentEntry.severity;
       this.defaultClass = parentEntry.defaultClass;
       this.logPoint = parentEntry.logPoint;
       this.threadName = parentEntry.threadName;
@@ -267,19 +262,5 @@ public final class LogEntry {
 
    private static StackTraceElement[] cleanNonTraced(StackTraceElement[] stack) {
       return Arrays.stream(stack).filter(e -> !skipNonTraced(e)).toArray(StackTraceElement[]::new);
-   }
-
-   private Throwable[] getThrowableStack() {
-      if (throwableStack == null) {
-         List<Throwable> tlist = new ArrayList<>();
-         Throwable t = (Throwable) message;
-         tlist.add(t);
-         while (t.getCause() != null && t != t.getCause()) {
-            t = t.getCause();
-            tlist.add(0, t);
-         }
-         throwableStack = tlist.toArray(new Throwable[0]);
-      }
-      return throwableStack;
    }
 }

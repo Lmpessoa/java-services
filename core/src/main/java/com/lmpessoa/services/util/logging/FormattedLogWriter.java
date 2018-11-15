@@ -31,7 +31,6 @@ public abstract class FormattedLogWriter extends LogWriter {
    static final String DEFAULT = "{Time} {Severity:>7} -- [{Remote.Host:<15}] {Class.Name:<36} : {Message}";
 
    private LogFormatter template;
-   private boolean tracing = false;
 
    public FormattedLogWriter() {
       try {
@@ -47,10 +46,6 @@ public abstract class FormattedLogWriter extends LogWriter {
       this.template = LogFormatter.parse(template);
    }
 
-   public void setTracing(boolean tracing) {
-      this.tracing = tracing;
-   }
-
    @Override
    protected final void append(LogEntry entry) {
       append(entry.getSeverity(), format(entry));
@@ -61,13 +56,9 @@ public abstract class FormattedLogWriter extends LogWriter {
    private String format(LogEntry entry) {
       StringWriter buffer = new StringWriter();
       PrintWriter result = new PrintWriter(buffer);
-      LogEntry n = entry;
-      while (n != null) {
-         result.println(template.format(n));
-         for (String message : n.getAdditionalMessages()) {
-            result.println(template.format(n, message));
-         }
-         n = tracing ? n.getTraceEntry() : null;
+      result.println(template.format(entry));
+      for (String message : entry.getAdditionalMessages()) {
+         result.println(template.format(entry, message));
       }
       return buffer.toString();
    }

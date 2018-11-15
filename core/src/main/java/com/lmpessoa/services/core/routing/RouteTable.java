@@ -61,8 +61,10 @@ import com.lmpessoa.services.core.services.IServiceMap;
 import com.lmpessoa.services.core.services.NoSingleMethodException;
 import com.lmpessoa.services.util.ClassUtils;
 import com.lmpessoa.services.util.logging.ILogger;
+import com.lmpessoa.services.util.logging.NonTraced;
 
 @Internal
+@NonTraced
 public final class RouteTable implements IRouteTable {
 
    private static final Map<Class<?>, Function<String, ?>> specialCases;

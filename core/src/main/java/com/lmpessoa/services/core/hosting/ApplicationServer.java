@@ -44,11 +44,11 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import com.lmpessoa.services.core.routing.content.Serializer;
 import com.lmpessoa.services.util.ClassUtils;
 import com.lmpessoa.services.util.logging.ConsoleLogWriter;
 import com.lmpessoa.services.util.logging.FileLogWriter;
 import com.lmpessoa.services.util.logging.ILogger;
-import com.lmpessoa.services.util.logging.ILoggerOptions;
 import com.lmpessoa.services.util.logging.LogWriter;
 import com.lmpessoa.services.util.logging.Logger;
 import com.lmpessoa.services.util.logging.NonTraced;
@@ -59,8 +59,8 @@ import com.lmpessoa.services.util.logging.Severity;
  *
  * <p>
  * The static methods in this class are used to start and stop the embedded application server for
- * applications. Applications must call {@link #start()} from their <code>main</code> method
- * to start the application server.
+ * applications. Applications must call {@link #start()} from their <code>main</code> method to
+ * start the application server.
  * </p>
  *
  * <p>
@@ -81,7 +81,7 @@ public final class ApplicationServer {
    private final ApplicationContext context;
    private final ExecutorService threadPool;
    private final IHostEnvironment env;
-   private final ILogger log;
+   private final Logger log;
 
    /**
     * Starts the Application Server.
@@ -91,7 +91,7 @@ public final class ApplicationServer {
     * </p>
     */
    public static void start() {
-      if (instance == null) {
+      if (instance == null && isStandalone()) {
          Class<?> startupClass = findStartupClass();
          outputBanner(startupClass);
          instance = new ApplicationServer(startupClass);
@@ -122,8 +122,8 @@ public final class ApplicationServer {
    /**
     * Returns the version number of the Application Server.
     * <p>
-    * The version number of the server coincides with the version number for the microservice engine itself,
-    * and thus may be used interchangeably.
+    * The version number of the server coincides with the version number for the engine itself, and
+    * thus may be used interchangeably.
     * </p>
     *
     * @return the version number of the Application Server.
@@ -152,8 +152,15 @@ public final class ApplicationServer {
       this.log = createLogger(info, startupClass);
       this.env = createEnvironment(info);
       logStartupMessage(startupClass, info);
+
+      Collection<String> enable = info.getProperties("enable").values();
+      Serializer.enableXml(enable.contains("xml"));
+
       this.threadPool = createJobQueue(info);
       this.context = createApplicationContext(startupClass);
+
+      this.log.setConnectionSupplier(context);
+      this.log.enableTracing(true);// enable.contains("trace"));
    }
 
    IHostEnvironment getEnvironment() {
@@ -199,7 +206,7 @@ public final class ApplicationServer {
       }
       threadPool.shutdown();
       try {
-         while (!threadPool.awaitTermination(5, TimeUnit.SECONDS)) {
+         while (!threadPool.awaitTermination(1, TimeUnit.SECONDS)) {
             // Just sit and wait
          }
       } catch (InterruptedException e) {
@@ -207,6 +214,20 @@ public final class ApplicationServer {
       }
       logShutdownMessage();
       log.join();
+   }
+
+   private static boolean isStandalone() {
+      // Theoretically, we can ensure we're running from a standalone application if the current
+      // thread
+      // has only four methods and was started with a 'main' method:
+      // - [0] Thread::getStackTrace()
+      // - [1] ApplicationServer::isStandalone()
+      // - [2] ApplicationServer::start()
+      // - [3] ???.main(String[])
+      //
+      Thread thread = Thread.currentThread();
+      StackTraceElement[] stack = thread.getStackTrace();
+      return stack.length == 4 && "main".equals(stack[stack.length - 1].getMethodName());
    }
 
    private static void outputBanner(Class<?> startupClass) {
@@ -247,7 +268,8 @@ public final class ApplicationServer {
       if (name == null) {
          name = "Development";
       }
-      final String envName = Character.toUpperCase(name.charAt(0)) + name.substring(1).toLowerCase();
+      final String envName = Character.toUpperCase(name.charAt(0))
+               + name.substring(1).toLowerCase();
       return () -> envName;
    }
 
@@ -265,8 +287,8 @@ public final class ApplicationServer {
       }
    }
 
-   private ILogger createLogger(ApplicationServerInfo info, Class<?> startupClass) {
-      ILogger result;
+   private Logger createLogger(ApplicationServerInfo info, Class<?> startupClass) {
+      Logger result;
       try {
          LogWriter writer;
          Map<String, String> logParams = info.getProperties("logging.writer");
@@ -288,27 +310,26 @@ public final class ApplicationServer {
          }
          Class<?> writerClass = writer.getClass();
          for (Entry<String, String> param : logParams.entrySet()) {
-            String methodName = String.format("set%s%s", Character.toUpperCase(param.getKey().charAt(0)),
-                     param.getKey().substring(1));
-            Method[] methods = ClassUtils.findMethods(writerClass, m -> m.getName().equals(methodName));
+            String methodName = String.format("set%s%s",
+                     Character.toUpperCase(param.getKey().charAt(0)), param.getKey().substring(1));
+            Method[] methods = ClassUtils.findMethods(writerClass,
+                     m -> m.getName().equals(methodName));
             if (methods.length == 1 && methods[0].getParameterCount() == 1
-                     && methods[0].getParameterTypes()[0].isAssignableFrom(param.getValue().getClass())) {
+                     && methods[0].getParameterTypes()[0]
+                              .isAssignableFrom(param.getValue().getClass())) {
                methods[0].invoke(writer, param.getValue());
             }
          }
          result = new Logger(startupClass, writer);
-         ILoggerOptions logOpt = (ILoggerOptions) result;
          Severity level = Severity.valueOf(info.getProperty("logging.default").orElse("INFO"));
-         logOpt.setDefaultLevel(level);
+         result.setDefaultLevel(level);
          Map<String, String> packages = info.getProperties("logging.packages");
          for (int i = 0; i < packages.size() / 2; ++i) {
             String packageName = packages.get(String.format("%d.name", i));
             level = Severity.valueOf(packages.get(String.format("%d.level", i)));
-            logOpt.setPackageLevel(packageName, level);
+            result.setPackageLevel(packageName, level);
          }
-      } catch (
-
-      Exception e) {
+      } catch (Exception e) {
          result = new Logger(startupClass);
          result.error(e);
       }
@@ -338,7 +359,8 @@ public final class ApplicationServer {
       BigDecimal thousand = new BigDecimal(1000);
       Duration duration = Duration.between(this.startupTime, Instant.now());
       BigDecimal uptime = new BigDecimal(duration.toMillis()).divide(thousand);
-      BigDecimal vmUptime = new BigDecimal(ManagementFactory.getRuntimeMXBean().getUptime()).divide(thousand);
+      BigDecimal vmUptime = new BigDecimal(ManagementFactory.getRuntimeMXBean().getUptime())
+               .divide(thousand);
       log.info("Started application in %s seconds (VM running for %s seconds)", uptime, vmUptime);
    }
 

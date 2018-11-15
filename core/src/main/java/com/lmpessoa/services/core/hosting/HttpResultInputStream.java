@@ -22,7 +22,7 @@
  */
 package com.lmpessoa.services.core.hosting;
 
-import java.io.ByteArrayOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -45,22 +45,20 @@ public final class HttpResultInputStream extends InputStream implements AutoClos
 
    private final InputStream contentStream;
    private final String contentType;
+   private final int size;
 
    private String downloadName = null;
    private Charset encoding = null;
-   private byte[] content = null;
-   private int pos = 0;
 
    /**
     * Creates a new <code>HttpResultInputStream</code> with the given content type and content.
     *
     * @param contentType the content type of this result input stream.
     * @param data the actual content of this result input stream.
+    * @throws IOException
     */
    public HttpResultInputStream(String contentType, byte[] content) {
-      this.contentType = Objects.requireNonNull(contentType);
-      this.content = Objects.requireNonNull(content);
-      this.contentStream = null;
+      this(contentType, new ByteArrayInputStream(content));
    }
 
    /**
@@ -68,10 +66,18 @@ public final class HttpResultInputStream extends InputStream implements AutoClos
     *
     * @param contentType the content type of this result input stream.
     * @param content the actual content of this result input stream.
+    * @throws IOException
     */
    public HttpResultInputStream(String contentType, InputStream contentStream) {
       this.contentType = Objects.requireNonNull(contentType);
       this.contentStream = Objects.requireNonNull(contentStream);
+      int contentSize = 0;
+      try {
+         contentSize = contentStream.available();
+      } catch (IOException e) {
+         contentSize = 0;
+      }
+      this.size = contentSize;
    }
 
    /**
@@ -149,48 +155,37 @@ public final class HttpResultInputStream extends InputStream implements AutoClos
 
    @Override
    public int available() throws IOException {
-      ensureContents();
-      return content.length - pos;
+      return contentStream.available();
    }
 
    @Override
    public void close() throws IOException {
-      content = new byte[0];
+      contentStream.close();
    }
 
    @Override
    public int read() throws IOException {
-      ensureContents();
-      if (pos < content.length) {
-         return content[pos++];
-      }
-      return -1;
-   }
-
-   @Override
-   public void reset() throws IOException {
-      pos = 0;
+      return contentStream.read();
    }
 
    /**
     * Returns the size of this content.
     *
     * @return the size of this content.
-    * @throws IOException if an I/O error happens during the execution of this method.
+    * @throws IOException if an I/O error occurs.
     */
-   public int size() throws IOException {
-      ensureContents();
-      return content.length;
+   public int size() {
+      return size;
    }
 
    /**
     * Copies the contents of this input stream into a given output.
-    * 
+    *
     * @param out the output stream to copy this content to.
     * @throws IOException if an I/O error happened during the execution of this method.
     */
    public void copyTo(OutputStream out) throws IOException {
-      out.write(content);
+      copyStream(contentStream, out);
    }
 
    private void copyStream(InputStream in, OutputStream out) throws IOException {
@@ -198,15 +193,6 @@ public final class HttpResultInputStream extends InputStream implements AutoClos
       int len;
       while ((len = in.read(buffer)) != -1) {
          out.write(buffer, 0, len);
-      }
-   }
-
-   private synchronized void ensureContents() throws IOException {
-      if (content == null) {
-         ByteArrayOutputStream out = new ByteArrayOutputStream();
-         copyStream(contentStream, out);
-         content = out.toByteArray();
-         contentStream.close();
       }
    }
 }

@@ -121,8 +121,8 @@ public final class HeaderMap {
     *
     * <p>
     * Note that, different from {@link #set(String, String...)}, this method will not replace the
-    * previously set values for the given header but add the values given in the call to this method
-    * to the list of existing values.
+    * previously set values for the given header but add the values given in the call to this method to
+    * the list of existing values.
     * </p>
     *
     * @param headerName the name of the header to add values for.
@@ -151,8 +151,8 @@ public final class HeaderMap {
     * </p>
     *
     * @param headerName the name of the header to get values of.
-    * @return the first registered value for the given header or <code>null</code> if the header is
-    * not set in this map.
+    * @return the first registered value for the given header or <code>null</code> if the header is not
+    * set in this map.
     */
    public String get(String headerName) {
       List<String> valueList = getAll(headerName);
@@ -166,8 +166,8 @@ public final class HeaderMap {
     * Returns a list of all registered values for the given header.
     *
     * @param headerName the name of the header to get values of.
-    * @return the list of registered values for the given header or <code>null</code> if the header
-    * is not set in this map.
+    * @return the list of registered values for the given header or <code>null</code> if the header is
+    * not set in this map.
     */
    public List<String> getAll(String headerName) {
       String header = normalise(headerName);
@@ -231,8 +231,8 @@ public final class HeaderMap {
     * Returns a stream for working with headers in this map.
     *
     * <p>
-    * This stream returns the same type of objects from a regular {@link java.util.Map} but note
-    * that trying to call {@link Map.Entry#setValue(Object)} in these objects will throw an
+    * This stream returns the same type of objects from a regular {@link java.util.Map} but note that
+    * trying to call {@link Map.Entry#setValue(Object)} in these objects will throw an
     * {@link UnsupportedOperationException}.
     * </p>
     *

@@ -55,5 +55,5 @@ package com.lmpessoa.services.util.logging;
  * </p>
  */
 public enum Severity {
-   NONE, FATAL, ERROR, WARNING, INFO, DEBUG, TRACE;
+   NONE, FATAL, ERROR, WARNING, INFO, DEBUG;
 }

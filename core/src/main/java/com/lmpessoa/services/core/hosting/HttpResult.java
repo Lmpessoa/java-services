@@ -22,8 +22,6 @@
  */
 package com.lmpessoa.services.core.hosting;
 
-import java.io.IOException;
-
 import com.lmpessoa.services.Internal;
 
 @Internal
@@ -57,11 +55,7 @@ final class HttpResult {
    public String toString() {
       int contentLength = 0;
       if (contentStream != null) {
-         try {
-            contentLength = contentStream.available();
-         } catch (IOException e) {
-            contentLength = 0;
-         }
+         contentLength = contentStream.size();
       }
       String userAgent = request.getHeaders().get(HeaderMap.USER_AGENT);
       return String.format("\"%s %s %s\" %s %s \"%s\"", request.getMethod(),

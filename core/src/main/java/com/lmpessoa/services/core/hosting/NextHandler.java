@@ -55,8 +55,8 @@ public final class NextHandler {
     * Calls the next handler registered in the application.
     * <p>
     * New handlers must be aware that they are expected to return a result of their execution aftr
-    * completion. Implementors of new handlers may receive that result from the return of calling
-    * this function.
+    * completion. Implementors of new handlers may receive that result from the return of calling this
+    * function.
     * </p>
     *
     * @return the result returned by the next handler.

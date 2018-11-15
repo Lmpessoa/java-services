@@ -47,6 +47,7 @@ import com.lmpessoa.services.core.Resource;
 import com.lmpessoa.services.core.routing.IRouteTable;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.routing.RouteTable;
+import com.lmpessoa.services.core.routing.content.Serializer;
 import com.lmpessoa.services.core.services.IConfigurable;
 import com.lmpessoa.services.core.services.IConfigurationLifecycle;
 import com.lmpessoa.services.core.services.IServiceMap;
@@ -71,7 +72,7 @@ import com.lmpessoa.services.util.logging.NonTraced;
  *
  * <p>
  * Also include in the configuration of the servlet an initial parameter named
- * <code>leeow.startup.classname</code> with the full name of the class which should be used to
+ * <code>service.startup.classname</code> with the full name of the class which should be used to
  * configure your application (this would be the same class where you call
  * {@link ApplicationServer#start()}).
  * </p>
@@ -140,6 +141,10 @@ public final class ApplicationServlet extends GenericServlet {
       headers.stream().forEach(s -> response.addHeader(s.getKey(), s.getValue()));
    }
 
+   IServiceMap getServices() {
+      return services;
+   }
+
    ILogger getLogger() {
       return log;
    }
@@ -190,6 +195,8 @@ public final class ApplicationServlet extends GenericServlet {
          }
          this.log = createLogger(startupClass);
          this.env = createEnvironment();
+         String enableXml = getServletConfig().getInitParameter("service.enable.xml");
+         Serializer.enableXml("true".equals(enableXml));
       }
    }
 

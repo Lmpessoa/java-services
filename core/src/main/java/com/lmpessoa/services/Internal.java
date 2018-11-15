@@ -37,8 +37,8 @@ import java.lang.annotation.Target;
  *
  * <p>
  * Internal methods (as well as methods from internal classes) may be public but should not be
- * called directly by your application. They are meant to be used only internally by the engine
- * and the Application Server.
+ * called directly by your application. They are meant to be used only internally by the engine and
+ * the Application Server.
  * </p>
  */
 @Inherited

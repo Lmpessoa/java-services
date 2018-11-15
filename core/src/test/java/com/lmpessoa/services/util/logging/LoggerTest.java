@@ -103,7 +103,7 @@ public final class LoggerTest {
       log.join();
       LogEntry trace = output.getLastTrace();
       assertNotNull(trace);
-      assertEquals(Severity.TRACE, trace.getSeverity());
+      assertEquals(Severity.ERROR, trace.getSeverity());
       assertEquals(
                "...at com.lmpessoa.services.util.logging.LoggerTest.testTraceEntry(LoggerTest.java:102)",
                trace.getMessage());

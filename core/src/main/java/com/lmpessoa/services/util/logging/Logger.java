@@ -35,7 +35,7 @@ import com.lmpessoa.services.util.ConnectionInfo;
 
 @Internal
 @NonTraced
-public final class Logger implements ILogger, ILoggerOptions, Runnable {
+public final class Logger implements ILogger, Runnable {
 
    private final Queue<LogEntry> entriesToLog = new ArrayDeque<>();
 
@@ -43,18 +43,17 @@ public final class Logger implements ILogger, ILoggerOptions, Runnable {
    private final LogWriter writer;
 
    private Supplier<ConnectionInfo> connSupplier;
+   private boolean tracing = false;
    private Thread thread = null;
 
    private Map<String, Severity> packageLevels = new HashMap<>();
    private Severity defaultLevel = Severity.INFO;
 
-   @Internal
    public Logger(Class<?> defaultClass) {
       this(defaultClass, new ConsoleLogWriter());
       ClassUtils.checkInternalAccess();
    }
 
-   @Internal
    public Logger(Class<?> defaultClass, LogWriter writer) {
       ClassUtils.checkInternalAccess();
       this.defaultClass = defaultClass;
@@ -87,28 +86,6 @@ public final class Logger implements ILogger, ILoggerOptions, Runnable {
    }
 
    @Override
-   public void setDefaultLevel(Severity level) {
-      ClassUtils.checkInternalAccess();
-      this.defaultLevel = Objects.requireNonNull(level);
-   }
-
-   @Override
-   public void setPackageLevel(String packageName, Severity level) {
-      ClassUtils.checkInternalAccess();
-      Objects.requireNonNull(packageName);
-      if (packageName.isEmpty() || packageName.matches("\\s")) {
-         throw new IllegalArgumentException("Not a valid package name: " + packageName);
-      }
-      packageLevels.put(packageName, level);
-   }
-
-   @Override
-   public void setConnectionSupplier(Supplier<ConnectionInfo> supplier) {
-      ClassUtils.checkInternalAccess();
-      this.connSupplier = supplier;
-   }
-
-   @Override
    public void run() {
       writer.prepare();
       while (!entriesToLog.isEmpty()) {
@@ -116,13 +93,15 @@ public final class Logger implements ILogger, ILoggerOptions, Runnable {
          synchronized (entriesToLog) {
             entry = entriesToLog.poll();
          }
-         writer.append(entry);
+         while (entry != null) {
+            writer.append(entry);
+            entry = tracing ? entry.getTraceEntry() : null;
+         }
       }
       writer.finished();
       thread = null;
    }
 
-   @Internal
    @Override
    public void join() {
       ClassUtils.checkInternalAccess();
@@ -134,6 +113,30 @@ public final class Logger implements ILogger, ILoggerOptions, Runnable {
             // Just ignore
          }
       }
+   }
+
+   public void setDefaultLevel(Severity level) {
+      ClassUtils.checkInternalAccess();
+      this.defaultLevel = Objects.requireNonNull(level);
+   }
+
+   public void setPackageLevel(String packageName, Severity level) {
+      ClassUtils.checkInternalAccess();
+      Objects.requireNonNull(packageName);
+      if (packageName.isEmpty() || packageName.matches("\\s")) {
+         throw new IllegalArgumentException("Not a valid package name: " + packageName);
+      }
+      packageLevels.put(packageName, level);
+   }
+
+   public void setConnectionSupplier(Supplier<ConnectionInfo> supplier) {
+      ClassUtils.checkInternalAccess();
+      this.connSupplier = supplier;
+   }
+
+   public void enableTracing(boolean tracing) {
+      ClassUtils.checkInternalAccess();
+      this.tracing = tracing;
    }
 
    private void log(Severity level, Object message) {

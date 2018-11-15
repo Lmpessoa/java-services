@@ -79,4 +79,4 @@ This project originally used a different name/namespace for which I no longer ma
 
 Since this is an open source project under MIT, anyone is entitled to do whatever they please from this project including but not limited to use it on your own projects or derive into a new project, even replacing the base package name if you please, as long as the original authorship of the project is retained.
 
-The original commit date this change is:  Sat Dec 30 19:44:07 2017 -0200
+The original commit date this change is:  Tue Jan 2 22:18:55 2018 -0200

@@ -56,9 +56,9 @@ public abstract class AbstractRouteType implements IVariablePart {
     * <p>
     * Subclasses must call this constructor providing both values; the minimum length cannot be less
     * than one (as there is no reason to expect a zero-length URI segment) and the maximum length
-    * cannot be less than the minimum length. Both however can have the same value meaning the
-    * matching route must have exactly that length. If the route type to be created does not wish
-    * specify a maximum length, the value <code>-1</code> can be provided instead.
+    * cannot be less than the minimum length. Both however can have the same value meaning the matching
+    * route must have exactly that length. If the route type to be created does not wish specify a
+    * maximum length, the value <code>-1</code> can be provided instead.
     * </p>
     *
     * @param minLength the minimum length of the matching route value.

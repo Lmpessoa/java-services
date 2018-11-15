@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterRegistration;
@@ -50,9 +51,10 @@ import javax.servlet.SessionCookieConfig;
 import javax.servlet.SessionTrackingMode;
 import javax.servlet.descriptor.JspConfigDescriptor;
 
+import com.lmpessoa.services.util.ConnectionInfo;
 import com.lmpessoa.services.util.logging.ILogger;
 
-class ApplicationContext implements ServletContext, Runnable {
+class ApplicationContext implements ServletContext, Runnable, Supplier<ConnectionInfo> {
 
    private final Map<String, Servlet> servlets = new HashMap<>();
    private final Map<String, String> params = new HashMap<>();
@@ -63,6 +65,12 @@ class ApplicationContext implements ServletContext, Runnable {
    private final int port;
 
    private ServerSocket socket;
+
+   @Override
+   public ConnectionInfo get() {
+      ApplicationServlet servlet = (ApplicationServlet) servlets.get("service");
+      return servlet.getServices().get(ConnectionInfo.class);
+   }
 
    @Override
    public void run() {
@@ -109,73 +117,8 @@ class ApplicationContext implements ServletContext, Runnable {
    }
 
    @Override
-   public String getMimeType(String file) {
-      return null;
-   }
-
-   @Override
-   public Set<String> getResourcePaths(String path) {
-      return null;
-   }
-
-   @Override
-   public URL getResource(String path) throws MalformedURLException {
-      return null;
-   }
-
-   @Override
-   public InputStream getResourceAsStream(String path) {
-      return null;
-   }
-
-   @Override
-   public RequestDispatcher getRequestDispatcher(String path) {
-      return null;
-   }
-
-   @Override
-   public RequestDispatcher getNamedDispatcher(String name) {
-      return null;
-   }
-
-   @Override
-   public Servlet getServlet(String name) throws ServletException {
-      return null;
-   }
-
-   @Override
-   public Enumeration<Servlet> getServlets() {
-      return null;
-   }
-
-   @Override
-   public Enumeration<String> getServletNames() {
-      return null;
-   }
-
-   @Override
-   public void log(String msg) {
-      throw new UnsupportedOperationException();
-   }
-
-   @Override
-   public void log(Exception exception, String msg) {
-      throw new UnsupportedOperationException();
-   }
-
-   @Override
-   public void log(String message, Throwable throwable) {
-      throw new UnsupportedOperationException();
-   }
-
-   @Override
-   public String getRealPath(String path) {
-      return null;
-   }
-
-   @Override
    public String getServerInfo() {
-      return "Leeow/" + ApplicationServer.getVersion();
+      return "Java Microservice Engine/" + ApplicationServer.getVersion();
    }
 
    @Override
@@ -223,11 +166,6 @@ class ApplicationContext implements ServletContext, Runnable {
    }
 
    @Override
-   public Dynamic addServlet(String servletName, String className) {
-      return null;
-   }
-
-   @Override
    public Dynamic addServlet(String servletName, Servlet servlet) {
       try {
          servlet.init(new ApplicationConfig(this, servletName));
@@ -249,54 +187,130 @@ class ApplicationContext implements ServletContext, Runnable {
       return null;
    }
 
+   // NOTE: The remaining methods are required by the servlet spevification but are not
+   // required by the implementation of the engine (at least for the moment). All of them throw
+   // UnsupportedOperationException so we can notice when one method is used without
+   // implementation.
+
+   @Override
+   public String getMimeType(String file) {
+      throw new UnsupportedOperationException();
+   }
+
+   @Override
+   public Set<String> getResourcePaths(String path) {
+      throw new UnsupportedOperationException();
+   }
+
+   @Override
+   public URL getResource(String path) throws MalformedURLException {
+      throw new UnsupportedOperationException();
+   }
+
+   @Override
+   public InputStream getResourceAsStream(String path) {
+      throw new UnsupportedOperationException();
+   }
+
+   @Override
+   public RequestDispatcher getRequestDispatcher(String path) {
+      throw new UnsupportedOperationException();
+   }
+
+   @Override
+   public RequestDispatcher getNamedDispatcher(String name) {
+      throw new UnsupportedOperationException();
+   }
+
+   @Override
+   public Servlet getServlet(String name) throws ServletException {
+      throw new UnsupportedOperationException();
+   }
+
+   @Override
+   public Enumeration<Servlet> getServlets() {
+      throw new UnsupportedOperationException();
+   }
+
+   @Override
+   public Enumeration<String> getServletNames() {
+      throw new UnsupportedOperationException();
+   }
+
+   @Override
+   public void log(String msg) {
+      throw new UnsupportedOperationException();
+   }
+
+   @Override
+   public void log(Exception exception, String msg) {
+      throw new UnsupportedOperationException();
+   }
+
+   @Override
+   public void log(String message, Throwable throwable) {
+      throw new UnsupportedOperationException();
+   }
+
+   @Override
+   public String getRealPath(String path) {
+      throw new UnsupportedOperationException();
+   }
+
+   @Override
+   public Dynamic addServlet(String servletName, String className) {
+      throw new UnsupportedOperationException();
+   }
+
    @Override
    public <T extends Servlet> T createServlet(Class<T> clazz) throws ServletException {
-      return null;
+      throw new UnsupportedOperationException();
    }
 
    @Override
    public ServletRegistration getServletRegistration(String servletName) {
-      return null;
+      throw new UnsupportedOperationException();
    }
 
    @Override
    public Map<String, ? extends ServletRegistration> getServletRegistrations() {
-      return null;
+      throw new UnsupportedOperationException();
    }
 
    @Override
    public javax.servlet.FilterRegistration.Dynamic addFilter(String filterName, String className) {
-      return null;
+      throw new UnsupportedOperationException();
    }
 
    @Override
    public javax.servlet.FilterRegistration.Dynamic addFilter(String filterName, Filter filter) {
-      return null;
+      throw new UnsupportedOperationException();
    }
 
    @Override
-   public javax.servlet.FilterRegistration.Dynamic addFilter(String filterName, Class<? extends Filter> filterClass) {
-      return null;
+   public javax.servlet.FilterRegistration.Dynamic addFilter(String filterName,
+      Class<? extends Filter> filterClass) {
+      throw new UnsupportedOperationException();
    }
 
    @Override
    public <T extends Filter> T createFilter(Class<T> clazz) throws ServletException {
-      return null;
+      throw new UnsupportedOperationException();
    }
 
    @Override
    public FilterRegistration getFilterRegistration(String filterName) {
-      return null;
+      throw new UnsupportedOperationException();
    }
 
    @Override
    public Map<String, ? extends FilterRegistration> getFilterRegistrations() {
-      return null;
+      throw new UnsupportedOperationException();
    }
 
    @Override
    public SessionCookieConfig getSessionCookieConfig() {
-      return null;
+      throw new UnsupportedOperationException();
    }
 
    @Override
@@ -306,12 +320,12 @@ class ApplicationContext implements ServletContext, Runnable {
 
    @Override
    public Set<SessionTrackingMode> getDefaultSessionTrackingModes() {
-      return null;
+      throw new UnsupportedOperationException();
    }
 
    @Override
    public Set<SessionTrackingMode> getEffectiveSessionTrackingModes() {
-      return null;
+      throw new UnsupportedOperationException();
    }
 
    @Override
@@ -331,17 +345,17 @@ class ApplicationContext implements ServletContext, Runnable {
 
    @Override
    public <T extends EventListener> T createListener(Class<T> clazz) throws ServletException {
-      return null;
+      throw new UnsupportedOperationException();
    }
 
    @Override
    public JspConfigDescriptor getJspConfigDescriptor() {
-      return null;
+      throw new UnsupportedOperationException();
    }
 
    @Override
    public ClassLoader getClassLoader() {
-      return ClassLoader.getSystemClassLoader();
+      throw new UnsupportedOperationException();
    }
 
    @Override
@@ -351,10 +365,11 @@ class ApplicationContext implements ServletContext, Runnable {
 
    @Override
    public String getVirtualServerName() {
-      return null;
+      throw new UnsupportedOperationException();
    }
 
-   ApplicationContext(ApplicationServer applicationServer, String name, InetAddress addr, int port) {
+   ApplicationContext(ApplicationServer applicationServer, String name, InetAddress addr,
+      int port) {
       this.server = Objects.requireNonNull(applicationServer);
       this.name = name;
       this.addr = addr;
@@ -376,7 +391,7 @@ class ApplicationContext implements ServletContext, Runnable {
    private void acceptClient(ServerSocket socket) {
       try {
          Socket client = socket.accept();
-         ApplicationServlet servlet = (ApplicationServlet) servlets.get("leeow");
+         ApplicationServlet servlet = (ApplicationServlet) servlets.get("service");
          Runnable job = new HttpRequestJob(servlet, client);
          server.queueJob(job);
       } catch (SocketTimeoutException e) {
