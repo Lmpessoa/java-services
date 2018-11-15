@@ -41,7 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
-import com.lmpessoa.services.core.hosting.IConfigurable;
+import com.lmpessoa.services.core.hosting.Configurable;
 import com.lmpessoa.services.core.hosting.InternalServerError;
 import com.lmpessoa.services.core.hosting.MethodNotAllowedException;
 import com.lmpessoa.services.core.hosting.NotFoundException;
@@ -79,7 +79,7 @@ import com.lmpessoa.services.util.logging.ILogger;
  * {@code RouteTable}.
  * </p>
  */
-public final class RouteTable implements IRouteTable, IConfigurable<IRouteOptions> {
+public final class RouteTable implements IRouteTable, Configurable<IRouteOptions> {
 
    private final Map<RoutePattern, Map<HttpMethod, MethodEntry>> endpoints = new ConcurrentHashMap<>();
    private final RouteOptions options = new RouteOptions();

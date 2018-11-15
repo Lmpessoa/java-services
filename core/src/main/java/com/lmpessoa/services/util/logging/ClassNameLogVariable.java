@@ -22,17 +22,15 @@
  */
 package com.lmpessoa.services.util.logging;
 
-import java.util.function.Function;
-
 final class ClassNameLogVariable extends LogVariable {
 
-   protected ClassNameLogVariable(String name, boolean rightAlign, int length, Function<LogEntry, String> func) {
-      super(name, rightAlign, length, func);
+   protected ClassNameLogVariable(String name, boolean rightAlign, int length) {
+      super(name, rightAlign, length);
    }
 
    @Override
-   public String getValueOf(LogEntry entry) {
-      String result = entry.getClassName();
+   String format(Object value) {
+      String result = value.toString();
       if (result == null) {
          result = "";
       } else if (length() > 0) {
@@ -44,6 +42,6 @@ final class ClassNameLogVariable extends LogVariable {
             i += 1;
          }
       }
-      return format(result);
+      return super.format(result);
    }
 }

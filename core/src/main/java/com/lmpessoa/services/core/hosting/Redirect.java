@@ -27,7 +27,6 @@ import java.net.URL;
 import java.util.Objects;
 
 import com.lmpessoa.services.core.routing.RouteTable;
-import com.lmpessoa.services.util.ConnectionInfo;
 
 /**
  * Represents a redirection of the client to another location.

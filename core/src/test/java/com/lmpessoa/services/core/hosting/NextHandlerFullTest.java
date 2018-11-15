@@ -45,6 +45,7 @@ import org.junit.rules.ExpectedException;
 
 import com.lmpessoa.services.core.hosting.ApplicationOptions;
 import com.lmpessoa.services.core.hosting.ApplicationServer;
+import com.lmpessoa.services.core.hosting.ConnectionInfo;
 import com.lmpessoa.services.core.hosting.ContentType;
 import com.lmpessoa.services.core.hosting.HeaderMap;
 import com.lmpessoa.services.core.hosting.HttpInputStream;
@@ -62,7 +63,6 @@ import com.lmpessoa.services.core.routing.Route;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.routing.RouteTableBridge;
 import com.lmpessoa.services.core.services.ServiceMap;
-import com.lmpessoa.services.util.ConnectionInfo;
 import com.lmpessoa.services.util.logging.ILogger;
 import com.lmpessoa.services.util.logging.Logger;
 import com.lmpessoa.services.util.logging.NullHandler;

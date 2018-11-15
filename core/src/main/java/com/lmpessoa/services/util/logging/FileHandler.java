@@ -52,15 +52,15 @@ import java.util.function.Predicate;
  * log message entry.
  * </p>
  * <p>
- * In the following example, a logger is defined to send to the file {@code /var/log/leeow.log} only
- * a timestamp, severity and message text of messages with severity {@code WARNING} or above:
+ * In the following example, a logger is defined to send to the file {@code /var/log/service.log}
+ * only a timestamp, severity and message text of messages with severity {@code WARNING} or above:
  * </p>
  *
  * <pre>
  * log:
  * - type: file
  *   above: warning
- *   filename: /var/log/leeow.log
+ *   filename: /var/log/service.log
  *   template: ${Time} [${Severity}] ${Message}
  * </pre>
  */

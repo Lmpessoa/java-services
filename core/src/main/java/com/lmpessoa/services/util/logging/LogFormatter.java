@@ -22,10 +22,6 @@
  */
 package com.lmpessoa.services.util.logging;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.InetAddress;
 import java.text.ParseException;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -40,48 +36,44 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 
-import com.lmpessoa.services.util.ConnectionInfo;
 import com.lmpessoa.services.util.parsing.ITemplatePart;
 import com.lmpessoa.services.util.parsing.LiteralPart;
 
 final class LogFormatter {
 
-   private static final Map<String, Function<LogEntry, String>> variables = new HashMap<>();
-   private static String hostname = null;
+   private static final Map<String, Function<LogEntry, String>> sharedVariables = new HashMap<>();
 
    private final List<ITemplatePart> parts;
 
    static {
-      variables.put("Time", LogFormatter::getTime);
-      variables.put("Time.Web", LogFormatter::getTimeWeb);
-      variables.put("Time.AmPm", LogFormatter::getTimeAmPm);
-      variables.put("Time.Day", LogFormatter::getTimeDay);
-      variables.put("Time.Hour", LogFormatter::getTimeHour);
-      variables.put("Time.12Hour", LogFormatter::getTime12Hour);
-      variables.put("Time.Millis", LogFormatter::getTimeMillis);
-      variables.put("Time.Minutes", LogFormatter::getTimeMinutes);
-      variables.put("Time.Month", LogFormatter::getTimeMonth);
-      variables.put("Time.Month.Name", LogFormatter::getTimeMonthName);
-      variables.put("Time.Month.Short", LogFormatter::getTimeMonthShort);
-      variables.put("Time.Offset", LogFormatter::getTimeOffset);
-      variables.put("Time.Seconds", LogFormatter::getTimeSeconds);
-      variables.put("Time.WeekDay", LogFormatter::getTimeWeekDay);
-      variables.put("Time.WeekDay.Short", LogFormatter::getTimeWeekDayShort);
-      variables.put("Time.Year", LogFormatter::getTimeYear);
-      variables.put("Time.Zone", LogFormatter::getTimeZone);
-      variables.put("Severity", LogFormatter::getSeverity);
-      variables.put("Message", LogFormatter::getMessage);
-      variables.put("Thread", LogFormatter::getThread);
-      variables.put("Thread.Id", LogFormatter::getThreadId);
-      variables.put("Thread.Name", LogFormatter::getThreadName);
-      variables.put("Remote.Addr", LogFormatter::getRemoteAddress);
-      variables.put("Remote.Host", LogFormatter::getRemoteHost);
-      variables.put("Local.Host", LogFormatter::getLocalHost);
-      variables.put("Class.SimpleName", LogFormatter::getSimpleClassName);
+      sharedVariables.put("Time", LogFormatter::getTime);
+      sharedVariables.put("Time.Web", LogFormatter::getTimeWeb);
+      sharedVariables.put("Time.AmPm", LogFormatter::getTimeAmPm);
+      sharedVariables.put("Time.Day", LogFormatter::getTimeDay);
+      sharedVariables.put("Time.Hour", LogFormatter::getTimeHour);
+      sharedVariables.put("Time.12Hour", LogFormatter::getTime12Hour);
+      sharedVariables.put("Time.Millis", LogFormatter::getTimeMillis);
+      sharedVariables.put("Time.Minutes", LogFormatter::getTimeMinutes);
+      sharedVariables.put("Time.Month", LogFormatter::getTimeMonth);
+      sharedVariables.put("Time.Month.Name", LogFormatter::getTimeMonthName);
+      sharedVariables.put("Time.Month.Short", LogFormatter::getTimeMonthShort);
+      sharedVariables.put("Time.Offset", LogFormatter::getTimeOffset);
+      sharedVariables.put("Time.Seconds", LogFormatter::getTimeSeconds);
+      sharedVariables.put("Time.WeekDay", LogFormatter::getTimeWeekDay);
+      sharedVariables.put("Time.WeekDay.Short", LogFormatter::getTimeWeekDayShort);
+      sharedVariables.put("Time.Year", LogFormatter::getTimeYear);
+      sharedVariables.put("Time.Zone", LogFormatter::getTimeZone);
+      sharedVariables.put("Severity", LogFormatter::getSeverity);
+      sharedVariables.put("Message", LogEntry::getMessage);
+      sharedVariables.put("Thread", LogFormatter::getThread);
+      sharedVariables.put("Thread.Id", LogFormatter::getThreadId);
+      sharedVariables.put("Thread.Name", LogEntry::getThreadName);
+      sharedVariables.put("Class.Name", LogEntry::getClassName);
+      sharedVariables.put("Class.SimpleName", LogFormatter::getSimpleClassName);
    }
 
    static LogFormatter parse(String template) throws ParseException {
-      return new LogFormatter(LogFormatParser.parse(template, variables));
+      return new LogFormatter(LogFormatParser.parse(template));
    }
 
    String format(LogEntry entry, String message) {
@@ -89,10 +81,19 @@ final class LogFormatter {
       for (ITemplatePart part : parts) {
          if (part instanceof LogVariable) {
             LogVariable var = (LogVariable) part;
-            if (var.isMessage() && message != null) {
+            if (var.isMessage()) {
                result.append(message);
             } else {
-               result.append(var.getValueOf(entry));
+               Function<LogEntry, String> func;
+               if (sharedVariables.containsKey(var.getName())) {
+                  func = sharedVariables.get(var.getName());
+               } else {
+                  func = entry.getLogger().getVariable(var.getName());
+                  if (func == null) {
+                     throw new IllegalArgumentException("Unknown variable: " + var.getName());
+                  }
+               }
+               result.append(var.format(func.apply(entry)));
             }
          } else {
             result.append(((LiteralPart) part).getValue());
@@ -215,62 +216,12 @@ final class LogFormatter {
       return entry.getSeverity().toString();
    }
 
-   private static String getMessage(LogEntry entry) {
-      return entry.getMessage();
-   }
-
    private static String getThread(LogEntry entry) {
-      return getThreadName(entry) + "/" + getThreadId(entry);
+      return entry.getThreadName() + "/" + getThreadId(entry);
    }
 
    private static String getThreadId(LogEntry entry) {
       return String.valueOf(entry.getThreadId());
-   }
-
-   private static String getThreadName(LogEntry entry) {
-      return entry.getThreadName();
-   }
-
-   private static String getRemoteAddress(LogEntry entry) {
-      ConnectionInfo conn = entry.getConnection();
-      if (conn == null) {
-         return InetAddress.getLoopbackAddress().getHostAddress();
-      }
-      return conn.getRemoteAddress().getHostAddress();
-   }
-
-   private static String getRemoteHost(LogEntry entry) {
-      ConnectionInfo conn = entry.getConnection();
-      if (conn == null) {
-         return "localhost";
-      }
-      return conn.getRemoteAddress().getHostName();
-   }
-
-   private static String getLocalHost(LogEntry entry) { // NOSONAR
-      if (hostname == null) {
-         if (System.getProperty("os.name").startsWith("Windows")) {
-            hostname = System.getenv("COMPUTERNAME");
-         } else {
-            hostname = System.getenv("HOSTNAME");
-            if (hostname == null) {
-               try {
-                  Process proc = Runtime.getRuntime().exec("hostname");
-                  BufferedReader stdInput = new BufferedReader(new InputStreamReader(proc.getInputStream()));
-                  StringBuilder result = new StringBuilder();
-                  String s;
-                  while ((s = stdInput.readLine()) != null) {
-                     result.append(s);
-                  }
-                  hostname = result.toString().trim();
-               } catch (IOException e) {
-                  // Ignore, should never get here
-                  hostname = "localhost";
-               }
-            }
-         }
-      }
-      return hostname;
    }
 
    private static String getSimpleClassName(LogEntry entry) {

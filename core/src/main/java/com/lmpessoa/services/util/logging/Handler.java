@@ -72,7 +72,7 @@ import java.util.function.Predicate;
  * - type: console
  *   below: debug
  * - type: file
- *   filename: /var/log/leeow.log
+ *   filename: /var/log/service.log
  *   above: warning
  *   packages:
  *   - name: org.example.data

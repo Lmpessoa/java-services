@@ -37,7 +37,6 @@ import java.util.Map;
 
 import com.lmpessoa.services.core.hosting.content.Serializer;
 import com.lmpessoa.services.core.routing.RouteMatch;
-import com.lmpessoa.services.util.ConnectionInfo;
 import com.lmpessoa.services.util.logging.ILogger;
 
 final class ResultHandler {

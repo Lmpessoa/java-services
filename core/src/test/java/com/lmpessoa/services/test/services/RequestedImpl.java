@@ -1,6 +1,7 @@
 /*
- * Copyright (c) 2018 Leonardo Pessoa
- * https://github.com/lmpessoa/java-services
+ * Leeow - A lightweight and easy engine for outstanding web APIs
+ * Copyright (c) 2017 Leonardo Pessoa
+ * http://leeow.io
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal

@@ -22,6 +22,7 @@
  */
 package com.lmpessoa.services.util.logging;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -88,7 +89,7 @@ public final class LoggerTest {
       assertTrue(message.length > 2);
       assertEquals("Test", message[0]);
       assertEquals(
-               "...at com.lmpessoa.services.util.logging.LoggerTest.testLastErrorMessageWithTrace(LoggerTest.java:84)",
+               "...at com.lmpessoa.services.util.logging.LoggerTest.testLastErrorMessageWithTrace(LoggerTest.java:85)",
                message[1]);
    }
 
@@ -102,7 +103,16 @@ public final class LoggerTest {
       assertTrue(message.length > 2);
       assertEquals("java.lang.RuntimeException: Test", message[0]);
       assertEquals(
-               "...at com.lmpessoa.services.util.logging.LoggerTest.testExceptionNoDebug(LoggerTest.java:97)",
+               "...at com.lmpessoa.services.util.logging.LoggerTest.testExceptionNoDebug(LoggerTest.java:98)",
                message[1]);
+   }
+
+   @Test
+   public void testArrayMessage() throws InterruptedException {
+      log.warning(new String[] { "Line #1", "Line #2" });
+      log.join();
+      assertEquals(Severity.WARNING, output.getLastEntry().getSeverity());
+      String[] message = output.getLastEntry().getMessage().split("\n");
+      assertArrayEquals(new String[] { "Line #1", "Line #2" }, message);
    }
 }

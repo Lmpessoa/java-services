@@ -24,8 +24,6 @@ package com.lmpessoa.services.util.logging;
 
 import java.text.ParseException;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,7 +34,6 @@ final class LogFormatParser extends AbstractParser<LogVariable> {
 
    private static final Pattern VARIABLE_DEF = Pattern
             .compile("^([A-Z][a-zA-Z0-9]*(?:\\.[A-Z0-9][a-zA-Z0-9]*)*)(?:\\:([<>])(\\d+))?$");
-   private final Map<String, Function<LogEntry, String>> variables;
 
    @Override
    protected LogVariable parseVariable(int pos, String variablePart) throws ParseException {
@@ -45,25 +42,19 @@ final class LogFormatParser extends AbstractParser<LogVariable> {
          throw new ParseException("Not a valid variable reference: " + variablePart, pos);
       }
       final String varName = matcher.group(1);
-      Function<LogEntry, String> func = variables.get(varName);
-      if (func == null && !"Class.Name".equals(varName)) {
-         throw new ParseException("Unknown log variable: " + varName, pos);
-      }
       boolean rightAlign = ">".equals(matcher.group(2));
       int length = matcher.group(3) != null ? Integer.valueOf(matcher.group(3)) : -1;
       if ("Class.Name".equals(varName)) {
-         return new ClassNameLogVariable(varName, rightAlign, length, func);
+         return new ClassNameLogVariable(varName, rightAlign, length);
       }
-      return new LogVariable(varName, rightAlign, length, func);
+      return new LogVariable(varName, rightAlign, length);
    }
 
-   static List<ITemplatePart> parse(String template, Map<String, Function<LogEntry, String>> variables)
-      throws ParseException {
-      return new LogFormatParser(template, variables).parse();
+   static List<ITemplatePart> parse(String template) throws ParseException {
+      return new LogFormatParser(template).parse();
    }
 
-   private LogFormatParser(String template, Map<String, Function<LogEntry, String>> variables) {
+   private LogFormatParser(String template) {
       super(template, false, null);
-      this.variables = variables;
    }
 }

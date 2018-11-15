@@ -23,34 +23,35 @@
 package com.lmpessoa.services.util.logging;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import com.lmpessoa.services.util.ConnectionInfo;
+import com.lmpessoa.services.core.hosting.ConnectionInfo;
 
 /**
  * A Logger is used to register information about the execution of an application.
- *
  * <p>
  * Messages sent to be logged my be of any type of object (beware they provide meaningful
  * information from their {@link #toString()} method) or a string to be formatted using any number
  * of variables (messages to be formatted behave exactly like
  * {@link String#format(String, Object...)}).
  * </p>
- *
  * <p>
  * In order to decide what to do with the message to be logger, all Loggers use a {@link Handler}
  * which implement the effective operation to store the logged message. By default all messages are
  * sent to the console but it is also possible to send messages to a file or to a remote service
  * using a different {@code Handler}.
  * </p>
- *
  * <p>
  * Loggers can be further configured to ignore certain messages based on the level of the message
  * (meaning that only messages on that level or above are important to the operation of the
@@ -60,8 +61,10 @@ import com.lmpessoa.services.util.ConnectionInfo;
  */
 public final class Logger implements ILogger {
 
+   private final Map<Class<?>, Supplier<?>> suppliers = new HashMap<>();
+   private final Map<String, VariableInfo> variables = new HashMap<>();
+
    private final Queue<LogEntry> entriesToLog = new LinkedBlockingQueue<>();
-   private final Supplier<ConnectionInfo> connectionSupplier;
    private final Predicate<StackTraceElement> stackFilter;
    private final Set<Handler> handlers = new HashSet<>();
    private final Class<?> defaultClass;
@@ -73,7 +76,7 @@ public final class Logger implements ILogger {
     * Creates a new default {@code Logger}.
     */
    public Logger() {
-      this(getCallerClass(), Logger::defaultStackFilter, null);
+      this(getCallerClass(), Logger::defaultStackFilter);
    }
 
    /**
@@ -82,17 +85,8 @@ public final class Logger implements ILogger {
     * @param firstHandler the first handler of this {@code Logger}.
     */
    public Logger(Handler firstHandler) {
-      this(getCallerClass(), Logger::defaultStackFilter, null);
+      this(getCallerClass(), Logger::defaultStackFilter);
       this.handlers.add(firstHandler);
-   }
-
-   /**
-    * Creates a new default {@code Logger} with the given connection supplier.
-    *
-    * @param connectionSupplier a supplier of {@link ConnectionInfo} for the {@code Logger}.
-    */
-   public Logger(Supplier<ConnectionInfo> connectionSupplier) {
-      this(getCallerClass(), Logger::defaultStackFilter, connectionSupplier);
    }
 
    /**
@@ -102,11 +96,9 @@ public final class Logger implements ILogger {
     * @param stackFilter a filter to reduce the amount of {@link StackTracElement}s in logged messages.
     * @param connectionSupplier a supplier of {@link ConnectionInfo} for the {@code Logger}.
     */
-   public Logger(Class<?> defaultClass, Predicate<StackTraceElement> stackFilter,
-      Supplier<ConnectionInfo> connectionSupplier) {
+   public Logger(Class<?> defaultClass, Predicate<StackTraceElement> stackFilter) {
       this.defaultClass = Objects.requireNonNull(defaultClass);
       this.stackFilter = Objects.requireNonNull(stackFilter);
-      this.connectionSupplier = connectionSupplier;
    }
 
    @Override
@@ -136,7 +128,6 @@ public final class Logger implements ILogger {
 
    /**
     * Adds the given {@link Handler} to this {@code Logger}.
-    * 
     * <p>
     * Since it makes no sense for the same handler to be added multiple times to a logger, if the given
     * handler is already assigned to this, this method will fail silently.
@@ -150,7 +141,6 @@ public final class Logger implements ILogger {
 
    /**
     * Removes the given {@link Handler} from this {@code Logger}.
-    * 
     * <p>
     * This method will fail silently if the given {@code Handler} is not assigned to this logger.
     * </p>
@@ -161,9 +151,23 @@ public final class Logger implements ILogger {
       handlers.remove(handler);
    }
 
+   public <T> void addSupplier(Class<T> type, Supplier<T> supplier) {
+      if (suppliers.containsKey(Objects.requireNonNull(type))) {
+         throw new IllegalArgumentException("Supplier for type is already defined: " + type.getName());
+      }
+      suppliers.put(type, Objects.requireNonNull(supplier));
+   }
+
+   public <T> void addVariable(String name, Class<T> type, Function<T, String> func) {
+      if (variables.containsKey(name)) {
+         throw new IllegalArgumentException("Variable is already defined: " + name);
+      }
+      variables.put(name, new VariableInfo(Objects.requireNonNull(type), //
+               Objects.requireNonNull(func)));
+   }
+
    /**
     * Sets whether this Logger should enable further tracing.
-    * 
     * <p>
     * When tracing is enabled, additional details from logged messages will be logged. Specifically,
     * logged exceptions will register all causes for the exception instead of just the original
@@ -179,7 +183,6 @@ public final class Logger implements ILogger {
 
    /**
     * Returns whether messages sent to this logger are being traced.
-    * 
     * <p>
     * When tracing is enabled, additional details from logged messages will be logged. Specifically,
     * logged exceptions will register all causes for the exception instead of just the original
@@ -232,6 +235,10 @@ public final class Logger implements ILogger {
       return defaultClass.getName();
    }
 
+   Function<LogEntry, String> getVariable(String name) {
+      return variables.get(name);
+   }
+
    private static Class<?> getCallerClass() {
       StackTraceElement[] trace = Thread.currentThread().getStackTrace();
       try {
@@ -243,8 +250,11 @@ public final class Logger implements ILogger {
    }
 
    private void log(Severity level, Object message) {
-      ConnectionInfo connection = connectionSupplier != null ? connectionSupplier.get() : null;
-      LogEntry entry = new LogEntry(level, message, connection, this);
+      Map<Class<?>, Object> extraInfo = new HashMap<>();
+      for (Entry<Class<?>, Supplier<?>> entry : suppliers.entrySet()) {
+         extraInfo.put(entry.getKey(), entry.getValue().get());
+      }
+      LogEntry entry = new LogEntry(level, message, extraInfo, this);
       entriesToLog.add(entry);
       runLoggerJob();
    }
@@ -268,6 +278,24 @@ public final class Logger implements ILogger {
             }
          }, "logger");
          thread.start();
+      }
+   }
+
+   private static class VariableInfo implements Function<LogEntry, String> {
+
+      private final Function<Object, String> func;
+      private final Class<?> type;
+
+      @SuppressWarnings("unchecked")
+      <T extends Object> VariableInfo(Class<T> type, Function<T, String> func) {
+         this.func = (Function<Object, String>) func;
+         this.type = type;
+      }
+
+      @Override
+      public String apply(LogEntry entry) {
+         Object obj = entry.getExtra(type);
+         return func.apply(obj);
       }
    }
 }

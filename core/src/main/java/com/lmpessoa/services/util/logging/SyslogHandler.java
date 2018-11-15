@@ -33,6 +33,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
+import java.text.ParseException;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -83,12 +84,14 @@ import javax.net.ssl.SSLSocketFactory;
  * log:
  * - type: syslog
  *   above: error
- *   host: stats.leeow.io
+ *   host: stats.lmpessoa.com
  *   port: 1514
  *   secure: yes
  * </pre>
  */
 public final class SyslogHandler extends Handler {
+
+   static final String DEFAULT = "[{Remote.Addr:<15}] {Class.Name:<36} : {Message}";
 
    public static final Charset UTF_8 = Charset.forName("UTF-8");
    public static final int DEFAULT_PORT = 514;
@@ -104,6 +107,7 @@ public final class SyslogHandler extends Handler {
    private SyslogMessageFormat format = SyslogMessageFormat.IETF;
    private SyslogTransportFormat transport = SyslogTransportFormat.TCP;
    private boolean secure = false;
+   private LogFormatter template;
    private int timeout = 500;
    private int facility = 0;
 
@@ -132,6 +136,13 @@ public final class SyslogHandler extends Handler {
    public SyslogHandler(String appName, String host, int port, Predicate<LogEntry> filter)
       throws UnknownHostException {
       super(filter);
+      try {
+         this.template = LogFormatter.parse(DEFAULT);
+      } catch (ParseException e) {
+         // If it falls here, something is wrong with our code
+         e.printStackTrace(); // NOSONAR
+         System.exit(1);
+      }
       this.host = InetAddress.getByName(host);
       this.appName = appName;
       this.port = port;
@@ -193,12 +204,16 @@ public final class SyslogHandler extends Handler {
       this.transport = Objects.requireNonNull(transport);
    }
 
+   public void setTemplate(String template) throws ParseException {
+      this.template = LogFormatter.parse(template);
+   }
+
    @Override
    protected void prepare() {
       try {
          if (transport == SyslogTransportFormat.UDP) {
             sender = new UdpDataSender();
-         } else if (transport == SyslogTransportFormat.TCP) {
+         } else {
             sender = new TcpDataSender();
          }
       } catch (Exception e) {
@@ -208,8 +223,18 @@ public final class SyslogHandler extends Handler {
 
    @Override
    protected void append(LogEntry entry) {
-      String[] messages = getMessages(entry);
-      Arrays.stream(messages).map(m -> produceMessage(entry, m).trim()).forEach(sender::send);
+      String[] messages = entry.getMessage().split("\n");
+
+      messages = Arrays.stream(messages) //
+               .map(m -> template.format(entry, m))
+               .map(m -> produceMessage(entry, m))
+               .toArray(String[]::new);
+
+      if (transport == SyslogTransportFormat.UDP) {
+         sender.send(String.join("\n", messages));
+      } else {
+         Arrays.stream(messages).forEach(sender::send);
+      }
    }
 
    @Override
@@ -219,15 +244,14 @@ public final class SyslogHandler extends Handler {
       }
    }
 
-   private String[] getMessages(LogEntry entry) {
-      if (transport == SyslogTransportFormat.TCP) {
-         return entry.getMessage().split("\\.");
-      }
-      return new String[] { entry.getMessage() };
-   }
-
    private String produceMessage(LogEntry entry, String message) {
-      String hostname = entry.getConnection().getLocalAddress().getHostName();
+      String hostname;
+      try {
+         hostname = InetAddress.getLocalHost().getHostName();
+      } catch (UnknownHostException e) {
+         // Shall never happen, so just in case...
+         hostname = "localhost";
+      }
       DateTimeFormatter formatter;
       int pri = (facility + 16) * 8 + numeric.get(entry.getSeverity());
       switch (format) {
@@ -237,15 +261,12 @@ public final class SyslogHandler extends Handler {
                      hostname, appName == null ? "-" : appName, message.trim());
          case IETF:
             formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-            String remoteIp = entry.getConnection().getRemoteAddress().getHostAddress();
             int msgId = sequence.incrementAndGet();
-            return String.format(
-                     "<%d>%d %s %s %s - ID%d [origin clientIp=\"%s\" className=\"%s\"] %s", pri,
-                     RFC_5424_VERSION, formatter.format(entry.getTime()), hostname,
-                     appName == null ? "-" : appName, msgId, remoteIp, entry.getClassName(),
-                     message.trim());
+            return String.format("<%d>%d %s %s %s - ID%d - %s", pri, RFC_5424_VERSION,
+                     formatter.format(entry.getTime()), hostname, appName == null ? "-" : appName,
+                     msgId, message.trim());
          default:
-            throw new IllegalArgumentException("Unknown syslog format");
+            throw new IllegalArgumentException("Unknown syslog format: " + format);
       }
    }
 

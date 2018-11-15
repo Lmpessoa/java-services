@@ -22,8 +22,6 @@
  */
 package com.lmpessoa.services.util.logging;
 
-import java.util.function.Function;
-
 import com.lmpessoa.services.util.parsing.IVariablePart;
 
 class LogVariable implements IVariablePart {
@@ -31,7 +29,6 @@ class LogVariable implements IVariablePart {
    private final String name;
    private final boolean rightAlign;
    private final int length;
-   private final Function<LogEntry, String> func;
 
    @Override
    public final String toString() {
@@ -48,18 +45,17 @@ class LogVariable implements IVariablePart {
       return result.toString();
    }
 
-   LogVariable(String name, boolean rightAlign, int length, Function<LogEntry, String> func) {
+   LogVariable(String name, boolean rightAlign, int length) {
       this.name = name;
       this.rightAlign = rightAlign;
       this.length = length;
-      this.func = func;
    }
 
-   String getValueOf(LogEntry entry) {
-      return format(func.apply(entry));
+   String getName() {
+      return name;
    }
 
-   final String format(Object value) {
+   String format(Object value) {
       String result = value.toString();
       if (length > 0) {
          if (result.length() > length) {

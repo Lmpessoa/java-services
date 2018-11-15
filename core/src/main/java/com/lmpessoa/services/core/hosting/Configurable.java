@@ -22,7 +22,7 @@
  */
 package com.lmpessoa.services.core.hosting;
 
-public interface IConfigurable<T> {
+public interface Configurable<T> {
 
    T getOptions();
 }

@@ -45,7 +45,6 @@ public interface ILogger {
 
    /**
     * Logs a fatal message.
-    *
     * <p>
     * Fatal messages indicate a severe error that cause the application (or a thread) to terminate
     * prematurely.
@@ -57,12 +56,10 @@ public interface ILogger {
 
    /**
     * Logs a fatal message
-    *
     * <p>
     * Fatal messages indicate a severe error that cause the application (or a thread) to terminate
     * prematurely.
     * </p>
-    *
     * <p>
     * This method is a shortcut to log a formatted text message. Its behaviour is the same as logging
     * <code>String.format(message, args)</code>.
@@ -88,12 +85,10 @@ public interface ILogger {
 
    /**
     * Logs an error message.
-    *
     * <p>
     * Error messages indicates an unexpected error or exception occurred but the application managed to
     * handle it and can continue. Part of the processing when this error occurred may be lost.
     * </p>
-    *
     * <p>
     * This method is a shortcut to log a formatted text message. Its behaviour is the same as logging
     * <code>String.format(message, args)</code>.
@@ -108,7 +103,6 @@ public interface ILogger {
 
    /**
     * Logs a warning message.
-    *
     * <p>
     * Warning messages indicate an unexpected situation (not mandatorily an exception) occurred and the
     * application handled it but the situation was worth registering.
@@ -120,12 +114,10 @@ public interface ILogger {
 
    /**
     * Logs a warning message.
-    *
     * <p>
     * Warning messages indicate an unexpected situation (not mandatorily an exception) occurred and the
     * application handled it but the situation was worth registering.
     * </p>
-    *
     * <p>
     * This method is a shortcut to log a formatted text message. Its behaviour is the same as logging
     * <code>String.format(message, args)</code>.
@@ -140,7 +132,6 @@ public interface ILogger {
 
    /**
     * Logs an informative message.
-    *
     * <p>
     * Information messages are used to register interesting runtime events (i.e. startup/shutdown).
     * Usually information messages do not have their source in exceptions.
@@ -152,12 +143,10 @@ public interface ILogger {
 
    /**
     * Logs an informative message.
-    *
     * <p>
     * Information messages are used to register interesting runtime events (i.e. startup/shutdown).
     * Usually information messages do not have their source in exceptions.
     * </p>
-    *
     * <p>
     * This method is a shortcut to log a formatted text message. Its behaviour is the same as logging
     * <code>String.format(message, args)</code>.
@@ -172,7 +161,6 @@ public interface ILogger {
 
    /**
     * Logs a debug message.
-    *
     * <p>
     * Debug messages are used to register information about the application execution that can be used
     * to understand if the application behaviour is correct.
@@ -184,12 +172,10 @@ public interface ILogger {
 
    /**
     * Logs a debug message.
-    *
     * <p>
     * Debug messages are used to register information about the application execution that can be used
     * to understand if the application behaviour is correct.
     * </p>
-    *
     * <p>
     * This method is a shortcut to log a formatted text message. Its behaviour is the same as logging
     * <code>String.format(message, args)</code>.
@@ -204,7 +190,6 @@ public interface ILogger {
 
    /**
     * Logs the execution of a method as debug messages.
-    *
     * <p>
     * This is a convenience method to log debug messages when entering and leaving a region of code
     * (usually a method execution), tracing the amount of time required for the method to finish
@@ -220,7 +205,6 @@ public interface ILogger {
 
    /**
     * Logs the execution of a method as debug messages.
-    *
     * <p>
     * This is a convenience method to log debug messages when entering and leaving a region of code
     * (usually a method execution), tracing the amount of time required for the method to finish

@@ -31,6 +31,8 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import com.lmpessoa.services.util.Property;
+
 public class PropertyTest {
 
    @Test
@@ -54,8 +56,8 @@ public class PropertyTest {
 
    @Test
    public void testFromJsonArray() {
-      Property result = Property.fromString(
-               "[{\"value\":42,\"key\":1},{\"value\":7,\"key\":2},{\"value\":12,\"key\":3}]");
+      Property result = Property
+               .fromString("[{\"value\":42,\"key\":1},{\"value\":7,\"key\":2},{\"value\":12,\"key\":3}]");
       assertNotNull(result);
       assertTrue(result.hasChildren());
       String[] values = result.values()
@@ -65,12 +67,8 @@ public class PropertyTest {
                .map(p -> p.getValue())
                .toArray(String[]::new);
       assertArrayEquals(new String[] { "42", "7", "12" }, values);
-      values = result.values()
-               .stream()
-               .map(p -> p.get("key"))
-               .filter(p -> p != null)
-               .map(p -> p.getValue())
-               .toArray(String[]::new);
+      values = result.values().stream().map(p -> p.get("key")).filter(p -> p != null).map(p -> p.getValue()).toArray(
+               String[]::new);
       assertArrayEquals(new String[] { "1", "2", "3" }, values);
    }
 
@@ -108,8 +106,7 @@ public class PropertyTest {
 
    @Test
    public void testFromYamlArray() {
-      Property result = Property
-               .fromString("- value: 42\n  key: 1\n- value: 7\n  key: 2\n- value: 12\n  key: 3");
+      Property result = Property.fromString("- value: 42\n  key: 1\n- value: 7\n  key: 2\n- value: 12\n  key: 3");
       assertNotNull(result);
       assertTrue(result.hasChildren());
       String[] values = result.values()
@@ -119,12 +116,8 @@ public class PropertyTest {
                .map(p -> p.getValue())
                .toArray(String[]::new);
       assertArrayEquals(new String[] { "42", "7", "12" }, values);
-      values = result.values()
-               .stream()
-               .map(p -> p.get("key"))
-               .filter(p -> p != null)
-               .map(p -> p.getValue())
-               .toArray(String[]::new);
+      values = result.values().stream().map(p -> p.get("key")).filter(p -> p != null).map(p -> p.getValue()).toArray(
+               String[]::new);
       assertArrayEquals(new String[] { "1", "2", "3" }, values);
    }
 

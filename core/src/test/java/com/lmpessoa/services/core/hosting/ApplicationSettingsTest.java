@@ -1,7 +1,6 @@
 /*
- * Leeow - A lightweight and easy engine for outstanding web APIs
  * Copyright (c) 2017 Leonardo Pessoa
- * http://leeow.io
+ * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -106,7 +105,7 @@ public final class ApplicationSettingsTest {
                .set("log.0.packages.0.above", "error")
                .build();
       ApplicationSettings settings = new ApplicationSettings(ApplicationSettingsTest.class, prop,
-               null);
+               () -> null);
       Logger log = settings.getLogger();
 
       log.info("Test");

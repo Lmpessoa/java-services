@@ -25,11 +25,10 @@ package com.lmpessoa.services.util.logging;
 import java.lang.reflect.Array;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
-
-import com.lmpessoa.services.util.ConnectionInfo;
 
 /**
  * Represents a log entry.
@@ -48,13 +47,13 @@ public final class LogEntry {
 
    private static final String AT = "\n...at ";
 
+   private final Map<Class<?>, Object> extraInfo;
    private final StackTraceElement[] logPoint;
-   private final ConnectionInfo connection;
    private final ZonedDateTime time;
    private final Severity severity;
    private final String threadName;
    private final Object message;
-   private final Logger logger;
+   private final Logger log;
    private final long threadId;
 
    /**
@@ -100,20 +99,7 @@ public final class LogEntry {
     * @return the name of the class in which the log entry was created.
     */
    public String getClassName() {
-      if (logger == null) {
-         StackTraceElement[] trace = getStackTrace();
-         return trace.length > 0 ? trace[0].getClassName() : "";
-      }
-      return logger.getClassName(logPoint);
-   }
-
-   /**
-    * Returns the information about the connection that made the current request.
-    *
-    * @return the connection information about the current request.
-    */
-   public ConnectionInfo getConnection() {
-      return connection;
+      return log.getClassName(logPoint);
    }
 
    /**
@@ -140,8 +126,7 @@ public final class LogEntry {
    }
 
    public StackTraceElement[] getStackTrace() {
-      return logger != null ? logger.filterStack(logPoint)
-               : Arrays.stream(logPoint).filter(Logger::defaultStackFilter).toArray(StackTraceElement[]::new);
+      return log.filterStack(logPoint);
    }
 
    /**
@@ -164,20 +149,29 @@ public final class LogEntry {
       return String.format("[%s] %s: %s", getSeverity(), getClassName(), getMessage());
    }
 
-   LogEntry(Severity severity, Object message, ConnectionInfo connection, Logger logger) {
-      this(ZonedDateTime.now(), severity, message, connection, logger);
+   LogEntry(Severity severity, Object message, Map<Class<?>, Object> extraInfo, Logger log) {
+      this(ZonedDateTime.now(), severity, message, extraInfo, log);
    }
 
-   LogEntry(ZonedDateTime time, Severity severity, Object message, ConnectionInfo connection, Logger logger) {
+   LogEntry(ZonedDateTime time, Severity severity, Object message, Map<Class<?>, Object> extraInfo, Logger log) {
       Thread thread = Thread.currentThread();
       this.logPoint = message instanceof Throwable ? ((Throwable) message).getStackTrace() : thread.getStackTrace();
+      this.extraInfo = extraInfo != null ? extraInfo : Collections.emptyMap();
       this.severity = Objects.requireNonNull(severity);
       this.message = Objects.requireNonNull(message);
+      this.log = Objects.requireNonNull(log);
       this.threadName = thread.getName();
       this.threadId = thread.getId();
-      this.connection = connection;
-      this.logger = logger;
       this.time = time;
+   }
+
+   Logger getLogger() {
+      return log;
+   }
+
+   @SuppressWarnings("unchecked")
+   <T> T getExtra(Class<T> type) {
+      return (T) extraInfo.get(type);
    }
 
    private String getMessageResult(Object message) {
@@ -195,8 +189,8 @@ public final class LogEntry {
             String s = getMessageResult(o);
             if (!s.isEmpty()) {
                result.append(s);
+               result.append("\n");
             }
-            result.append("\n");
          }
       } else {
          result.append(message.toString());
@@ -218,6 +212,6 @@ public final class LogEntry {
    }
 
    private boolean isTracing() {
-      return logger != null ? logger.isTracing() : false;
+      return log != null ? log.isTracing() : false;
    }
 }

@@ -28,17 +28,17 @@ import com.lmpessoa.services.core.services.ServiceMap;
 
 final class LazyGetOptions<T> implements Supplier<T> {
 
-   private final Class<? extends IConfigurable<T>> serviceClass;
+   private final Class<? extends Configurable<T>> serviceClass;
    private final ServiceMap serviceMap;
 
-   LazyGetOptions(Class<? extends IConfigurable<T>> serviceClass, ServiceMap serviceMap) {
+   LazyGetOptions(Class<? extends Configurable<T>> serviceClass, ServiceMap serviceMap) {
       this.serviceClass = serviceClass;
       this.serviceMap = serviceMap;
    }
 
    @Override
    public T get() {
-      IConfigurable<T> service = serviceMap.get(serviceClass);
+      Configurable<T> service = serviceMap.get(serviceClass);
       return service.getOptions();
    }
 }

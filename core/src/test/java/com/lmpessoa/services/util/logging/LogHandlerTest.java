@@ -40,11 +40,15 @@ import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.util.Arrays;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
-import com.lmpessoa.services.util.ConnectionInfo;
+import com.lmpessoa.services.core.hosting.ConnectionInfo;
 
 public final class LogHandlerTest {
+
+   private static final String MESSAGE = "[42.0.1.7       ] c.l.s.util.logging.LogHandlerTest    : Test";
 
    private static Logger useHandler(Handler handler) throws UnknownHostException {
       if (handler instanceof FormattedHandler) {
@@ -56,13 +60,20 @@ public final class LogHandlerTest {
       }
       Socket socket = mock(Socket.class);
       when(socket.getInetAddress())
-               .thenReturn(InetAddress.getByAddress(new byte[] { 42, 1, 0, 7 }));
-      when(socket.getLocalAddress())
-               .thenReturn(InetAddress.getByAddress("test.host", new byte[] { 127, 0, 0, 1 }));
-      Logger log = new Logger(() -> new ConnectionInfo(socket, "https://lmpessoa.com"));
+               .thenReturn(InetAddress.getByAddress(new byte[] { 42, 0, 1, 7 }));
+      when(socket.getLocalAddress()).thenReturn(InetAddress.getLocalHost());
+      Logger log = new Logger();
+      log.addSupplier(ConnectionInfo.class,
+               () -> new ConnectionInfo(socket, "https://lmpessoa.com"));
+      log.addVariable("Remote.Host", ConnectionInfo.class, c -> c.getRemoteAddress().getHostName());
+      log.addVariable("Remote.Addr", ConnectionInfo.class,
+               c -> c.getRemoteAddress().getHostAddress());
       log.addHandler(handler);
       return log;
    }
+
+   @Rule
+   public ExpectedException thrown = ExpectedException.none();
 
    @Test
    public void testConsoleHandlerError() throws InterruptedException, UnknownHostException {
@@ -137,6 +148,22 @@ public final class LogHandlerTest {
    }
 
    @Test
+   public void testSyslogFacilityBelowZero() throws UnknownHostException {
+      thrown.expect(IllegalArgumentException.class);
+      SyslogHandler handler = new SyslogHandler("Test", "localhost", 5140,
+               Severity.atOrAbove(Severity.INFO));
+      handler.setFacility(-1);
+   }
+
+   @Test
+   public void testSyslogFacilityAboveSeven() throws UnknownHostException {
+      thrown.expect(IllegalArgumentException.class);
+      SyslogHandler handler = new SyslogHandler("Test", "localhost", 5140,
+               Severity.atOrAbove(Severity.INFO));
+      handler.setFacility(8);
+   }
+
+   @Test
    public void testSyslogHandlerUdp5424() throws InterruptedException, IOException {
       try (DatagramSocket dgram = new DatagramSocket(5140)) {
          sendSyslogTestUdp5424();
@@ -150,9 +177,7 @@ public final class LogHandlerTest {
          assertEquals(" ", dataStr.substring(31, 32));
          String hostname = InetAddress.getLocalHost().getHostName();
          assertEquals(hostname, dataStr.substring(32, 32 + hostname.length()));
-         assertEquals(
-                  " Test - ID1 [origin clientIp=\"42.1.0.7\" className=\"com.lmpessoa.services.util.logging.LogHandlerTest\"] Test",
-                  dataStr.substring(32 + hostname.length()));
+         assertEquals(" Test - ID1 - " + MESSAGE, dataStr.substring(32 + hostname.length()));
       }
    }
 
@@ -180,7 +205,7 @@ public final class LogHandlerTest {
          assertEquals(" ", dataStr.substring(20, 21));
          String hostname = InetAddress.getLocalHost().getHostName();
          assertEquals(hostname, dataStr.substring(21, 21 + hostname.length()));
-         assertEquals(" Test Test", dataStr.substring(21 + hostname.length()));
+         assertEquals(" Test " + MESSAGE, dataStr.substring(21 + hostname.length()));
       }
    }
 
@@ -205,9 +230,7 @@ public final class LogHandlerTest {
          assertEquals(" ", dataStr.substring(31, 32));
          String hostname = InetAddress.getLocalHost().getHostName();
          assertEquals(hostname, dataStr.substring(32, 32 + hostname.length()));
-         assertEquals(
-                  " Test - ID1 [origin clientIp=\"42.1.0.7\" className=\"com.lmpessoa.services.util.logging.LogHandlerTest\"] Test",
-                  dataStr.substring(32 + hostname.length()));
+         assertEquals(" Test - ID1 - " + MESSAGE, dataStr.substring(32 + hostname.length()));
       }
    }
 
@@ -230,7 +253,7 @@ public final class LogHandlerTest {
          assertEquals(" ", dataStr.substring(20, 21));
          String hostname = InetAddress.getLocalHost().getHostName();
          assertEquals(hostname, dataStr.substring(21, 21 + hostname.length()));
-         assertEquals(" Test Test", dataStr.substring(21 + hostname.length()));
+         assertEquals(" Test " + MESSAGE, dataStr.substring(21 + hostname.length()));
       }
    }
 

@@ -23,28 +23,49 @@
 package com.lmpessoa.services.util.logging;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import java.net.InetAddress;
+import java.net.Socket;
 import java.text.ParseException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import com.lmpessoa.services.core.hosting.ConnectionInfo;
+import com.lmpessoa.services.util.logging.FormattedHandler;
+import com.lmpessoa.services.util.logging.LogEntry;
+import com.lmpessoa.services.util.logging.LogFormatter;
+import com.lmpessoa.services.util.logging.Logger;
+import com.lmpessoa.services.util.logging.Severity;
 
 public final class LogFormatterTest {
 
    @Rule
    public ExpectedException thrown = ExpectedException.none();
 
+   private static final Logger log = new Logger();
+   private static final LogEntry entry;
+
    static {
       Thread.currentThread().setName("test");
+      Socket socket = mock(Socket.class);
+      when(socket.getInetAddress()).thenReturn(InetAddress.getLoopbackAddress());
+      // log.addSupplier(ConnectionInfo.class, () -> );
+      log.addVariable("Remote.Host", ConnectionInfo.class, c -> c.getRemoteAddress().getHostName());
+      log.addVariable("Remote.Addr", ConnectionInfo.class, c -> c.getRemoteAddress().getHostAddress());
+      Map<Class<?>, Object> extra = new HashMap<>();
+      extra.put(ConnectionInfo.class, new ConnectionInfo(socket, "https://lmpessoa.com/"));
+      entry = new LogEntry(ZonedDateTime.of(LocalDateTime.of(2017, 6, 5, 5, 42, 7), ZoneId.of("America/Sao_Paulo")),
+               Severity.ERROR, "Test", extra, log);
    }
-
-   private final LogEntry entry = new LogEntry(
-            ZonedDateTime.of(LocalDateTime.of(2017, 6, 5, 5, 42, 7), ZoneId.of("America/Sao_Paulo")), Severity.ERROR,
-            "Test", null, null);
 
    @Test
    public void testFormatTimeWeb() throws ParseException {
@@ -132,7 +153,8 @@ public final class LogFormatterTest {
 
    @Test
    public void testNonDefinedVariable() throws ParseException {
-      thrown.expect(ParseException.class);
+      thrown.expect(IllegalArgumentException.class);
+      thrown.expectMessage("Unknown variable: Undefined");
       formatWith("{Undefined}");
    }
 

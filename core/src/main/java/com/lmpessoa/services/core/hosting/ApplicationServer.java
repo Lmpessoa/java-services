@@ -51,7 +51,6 @@ import com.lmpessoa.services.core.routing.RouteTable;
 import com.lmpessoa.services.core.services.IServiceMap;
 import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.util.ClassUtils;
-import com.lmpessoa.services.util.ConnectionInfo;
 import com.lmpessoa.services.util.logging.ILogger;
 
 /**
@@ -316,7 +315,7 @@ public final class ApplicationServer {
       configMap.put(IApplicationOptions.class, Wrapper.wrap(options));
       for (Class<?> c : services.getServices()) {
          Object o = services.get(c);
-         if (o != null && o instanceof IConfigurable<?>) {
+         if (o != null && o instanceof Configurable<?>) {
             Method m = ClassUtils.getMethod(o.getClass(), "getOptions");
             if (m != null) {
                Class<?> configOptions = m.getReturnType();
