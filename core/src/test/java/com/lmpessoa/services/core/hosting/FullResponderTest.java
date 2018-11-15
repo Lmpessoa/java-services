@@ -50,6 +50,7 @@ import com.lmpessoa.services.core.routing.HttpMethod;
 import com.lmpessoa.services.core.routing.HttpPatch;
 import com.lmpessoa.services.core.routing.HttpPost;
 import com.lmpessoa.services.core.routing.MatchedRouteBridge;
+import com.lmpessoa.services.core.routing.QueryParam;
 import com.lmpessoa.services.core.routing.Route;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.routing.RouteTable;
@@ -129,8 +130,7 @@ public final class FullResponderTest {
       assertEquals(ContentType.TEXT, is.getType());
       ByteArrayOutputStream out = new ByteArrayOutputStream();
       is.sendTo(out);
-      assertEquals("java.lang.IllegalStateException: Test",
-               new String(out.toByteArray(), is.getEncoding()));
+      assertEquals("java.lang.IllegalStateException: Test", new String(out.toByteArray(), is.getEncoding()));
    }
 
    @Test
@@ -240,6 +240,18 @@ public final class FullResponderTest {
       HttpResult result = perform(PATCH, "/test/invalid");
       assertEquals(204, result.getStatusCode());
       assertNull(result.getInputStream());
+   }
+
+   @Test
+   public void testMediatorWithoutQueryParam() throws IOException {
+      HttpResult result = performFile("/http/query_get_request.txt");
+      assertEquals(400, result.getStatusCode());
+      assertNotNull(result.getInputStream());
+      assertEquals(ContentType.TEXT, result.getInputStream().getType());
+      byte[] data = new byte[result.getInputStream().available()];
+      result.getInputStream().read(data);
+      String content = new String(data, Serializer.UTF_8);
+      assertEquals("java.lang.IllegalArgumentException", content);
    }
 
    private HttpResult perform(String path) throws IOException {
@@ -352,6 +364,12 @@ public final class FullResponderTest {
       @Route("redirect")
       public Redirect redirect() {
          return Redirect.to("/test/7");
+      }
+
+      @HttpGet
+      @Route("query")
+      public String query(@QueryParam int id) {
+         return String.valueOf(id);
       }
    }
 }

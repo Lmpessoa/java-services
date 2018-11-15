@@ -26,94 +26,128 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.function.Consumer;
 
+/**
+ * Represents errors in an object validation.
+ * <p>
+ * Objects received through the body of an HTTP request may contain a validation method which will
+ * ensure the object received is valid. Instances of {@code ErrorList} are passed to his validation
+ * method to hold error messages that arise from such validation.
+ * </p>
+ * <p>
+ * In order for objects to be validated, classes must implement a {@code validate(ErrorList)}
+ * method. Developers may also choose to implement the {@link Validable} interface, which will only
+ * provide the correctly required method signature for {@code validate()}. The implementation of the
+ * interface is not mandatory.
+ * </p>
+ *
+ * @see Validable
+ */
 public final class ErrorList {
 
-   private final List<ErrorEntry> errors = new ArrayList<>();
+   private final List<Message> errors = new ArrayList<>();
    private transient final Collection<String> fieldNames;
-   private transient final Object sourceObject;
+   private transient final Object object;
 
+   /**
+    * Adds an error message associated with the evaluated object.
+    * <p>
+    * Messages added to the list through this method are not associated with any fields. Instead,
+    * these messages are associated with the evaluated object as a whole.
+    * </p>
+    *
+    * @param message the message to be associated with the evaluated object.
+    */
    public void add(String message) {
-      errors.add(new ErrorEntry(Objects.requireNonNull(message)));
+      errors.add(new Message(Objects.requireNonNull(message)));
    }
 
+   /**
+    * Adds an error message associated with the field with the given name on the evaluated object.
+    * <p>
+    * Note that the object must actually have a field with the given name in order to store the
+    * message. Otherwise, this method will throw an exception.
+    * </p>
+    *
+    * @param fieldName the name of the field in the evaluated object.
+    * @param message the message to be associated with the given field name in the evaluated object.
+    * @throws NoSuchElementException if the evaluated object has no field with the given name.
+    */
    public void add(String fieldName, String message) {
       if (!fieldNames.contains(Objects.requireNonNull(fieldName))) {
          throw new NoSuchElementException();
       }
-      errors.add(new ErrorEntry(Objects.requireNonNull(message), fieldName));
+      errors.add(new Message(Objects.requireNonNull(message), fieldName));
    }
 
+   /**
+    * Returns whether no error messages have been registered in this map.
+    *
+    * @return {@code true} if no error messages have been registered in this map, {#code false}
+    *         otherwise.
+    */
    public boolean isEmpty() {
       return errors.isEmpty();
    }
 
-   public boolean hasMessages() {
-      return errors.stream().anyMatch(e -> e.getField() == null);
+   /**
+    * Returns the object this error list is about.
+    *
+    * @return the object this error list is about.
+    */
+   public Object getObject() {
+      return object;
    }
 
-   public boolean hasMessages(String fieldName) {
-      Objects.requireNonNull(fieldName);
-      return errors.stream().anyMatch(e -> e.getField() != null && e.getField().equals(fieldName));
+   /**
+    * Performs the given action for each message of this list until all elements have been processed
+    * or the action throws an exception. Unless otherwise specified by the implementing class,
+    * actions are performed in the order of iteration (if an iteration order is specified).
+    * Exceptions thrown by the action are relayed to the caller.
+    *
+    * @param action the action to be performed in each element.
+    * @throws NullPointerException if the specified action is {@code null}.
+    */
+   public void forEach(Consumer<Message> action) {
+      errors.forEach(action);
    }
 
-   public String[] getFields() {
-      return errors.stream().map(e -> e.getField()).distinct().filter(e -> e != null).toArray(
-               String[]::new);
-   }
-
-   public String[] getMessages() {
-      return errors.stream().filter(e -> e.getField() == null).map(e -> e.getMessage()).toArray(
-               String[]::new);
-   }
-
-   public String[] getMessages(String fieldName) {
-      if (!fieldNames.contains(Objects.requireNonNull(fieldName))) {
-         return new String[0];
+   ErrorList(Object object) {
+      this.object = Objects.requireNonNull(object);
+      List<String> fields = new ArrayList<>();
+      Class<?> type = object.getClass();
+      while (type != null && type != Object.class) {
+         Arrays.stream(type.getDeclaredFields())
+                  .filter(f -> !Modifier.isStatic(f.getModifiers())
+                           && !Modifier.isTransient(f.getModifiers())
+                           && !Modifier.isVolatile(f.getModifiers()))
+                  .map(f -> f.getName())
+                  .forEach(f -> fields.add(f));
+         type = type.getSuperclass();
       }
-      return errors.stream()
-               .filter(e -> e.getField() != null && e.getField().equals(fieldName))
-               .map(e -> e.getMessage())
-               .toArray(String[]::new);
+      this.fieldNames = Collections.unmodifiableCollection(fields);
    }
 
-   public String[] getAllMessages() {
-      return errors.stream().map(e -> e.getMessage()).toArray(String[]::new);
-   }
-
-   public Object getSourceObject() {
-      return sourceObject;
-   }
-
-   ErrorList(Object sourceObject) {
-      this.sourceObject = Objects.requireNonNull(sourceObject);
-      this.fieldNames = Arrays.stream(sourceObject.getClass().getFields())
-               .filter(f -> !Modifier.isStatic(f.getModifiers())
-                        && !Modifier.isTransient(f.getModifiers())
-                        && !Modifier.isVolatile(f.getModifiers()))
-               .map(f -> f.getName())
-               .collect(Collectors.toList());
-   }
-
-   private static class ErrorEntry {
+   public static class Message {
 
       private final String message;
       private final String field;
 
-      ErrorEntry(String message) {
+      Message(String message) {
          this(message, null);
       }
 
-      ErrorEntry(String message, String fieldName) {
+      Message(String message, String fieldName) {
          this.message = message;
          this.field = fieldName;
       }
 
-      public String getMessage() {
+      public String getValue() {
          return message;
       }
 

@@ -27,7 +27,6 @@ import static com.lmpessoa.services.core.routing.HttpMethod.PUT;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -47,18 +46,7 @@ public final class HttpRequestTest {
       HttpRequest request = getRequest("simple_get_request.txt");
       assertEquals(GET, request.getMethod());
       assertEquals("/path/file.html", request.getPath());
-      assertEquals("someuser@jmarshall.com", request.getHeader("From"));
-   }
-
-   @Test
-   public void testQueryGetRequest() throws IOException {
-      HttpRequest request = getRequest("query_get_request.txt");
-      assertEquals(GET, request.getMethod());
-      assertEquals("/b/ss/rsid/0", request.getPath());
-      assertEquals(Arrays.asList("apps.sillystring.com/summary.do"), request.getQuery().get("g"));
-      assertEquals(Arrays.asList("http://apps.sillystring.com/summary.do"),
-               request.getQuery().get("r"));
-      assertEquals(Arrays.asList("2009-03-05T01:00:01-05"), request.getQuery().get("ts"));
+      assertEquals("someuser@jmarshall.com", request.getHeaders().get("From"));
    }
 
    @Test
@@ -66,7 +54,7 @@ public final class HttpRequestTest {
       HttpRequest request = getRequest("hosted_get_request.txt");
       assertEquals(GET, request.getMethod());
       assertEquals("/path/file.html", request.getPath());
-      assertEquals("https://lmpessoa.com", request.getHeader("Host"));
+      assertEquals("https://lmpessoa.com", request.getHeaders().get(Headers.HOST));
    }
 
    @Test

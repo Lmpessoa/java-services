@@ -24,7 +24,6 @@ package com.lmpessoa.services.core.hosting;
 
 import java.io.InputStream;
 import java.util.Collection;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Future;
@@ -251,28 +250,8 @@ final class Wrapper {
          }
 
          @Override
-         public String[] getHeaderNames() {
-            return original.getHeaderNames();
-         }
-
-         @Override
-         public String getHeader(String headerName) {
-            return original.getHeader(headerName);
-         }
-
-         @Override
-         public String[] getHeaderValues(String headerName) {
-            return original.getHeaderValues(headerName);
-         }
-
-         @Override
-         public boolean containsHeaders(String headerName) {
-            return original.containsHeaders(headerName);
-         }
-
-         @Override
-         public Map<String, Collection<String>> getQuery() {
-            return original.getQuery();
+         public HeaderMap getHeaders() {
+            return original.getHeaders();
          }
       };
    }

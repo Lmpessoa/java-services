@@ -55,13 +55,21 @@ public interface IRouteRequest {
     * platforms as it does not work with partial matches.
     * </p>
     * <p>
-    * To have access to query parameters of this HTTP request, refer to {@see #getQuery()) and
-    * {@see #getQueryString()}.
+    * To have access to query parameters of this HTTP request, refer to {@see #getQueryString()}.
     * </p>
     *
     * @return the path of this HTTP request.
+    * @see QueryParam
     */
    String getPath();
+
+   /**
+    * Returns the query parameters of this HTTP request as a single string.
+    *
+    * @return the query parameters of this HTTP request.
+    * @see QueryParam
+    */
+   String getQueryString();
 
    /**
     * Returns the content length of the body of this HTTP request.

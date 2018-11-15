@@ -1,6 +1,7 @@
 /*
+ * Leeow - A lightweight and easy engine for outstanding web APIs
  * Copyright (c) 2017 Leonardo Pessoa
- * https://github.com/lmpessoa/java-services
+ * http://leeow.io
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,22 +25,27 @@ package com.lmpessoa.services.core.routing;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Parameter;
+import java.net.URLDecoder;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
@@ -83,7 +89,7 @@ import com.lmpessoa.services.util.ClassUtils;
  */
 public final class RouteTable implements IRouteTable {
 
-   private final Map<RoutePattern, Map<HttpMethod, MethodEntry>> endpoints = new ConcurrentHashMap<>();
+   private final Map<RoutePattern, Map<HttpMethod, MethodEntry>> endpoints = new ConcurrentSkipListMap<>();
    private final RouteOptions options = new RouteOptions();
    private final ServiceMap services;
 
@@ -151,24 +157,31 @@ public final class RouteTable implements IRouteTable {
          if (methodEntry == null) {
             continue;
          }
-         List<Class<?>> params = new ArrayList<>();
+         List<Parameter> params = new ArrayList<>();
          Class<?> resourceClass = methodEntry.getResourceClass();
          Constructor<?> constructor = resourceClass.getConstructors()[0];
-         params.addAll(Arrays.asList(constructor.getParameterTypes()));
+         params.addAll(Arrays.asList(constructor.getParameters()));
          Method methodCall = methodEntry.getMethod();
-         params.addAll(Arrays.asList(methodCall.getParameterTypes()));
+         params.addAll(Arrays.asList(methodCall.getParameters()));
          ErrorList errors = null;
          if (methodEntry.getContentClass() != null) {
             params.remove(params.size() - 1);
          }
-         List<Object> result = convertParams(matcher, params);
+         Map<String, List<String>> query = parseQueryString(request.getQueryString());
+         List<Object> result = convertParams(matcher, params, query);
+         for (int i = 0; i < result.size(); ++i) {
+            if (result.get(i) instanceof ErrorList) {
+               errors = (ErrorList) result.get(i);
+               result.set(i, errors.getObject());
+            }
+         }
          if (methodEntry.getContentClass() != null) {
             Object contentObject;
             try {
                contentObject = parseContentBody(request, methodEntry.getContentClass());
             } catch (ValidationException e) {
                errors = e.getErrors();
-               contentObject = errors.getSourceObject();
+               contentObject = errors.getObject();
             }
             result.add(contentObject);
          }
@@ -355,19 +368,55 @@ public final class RouteTable implements IRouteTable {
       }
    }
 
-   private List<Object> convertParams(Matcher matcher, List<Class<?>> params) {
+   private List<Object> convertParams(Matcher matcher, List<Parameter> params,
+      Map<String, List<String>> query) {
       List<Object> result = new ArrayList<>();
       int group = 1;
-      for (Class<?> param : params) {
+      for (Parameter param : params) {
          try {
-            Object obj = services.contains(param) ? services.get(param)
-                     : convert(matcher.group(group++), param);
-            result.add(obj);
+            Class<?> type = param.getType();
+            if (services.contains(type)) {
+               result.add(services.get(type));
+            } else if (param.isAnnotationPresent(QueryParam.class)) {
+               QueryParam ann = param.getAnnotation(QueryParam.class);
+               List<String> values = query
+                        .get(!ann.value().isEmpty() ? ann.value() : param.getName());
+               if (values != null) {
+                  result.add(ClassUtils.cast(String.join(",", values), type));
+               } else {
+                  result.add(null);
+               }
+            } else {
+               result.add(convert(matcher.group(group++), type));
+            }
          } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
             throw new InternalServerError(e);
          }
       }
       return result;
+   }
+
+   private Map<String, List<String>> parseQueryString(String queryString) {
+      final Map<String, List<String>> result = new HashMap<>();
+      if (queryString != null) {
+         for (String var : queryString.split("&")) {
+            String[] parts = var.split("=", 2);
+            try {
+               parts[0] = URLDecoder.decode(parts[0], Serializer.UTF_8.name());
+               parts[1] = URLDecoder.decode(parts[1], Serializer.UTF_8.name());
+            } catch (UnsupportedEncodingException e) {
+               // Ignore; never happens
+            }
+            if (parts[0].endsWith("[]")) {
+               parts[0] = parts[0].substring(0, parts[0].length() - 2);
+            }
+            if (!result.containsKey(parts[0])) {
+               result.put(parts[0], new ArrayList<>());
+            }
+            result.get(parts[0]).add(parts[1]);
+         }
+      }
+      return Collections.unmodifiableMap(result);
    }
 
    private Object convert(String value, Class<?> clazz)

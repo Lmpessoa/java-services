@@ -26,12 +26,9 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.SocketTimeoutException;
-import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -44,14 +41,12 @@ final class HttpRequestImpl implements HttpRequest {
 
    private static final String UTF8 = "UTF-8";
 
-   private final Map<String, List<String>> headers;
+   private final HeaderMap headers;
    private final String queryString;
    private final HttpMethod method;
    private final String protocol;
    private final byte[] content;
    private final String path;
-
-   private Map<String, Collection<String>> query;
 
    @Override
    public HttpMethod getMethod() {
@@ -75,13 +70,13 @@ final class HttpRequestImpl implements HttpRequest {
 
    @Override
    public long getContentLength() {
-      String length = getHeader("Content-Length");
+      String length = getHeaders().get("Content-Length");
       return length != null ? Long.parseLong(length) : 0;
    }
 
    @Override
    public String getContentType() {
-      return getHeader("Content-Type");
+      return getHeaders().get("Content-Type");
    }
 
    @Override
@@ -93,48 +88,8 @@ final class HttpRequestImpl implements HttpRequest {
    }
 
    @Override
-   public String[] getHeaderNames() {
-      return headers.keySet().toArray(new String[0]);
-   }
-
-   @Override
-   public String getHeader(String headerName) {
-      List<String> header = headers.get(headerName);
-      return header != null ? header.get(0) : null;
-   }
-
-   @Override
-   public String[] getHeaderValues(String headerName) {
-      List<String> header = headers.get(headerName);
-      String[] emptyResult = new String[0];
-      return header != null ? header.toArray(emptyResult) : emptyResult;
-   }
-
-   @Override
-   public boolean containsHeaders(String headerName) {
-      return headers.containsKey(headerName);
-   }
-
-   @Override
-   public synchronized Map<String, Collection<String>> getQuery() {
-      if (query == null && queryString != null) {
-         final Map<String, List<String>> result = new HashMap<>();
-         for (String var : queryString.split("&")) {
-            String[] parts = var.split("=", 2);
-            try {
-               parts[0] = URLDecoder.decode(parts[0], UTF8);
-               parts[1] = URLDecoder.decode(parts[1], UTF8);
-            } catch (UnsupportedEncodingException e) {
-               // Ignore
-            }
-            if (!result.containsKey(parts[0])) {
-               result.put(parts[0], new ArrayList<>());
-            }
-            result.get(parts[0]).add(parts[1]);
-         }
-         query = Collections.unmodifiableMap(result);
-      }
-      return query;
+   public HeaderMap getHeaders() {
+      return headers;
    }
 
    @Override
@@ -163,7 +118,7 @@ final class HttpRequestImpl implements HttpRequest {
       }
       this.path = thePath;
       this.queryString = parts.length > 1 ? parts[1] : null;
-      this.headers = extractHeaders(clientStream, headerMap);
+      this.headers = new HeaderMap(extractHeaders(clientStream, headerMap));
       if (headerMap.containsKey(Headers.CONTENT_TYPE)) {
          if (!headerMap.containsKey(Headers.CONTENT_LENGTH)) {
             throw new LengthRequiredException();

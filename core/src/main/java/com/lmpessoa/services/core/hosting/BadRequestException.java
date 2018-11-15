@@ -60,6 +60,16 @@ public final class BadRequestException extends HttpException {
       this.errors = errors;
    }
 
+   /**
+    * Creates a new {@code BadRequestException} with the given cause.
+    *
+    * @param cause the cause for the exception.
+    */
+   public BadRequestException(Throwable t) {
+      super(400, t);
+      errors = null;
+   }
+
    ErrorList getErrors() {
       return errors;
    }

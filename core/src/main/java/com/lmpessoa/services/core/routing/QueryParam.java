@@ -20,28 +20,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.hosting;
+package com.lmpessoa.services.core.routing;
+
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
 /**
- * Thrown when the received content type is not supported.
+ * Identifies a method parameter whose value is retrieved from the HTTP request query string.
+ * <p>
+ * By default, values of parameters of exposed methods have their values retrieved from the request
+ * path (except for content parameters, which are parsed from the request body). However, parameters
+ * annotated with {@code QueryParam} will have its values retrieved from the request query string
+ * instead.
+ * </p>
  */
-public final class UnsupportedMediaTypeException extends HttpException {
+@Target(PARAMETER)
+@Retention(RUNTIME)
+public @interface QueryParam {
 
-   private static final long serialVersionUID = 1L;
-
-   /**
-    * Creates a new {@code UnsupportedMediaTypeException}.
-    */
-   public UnsupportedMediaTypeException() {
-      super(415);
-   }
-
-   /**
-    * Creates a new {@code UnsupportedMediaTypeException} with the given detail message.
-    * 
-    * @param message the detail message.
-    */
-   public UnsupportedMediaTypeException(String message) {
-      super(415, message);
-   }
+   String value() default "";
 }

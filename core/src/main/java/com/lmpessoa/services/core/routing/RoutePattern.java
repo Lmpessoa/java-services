@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import com.lmpessoa.services.core.services.NoSingleMethodException;
 import com.lmpessoa.services.core.services.ServiceMap;
@@ -40,7 +41,7 @@ import com.lmpessoa.services.util.parsing.IVariablePart;
 import com.lmpessoa.services.util.parsing.LiteralPart;
 import com.lmpessoa.services.util.parsing.TypeMismatchException;
 
-final class RoutePattern {
+final class RoutePattern implements Comparable<RoutePattern> {
 
    private static final Pattern areaPattern = Pattern.compile("^(\\/)?[a-zA-Z0-9%_-]+(\\/[a-zA-Z0-9%_-]+)?$");
    private static final IntRouteType intType = new IntRouteType();
@@ -73,6 +74,60 @@ final class RoutePattern {
    @Override
    public int hashCode() {
       return toString().hashCode();
+   }
+
+   @Override
+   public int compareTo(RoutePattern other) {
+      for (int i = 0; i < Math.min(parts.size(), other.parts.size()); ++i) {
+         ITemplatePart part = parts.get(i);
+         ITemplatePart otherPart = other.parts.get(i);
+         if (part instanceof LiteralPart && otherPart instanceof LiteralPart) {
+            String str = ((LiteralPart) part).getValue();
+            String otherStr = ((LiteralPart) otherPart).getValue();
+            int diff = otherStr.length() - str.length();
+            if (diff == 0) {
+               diff = str.compareTo(otherStr);
+            }
+            if (diff != 0) {
+               return diff;
+            }
+         } else if (part instanceof AbstractRouteType && otherPart instanceof AbstractRouteType) {
+            int index = routeTypeIndex((AbstractRouteType) part);
+            int otherIndex = routeTypeIndex((AbstractRouteType) otherPart);
+            int diff = otherIndex - index;
+            if (diff == 0 && part instanceof AlphaRouteType) {
+               AlphaRouteType alpha = (AlphaRouteType) part;
+               AlphaRouteType otherAlpha = (AlphaRouteType) otherPart;
+               diff = otherAlpha.getMinLength() - alpha.getMinLength();
+               if (diff == 0) {
+                  int len = alpha.getMaxLength() == -1 ? Short.MAX_VALUE : alpha.getMaxLength();
+                  int otherLen = otherAlpha.getMaxLength() == -1 ? Short.MAX_VALUE : otherAlpha.getMaxLength();
+                  diff = otherLen - len;
+               }
+            }
+            if (diff != 0) {
+               return diff;
+            }
+         } else if (part instanceof LiteralPart) {
+            return -1;
+         } else {
+            return 1;
+         }
+      }
+      return other.parts.size() - parts.size();
+   }
+
+   private int routeTypeIndex(AbstractRouteType part) {
+      if (part instanceof AnyRouteType) {
+         return 0;
+      } else if (part instanceof AlphaRouteType) {
+         return 1;
+      } else if (part instanceof IntRouteType) {
+         return 2;
+      } else if (part instanceof HexRouteType) {
+         return 3;
+      }
+      return 4;
    }
 
    public static String getResourceName(Class<?> clazz) {
@@ -153,7 +208,10 @@ final class RoutePattern {
 
    static RoutePattern build(RoutePattern resource, Method method, RouteOptions options) throws ParseException {
       Route route = method.getAnnotation(Route.class);
-      List<Class<?>> params = new ArrayList<>(Arrays.asList(method.getParameterTypes()));
+      List<Class<?>> params = Arrays.stream(method.getParameters())
+               .filter(p -> !p.isAnnotationPresent(QueryParam.class))
+               .map(p -> p.getType())
+               .collect(Collectors.toList());
       Class<?> lastArgument = null;
       if (!params.isEmpty()) {
          lastArgument = params.get(params.size() - 1);
@@ -301,7 +359,7 @@ final class RoutePattern {
 // Also there will only be designators for length:
 // (n,) = minimum length of n
 // (,n) = maximum length of n (minimum is at most zero)
-// (n,m) = minimum length of n and maximum of m
+// (n,m) = minumum length of n and maximum of m
 // (n) = exact length of n
 // [nothing] = any length
 

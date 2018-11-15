@@ -55,7 +55,7 @@ final class ApplicationRequestJob implements Runnable {
       try (Socket socket = this.client) {
          HttpRequest request = new HttpRequestImpl(socket.getInputStream());
 
-         String host = request.getHeader(Headers.HOST);
+         String host = request.getHeaders().get(Headers.HOST);
          if (host == null) {
             host = String.format("localhost:%d", context.getPort());
          }
@@ -63,7 +63,7 @@ final class ApplicationRequestJob implements Runnable {
 
          HttpResult result = resolveRequest(request, connection);
 
-         log.info("\"%s\" %s \"%s\"", request, result, request.getHeader(Headers.USER_AGENT));
+         log.info("\"%s\" %s \"%s\"", request, result, request.getHeaders().get(Headers.USER_AGENT));
 
          int statusCode = result.getStatusCode();
          StringBuilder response = new StringBuilder();

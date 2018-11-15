@@ -67,6 +67,8 @@ final class MatchedRoute implements RouteMatch {
             throw (InternalServerError) e.getCause();
          }
          throw new InternalServerError(e.getCause());
+      } catch (IllegalArgumentException e) {
+         throw new BadRequestException(e);
       } catch (Exception e) {
          throw new InternalServerError(e);
       }

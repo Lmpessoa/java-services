@@ -30,7 +30,7 @@ public final class LazyInstatiationException extends RuntimeException {
    private static final long serialVersionUID = 1L;
 
    /**
-    * Creates a new <code>LazyInstatiationException</code> with the given cause.
+    * Creates a new {@code LazyInstatiationException} with the given cause.
     *
     * @param cause the cause for the exception.
     */

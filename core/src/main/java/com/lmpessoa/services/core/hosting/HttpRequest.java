@@ -22,9 +22,6 @@
  */
 package com.lmpessoa.services.core.hosting;
 
-import java.util.Collection;
-import java.util.Map;
-
 import com.lmpessoa.services.core.routing.IRouteRequest;
 import com.lmpessoa.services.core.services.Reuse;
 import com.lmpessoa.services.core.services.Service;
@@ -46,36 +43,9 @@ public interface HttpRequest extends IRouteRequest {
    String getProtocol();
 
    /**
-    * Returns the query parameters of this HTTP request as a single string.
+    * Returns the headers associates with this HTTP request.
     *
-    * @return the query parameters of this HTTP request.
+    * @return the headers associates with this HTTP request.
     */
-   String getQueryString();
-
-   /**
-    * Returns a map with the headers of this HTTP request.
-    *
-    * @return a map with the headers of this HTTP request.
-    */
-   String[] getHeaderNames();
-
-   /**
-    * Returns the first value associated with the given header name of this HTTP request.
-    *
-    * @param headerName the name of the header to retrieve.
-    * @return the first value associated with the given header name, or <code>null</code> if no such
-    * value exists.
-    */
-   String getHeader(String headerName);
-
-   String[] getHeaderValues(String headerName);
-
-   boolean containsHeaders(String headerName);
-
-   /**
-    * Returns a map with the parsed values of the query string of this HTTP request.
-    *
-    * @return a map with the parsed values of the query string of this HTTP request.
-    */
-   Map<String, Collection<String>> getQuery();
+   HeaderMap getHeaders();
 }

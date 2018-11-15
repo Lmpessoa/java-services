@@ -177,9 +177,9 @@ final class SerializerResponder {
          return new HttpInputStream(contentType, (InputStream) result);
       }
       String[] accepts;
-      if (request.containsHeaders(Headers.ACCEPT)) {
+      if (request.getHeaders().contains(Headers.ACCEPT)) {
          List<String> acceptList = new ArrayList<>();
-         Arrays.stream(request.getHeaderValues(Headers.ACCEPT)).map(s -> s.split(",")).forEach(
+         Arrays.stream(request.getHeaders().getAny(Headers.ACCEPT)).map(s -> s.split(",")).forEach(
                   s -> Arrays.stream(s).map(String::trim).forEach(acceptList::add));
          accepts = acceptList.toArray(new String[0]);
       } else {

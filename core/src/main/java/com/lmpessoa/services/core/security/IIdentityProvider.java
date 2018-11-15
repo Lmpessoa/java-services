@@ -59,7 +59,7 @@ public interface IIdentityProvider {
     * @return the identity of the user of the given request.
     */
    default IIdentity getIdentity(HttpRequest request) {
-      String auth = request.getHeader(Headers.AUTHORIZATION);
+      String auth = request.getHeaders().get(Headers.AUTHORIZATION);
       if (auth != null) {
          String[] parts = auth.split(" ", 2);
          if (parts.length == 2) {

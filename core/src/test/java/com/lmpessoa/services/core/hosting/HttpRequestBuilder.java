@@ -24,15 +24,16 @@ package com.lmpessoa.services.core.hosting;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.lmpessoa.services.core.routing.HttpMethod;
 
 public final class HttpRequestBuilder {
 
-   private Map<String, String> headers = new HashMap<>();
+   private Map<String, List<String>> headers = new HashMap<>();
    private Map<String, String> cookies = new HashMap<>();
    private HttpMethod method = HttpMethod.GET;
    private String query = null;
@@ -55,23 +56,23 @@ public final class HttpRequestBuilder {
    }
 
    public HttpRequestBuilder setContentType(String contentType) {
-      headers.put(Headers.CONTENT_TYPE, contentType);
+      headers.put(Headers.CONTENT_TYPE, Arrays.asList(contentType));
       return this;
    }
 
    public HttpRequestBuilder setHost(String host) {
-      headers.put(Headers.HOST, host);
+      headers.put(Headers.HOST, Arrays.asList(host));
       return this;
    }
 
    public HttpRequestBuilder setBody(String body) {
-      headers.put(Headers.CONTENT_LENGTH, String.valueOf(body.length()));
+      headers.put(Headers.CONTENT_LENGTH, Arrays.asList(String.valueOf(body.length())));
       this.body = body;
       return this;
    }
 
    public HttpRequestBuilder addHeader(String name, String value) {
-      this.headers.put(Headers.normalise(name), value);
+      this.headers.put(Headers.normalise(name), Arrays.asList(value));
       return this;
    }
 
@@ -129,7 +130,7 @@ public final class HttpRequestBuilder {
          @Override
          public long getContentLength() {
             try {
-               return Long.parseLong(headers.get(Headers.CONTENT_LENGTH));
+               return Long.parseLong(headers.get(Headers.CONTENT_LENGTH).get(0));
             } catch (Exception e) {
                return 0;
             }
@@ -137,7 +138,7 @@ public final class HttpRequestBuilder {
 
          @Override
          public String getContentType() {
-            return headers.get(Headers.CONTENT_TYPE);
+            return headers.get(Headers.CONTENT_TYPE).get(0);
          }
 
          @Override
@@ -149,32 +150,8 @@ public final class HttpRequestBuilder {
          }
 
          @Override
-         public String[] getHeaderNames() {
-            return headers.keySet().toArray(new String[0]);
-         }
-
-         @Override
-         public String getHeader(String headerName) {
-            return headers.get(headerName);
-         }
-
-         @Override
-         public String[] getHeaderValues(String headerName) {
-            if (headers.containsKey(headerName)) {
-               return new String[] { headers.get(headerName) };
-            }
-            return new String[0];
-         }
-
-         @Override
-         public boolean containsHeaders(String headerName) {
-            return headers.containsKey(headerName);
-         }
-
-         @Override
-         public Map<String, Collection<String>> getQuery() {
-            // TODO Auto-generated method stub
-            return null;
+         public HeaderMap getHeaders() {
+            return new HeaderMap(headers);
          }
       };
    }

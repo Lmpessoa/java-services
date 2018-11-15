@@ -32,20 +32,14 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
 
-import com.lmpessoa.services.core.hosting.ConnectionInfo;
-import com.lmpessoa.services.core.hosting.ContentType;
-import com.lmpessoa.services.core.hosting.HeaderEntry;
-import com.lmpessoa.services.core.hosting.Headers;
-import com.lmpessoa.services.core.hosting.HttpRequest;
-import com.lmpessoa.services.core.hosting.HttpResult;
-import com.lmpessoa.services.core.hosting.NextResponder;
-import com.lmpessoa.services.core.hosting.NotFoundException;
-import com.lmpessoa.services.core.hosting.Redirect;
-import com.lmpessoa.services.core.hosting.SerializerResponder;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.util.logging.ILogger;
 import com.lmpessoa.services.util.logging.Logger;
@@ -83,7 +77,9 @@ public class SerializerResponderTest {
    public void testIntResult() throws IOException {
       next = () -> 7;
       handler = new SerializerResponder(next);
-      when(request.getHeaderValues(Headers.ACCEPT)).thenReturn(new String[] { ContentType.JSON });
+      Map<String, List<String>> headerValues = new HashMap<>();
+      headerValues.put(Headers.ACCEPT, Arrays.asList(ContentType.JSON));
+      when(request.getHeaders()).thenReturn(new HeaderMap(headerValues));
       HttpResult result = handler.invoke(request, null, connect, log);
       assertEquals(200, result.getStatusCode());
       assertEquals(ContentType.JSON, result.getInputStream().getType());
@@ -118,9 +114,10 @@ public class SerializerResponderTest {
 
    @Test
    public void testErrorProducingContent() throws IOException {
-      next = () -> 7;
-      handler = new SerializerResponder(next);
-      when(request.containsHeaders(Headers.ACCEPT)).thenReturn(true);
+      handler = new SerializerResponder(null);
+      Map<String, List<String>> headerValues = new HashMap<>();
+      headerValues.put(Headers.ACCEPT, Arrays.asList(ContentType.JSON));
+      when(request.getHeaders()).thenReturn(new HeaderMap(headerValues));
       HttpResult result = handler.invoke(request, null, connect, log);
       assertEquals(500, result.getStatusCode());
       assertEquals(ContentType.TEXT, result.getInputStream().getType());
@@ -188,8 +185,10 @@ public class SerializerResponderTest {
    public void testNotAcceptableContent() throws IOException {
       next = () -> 7;
       handler = new SerializerResponder(next);
-      when(request.containsHeaders(Headers.ACCEPT)).thenReturn(true);
-      when(request.getHeaderValues(Headers.ACCEPT)).thenReturn(new String[] { ContentType.HTML });
+      Map<String, List<String>> headerValues = new HashMap<>();
+      headerValues.put(Headers.ACCEPT, Arrays.asList(ContentType.HTML));
+      HeaderMap headers = new HeaderMap(headerValues);
+      when(request.getHeaders()).thenReturn(headers);
       HttpResult result = handler.invoke(request, null, connect, log);
       assertEquals(406, result.getStatusCode());
    }
