@@ -56,40 +56,28 @@ import com.lmpessoa.services.core.hosting.HttpRequest;
 import com.lmpessoa.services.core.hosting.InternalServerError;
 import com.lmpessoa.services.core.hosting.MethodNotAllowedException;
 import com.lmpessoa.services.core.hosting.NotFoundException;
-import com.lmpessoa.services.core.routing.content.Serializer;
+import com.lmpessoa.services.core.hosting.content.Serializer;
 import com.lmpessoa.services.core.services.IServiceMap;
 import com.lmpessoa.services.core.services.NoSingleMethodException;
+import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.util.ClassUtils;
 import com.lmpessoa.services.util.logging.ILogger;
-import com.lmpessoa.services.util.logging.NonTraced;
 
 @Internal
-@NonTraced
 public final class RouteTable implements IRouteTable {
 
    private static final Map<Class<?>, Function<String, ?>> specialCases;
 
    private final Map<RoutePattern, Map<HttpMethod, MethodEntry>> endpoints = new HashMap<>();
    private final RouteOptions options = new RouteOptions();
-   private final IServiceMap serviceMap;
+   private final ServiceMap services;
    private final ILogger log;
 
    private Collection<Exception> lastExceptions;
 
-   static {
-      Map<Class<?>, Function<String, ?>> special = new HashMap<>();
-      special.put(long.class, Long::valueOf);
-      special.put(int.class, Integer::valueOf);
-      special.put(short.class, Short::valueOf);
-      special.put(byte.class, Byte::valueOf);
-      special.put(float.class, Float::valueOf);
-      special.put(double.class, Double::valueOf);
-      special.put(boolean.class, Boolean::valueOf);
-      specialCases = Collections.unmodifiableMap(special);
-   }
-
-   RouteTable(IServiceMap serviceMap, ILogger log) {
-      this.serviceMap = serviceMap;
+   public RouteTable(IServiceMap services, ILogger log) {
+      ClassUtils.checkInternalAccess();
+      this.services = (ServiceMap) services;
       this.log = log;
    }
 
@@ -187,6 +175,18 @@ public final class RouteTable implements IRouteTable {
       return lastExceptions;
    }
 
+   static {
+      Map<Class<?>, Function<String, ?>> special = new HashMap<>();
+      special.put(long.class, Long::valueOf);
+      special.put(int.class, Integer::valueOf);
+      special.put(short.class, Short::valueOf);
+      special.put(byte.class, Byte::valueOf);
+      special.put(float.class, Float::valueOf);
+      special.put(double.class, Double::valueOf);
+      special.put(boolean.class, Boolean::valueOf);
+      specialCases = Collections.unmodifiableMap(special);
+   }
+
    private Object parseContentBody(HttpRequest request, Class<?> contentClass) {
       InputStream body = request.getBody();
       byte[] content = readContentBody(body);
@@ -221,7 +221,7 @@ public final class RouteTable implements IRouteTable {
                }
                validateResourceClass(clazz);
                String area = entry.getValue();
-               RoutePattern classPat = RoutePattern.build(area, clazz, serviceMap, options);
+               RoutePattern classPat = RoutePattern.build(area, clazz, services, options);
                for (Method method : clazz.getMethods()) {
                   putMethod(clazz, classPat, method, exceptions);
                }
@@ -325,7 +325,7 @@ public final class RouteTable implements IRouteTable {
       int group = 1;
       for (Class<?> param : params) {
          try {
-            Object obj = serviceMap.contains(param) ? serviceMap.get(param) : convert(matcher.group(group++), param);
+            Object obj = services.contains(param) ? services.get(param) : convert(matcher.group(group++), param);
             result.add(obj);
          } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
             throw new InternalServerError(e);

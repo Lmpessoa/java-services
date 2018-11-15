@@ -20,14 +20,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.hosting;
+package com.lmpessoa.services.core.hosting.content;
 
-interface IHttpStatus {
+/**
+ * Thrown when an HTTP serializer cannot convert a value representation.
+ */
+public final class TypeConvertException extends RuntimeException {
+
+   private static final long serialVersionUID = 1L;
 
    /**
-    * Returns the HTTP status code of this exception.
+    * Constructs a <code>TypeConvertException</code> with a cause exception.
     *
-    * @return the HTTP status code of this exception.
+    * @param e the cause exception.
     */
-   int getStatusCode();
+   public TypeConvertException(Throwable e) {
+      super("Don't know how to convert type", e);
+   }
 }

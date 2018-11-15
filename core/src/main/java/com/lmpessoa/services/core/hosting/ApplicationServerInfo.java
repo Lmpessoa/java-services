@@ -38,32 +38,12 @@ import java.util.Properties;
 import com.esotericsoftware.yamlbeans.YamlReader;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.lmpessoa.services.Internal;
 
-final class ApplicationServerInfo {
+@Internal
+class ApplicationServerInfo {
 
    private final Map<String, String> properties;
-
-   public Optional<String> getProperty(String name) {
-      return Optional.ofNullable(properties.get(name));
-   }
-
-   public Map<String, String> getProperties(String name) {
-      Map<String, String> result = new HashMap<>();
-      for (Entry<String, String> entry : properties.entrySet()) {
-         if (entry.getKey().startsWith(name + '.')) {
-            result.put(entry.getKey().substring(name.length() + 1), entry.getValue());
-         }
-      }
-      return result;
-   }
-
-   public Optional<Integer> getIntProperty(String name) {
-      String value = properties.get(name);
-      if (value != null && value.matches("\\d+")) {
-         return Optional.of(Integer.parseInt(value));
-      }
-      return Optional.empty();
-   }
 
    ApplicationServerInfo(Class<?> startupClass) {
       File location = findLocation(startupClass);
@@ -93,6 +73,28 @@ final class ApplicationServerInfo {
          default:
             throw new IllegalArgumentException("Unknown configuration file type: " + type);
       }
+   }
+
+   Optional<String> getProperty(String name) {
+      return Optional.ofNullable(properties.get(name));
+   }
+
+   Map<String, String> getProperties(String name) {
+      Map<String, String> result = new HashMap<>();
+      for (Entry<String, String> entry : properties.entrySet()) {
+         if (entry.getKey().startsWith(name + '.')) {
+            result.put(entry.getKey().substring(name.length() + 1), entry.getValue());
+         }
+      }
+      return result;
+   }
+
+   Optional<Integer> getIntProperty(String name) {
+      String value = properties.get(name);
+      if (value != null && value.matches("\\d+")) {
+         return Optional.of(Integer.parseInt(value));
+      }
+      return Optional.empty();
    }
 
    private static File findLocation(Class<?> startupClass) {

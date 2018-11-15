@@ -138,6 +138,11 @@ final class HttpRequestImpl implements HttpRequest {
       return cookies;
    }
 
+   @Override
+   public String toString() {
+      return String.format("%s %s %s", method, path + (queryString != null ? "?" + queryString : ""), protocol);
+   }
+
    HttpRequestImpl(InputStream clientStream) throws IOException {
       String requestLine = readLine(clientStream);
       if (requestLine.isEmpty()) {

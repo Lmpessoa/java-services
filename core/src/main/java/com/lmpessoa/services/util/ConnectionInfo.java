@@ -22,50 +22,68 @@
  */
 package com.lmpessoa.services.util;
 
+import java.io.IOException;
 import java.net.InetAddress;
+import java.net.Socket;
+import java.util.Arrays;
 
-public interface ConnectionInfo {
+public final class ConnectionInfo {
 
-   /**
-    * Returns the local port this connection is bound to.
-    *
-    * @return the local port this connection is bound to.
-    */
-   int getLocalPort();
+   private final boolean secure;
+   private final Socket socket;
+   private final String host;
+   private final int port;
 
-   /**
-    * Returns the remote address this connection is bound to.
-    *
-    * @return the remote address this connection is bound to.
-    */
-   InetAddress getRemoteAddress();
+   public int getLocalPort() {
+      return socket.getLocalPort();
+   }
 
-   /**
-    * Returns the remote port this connection is bound to.
-    *
-    * @return the remote port this connection is bound to.
-    */
-   int getRemotePort();
+   public InetAddress getRemoteAddress() {
+      return socket.getInetAddress();
+   }
 
-   /**
-    * Returns the name of the host of this connection.
-    *
-    * @return the name of the host of this connection
-    */
-   String getServerName();
+   public int getRemotePort() {
+      return socket.getPort();
+   }
 
-   /**
-    * Returns the server port that received this connection.
-    * 
-    * @return the server port that received this connection.
-    */
-   int getServerPort();
+   public String getServerName() {
+      return host;
+   }
 
-   /**
-    * Returns whether the current connection is a secure connection.
-    *
-    * @return <code>true</code> if the current connection is a secure connection, <code>false</code>
-    * otherwise.
-    */
-   boolean isSecure();
+   public int getServerPort() {
+      return port;
+   }
+
+   public boolean isSecure() {
+      return secure;
+   }
+
+   public void close() throws IOException {
+      socket.close();
+   }
+
+   public ConnectionInfo(Socket socket, String hostValue) {
+      this.socket = socket;
+      if (hostValue != null) {
+         String[] hostParts = hostValue.split(":");
+         this.secure = "https".equals(hostParts[0]);
+         int portValue;
+         if (hostParts[hostParts.length - 1].matches("\\d+")) {
+            portValue = Integer.parseInt(hostParts[hostParts.length - 1]);
+            hostParts = Arrays.copyOf(hostParts, hostParts.length - 1);
+         } else {
+            portValue = secure ? 443 : 80;
+         }
+         this.port = portValue;
+         String hostName = hostParts[hostParts.length - 1];
+         if (hostName.startsWith("//")) {
+            hostName = hostName.substring(2);
+         }
+         this.host = hostName;
+      } else {
+         this.secure = false;
+         this.host = null;
+         this.port = -1;
+      }
+   }
 }

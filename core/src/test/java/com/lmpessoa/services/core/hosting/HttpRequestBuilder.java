@@ -38,7 +38,7 @@ public final class HttpRequestBuilder {
    private String method = "GET";
    private String query = null;
    private String path = null;
-   private String body;
+   private String body = null;
 
    public HttpRequestBuilder setMethod(String method) {
       if (method.indexOf(' ') != -1) {
@@ -84,12 +84,27 @@ public final class HttpRequestBuilder {
       return this;
    }
 
-   public static HttpRequest build(String path) {
-      return new HttpRequestBuilder().setPath(path).build();
-   }
-
-   public static HttpRequest build(String method, String path) {
-      return new HttpRequestBuilder().setMethod(method).setPath(path).build();
+   public InputStream buildAsStream() {
+      StringBuilder result = new StringBuilder();
+      result.append(method);
+      result.append(' ');
+      result.append(path);
+      if (query != null) {
+         result.append('?');
+         result.append(query);
+      }
+      result.append(" HTTP/1.1\r\n");
+      headers.stream().forEach(e -> {
+         result.append(e.getKey());
+         result.append(": ");
+         result.append(e.getValue());
+         result.append("\r\n");
+      });
+      if (body != null) {
+         result.append("\r\n");
+         result.append(body);
+      }
+      return new ByteArrayInputStream(result.toString().getBytes());
    }
 
    public HttpRequest build() {

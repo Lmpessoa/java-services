@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.routing.content;
+package com.lmpessoa.services.core.hosting.content;
 
 import java.io.InputStream;
 import java.lang.reflect.Field;
@@ -82,7 +82,8 @@ final class MultipartSerializer implements IContentReader {
       throws InstantiationException, IllegalAccessException {
       T result = resultClass.newInstance();
       for (MultipartEntry entry : entries) {
-         Map<String, String> disp = getHeaderValues(entry.headers.get(HeaderMap.CONTENT_DISPOSITION));
+         Map<String, String> disp = getHeaderValues(
+                  entry.headers.get(HeaderMap.CONTENT_DISPOSITION));
          if (!"form-data".equals(disp.get(""))) {
             throw new BadRequestException();
          }
@@ -102,7 +103,8 @@ final class MultipartSerializer implements IContentReader {
          String name = disp.get("name");
          Field field = FormSerializer.findField(name, resultClass);
          Class<?> fieldType = field.getType();
-         if (fieldType.isArray() && fieldType.getComponentType().isAssignableFrom(HttpInputStream.class)) {
+         if (fieldType.isArray()
+                  && fieldType.getComponentType().isAssignableFrom(HttpInputStream.class)) {
             if (value instanceof Collection<?>) {
                value = ((Collection<InputStream>) value).toArray(new HttpInputStream[0]);
             } else if (value instanceof HttpInputStream) {
@@ -123,7 +125,8 @@ final class MultipartSerializer implements IContentReader {
       Collection<MultipartEntry> mixedEntries = parseMultipart(entry.content, mixedBoundary);
       List<InputStream> result = new ArrayList<>();
       for (MultipartEntry mixedEntry : mixedEntries) {
-         Map<String, String> mixedEntryDisp = getHeaderValues(mixedEntry.headers.get(HeaderMap.CONTENT_DISPOSITION));
+         Map<String, String> mixedEntryDisp = getHeaderValues(
+                  mixedEntry.headers.get(HeaderMap.CONTENT_DISPOSITION));
          if (!"file".equals(mixedEntryDisp.get(""))) {
             throw new BadRequestException();
          }

@@ -39,6 +39,8 @@ import java.util.function.Predicate;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+import com.lmpessoa.services.Internal;
+
 /**
  * Class used to hold several useful methods when dealing with classes.
  */
@@ -175,9 +177,14 @@ public final class ClassUtils {
     * @throws IOException if there is an error while reading classes from a JAR file.
     */
    public static Collection<String> scanInProjectOf(Class<?> clazz) throws IOException {
-      String location = findClassLocation(clazz);
-      return location.startsWith("jar:") ? findClassesInJar(location.substring(9, location.length() - 1))
-               : findClassesInPath(location.substring(5) + "/", "");
+      String location = findLocation(clazz);
+      if (location == null) {
+         return null;
+      }
+      if (location.startsWith("jar:")) {
+         return findClassesInJar(location.substring(9, location.length() - 1));
+      }
+      return findClassesInPath(location.substring(5) + "/", "");
    }
 
    /**
@@ -241,25 +248,51 @@ public final class ClassUtils {
     * method.
     * </p>
     *
+    * @param class1 a class to compare if on the same project as the other
+    * @param class2 a class to compare if on the same project as the other
+    * @throws SecurityException if the caller method cannot access the called method.
+    */
+   public static void checkInternalAccess(Class<?> class1, Class<?> class2) {
+      String calledLocation = new File(findLocation(class1)).getParent();
+      String callerLocation = new File(findLocation(class2)).getParent();
+      if (!calledLocation.equals(callerLocation)) {
+         SecurityException ex = new AccessControlException("Cannot call an internal class");
+         StackTraceElement[] stack = ex.getStackTrace();
+         stack = Arrays.stream(stack) //
+                  .filter(t -> t.getClassName() != ClassUtils.class.getName()) //
+                  .toArray(StackTraceElement[]::new);
+         ex.setStackTrace(stack);
+         throw ex;
+      }
+   }
+
+   /**
+    * Prevents access to an internal method.
+    *
+    * <p>
+    * The <code>@Internal</code> annotation is useful only for documentation purposes and will be shown
+    * in generated Javadoc. This, however, does not ensure the annotated method or classes cannot be
+    * called outside the project they are declared. Calling this method as the first line of a method
+    * creates a fence that ensures only methods declared in the same project can call the protected
+    * method.
+    * </p>
+    *
     * @throws SecurityException if the caller method cannot access the called method.
     */
    public static void checkInternalAccess() {
       try {
          StackTraceElement[] stack = Thread.currentThread().getStackTrace();
-         String calledLocation = new File(findClassLocation(Class.forName(stack[2].getClassName()))).getParent();
-         String callerLocation = new File(findClassLocation(Class.forName(stack[3].getClassName()))).getParent();
-         if (!calledLocation.equals(callerLocation)) {
-            SecurityException ex = new AccessControlException("Cannot call an internal class");
-            stack = Arrays.copyOfRange(stack, 3, stack.length);
-            ex.setStackTrace(stack);
-            throw ex;
-         }
+         checkInternalAccess(Class.forName(stack[2].getClassName()), Class.forName(stack[3].getClassName()));
       } catch (ClassNotFoundException e) {
          // Should not happen; ignore for now
       }
    }
 
-   private static String findClassLocation(Class<?> clazz) {
+   @Internal
+   public static String findLocation(Class<?> clazz) {
+      if (clazz == null) {
+         return null;
+      }
       String pathOfClass = File.separator + clazz.getName().replaceAll("\\.", File.separator) + ".class";
       String location = clazz.getResource(pathOfClass).toString();
       return location.substring(0, location.length() - pathOfClass.length());

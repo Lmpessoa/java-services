@@ -28,7 +28,6 @@ import java.util.List;
 
 import com.lmpessoa.services.core.services.NoSingleMethodException;
 import com.lmpessoa.services.core.services.ServiceMap;
-import com.lmpessoa.services.util.logging.NonTraced;
 
 /**
  * Wraps the call to the next handler in the application.
@@ -43,7 +42,6 @@ import com.lmpessoa.services.util.logging.NonTraced;
  * The proxy can only be invoked once per request.
  * </p>
  */
-@NonTraced
 public final class NextHandler {
 
    private final List<Class<?>> handlers;
@@ -94,7 +92,7 @@ public final class NextHandler {
    }
 
    private Object invokeService(Object obj)
-      throws IllegalAccessException, InvocationTargetException, NoSingleMethodException {
+      throws IllegalAccessException, InvocationTargetException, NoSingleMethodException, InstantiationException {
       try {
          return services.invoke(obj, "invoke");
       } catch (InvocationTargetException e) {

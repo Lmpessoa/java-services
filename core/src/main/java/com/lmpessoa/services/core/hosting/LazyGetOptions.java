@@ -25,14 +25,14 @@ package com.lmpessoa.services.core.hosting;
 import java.util.function.Supplier;
 
 import com.lmpessoa.services.core.services.IConfigurable;
-import com.lmpessoa.services.core.services.IServiceMap;
+import com.lmpessoa.services.core.services.ServiceMap;
 
 final class LazyGetOptions<T> implements Supplier<T> {
 
    private final Class<? extends IConfigurable<T>> serviceClass;
-   private final IServiceMap serviceMap;
+   private final ServiceMap serviceMap;
 
-   LazyGetOptions(Class<? extends IConfigurable<T>> serviceClass, IServiceMap serviceMap) {
+   LazyGetOptions(Class<? extends IConfigurable<T>> serviceClass, ServiceMap serviceMap) {
       this.serviceClass = serviceClass;
       this.serviceMap = serviceMap;
    }

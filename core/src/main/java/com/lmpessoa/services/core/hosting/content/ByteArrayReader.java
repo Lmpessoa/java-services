@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.routing.content;
+package com.lmpessoa.services.core.hosting.content;
 
 final class ByteArrayReader {
 

@@ -34,7 +34,6 @@ import com.lmpessoa.services.util.ClassUtils;
 import com.lmpessoa.services.util.ConnectionInfo;
 
 @Internal
-@NonTraced
 public final class Logger implements ILogger, Runnable {
 
    private final Queue<LogEntry> entriesToLog = new ArrayDeque<>();

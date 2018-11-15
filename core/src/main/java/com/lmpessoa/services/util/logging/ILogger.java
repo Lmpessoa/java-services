@@ -33,7 +33,6 @@ import com.lmpessoa.services.Internal;
  * the console).
  * </p>
  */
-@NonTraced
 public interface ILogger {
 
    /**

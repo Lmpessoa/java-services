@@ -24,8 +24,6 @@ package com.lmpessoa.services.core.services;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Supplier;
 
 import com.lmpessoa.services.util.ClassUtils;
@@ -33,10 +31,10 @@ import com.lmpessoa.services.util.ClassUtils;
 final class LazyInitializer<T> implements Supplier<T> {
 
    private final Class<? extends T> provider;
-   private final ServiceMap serviceMap;
+   private final ServiceMap services;
 
    public LazyInitializer(Class<? extends T> provider, ReuseLevel level, IServiceMap serviceMap) {
-      this.serviceMap = (ServiceMap) serviceMap;
+      this.services = (ServiceMap) serviceMap;
       this.provider = provider;
       if (!ClassUtils.isConcreteClass(provider)) {
          throw new IllegalArgumentException("Provider class must be a concrete class");
@@ -47,7 +45,7 @@ final class LazyInitializer<T> implements Supplier<T> {
                   new NoSingleMethodException("Provider class must have only one constructor", constructors.length));
       }
       for (Class<?> paramType : constructors[0].getParameterTypes()) {
-         ServiceEntry entry = this.serviceMap.getEntry(paramType);
+         ServiceEntry entry = this.services.getEntry(paramType);
          if (entry == null) {
             throw new IllegalArgumentException("Dependent service " + paramType.getName() + " is not registered");
          }
@@ -61,14 +59,9 @@ final class LazyInitializer<T> implements Supplier<T> {
    @Override
    @SuppressWarnings("unchecked")
    public T get() {
-      Constructor<?> constructor = provider.getDeclaredConstructors()[0];
-      constructor.setAccessible(true);
-      List<Object> params = new ArrayList<>();
-      for (Class<?> param : constructor.getParameterTypes()) {
-         params.add(serviceMap.get(param));
-      }
       try {
-         return (T) constructor.newInstance(params.toArray());
+         Constructor<?> constructor = provider.getDeclaredConstructors()[0];
+         return (T) services.invoke(null, constructor);
       } catch (InvocationTargetException e) {
          throw new LazyInstatiationException(e.getCause());
       } catch (Exception e) {

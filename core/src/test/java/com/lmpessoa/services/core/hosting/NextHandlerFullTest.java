@@ -43,9 +43,9 @@ import com.lmpessoa.services.core.HttpGet;
 import com.lmpessoa.services.core.HttpInputStream;
 import com.lmpessoa.services.core.HttpPost;
 import com.lmpessoa.services.core.Route;
-import com.lmpessoa.services.core.hosting.ApplicationInfo;
 import com.lmpessoa.services.core.hosting.ApplicationOptions;
 import com.lmpessoa.services.core.hosting.ApplicationServer;
+import com.lmpessoa.services.core.hosting.HeaderMap;
 import com.lmpessoa.services.core.hosting.HttpRequest;
 import com.lmpessoa.services.core.hosting.HttpRequestImpl;
 import com.lmpessoa.services.core.hosting.HttpResult;
@@ -57,14 +57,15 @@ import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.routing.RouteTableBridge;
 import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.util.logging.ILogger;
-import com.lmpessoa.services.util.logging.NullLogger;
+import com.lmpessoa.services.util.logging.Logger;
+import com.lmpessoa.services.util.logging.NullLogWriter;
 
 public final class NextHandlerFullTest {
 
    @Rule
    public ExpectedException thrown = ExpectedException.none();
 
-   private final ILogger log = new NullLogger();
+   private final Logger log = new Logger(NextHandlerFullTest.class, new NullLogWriter());
    private ApplicationOptions app;
    private ServiceMap services;
 
@@ -76,7 +77,14 @@ public final class NextHandlerFullTest {
    public void setup() throws NoSuchMethodException {
       services = new ServiceMap();
       services.useSingleton(ILogger.class, log);
-      services.useSingleton(IApplicationInfo.class, new ApplicationInfo(NextHandlerFullTest.class));
+      services.useSingleton(IApplicationInfo.class, new IApplicationInfo() {
+
+         @Override
+         public Class<?> getStartupClass() {
+            return NextHandlerFullTest.class;
+         }
+      });
+      services.useSingleton(HeaderMap.class);
       services.useTransient(RouteMatch.class, () -> route);
 
       routes = RouteTableBridge.get(services, log);
@@ -207,7 +215,7 @@ public final class NextHandlerFullTest {
                .build();
       services.useSingleton(HttpRequest.class, request);
       route = RouteTableBridge.match(routes, request);
-      return (HttpResult) app.getFirstHandler(services).invoke();
+      return (HttpResult) app.getFirstResponder(services).invoke();
    }
 
    private HttpResult performFile(String resource) throws IOException {
@@ -215,7 +223,7 @@ public final class NextHandlerFullTest {
          request = new HttpRequestImpl(res);
          services.useSingleton(HttpRequest.class, request);
          route = RouteTableBridge.match(routes, request);
-         return (HttpResult) app.getFirstHandler(services).invoke();
+         return (HttpResult) app.getFirstResponder(services).invoke();
       }
    }
 

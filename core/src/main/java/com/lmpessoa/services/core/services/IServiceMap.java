@@ -26,14 +26,7 @@ import static com.lmpessoa.services.core.services.ReuseLevel.PER_REQUEST;
 import static com.lmpessoa.services.core.services.ReuseLevel.SINGLETON;
 import static com.lmpessoa.services.core.services.ReuseLevel.TRANSIENT;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Set;
 import java.util.function.Supplier;
-
-import com.lmpessoa.services.Internal;
-import com.lmpessoa.services.util.logging.NonTraced;
 
 /**
  * A service registry is a registration service used to help locate other services by using a
@@ -46,7 +39,6 @@ import com.lmpessoa.services.util.logging.NonTraced;
  * <li><b>Transient</b> services have one new instance every time the service is requested.</li>
  * </ul>
  */
-@NonTraced
 public interface IServiceMap {
 
    // Singleton ----------
@@ -195,42 +187,4 @@ public interface IServiceMap {
     * base class.
     */
    <T> void useTransient(Class<T> service, Supplier<T> supplier);
-
-   // Utils ----------
-
-   /**
-    * Returns whether this service map has a registration for the given service.
-    *
-    * @param service the service to check if there is a registration on this service map.
-    * @return <code>true</code> if this service map has a registration for the given service,
-    * <code>false</code> otherwise.
-    */
-   boolean contains(Class<?> service);
-
-   /**
-    * Returns the list of classes served by this service map.
-    *
-    * @return the list of classes served by this service map.
-    */
-   Set<Class<?>> getServices();
-
-   @Internal
-   <T> T get(Class<T> serviceClass);
-
-   @Internal
-   default Object invoke(Object obj, String methodName)
-      throws NoSingleMethodException, IllegalAccessException, InvocationTargetException {
-      Class<?> clazz = obj instanceof Class<?> ? (Class<?>) obj : obj.getClass();
-      Method[] methods = Arrays.stream(clazz.getMethods()).filter(m -> methodName.equals(m.getName())).toArray(
-               Method[]::new);
-      if (methods.length != 1) {
-         throw new NoSingleMethodException(
-                  "Class " + clazz.getName() + " must have exactly one method named '" + methodName + "'",
-                  methods.length);
-      }
-      return invoke(obj, methods[0]);
-   }
-
-   @Internal
-   Object invoke(Object obj, Method method) throws IllegalAccessException, InvocationTargetException;
 }

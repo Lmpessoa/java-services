@@ -28,9 +28,7 @@ import java.net.URL;
 import com.lmpessoa.services.core.ContentType;
 import com.lmpessoa.services.core.HttpInputStream;
 import com.lmpessoa.services.util.logging.ILogger;
-import com.lmpessoa.services.util.logging.NonTraced;
 
-@NonTraced
 final class FaviconHandler {
 
    private static final String FAVICON = "/favicon.ico";

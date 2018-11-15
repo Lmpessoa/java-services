@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.routing.content;
+package com.lmpessoa.services.core.hosting.content;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
@@ -65,7 +65,8 @@ final class FormSerializer implements IContentReader {
          throw new TypeConvertException(e);
       }
       if (!Modifier.isStatic(valueOf.getModifiers())) {
-         throw new TypeConvertException(new NoSuchMethodException("Method 'valueOf' is not static"));
+         throw new TypeConvertException(
+                  new NoSuchMethodException("Method 'valueOf' is not static"));
       }
       try {
          return (T) valueOf.invoke(null, value);
@@ -88,7 +89,8 @@ final class FormSerializer implements IContentReader {
          try {
             return superType.getDeclaredField(fieldName);
          } catch (NoSuchFieldException e) {
-            superType = superType.getSuperclass() == Object.class ? null : superType.getSuperclass();
+            superType = superType.getSuperclass() == Object.class ? null
+                     : superType.getSuperclass();
          } catch (NullPointerException e) {
             break;
          }
@@ -111,7 +113,8 @@ final class FormSerializer implements IContentReader {
                try {
                   Method primValue = cvalue.getClass().getMethod(type.getName() + "Value");
                   Array.set(result, i, primValue.invoke(cvalue));
-               } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+               } catch (NoSuchMethodException | IllegalAccessException
+                        | InvocationTargetException e) {
                   // Ignore
                }
             }
@@ -132,7 +135,8 @@ final class FormSerializer implements IContentReader {
                return null;
             }
             Class<?> fieldType = field.getType();
-            Object fieldValue = fieldType == String.class || fieldType == String[].class ? value.getValue()
+            Object fieldValue = fieldType == String.class || fieldType == String[].class
+                     ? value.getValue()
                      : convertToValue(value.getValue(), field.getType());
             field.setAccessible(true);
             field.set(result, fieldValue);

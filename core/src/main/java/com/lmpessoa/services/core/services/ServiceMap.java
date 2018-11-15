@@ -26,10 +26,13 @@ import static com.lmpessoa.services.core.services.ReuseLevel.PER_REQUEST;
 import static com.lmpessoa.services.core.services.ReuseLevel.SINGLETON;
 import static com.lmpessoa.services.core.services.ReuseLevel.TRANSIENT;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Executable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,9 +43,8 @@ import java.util.function.Supplier;
 
 import com.lmpessoa.services.Internal;
 import com.lmpessoa.services.util.ClassUtils;
-import com.lmpessoa.services.util.logging.NonTraced;
 
-@NonTraced
+@Internal
 public final class ServiceMap implements IServiceMap {
 
    private final ThreadLocal<Map<Class<?>, Object>> threadPool = ThreadLocal.withInitial(HashMap::new);
@@ -75,17 +77,14 @@ public final class ServiceMap implements IServiceMap {
       put(TRANSIENT, service, Objects.requireNonNull(supplier));
    }
 
-   @Override
    public boolean contains(Class<?> service) {
       return entries.containsKey(service);
    }
 
-   @Override
    public Set<Class<?>> getServices() {
       return entries.keySet();
    }
 
-   @Override
    @SuppressWarnings("unchecked")
    public <T> T get(Class<T> clazz) {
       ClassUtils.checkInternalAccess();
@@ -107,19 +106,40 @@ public final class ServiceMap implements IServiceMap {
       return value;
    }
 
-   @Override
-   public Object invoke(Object obj, Method method) throws IllegalAccessException, InvocationTargetException {
+   public Object invoke(Object obj, String methodName)
+      throws NoSingleMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+      Class<?> clazz = obj instanceof Class<?> ? (Class<?>) obj : obj.getClass();
+      Method[] methods = Arrays.stream(clazz.getMethods()).filter(m -> methodName.equals(m.getName())).toArray(
+               Method[]::new);
+      if (methods.length != 1) {
+         throw new NoSingleMethodException(
+                  "Class " + clazz.getName() + " must have exactly one method named '" + methodName + "'",
+                  methods.length);
+      }
+      return invoke(obj, methods[0]);
+   }
+
+   public Object invoke(Object obj, Executable exec)
+      throws IllegalAccessException, InvocationTargetException, InstantiationException {
       ClassUtils.checkInternalAccess();
       Object instance = obj instanceof Class<?> ? null : obj;
-      if (Modifier.isStatic(method.getModifiers()) != (instance == null)) {
+      if ((Modifier.isStatic(exec.getModifiers()) || exec instanceof Constructor<?>) != (instance == null)) {
          throw new IllegalArgumentException("Mismatched static/instance method call");
       }
       List<Object> args = new ArrayList<>();
-      for (Class<?> param : method.getParameterTypes()) {
+      for (Class<?> param : exec.getParameterTypes()) {
+         if (param.isAnnotationPresent(Internal.class)) {
+            ClassUtils.checkInternalAccess(param, exec.getDeclaringClass());
+         }
          args.add(get(param));
       }
-      method.setAccessible(true);
-      return method.invoke(instance, args.toArray());
+      exec.setAccessible(true);
+      if (exec instanceof Constructor<?>) {
+         return ((Constructor<?>) exec).newInstance(args.toArray());
+      } else if (exec instanceof Method) {
+         return ((Method) exec).invoke(obj, args.toArray());
+      }
+      throw new UnsupportedOperationException();
    }
 
    @Internal

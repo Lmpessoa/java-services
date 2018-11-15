@@ -42,7 +42,6 @@ import com.lmpessoa.services.core.Route;
 import com.lmpessoa.services.core.routing.AbstractRouteType;
 import com.lmpessoa.services.core.routing.RouteOptions;
 import com.lmpessoa.services.core.routing.RoutePattern;
-import com.lmpessoa.services.core.services.IServiceMap;
 import com.lmpessoa.services.core.services.NoSingleMethodException;
 import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.util.parsing.TypeMismatchException;
@@ -52,7 +51,7 @@ public final class RoutePatternTest {
    @Rule
    public ExpectedException thrown = ExpectedException.none();
 
-   private IServiceMap serviceMap;
+   private ServiceMap serviceMap;
    private RouteOptions options;
 
    @Before

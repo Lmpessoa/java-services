@@ -23,9 +23,7 @@
 package com.lmpessoa.services.core.hosting;
 
 import com.lmpessoa.services.core.routing.RouteMatch;
-import com.lmpessoa.services.util.logging.NonTraced;
 
-@NonTraced
 final class InvokeHandler {
 
    public InvokeHandler(NextHandler next) { // NOSONAR

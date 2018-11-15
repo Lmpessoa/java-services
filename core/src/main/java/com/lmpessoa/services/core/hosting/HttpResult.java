@@ -22,38 +22,21 @@
  */
 package com.lmpessoa.services.core.hosting;
 
-import java.util.Objects;
-
 import com.lmpessoa.services.core.HttpInputStream;
 
 final class HttpResult {
 
    private final HttpInputStream contentStream;
-   private final HttpRequest request;
+   private final Object contentObject;
    private final int contentLength;
    private final int statusCode;
-   private final Object object;
-
-   HttpResult(HttpRequest request, int statusCode, Object contentObject, HttpInputStream contentStream) {
-      this.request = Objects.requireNonNull(request);
-      this.statusCode = statusCode;
-      this.object = contentObject;
-      this.contentStream = contentStream;
-      int size = 0;
-      try {
-         size = contentStream.available();
-      } catch (Exception e) {
-         // Just ignore for now
-      }
-      this.contentLength = size;
-   }
 
    public int getStatusCode() {
       return statusCode;
    }
 
    public Object getObject() {
-      return object;
+      return contentObject;
    }
 
    public HttpInputStream getInputStream() {
@@ -62,10 +45,20 @@ final class HttpResult {
 
    @Override
    public String toString() {
-      String userAgent = request.getHeaders().get(HeaderMap.USER_AGENT);
       String resultType = contentStream != null ? contentStream.getContentType() : "(empty)";
-      return String.format("\"%s %s %s\" %s %s %s \"%s\"", request.getMethod(),
-               request.getPath() + (request.getQueryString() != null ? "?" + request.getQueryString() : ""),
-               request.getProtocol(), statusCode, contentLength, resultType, userAgent);
+      return String.format("%s %s %s", statusCode, contentLength, resultType);
+   }
+
+   HttpResult(int statusCode, Object contentObject, HttpInputStream contentStream) {
+      this.statusCode = statusCode;
+      this.contentObject = contentObject;
+      this.contentStream = contentStream;
+      int size = 0;
+      try {
+         size = contentStream.available();
+      } catch (Exception e) {
+         // Just ignore for now
+      }
+      this.contentLength = size;
    }
 }

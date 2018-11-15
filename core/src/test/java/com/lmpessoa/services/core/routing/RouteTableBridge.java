@@ -29,12 +29,12 @@ import com.lmpessoa.services.core.routing.IRouteTable;
 import com.lmpessoa.services.core.routing.MatchedRoute;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.routing.RouteTable;
-import com.lmpessoa.services.core.services.IServiceMap;
+import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.util.logging.ILogger;
 
 public final class RouteTableBridge {
 
-   public static IRouteTable get(IServiceMap serviceMap, ILogger log) throws NoSuchMethodException {
+   public static IRouteTable get(ServiceMap serviceMap, ILogger log) throws NoSuchMethodException {
       return new RouteTable(serviceMap, log);
    }
 

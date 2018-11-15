@@ -29,9 +29,7 @@ import java.util.Arrays;
 
 import com.lmpessoa.services.core.hosting.HttpException;
 import com.lmpessoa.services.core.hosting.InternalServerError;
-import com.lmpessoa.services.util.logging.NonTraced;
 
-@NonTraced
 final class MatchedRoute implements RouteMatch {
 
    private final Class<?> resourceClass;
@@ -72,13 +70,6 @@ final class MatchedRoute implements RouteMatch {
       this.constructorArgs = Arrays.copyOfRange(args, 0, entry.getResourceArgumentCount());
       this.method = entry.getMethod();
       this.methodArgs = Arrays.copyOfRange(args, entry.getResourceArgumentCount(), args.length);
-   }
-
-   MatchedRoute() {
-      this.resourceClass = null;
-      this.constructorArgs = null;
-      this.method = null;
-      this.methodArgs = null;
    }
 
    Object[] getConstructorArgs() {

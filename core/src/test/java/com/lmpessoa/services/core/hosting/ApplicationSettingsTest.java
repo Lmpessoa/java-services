@@ -24,86 +24,94 @@ package com.lmpessoa.services.core.hosting;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
-import javax.servlet.ServletException;
-
-import org.junit.Before;
 import org.junit.Test;
 
-import com.lmpessoa.services.core.hosting.ApplicationConfig;
-import com.lmpessoa.services.core.hosting.ApplicationContext;
-import com.lmpessoa.services.core.hosting.ApplicationServlet;
-import com.lmpessoa.services.core.hosting.IHostEnvironment;
-import com.lmpessoa.services.core.routing.IRouteOptions;
 import com.lmpessoa.services.core.services.IServiceMap;
-import com.lmpessoa.services.util.logging.ILogger;
-import com.lmpessoa.services.util.logging.NullLogger;
+import com.lmpessoa.services.util.logging.LogEntry;
+import com.lmpessoa.services.util.logging.LogWriter;
+import com.lmpessoa.services.util.logging.Logger;
+import com.lmpessoa.services.util.logging.NullLogWriter;
 
 public final class ApplicationSettingsTest {
 
-   private static ILogger log = new NullLogger();
+   private static Logger log = new Logger(ApplicationSettingsTest.class, new NullLogWriter());
    private static String servicesResult;
    private static String configResult;
+   private static String logResult;
 
-   private ApplicationContext context;
-   private ApplicationConfig config;
-   private ApplicationServlet app;
+   private ApplicationServer server;
 
-   @Before
-   public void setup() {
-      context = mock(ApplicationContext.class);
-      when(context.getEnvironment()).thenReturn(() -> "Development");
-      when(context.getLogger()).thenReturn(log);
-      config = new ApplicationConfig(context, "test");
-      app = new ApplicationServlet();
+   private void setup(Class<?> startupClass) {
+      setup(startupClass, "Development");
+   }
+
+   private void setup(Class<?> startupClass, String envName) {
+      ApplicationServerInfo info = mock(ApplicationServerInfo.class);
+      server = new ApplicationServer(startupClass, info, envName, log);
+      server.getServices();
    }
 
    @Test
-   public void testConfigMultipleEnvironments() throws ServletException {
-      when(context.getAttribute("service.startup.class")).thenReturn(CommonEnv.class);
-      app.init(config);
-      assertEquals("common", servicesResult);
-      assertEquals("common", configResult);
-   }
-
-   @Test
-   public void testConfigDefaultEnvironment() throws ServletException {
-      when(context.getAttribute("service.startup.class")).thenReturn(DefaultEnv.class);
-      app.init(config);
-      assertEquals("common", servicesResult);
-      assertEquals("dev", configResult);
-   }
-
-   @Test
-   public void testConfigSpecificEnvironment() throws ServletException {
-      when(context.getEnvironment()).thenReturn(() -> "Staging");
-      when(context.getAttribute("service.startup.class")).thenReturn(SpecificEnv.class);
-      app.init(config);
-      assertEquals("staging", servicesResult);
-      assertEquals("staging", configResult);
-   }
-
-   @Test
-   public void testScanDefault() throws ServletException {
-      when(context.getAttribute("service.startup.class")).thenReturn(ApplicationInfoTest.class);
-      app.init(config);
-      Collection<Class<?>> result = app.getResources();
+   public void testScanDefault() {
+      setup(ApplicationInfoTest.class);
+      Collection<Class<?>> result = server.getResources();
       assertTrue(result.contains(com.lmpessoa.services.test.resources.IndexResource.class));
       assertTrue(result.contains(com.lmpessoa.services.test.resources.TestResource.class));
       assertTrue(result.contains(com.lmpessoa.services.test.resources.api.TestResource.class));
       assertFalse(result.contains(com.lmpessoa.services.test.resources.AbstractResource.class));
    }
 
-   public static class MainWithApi {
+   @Test
+   public void testConfigMultipleEnvironments() {
+      setup(CommonEnv.class);
+      assertEquals("common", servicesResult);
+      assertEquals("common", configResult);
+   }
 
-      public static void configure(IRouteOptions routes) {
-         routes.addArea("api/v1", ".resources.api$");
-      }
+   @Test
+   public void testConfigDefaultEnvironment() {
+      setup(DefaultEnv.class);
+      assertEquals("common", servicesResult);
+      assertEquals("dev", configResult);
+   }
+
+   @Test
+   public void testConfigSpecificEnvironment() {
+      setup(SpecificEnv.class, "Staging");
+      assertEquals("staging", servicesResult);
+      assertEquals("staging", configResult);
+   }
+
+   @Test
+   public void testLoggerCreation() {
+      ApplicationServerInfo info = mock(ApplicationServerInfo.class);
+      Map<String, String> settings = new HashMap<>();
+      settings.put("type", TestLogWriter.class.getName());
+      when(info.getProperties("logging.writer")).thenReturn(settings);
+
+      Map<String, String> packages = new HashMap<>();
+      packages.put("0.name", "com.lmpessoa.services.core.hosting");
+      packages.put("0.level", "ERROR");
+      when(info.getProperties("logging.packages")).thenReturn(packages);
+      Logger log = ApplicationServer.createLogger(info, ApplicationSettingsTest.class);
+
+      log.info("Test");
+      log.join();
+      assertNull(logResult);
+
+      log.error("Test");
+      log.join();
+      assertEquals("[ERROR] com.lmpessoa.services.core.hosting.ApplicationSettingsTest: Test",
+               logResult);
    }
 
    public static class CommonEnv {
@@ -132,6 +140,14 @@ public final class ApplicationSettingsTest {
 
       public static void configureStaging() {
          configResult = "staging";
+      }
+   }
+
+   public static class TestLogWriter extends LogWriter {
+
+      @Override
+      protected void append(LogEntry entry) {
+         logResult = entry.toString();
       }
    }
 }

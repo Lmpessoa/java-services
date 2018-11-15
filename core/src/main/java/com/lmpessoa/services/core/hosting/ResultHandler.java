@@ -33,11 +33,9 @@ import java.util.List;
 
 import com.lmpessoa.services.core.ContentType;
 import com.lmpessoa.services.core.HttpInputStream;
+import com.lmpessoa.services.core.hosting.content.Serializer;
 import com.lmpessoa.services.core.routing.RouteMatch;
-import com.lmpessoa.services.core.routing.content.Serializer;
-import com.lmpessoa.services.util.logging.NonTraced;
 
-@NonTraced
 final class ResultHandler {
 
    private NextHandler next;
@@ -49,8 +47,15 @@ final class ResultHandler {
    public HttpResult invoke(HttpRequest request, RouteMatch route) {
       Object obj = getResultObject();
       int statusCode = getStatusCode(obj);
-      HttpInputStream is = getContentBody(obj, request, route != null ? route.getMethod() : null);
-      return new HttpResult(request, statusCode, obj, is);
+      HttpInputStream is;
+      try {
+         is = getContentBody(obj, request, route != null ? route.getMethod() : null);
+      } catch (InternalServerError e) {
+         obj = e;
+         statusCode = getStatusCode(e);
+         is = getContentBody(e, request, null);
+      }
+      return new HttpResult(statusCode, obj, is);
    }
 
    private Object getResultObject() {
@@ -65,40 +70,43 @@ final class ResultHandler {
    private int getStatusCode(Object obj) {
       if (obj == null) {
          return 204;
-      } else if (obj instanceof IHttpStatus) {
-         return ((IHttpStatus) obj).getStatusCode();
+      } else if (obj instanceof IHttpStatusSupplier) {
+         return ((IHttpStatusSupplier) obj).getStatusCode();
       }
       return 200;
    }
 
    private HttpInputStream getContentBody(Object obj, HttpRequest request, Method method) {
-      Object objx = obj;
-      while (objx instanceof InternalServerError) {
-         objx = ((InternalServerError) obj).getCause();
+      Object object = obj;
+      if (object instanceof HttpInputStream) {
+         return (HttpInputStream) object;
       }
-      if (objx instanceof Throwable && !(objx instanceof HttpException)) {
-         objx = ((Throwable) obj).getMessage();
+      while (object instanceof InternalServerError) {
+         object = ((InternalServerError) obj).getCause();
       }
-      if (objx == null || objx instanceof HttpException) {
+      if (object instanceof Throwable && !(object instanceof HttpException)) {
+         object = ((Throwable) obj).getMessage();
+      }
+      if (object == null || object instanceof HttpException) {
          return null;
       }
-      Object result = objx;
+      Object result = object;
+      Charset charset = null;
       if (result instanceof String) {
-         result = ((String) result).getBytes(Charset.forName("UTF-8"));
+         charset = Charset.forName("UTF-8");
+         result = ((String) result).getBytes(charset);
       } else if (result instanceof ByteArrayOutputStream) {
          result = ((ByteArrayOutputStream) result).toByteArray();
       }
       if (result instanceof byte[]) {
          result = new ByteArrayInputStream((byte[]) result);
       }
-      if (result instanceof HttpInputStream) {
-         return (HttpInputStream) result;
-      } else if (result instanceof InputStream) {
+      if (result instanceof InputStream) {
          ContentType contentAnn = method == null ? null : method.getAnnotation(ContentType.class);
          String contentType;
          if (contentAnn != null) {
             contentType = contentAnn.value();
-         } else if (objx instanceof String) {
+         } else if (object instanceof String) {
             contentType = ContentType.TEXT;
          } else {
             contentType = ContentType.BINARY;

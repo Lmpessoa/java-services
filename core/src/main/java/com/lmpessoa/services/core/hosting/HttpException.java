@@ -37,7 +37,7 @@ package com.lmpessoa.services.core.hosting;
  * be returned to the sender of the request in this case.
  * </p>
  */
-public abstract class HttpException extends RuntimeException implements IHttpStatus {
+public abstract class HttpException extends RuntimeException implements IHttpStatusSupplier {
 
    private static final long serialVersionUID = 1L;
 

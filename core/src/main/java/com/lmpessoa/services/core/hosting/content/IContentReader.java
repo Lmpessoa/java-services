@@ -20,41 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.hosting;
+package com.lmpessoa.services.core.hosting.content;
 
-import java.util.Enumeration;
-import java.util.Objects;
+interface IContentReader {
 
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletContext;
-
-final class ApplicationConfig implements ServletConfig {
-
-   private final ApplicationContext context;
-   private final String servletName;
-
-   @Override
-   public String getServletName() {
-      return servletName;
-   }
-
-   @Override
-   public ServletContext getServletContext() {
-      return context;
-   }
-
-   @Override
-   public String getInitParameter(String name) {
-      return context.getInitParameter(name);
-   }
-
-   @Override
-   public Enumeration<String> getInitParameterNames() {
-      return context.getInitParameterNames();
-   }
-
-   ApplicationConfig(ApplicationContext context, String servletName) {
-      this.context = Objects.requireNonNull(context);
-      this.servletName = servletName;
-   }
+   <T> T read(byte[] content, String contentType, Class<T> resultClass);
 }

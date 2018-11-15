@@ -20,9 +20,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.routing.content;
+package com.lmpessoa.services.util.logging;
 
-interface IContentReader {
+public final class NullLogWriter extends LogWriter {
 
-   <T> T read(byte[] content, String contentType, Class<T> resultClass);
+   @Override
+   protected void append(LogEntry entry) {
+      // Does nothing
+   }
 }

@@ -20,38 +20,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.hosting;
+package com.lmpessoa.services.core.hosting.content;
 
-import java.io.IOException;
-import java.net.Socket;
+public final class SerializationException extends RuntimeException {
 
-import com.lmpessoa.services.util.ConnectionInfo;
+   private static final long serialVersionUID = 1L;
 
-final class HttpRequestJob implements Runnable {
-
-   private final ApplicationServlet servlet;
-   private final Socket client;
-
-   public HttpRequestJob(ApplicationServlet servlet, Socket client) {
-      this.client = client;
-      this.servlet = servlet;
+   public SerializationException(String message) {
+      super(message);
    }
 
-   @Override
-   public void run() {
-      Thread.currentThread().setName("http-request");
-      try {
-         try {
-            HttpRequest request = new HttpRequestImpl(client.getInputStream());
-            ConnectionInfo connInfo = new SocketConnectionInfo(client, request.getHeader("Host"));
-            HttpResponse response = new HttpResponse(client.getOutputStream());
-            servlet.service(request, connInfo, response);
-            response.commit(servlet.getLogger());
-         } finally {
-            client.close();
-         }
-      } catch (IOException e) {
-         servlet.getLogger().fatal(e);
-      }
+   SerializationException(String message, Exception e) {
+      super(message, e);
    }
+
 }

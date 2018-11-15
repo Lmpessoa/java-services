@@ -50,10 +50,9 @@ import com.lmpessoa.services.core.routing.DuplicateMethodException;
 import com.lmpessoa.services.core.routing.HttpMethod;
 import com.lmpessoa.services.core.routing.IRouteTable;
 import com.lmpessoa.services.core.routing.RouteTable;
-import com.lmpessoa.services.core.services.IServiceMap;
 import com.lmpessoa.services.core.services.ServiceMap;
-import com.lmpessoa.services.util.logging.ILogger;
-import com.lmpessoa.services.util.logging.NullLogger;
+import com.lmpessoa.services.util.logging.Logger;
+import com.lmpessoa.services.util.logging.NullLogWriter;
 import com.lmpessoa.services.util.parsing.TypeMismatchException;
 
 public final class RouteTableTest {
@@ -61,8 +60,8 @@ public final class RouteTableTest {
    @Rule
    public ExpectedException thrown = ExpectedException.none();
 
-   private final ILogger log = new NullLogger();
-   private IServiceMap serviceMap;
+   private final Logger log = new Logger(RouteTableTest.class, new NullLogWriter());
+   private ServiceMap serviceMap;
    private RouteTable table;
 
    @Before

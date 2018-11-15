@@ -58,7 +58,7 @@ final class ApplicationOptions implements IApplicationOptions {
       handlers.add(handlerClass);
    }
 
-   NextHandler getFirstHandler(ServiceMap services) {
+   NextHandler getFirstResponder(ServiceMap services) {
       List<Class<?>> allHandlers = new ArrayList<>();
       allHandlers.addAll(this.handlers);
       allHandlers.addAll(LAST_HANDLERS);

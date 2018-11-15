@@ -34,8 +34,8 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 import com.lmpessoa.services.core.Route;
-import com.lmpessoa.services.core.services.IServiceMap;
 import com.lmpessoa.services.core.services.NoSingleMethodException;
+import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.util.parsing.ITemplatePart;
 import com.lmpessoa.services.util.parsing.LiteralPart;
 import com.lmpessoa.services.util.parsing.TypeMismatchException;
@@ -50,7 +50,7 @@ final class RoutePattern {
    private final Class<?> contentClass;
    private Pattern pattern = null;
 
-   static RoutePattern build(String area, Class<?> clazz, IServiceMap serviceMap, RouteOptions options)
+   static RoutePattern build(String area, Class<?> clazz, ServiceMap serviceMap, RouteOptions options)
       throws NoSingleMethodException, ParseException {
       final Constructor<?>[] constructors = clazz.getConstructors();
       if (constructors.length != 1) {

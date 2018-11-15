@@ -25,7 +25,7 @@ package com.lmpessoa.services;
 import static java.lang.annotation.ElementType.CONSTRUCTOR;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.TYPE;
-import static java.lang.annotation.RetentionPolicy.SOURCE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.Inherited;
@@ -37,12 +37,12 @@ import java.lang.annotation.Target;
  *
  * <p>
  * Internal methods (as well as methods from internal classes) may be public but should not be
- * called directly by your application. They are meant to be used only internally by the Leeow
- * engine and the Leeow Application Server.
+ * called directly by your application. They are meant to be used only internally by the engine and
+ * the Application Server.
  * </p>
  */
 @Inherited
 @Documented
-@Retention(SOURCE)
+@Retention(RUNTIME)
 @Target({ TYPE, METHOD, CONSTRUCTOR })
 public @interface Internal {}

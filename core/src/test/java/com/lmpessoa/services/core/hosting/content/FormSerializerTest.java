@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.routing.content;
+package com.lmpessoa.services.core.hosting.content;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -34,8 +34,8 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import com.lmpessoa.services.core.ContentType;
-import com.lmpessoa.services.core.routing.content.FormSerializer;
-import com.lmpessoa.services.core.routing.content.TypeConvertException;
+import com.lmpessoa.services.core.hosting.content.FormSerializer;
+import com.lmpessoa.services.core.hosting.content.TypeConvertException;
 
 public final class FormSerializerTest {
 

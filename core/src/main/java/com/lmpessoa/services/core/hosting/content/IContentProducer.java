@@ -20,21 +20,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.routing.content;
+package com.lmpessoa.services.core.hosting.content;
 
-/**
- * Thrown when an HTTP serializer cannot convert a value representation.
- */
-public final class TypeConvertException extends RuntimeException {
+import java.io.InputStream;
 
-   private static final long serialVersionUID = 1L;
+interface IContentProducer {
 
-   /**
-    * Constructs a <code>TypeConvertException</code> with a cause exception.
-    *
-    * @param e the cause exception.
-    */
-   public TypeConvertException(Throwable e) {
-      super("Don't know how to convert type", e);
-   }
+   InputStream produce(Object obj);
 }

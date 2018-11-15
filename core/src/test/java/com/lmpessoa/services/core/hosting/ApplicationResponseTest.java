@@ -29,8 +29,9 @@ import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-
-import javax.servlet.ServletException;
+import java.io.InputStream;
+import java.net.Socket;
+import java.nio.charset.Charset;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -39,68 +40,62 @@ import com.lmpessoa.services.core.ContentType;
 import com.lmpessoa.services.core.HttpGet;
 import com.lmpessoa.services.core.HttpInputStream;
 import com.lmpessoa.services.core.Route;
-import com.lmpessoa.services.core.hosting.ApplicationConfig;
 import com.lmpessoa.services.core.hosting.ApplicationContext;
-import com.lmpessoa.services.core.hosting.ApplicationServlet;
-import com.lmpessoa.services.core.hosting.HttpRequest;
-import com.lmpessoa.services.core.hosting.HttpResponse;
-import com.lmpessoa.services.core.routing.IRouteOptions;
-import com.lmpessoa.services.util.ConnectionInfo;
-import com.lmpessoa.services.util.logging.ILogger;
-import com.lmpessoa.services.util.logging.NullLogger;
+import com.lmpessoa.services.core.hosting.ApplicationResponder;
+import com.lmpessoa.services.core.hosting.ApplicationServer;
+import com.lmpessoa.services.core.hosting.ApplicationServerInfo;
+import com.lmpessoa.services.core.routing.IRouteTable;
+import com.lmpessoa.services.core.routing.RouteTable;
+import com.lmpessoa.services.util.logging.Logger;
+import com.lmpessoa.services.util.logging.NullLogWriter;
 
 public final class ApplicationResponseTest {
 
-   private ILogger log = new NullLogger();
+   private Logger log = new Logger(ApplicationResponseTest.class, new NullLogWriter());
    private ApplicationContext context;
-   private ApplicationServlet app;
-
-   public static void configure(IRouteOptions routes) {
-      routes.addArea("", "^com.lmpessoa.services");
-   }
 
    @Before
-   public void setup() throws ServletException {
-      context = mock(ApplicationContext.class);
-      when(context.getAttribute("service.startup.class")).thenReturn(ApplicationResponseTest.class);
-      when(context.getEnvironment()).thenReturn(() -> "Development");
-      when(context.getLogger()).thenReturn(log);
-      app = new ApplicationServlet(TestResource.class);
-      app.init(new ApplicationConfig(context, "test"));
+   public void setup() {
+      ApplicationServerInfo info = mock(ApplicationServerInfo.class);
+      ApplicationServer server = new ApplicationServer(ApplicationResponseTest.class, info, "Development", log);
+      RouteTable routes = new RouteTable(server.getServices(), log);
+      routes.put("", TestResource.class);
+      context = new ApplicationContext(server, 5617, "test", routes);
+      server.getServices().putRequestValue(IRouteTable.class, routes);
    }
 
    @Test
    public void testJobRequestEmpty() throws InterruptedException, IOException {
-      String[] result = runJob(HttpRequestBuilder.build("/test/empty"));
+      String[] result = runJob("GET", "/test/empty");
       assertEquals("HTTP/1.1 204 No Content", result[0]);
    }
 
    @Test
    public void testJobRequestNotFound() throws InterruptedException, IOException {
-      String[] result = runJob(HttpRequestBuilder.build("/test/notfound"));
+      String[] result = runJob("GET", "/test/notfound");
       assertEquals("HTTP/1.1 404 Not Found", result[0]);
    }
 
    @Test
    public void testJobRequestWrongMethod() throws InterruptedException, IOException {
-      String[] result = runJob(HttpRequestBuilder.build("POST", "/test/empty"));
+      String[] result = runJob("POST", "/test/empty");
       assertEquals("HTTP/1.1 405 Method Not Allowed", result[0]);
    }
 
    @Test
    public void testJobResquestString() throws InterruptedException, IOException {
-      String[] result = runJob(HttpRequestBuilder.build("/test"));
+      String[] result = runJob("GET", "/test");
       assertArrayEquals(new String[] { //
                "HTTP/1.1 200 OK", //
                "Content-Length: 4", //
-               "Content-Type: text/plain; charset=utf-8", //
+               "Content-Type: text/plain", //
                "", //
                "Test" }, result);
    }
 
    @Test
    public void testJobRequestDownload() throws InterruptedException, IOException {
-      String[] result = runJob(HttpRequestBuilder.build("/test/download"));
+      String[] result = runJob("GET", "/test/download");
       assertArrayEquals(new String[] { //
                "HTTP/1.1 200 OK", //
                "Content-Disposition: attachment; filename=\"test.txt\"", //
@@ -125,18 +120,21 @@ public final class ApplicationResponseTest {
       @HttpGet
       @Route("download")
       public HttpInputStream download() {
-         HttpInputStream result = new HttpInputStream(ContentType.TEXT, "Test".getBytes(), "test.txt");
+         Charset utf8 = Charset.forName("UTF-8");
+         HttpInputStream result = new HttpInputStream(ContentType.TEXT, "Test".getBytes(utf8), utf8, "test.txt");
          result.setDownloadable(true);
          return result;
       }
    }
 
-   private String[] runJob(HttpRequest request) throws InterruptedException {
+   private String[] runJob(String method, String path) throws InterruptedException, IOException {
+      InputStream request = new HttpRequestBuilder().setMethod(method).setPath(path).buildAsStream();
       ByteArrayOutputStream result = new ByteArrayOutputStream();
-      HttpResponse response = new HttpResponse(result);
-      ConnectionInfo conn = mock(ConnectionInfo.class);
-      app.service(request, conn, response);
-      response.commit(log);
+      Socket socket = mock(Socket.class);
+      when(socket.getInputStream()).thenReturn(request);
+      when(socket.getOutputStream()).thenReturn(result);
+      ApplicationResponder app = new ApplicationResponder(context, socket);
+      app.run();
       return new String(result.toByteArray()).split("\r\n");
    }
 }

@@ -31,7 +31,7 @@ package com.lmpessoa.services.core.hosting;
  * wrapped in an instance of this class.
  * </p>
  */
-public final class InternalServerError extends Error implements IHttpStatus {
+public final class InternalServerError extends Error implements IHttpStatusSupplier {
 
    private static final long serialVersionUID = 1L;
 

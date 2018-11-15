@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.routing.content;
+package com.lmpessoa.services.core.hosting.content;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -39,8 +39,8 @@ import org.junit.rules.ExpectedException;
 
 import com.lmpessoa.services.core.ContentType;
 import com.lmpessoa.services.core.HttpInputStream;
-import com.lmpessoa.services.core.routing.content.SerializationException;
-import com.lmpessoa.services.core.routing.content.Serializer;
+import com.lmpessoa.services.core.hosting.content.SerializationException;
+import com.lmpessoa.services.core.hosting.content.Serializer;
 
 public final class SerializerTest {
 

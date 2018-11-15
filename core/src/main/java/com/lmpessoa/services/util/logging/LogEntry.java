@@ -45,9 +45,9 @@ import com.lmpessoa.services.util.ConnectionInfo;
  * whenever one of the methods of the {@link ILogger} interface is called.
  * </p>
  */
-@NonTraced
 public final class LogEntry {
 
+   private static final String LOCATION = ClassUtils.findLocation(LogEntry.class);
    private static final String AT = "...at ";
 
    private final StackTraceElement logPoint;
@@ -56,6 +56,7 @@ public final class LogEntry {
    private final ZonedDateTime time;
    private final Severity severity;
    private final String threadName;
+   private final boolean internal;
    private final Object message;
    private final long threadId;
 
@@ -102,10 +103,7 @@ public final class LogEntry {
     * @return the name of the class in which the log entry was created.
     */
    public String getClassName() {
-      if (message instanceof Throwable) {
-         Throwable t = (Throwable) message;
-         return t.getStackTrace()[0].getClassName();
-      } else if (logPoint != null) {
+      if (logPoint != null) {
          return logPoint.getClassName();
       }
       return defaultClass;
@@ -173,9 +171,13 @@ public final class LogEntry {
       this.message = Objects.requireNonNull(message);
       this.connInfo = connInfo;
       this.time = time;
-
+   
       Thread thread = Thread.currentThread();
-      this.logPoint = getFirstNonTraced(thread.getStackTrace());
+      StackTraceElement[] stack = message instanceof Throwable //
+               ? ((Throwable) message).getStackTrace()
+               : thread.getStackTrace();
+      this.internal = LOCATION.equals(ClassUtils.findLocation(getFirstNonLogger(stack)));
+      this.logPoint = getFirstNonTraced(stack);
       this.threadName = thread.getName();
       this.threadId = thread.getId();
    }
@@ -198,9 +200,7 @@ public final class LogEntry {
          if (t.getCause() != null) {
             return new LogEntry(this, t.getCause());
          }
-         return null;
-      }
-      if (!getMessage().startsWith(AT) && logPoint != null) {
+      } else if (!getMessage().startsWith(AT) && logPoint != null && !internal) {
          return new LogEntry(this, AT + logPoint);
       }
       return null;
@@ -211,10 +211,31 @@ public final class LogEntry {
       this.message = Objects.requireNonNull(message);
       this.severity = parentEntry.severity;
       this.defaultClass = parentEntry.defaultClass;
+      this.internal = parentEntry.internal;
       this.logPoint = parentEntry.logPoint;
       this.threadName = parentEntry.threadName;
       this.threadId = parentEntry.threadId;
       this.connInfo = parentEntry.connInfo;
+   }
+
+   private static Class<?> getFirstNonLogger(StackTraceElement[] stack) {
+      boolean foundLogger = false;
+      for (StackTraceElement element : stack) {
+         if (Logger.class.getName().equals(element.getClassName())) {
+            if (!foundLogger) {
+               foundLogger = true;
+            }
+         } else {
+            if (foundLogger) {
+               try {
+                  return Class.forName(element.getClassName());
+               } catch (ClassNotFoundException e) { // NOSONAR
+                  // Should never happen since we know the class exists
+               }
+            }
+         }
+      }
+      return null;
    }
 
    private static boolean skipNonTraced(StackTraceElement element) {
@@ -234,7 +255,7 @@ public final class LogEntry {
       if (!Modifier.isPublic(clazz.getModifiers())) {
          return true;
       }
-      if (clazz.isAnnotationPresent(NonTraced.class)) {
+      if (LOCATION.equals(ClassUtils.findLocation(clazz))) {
          return true;
       }
       final String methodName = element.getMethodName();
@@ -243,10 +264,9 @@ public final class LogEntry {
       }
       Object[] methods;
       if ("<init>".equals(methodName)) {
-         methods = ClassUtils.findConstructor(clazz, m -> !m.isSynthetic() && !m.isAnnotationPresent(NonTraced.class));
+         methods = ClassUtils.findConstructor(clazz, m -> !m.isSynthetic());
       } else {
-         methods = ClassUtils.findMethods(clazz,
-                  m -> m.getName().equals(methodName) && !m.isSynthetic() && !m.isAnnotationPresent(NonTraced.class));
+         methods = ClassUtils.findMethods(clazz, m -> m.getName().equals(methodName) && !m.isSynthetic());
       }
       return methods.length == 0;
    }
