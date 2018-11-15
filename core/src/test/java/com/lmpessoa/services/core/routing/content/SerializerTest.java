@@ -37,8 +37,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.lmpessoa.services.core.MediaType;
-import com.lmpessoa.services.core.hosting.HttpResultInputStream;
+import com.lmpessoa.services.core.ContentType;
+import com.lmpessoa.services.core.HttpInputStream;
 import com.lmpessoa.services.core.routing.content.SerializationException;
 import com.lmpessoa.services.core.routing.content.Serializer;
 
@@ -51,7 +51,7 @@ public final class SerializerTest {
    public void testParseJson() {
       String content = "{\"id\": 12, \"name\": \"Test\", \"email\": "
                + "[ \"test@test.com\", \"test@test.org\" ], \"checked\": true}";
-      TestObject result = Serializer.parse(MediaType.JSON, content, TestObject.class);
+      TestObject result = Serializer.read(ContentType.JSON, content.getBytes(), TestObject.class);
       assertNotNull(result);
       assertEquals(12, result.id);
       assertEquals("Test", result.name);
@@ -65,7 +65,7 @@ public final class SerializerTest {
       Serializer.enableXml(false);
       String content = "<?xml version=\"1.0\"?><object><id>12</id><name>Test</name>"
                + "<email>test@test.com</email><email>test@test.org</email><checked>true</checked></object>";
-      Serializer.parse(MediaType.XML, content, TestObject.class);
+      Serializer.read(ContentType.XML, content.getBytes(), TestObject.class);
    }
 
    @Test
@@ -73,7 +73,7 @@ public final class SerializerTest {
       Serializer.enableXml(true);
       String content = "<?xml version=\"1.0\"?><object><id>12</id><name>Test</name>"
                + "<email>test@test.com</email><email>test@test.org</email><checked>true</checked></object>";
-      TestObject result = Serializer.parse(MediaType.XML, content, TestObject.class);
+      TestObject result = Serializer.read(ContentType.XML, content.getBytes(), TestObject.class);
       assertNotNull(result);
       assertEquals(12, result.id);
       assertEquals("Test", result.name);
@@ -84,7 +84,7 @@ public final class SerializerTest {
    @Test
    public void testParseForm() {
       String content = "id=12&name=Test&email=test%40test.com&email=test%40test.org&checked=true";
-      TestObject result = Serializer.parse(MediaType.FORM, content, TestObject.class);
+      TestObject result = Serializer.read(ContentType.FORM, content.getBytes(), TestObject.class);
       assertNotNull(result);
       assertEquals(12, result.id);
       assertEquals("Test", result.name);
@@ -95,13 +95,13 @@ public final class SerializerTest {
    @Test
    public void testProduceXmlFails() throws IOException, InstantiationException, IllegalAccessException {
       Serializer.enableXml(false);
-      assertNull(Serializer.produce(new String[] { MediaType.XML }, "Test"));
+      assertNull(Serializer.produce(new String[] { ContentType.XML }, "Test"));
    }
 
    @Test
    public void testProduceXmlString() throws IOException, InstantiationException, IllegalAccessException {
       Serializer.enableXml(true);
-      HttpResultInputStream result = Serializer.produce(new String[] { MediaType.XML }, "Test");
+      HttpInputStream result = Serializer.produce(new String[] { ContentType.XML }, "Test");
       byte[] data = new byte[result.available()];
       result.read(data);
       String content = new String(data, Charset.forName("UTF-8"));
@@ -111,7 +111,7 @@ public final class SerializerTest {
    @Test
    public void testProduceXmlInt() throws IOException, InstantiationException, IllegalAccessException {
       Serializer.enableXml(true);
-      HttpResultInputStream result = Serializer.produce(new String[] { MediaType.XML }, 12);
+      HttpInputStream result = Serializer.produce(new String[] { ContentType.XML }, 12);
       byte[] data = new byte[result.available()];
       result.read(data);
       String content = new String(data, Charset.forName("UTF-8"));
@@ -121,7 +121,7 @@ public final class SerializerTest {
    @Test
    public void testProduceXmlException() throws IOException, InstantiationException, IllegalAccessException {
       Serializer.enableXml(true);
-      HttpResultInputStream result = Serializer.produce(new String[] { MediaType.XML }, new NullPointerException());
+      HttpInputStream result = Serializer.produce(new String[] { ContentType.XML }, new NullPointerException());
       byte[] data = new byte[result.available()];
       result.read(data);
       String content = new String(data, Charset.forName("UTF-8"));

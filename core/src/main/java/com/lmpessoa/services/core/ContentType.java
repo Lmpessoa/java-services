@@ -28,8 +28,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import com.lmpessoa.services.core.hosting.HttpResultInputStream;
-
 /**
  * Identifies the content type returned by a method.
  *
@@ -51,11 +49,36 @@ import com.lmpessoa.services.core.hosting.HttpResultInputStream;
  * return may vary.
  * </p>
  *
- * @see HttpResultInputStream
+ * @see HttpInputStream
  */
 @Target(METHOD)
 @Retention(RUNTIME)
 public @interface ContentType {
+
+   public static final String ATOM = "application/atom+xml";
+   public static final String BINARY = "application/octet-stream";
+   public static final String CSS = "text/css";
+   public static final String CSV = "text/csv";
+   public static final String GIF = "image/gif";
+   public static final String HTML = "text/html";
+   public static final String ICO = "image/x-icon";
+   public static final String JS = "application/javascript";
+   public static final String JSON = "application/json";
+   public static final String JPEG = "image/jpeg";
+   public static final String PDF = "application/pdf";
+   public static final String PNG = "image/png";
+   public static final String RSS = "application/rss+xml";
+   public static final String SVG = "image/svg+xml";
+   public static final String SGML = "text/sgml";
+   public static final String TEXT = "text/plain";
+   public static final String WEBP = "image/webp";
+   public static final String WSDL = "application/wdsl+xml";
+   public static final String XHTML = "application/xhtml+xml";
+   public static final String XML = "text/xml";
+   public static final String YAML = "text/yaml";
+
+   public static final String FORM = "application/x-www-form-urlencoded";
+   public static final String MULTIPART_FORM = "multipart/form-data";
 
    String value();
 }

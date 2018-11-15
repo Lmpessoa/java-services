@@ -25,7 +25,8 @@ package com.lmpessoa.services.core.hosting;
 import java.io.IOException;
 import java.net.URL;
 
-import com.lmpessoa.services.core.MediaType;
+import com.lmpessoa.services.core.ContentType;
+import com.lmpessoa.services.core.HttpInputStream;
 import com.lmpessoa.services.util.logging.ILogger;
 import com.lmpessoa.services.util.logging.NonTraced;
 
@@ -51,7 +52,7 @@ final class FaviconHandler {
          }
          if (iconUrl != null) {
             try {
-               return new HttpResultInputStream(MediaType.ICO, iconUrl.openStream());
+               return new HttpInputStream(ContentType.ICO, iconUrl.openStream());
             } catch (IOException e) {
                log.error(e);
             }

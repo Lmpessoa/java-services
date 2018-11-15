@@ -20,24 +20,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.util.logging;
+package com.lmpessoa.services.core.hosting;
 
-import com.lmpessoa.services.Internal;
-import com.lmpessoa.services.util.ClassUtils;
+/**
+ * Thrown when the received request is not valid.
+ */
+public final class BadRequestException extends HttpException {
 
-public final class ConsoleLogWriter extends FormattedLogWriter {
+   private static final long serialVersionUID = 1L;
 
-   @Internal
-   public ConsoleLogWriter() {
-      ClassUtils.checkInternalAccess();
+   /**
+    * Creates a new <code>BadRequestException</code>.
+    */
+   public BadRequestException() {
+      super();
+   }
+
+   /**
+    * Creates a new <code>BadRequestException</code> with the given detail message.
+    *
+    * @param message the detail message.
+    */
+   public BadRequestException(String message) {
+      super(message);
    }
 
    @Override
-   public void append(Severity severity, String entry) {
-      if (Severity.ERROR.compareTo(severity) >= 0) {
-         System.err.print(entry); // NOSONAR
-      } else {
-         System.out.print(entry); // NOSONAR
-      }
+   public int getStatusCode() {
+      return 400;
    }
+
 }

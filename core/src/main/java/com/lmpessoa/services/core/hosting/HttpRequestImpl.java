@@ -37,8 +37,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.lmpessoa.services.core.MediaType;
-
 final class HttpRequestImpl implements HttpRequest {
 
    private static final String UTF8 = "UTF-8";
@@ -52,7 +50,6 @@ final class HttpRequestImpl implements HttpRequest {
 
    private Map<String, String> cookies;
    private Map<String, Collection<String>> query;
-   private Map<String, Collection<String>> form;
 
    @Override
    public String getMethod() {
@@ -123,28 +120,6 @@ final class HttpRequestImpl implements HttpRequest {
          query = Collections.unmodifiableMap(result);
       }
       return query;
-   }
-
-   @Override
-   public synchronized Map<String, Collection<String>> getForm() {
-      if (form == null && MediaType.FORM.equals(getContentType())) {
-         Map<String, List<String>> result = new HashMap<>();
-         for (String var : new String(content).split("&")) {
-            String[] parts = var.split("=", 2);
-            try {
-               parts[0] = URLDecoder.decode(parts[0], UTF8);
-               parts[1] = URLDecoder.decode(parts[1], UTF8);
-            } catch (UnsupportedEncodingException e) {
-               // Ignore
-            }
-            if (!result.containsKey(parts[0])) {
-               result.put(parts[0], new ArrayList<>());
-            }
-            result.get(parts[0]).add(parts[1]);
-         }
-         form = Collections.unmodifiableMap(result);
-      }
-      return form;
    }
 
    @Override

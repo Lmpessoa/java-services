@@ -85,8 +85,8 @@ public interface HttpRequest {
     * but only the value send with the request headers.
     * </p>
     *
-    * @return the content length of the body of this HTTP request, or <code>0</code> if this value
-    * is not present.
+    * @return the content length of the body of this HTTP request, or <code>0</code> if this value is
+    * not present.
     */
    long getContentLength();
 
@@ -103,7 +103,7 @@ public interface HttpRequest {
     * @return a stream with the content of this HTTP request.
     * @throws IOException
     */
-   InputStream getBody() throws IOException;
+   InputStream getBody();
 
    /**
     * Returns a map with the headers of this HTTP request.
@@ -127,14 +127,6 @@ public interface HttpRequest {
     * @return a map with the parsed values of the query string of this HTTP request.
     */
    Map<String, Collection<String>> getQuery();
-
-   /**
-    * Returns a map with the parsed values of the body of this HTTP request, if this body is an URL
-    * encoded form.
-    *
-    * @return a map with the parsed values of the body of this HTTP request.
-    */
-   Map<String, Collection<String>> getForm();
 
    /**
     * Returns a map of the cookies sent with this HTTP request.

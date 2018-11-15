@@ -35,7 +35,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.lmpessoa.services.core.MediaType;
+import com.lmpessoa.services.core.ContentType;
 import com.lmpessoa.services.core.Route;
 import com.lmpessoa.services.core.hosting.HttpException;
 import com.lmpessoa.services.core.hosting.HttpRequest;
@@ -192,7 +192,7 @@ public final class RouteTableMatcherTest {
       HttpRequest request = new HttpRequestBuilder().setMethod("PUT")
                .setPath("/test/12")
                .setBody("id=12&name=Test&email=test%40test.com&checked=true")
-               .setContentType(MediaType.FORM)
+               .setContentType(ContentType.FORM)
                .build();
       RouteMatch result = table.matches(request);
       assertTrue(result instanceof MatchedRoute);

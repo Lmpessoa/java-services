@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -39,64 +40,85 @@ import java.util.Map;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 
-import com.lmpessoa.services.core.MediaType;
-
 final class HttpRequestWrapper implements HttpRequest {
 
-   private final HttpServletRequest request;
-
+   private static final String UTF_8 = "utf-8";
    private Map<String, Collection<String>> query = null;
-   private Map<String, Collection<String>> form = null;
-   private HeaderMap headers = null;
    private byte[] content;
 
-   HttpRequestWrapper(HttpServletRequest request) {
-      this.request = request;
+   private final String queryString;
+   private final HeaderMap headers;
+   private final Cookie[] cookies;
+   private final Charset charset;
+   private final String protocol;
+   private final String method;
+   private final String path;
+
+   HttpRequestWrapper(HttpServletRequest request) throws IOException {
+      this.method = request.getMethod();
+      this.path = request.getPathInfo();
+      this.protocol = request.getProtocol();
+      this.queryString = request.getQueryString();
+      headers = new HeaderMap();
+      Enumeration<String> headerNames = request.getHeaderNames();
+      while (headerNames.hasMoreElements()) {
+         String header = headerNames.nextElement();
+         headers.add(header, request.getHeader(header));
+      }
+      headers.freeze();
+      try (InputStream is = request.getInputStream()) {
+         ByteArrayOutputStream os = new ByteArrayOutputStream();
+         byte[] buffer = new byte[1024];
+         int len;
+         while ((len = is.read(buffer)) > 0) {
+            os.write(buffer, 0, len);
+         }
+         content = os.toByteArray();
+      }
+      String encoding = request.getCharacterEncoding();
+      if (encoding == null) {
+         encoding = UTF_8;
+      }
+      this.charset = Charset.forName(encoding);
+      this.cookies = request.getCookies();
    }
 
    @Override
    public String getMethod() {
-      return request.getMethod();
+      return method;
    }
 
    @Override
    public String getPath() {
-      return request.getPathInfo();
+      return path;
    }
 
    @Override
    public String getProtocol() {
-      return request.getProtocol();
+      return protocol;
    }
 
    @Override
    public String getQueryString() {
-      return request.getQueryString();
+      return queryString;
    }
 
    @Override
    public long getContentLength() {
-      return request.getContentLengthLong();
+      String result = headers.get(HeaderMap.CONTENT_LENGTH);
+      if (result != null) {
+         return Integer.parseInt(result);
+      }
+      return 0;
    }
 
    @Override
    public String getContentType() {
-      return request.getContentType();
+      return headers.get(HeaderMap.CONTENT_TYPE);
    }
 
    @Override
-   public InputStream getBody() throws IOException {
-      if (content == null) {
-         try (InputStream is = request.getInputStream()) {
-            ByteArrayOutputStream os = new ByteArrayOutputStream();
-            byte[] buffer = new byte[1024];
-            int len;
-            while ((len = is.read(buffer)) > 0) {
-               os.write(buffer, 0, len);
-            }
-            content = os.toByteArray();
-         }
-      }
+   public InputStream getBody() {
       if (content != null) {
          return new ByteArrayInputStream(content);
       }
@@ -105,34 +127,23 @@ final class HttpRequestWrapper implements HttpRequest {
 
    @Override
    public synchronized HeaderMap getHeaders() {
-      if (headers == null) {
-         HeaderMap result = new HeaderMap();
-         Enumeration<String> headerNames = request.getHeaderNames();
-         while (headerNames.hasMoreElements()) {
-            String header = headerNames.nextElement();
-            result.add(header, request.getHeader(header));
-         }
-         result.freeze();
-         headers = result;
-      }
       return headers;
    }
 
    @Override
    public String getHeader(String headerName) {
-      return request.getHeader(headerName);
+      return headers.get(headerName);
    }
 
    @Override
    public Map<String, Collection<String>> getQuery() {
-      String queryString = request.getQueryString();
       if (query == null && queryString != null) {
          final Map<String, List<String>> result = new HashMap<>();
          for (String var : queryString.split("&")) {
             String[] parts = var.split("=", 2);
             try {
-               parts[0] = URLDecoder.decode(parts[0], request.getCharacterEncoding());
-               parts[1] = URLDecoder.decode(parts[1], request.getCharacterEncoding());
+               parts[0] = URLDecoder.decode(parts[0], UTF_8);
+               parts[1] = URLDecoder.decode(parts[1], UTF_8);
             } catch (UnsupportedEncodingException e) {
                // Ignore
             }
@@ -147,39 +158,15 @@ final class HttpRequestWrapper implements HttpRequest {
    }
 
    @Override
-   public Map<String, Collection<String>> getForm() {
-      if (form == null && MediaType.FORM.equals(getContentType())) {
-         Map<String, List<String>> result = new HashMap<>();
-         try {
-            getBody();
-         } catch (IOException e) {
-            request.getServletContext().log(e.getMessage(), e);
-            return null;
-         }
-         for (String var : new String(content).split("&")) {
-            String[] parts = var.split("=", 2);
-            try {
-               parts[0] = URLDecoder.decode(parts[0], request.getCharacterEncoding());
-               parts[1] = URLDecoder.decode(parts[1], request.getCharacterEncoding());
-            } catch (UnsupportedEncodingException e) {
-               // Ignore
-            }
-            if (!result.containsKey(parts[0])) {
-               result.put(parts[0], new ArrayList<>());
-            }
-            result.get(parts[0]).add(parts[1]);
-         }
-         form = Collections.unmodifiableMap(result);
-      }
-      return form;
-   }
-
-   @Override
    public Map<String, String> getCookies() {
       Map<String, String> result = new HashMap<>();
-      for (Cookie cookie : request.getCookies()) {
+      for (Cookie cookie : cookies) {
          result.put(cookie.getName(), cookie.getValue());
       }
       return result;
+   }
+
+   public Charset getCharset() {
+      return charset;
    }
 }

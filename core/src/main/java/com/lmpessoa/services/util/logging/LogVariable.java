@@ -71,9 +71,9 @@ class LogVariable implements IVariablePart {
          } else {
             while (result.length() < length) {
                if (rightAlign) {
-                  result = " " + result;
+                  result = " " + result; // NOSONAR
                } else {
-                  result += " ";
+                  result += " "; // NOSONAR
                }
             }
          }

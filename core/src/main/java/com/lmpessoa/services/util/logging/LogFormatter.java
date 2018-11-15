@@ -251,7 +251,7 @@ final class LogFormatter {
       return conn.getRemoteAddress().getHostName();
    }
 
-   private static String getLocalHost(LogEntry entry) {
+   private static String getLocalHost(LogEntry entry) { // NOSONAR
       if (hostname == null) {
          if (System.getProperty("os.name").startsWith("Windows")) {
             hostname = System.getenv("COMPUTERNAME");

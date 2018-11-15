@@ -23,7 +23,6 @@
 package com.lmpessoa.services.core.hosting;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.HashMap;
@@ -131,7 +130,7 @@ public final class HttpRequestBuilder {
          }
 
          @Override
-         public InputStream getBody() throws IOException {
+         public InputStream getBody() {
             return new ByteArrayInputStream(body.getBytes());
          }
 
@@ -147,12 +146,6 @@ public final class HttpRequestBuilder {
 
          @Override
          public Map<String, Collection<String>> getQuery() {
-            // TODO Auto-generated method stub
-            return null;
-         }
-
-         @Override
-         public Map<String, Collection<String>> getForm() {
             // TODO Auto-generated method stub
             return null;
          }

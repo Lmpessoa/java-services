@@ -1,0 +1,14 @@
+--AaB03x
+Content-Disposition: form-data; name="id"
+
+12
+--AaB03x
+Content-Disposition: form-data; name="name"
+
+Test
+--AaB03x
+Content-Disposition: form-data; name="files"; filename="file1.txt"
+Content-Type: text/plain
+
+...contents of file1.txt...
+--AaB03x--

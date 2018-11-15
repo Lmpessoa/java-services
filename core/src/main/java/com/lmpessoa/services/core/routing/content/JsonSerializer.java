@@ -29,13 +29,22 @@ import java.nio.charset.Charset;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-final class JsonSerializer implements IContentParser, IContentProducer {
+final class JsonSerializer implements IContentReader, IContentProducer {
 
    @Override
-   public <T> T parse(String content, Class<T> clazz) {
+   public <T> T read(byte[] content, String contentType, Class<T> resultClass) {
+      String charset = Serializer.getContentTypeVariable(contentType, "charset");
+      Charset encoding = Charset.forName(charset == null ? Serializer.UTF_8 : charset);
+      String contentStr = new String(content, encoding);
+      return read(contentStr, resultClass);
+   }
+
+   @Override
+   public InputStream produce(Object obj) {
       try {
-         Gson gson = new GsonBuilder().setPrettyPrinting().create();
-         return gson.fromJson(content, clazz);
+         Gson gson = new GsonBuilder().create();
+         byte[] data = gson.toJson(obj).getBytes(Charset.forName(Serializer.UTF_8));
+         return new ByteArrayInputStream(data);
       } catch (RuntimeException e) {
          throw e;
       } catch (Exception e) {
@@ -43,12 +52,10 @@ final class JsonSerializer implements IContentParser, IContentProducer {
       }
    }
 
-   @Override
-   public InputStream produce(Object obj) {
+   private <T> T read(String content, Class<T> clazz) {
       try {
-         Gson gson = new GsonBuilder().create();
-         byte[] data = gson.toJson(obj).getBytes(Charset.forName("UTF-8"));
-         return new ByteArrayInputStream(data);
+         Gson gson = new GsonBuilder().setPrettyPrinting().create();
+         return gson.fromJson(content, clazz);
       } catch (RuntimeException e) {
          throw e;
       } catch (Exception e) {

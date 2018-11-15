@@ -165,7 +165,7 @@ public final class Logger implements ILogger, Runnable {
    }
 
    private synchronized void runLoggerJob() {
-      if (thread == null) {
+      if (thread == null || !thread.isAlive()) {
          thread = new Thread(this, "logger");
          thread.start();
       }

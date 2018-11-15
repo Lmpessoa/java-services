@@ -42,6 +42,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.lmpessoa.services.Internal;
+import com.lmpessoa.services.core.HttpInputStream;
 import com.lmpessoa.services.core.NonResource;
 import com.lmpessoa.services.core.Resource;
 import com.lmpessoa.services.core.routing.IRouteTable;
@@ -99,8 +100,7 @@ public final class ApplicationServlet extends GenericServlet {
    }
 
    @Override
-   public void service(ServletRequest req, ServletResponse res)
-      throws ServletException, IOException {
+   public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException {
       if (req instanceof HttpServletRequest && res instanceof HttpServletResponse) {
          HttpRequest request = new HttpRequestWrapper((HttpServletRequest) req);
          ConnectionInfo connection = new ServletConnectionInfo(req);
@@ -121,16 +121,16 @@ public final class ApplicationServlet extends GenericServlet {
    void service(HttpRequest request, ConnectionInfo connection, HttpServletResponse response) {
       HttpResult result = resolveRequest(request, connection);
       response.setStatus(result.getStatusCode());
-      try (HttpResultInputStream is = result.getInputStream()) {
+      try (HttpInputStream is = result.getInputStream()) {
          if (is != null) {
             response.setContentType(is.getContentType());
             response.setContentLength(is.available());
             if (is.getContentEncoding() != null) {
                response.setCharacterEncoding(is.getContentEncoding().name());
             }
-            if (is.isForceDownload()) {
+            if (is.isDownloadable()) {
                response.setHeader("Content-Disposition",
-                        String.format("attachment; filename=\"%s\"", is.getDownloadName()));
+                        String.format("attachment; filename=\"%s\"", is.getFilename()));
             }
             is.copyTo(response.getOutputStream());
          }
@@ -208,8 +208,7 @@ public final class ApplicationServlet extends GenericServlet {
       if (name == null) {
          name = "Development";
       }
-      final String envName = Character.toUpperCase(name.charAt(0))
-               + name.substring(1).toLowerCase();
+      final String envName = Character.toUpperCase(name.charAt(0)) + name.substring(1).toLowerCase();
       return () -> envName;
    }
 

@@ -40,14 +40,15 @@ import org.junit.rules.ExpectedException;
 
 import com.lmpessoa.services.core.ContentType;
 import com.lmpessoa.services.core.HttpGet;
-import com.lmpessoa.services.core.MediaType;
+import com.lmpessoa.services.core.HttpInputStream;
+import com.lmpessoa.services.core.HttpPost;
 import com.lmpessoa.services.core.Route;
 import com.lmpessoa.services.core.hosting.ApplicationInfo;
 import com.lmpessoa.services.core.hosting.ApplicationOptions;
 import com.lmpessoa.services.core.hosting.ApplicationServer;
 import com.lmpessoa.services.core.hosting.HttpRequest;
+import com.lmpessoa.services.core.hosting.HttpRequestImpl;
 import com.lmpessoa.services.core.hosting.HttpResult;
-import com.lmpessoa.services.core.hosting.HttpResultInputStream;
 import com.lmpessoa.services.core.hosting.IApplicationInfo;
 import com.lmpessoa.services.core.hosting.InternalServerError;
 import com.lmpessoa.services.core.hosting.NotImplementedException;
@@ -84,16 +85,6 @@ public final class NextHandlerFullTest {
       app = new ApplicationOptions();
    }
 
-   public HttpResult perform(String path) throws IOException {
-      request = new HttpRequestBuilder() //
-               .setMethod("GET") //
-               .setPath(path) //
-               .build();
-      services.useSingleton(HttpRequest.class, request);
-      route = RouteTableBridge.match(routes, request);
-      return (HttpResult) app.getFirstHandler(services).invoke();
-   }
-
    public String readAll(InputStream is) throws IOException {
       byte[] data = new byte[is.available()];
       is.read(data);
@@ -106,7 +97,7 @@ public final class NextHandlerFullTest {
       assertEquals(200, result.getStatusCode());
       assertEquals("Test", result.getObject());
       assertNotNull(result.getInputStream());
-      assertEquals(MediaType.TEXT, result.getInputStream().getContentType());
+      assertEquals(ContentType.TEXT, result.getInputStream().getContentType());
    }
 
    @Test
@@ -136,9 +127,37 @@ public final class NextHandlerFullTest {
       HttpResult result = perform("/test/object");
       assertEquals(200, result.getStatusCode());
       assertNotNull(result.getInputStream());
-      assertEquals(MediaType.JSON, result.getInputStream().getContentType());
+      assertEquals(ContentType.JSON, result.getInputStream().getContentType());
       String content = readAll(result.getInputStream());
       assertEquals("{\"id\":12,\"message\":\"Test\"}", content);
+   }
+
+   @Test
+   public void testMediatorWithObjectPost() throws IOException, NoSuchMethodException {
+      HttpResult result = performFile("/http/multi_post_request.txt");
+      assertEquals(200, result.getStatusCode());
+      assertNotNull(result.getInputStream());
+      assertEquals(ContentType.JSON, result.getInputStream().getContentType());
+      String content = readAll(result.getInputStream());
+      assertEquals("12", content);
+
+      assertTrue(RouteTableBridge.isMatchedRoute(route));
+      assertEquals(TestResource.class.getMethod("object", TestObject.class),
+               RouteTableBridge.getMatchedRouteMethod(route));
+      Object[] args = RouteTableBridge.getMatchedRouteMethodArgs(route);
+      assertEquals(1, args.length);
+
+      assertTrue(args[0] instanceof TestObject);
+      TestObject obj = (TestObject) args[0];
+      assertEquals(12, obj.id);
+      assertEquals("Test", obj.message);
+
+      assertTrue(obj.file instanceof HttpInputStream);
+      HttpInputStream file = (HttpInputStream) obj.file;
+      assertEquals("file1.txt", file.getFilename());
+      assertEquals(ContentType.TEXT, file.getContentType());
+      content = readAll(file);
+      assertEquals("...contents of file1.txt...", content);
    }
 
    @Test
@@ -146,7 +165,7 @@ public final class NextHandlerFullTest {
       HttpResult result = perform("/test/binary");
       assertEquals(200, result.getStatusCode());
       assertNotNull(result.getInputStream());
-      assertEquals(MediaType.BINARY, result.getInputStream().getContentType());
+      assertEquals(ContentType.BINARY, result.getInputStream().getContentType());
       String content = readAll(result.getInputStream());
       assertEquals("Test", content);
    }
@@ -156,7 +175,7 @@ public final class NextHandlerFullTest {
       HttpResult result = perform("/test/typed");
       assertEquals(200, result.getStatusCode());
       assertNotNull(result.getInputStream());
-      assertEquals(MediaType.YAML, result.getInputStream().getContentType());
+      assertEquals(ContentType.YAML, result.getInputStream().getContentType());
       String content = readAll(result.getInputStream());
       assertEquals("Test", content);
    }
@@ -166,7 +185,7 @@ public final class NextHandlerFullTest {
       HttpResult result = perform("/test/result");
       assertEquals(200, result.getStatusCode());
       assertNotNull(result.getInputStream());
-      assertEquals(MediaType.YAML, result.getInputStream().getContentType());
+      assertEquals(ContentType.YAML, result.getInputStream().getContentType());
       String content = readAll(result.getInputStream());
       assertEquals("Test", content);
    }
@@ -176,15 +195,38 @@ public final class NextHandlerFullTest {
       HttpResult result = perform("/test/favicon.ico");
       assertEquals(200, result.getStatusCode());
       assertNotNull(result.getInputStream());
-      assertEquals(MediaType.ICO, result.getInputStream().getContentType());
+      assertEquals(ContentType.ICO, result.getInputStream().getContentType());
       File favicon = new File(ApplicationServer.class.getResource("/favicon.ico").toURI());
       assertEquals(favicon.length(), result.getInputStream().available());
    }
 
+   private HttpResult perform(String path) throws IOException {
+      request = new HttpRequestBuilder() //
+               .setMethod("GET") //
+               .setPath(path) //
+               .build();
+      services.useSingleton(HttpRequest.class, request);
+      route = RouteTableBridge.match(routes, request);
+      return (HttpResult) app.getFirstHandler(services).invoke();
+   }
+
+   private HttpResult performFile(String resource) throws IOException {
+      try (InputStream res = NextHandlerFullTest.class.getResourceAsStream(resource)) {
+         request = new HttpRequestImpl(res);
+         services.useSingleton(HttpRequest.class, request);
+         route = RouteTableBridge.match(routes, request);
+         return (HttpResult) app.getFirstHandler(services).invoke();
+      }
+   }
+
    public static class TestObject {
 
-      public final int id;
-      public final String message;
+      public int id;
+      public String message;
+      public InputStream file;
+
+      public TestObject() {
+      }
 
       public TestObject(int id, String message) {
          this.message = message;
@@ -224,6 +266,12 @@ public final class NextHandlerFullTest {
          return new TestObject(12, "Test");
       }
 
+      @HttpPost
+      @Route("object")
+      public int object(TestObject value) {
+         return value.id;
+      }
+
       @HttpGet
       @Route("binary")
       public byte[] binary() {
@@ -232,16 +280,16 @@ public final class NextHandlerFullTest {
 
       @HttpGet
       @Route("typed")
-      @ContentType(MediaType.YAML)
+      @ContentType(ContentType.YAML)
       public byte[] typed() {
          return "Test".getBytes();
       }
 
       @HttpGet
       @Route("result")
-      @ContentType(MediaType.ATOM)
+      @ContentType(ContentType.ATOM)
       public InputStream result() {
-         return new HttpResultInputStream(MediaType.YAML, "Test".getBytes());
+         return new HttpInputStream(ContentType.YAML, "Test".getBytes());
       }
    }
 }

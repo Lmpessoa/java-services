@@ -1,0 +1,20 @@
+POST /test/object HTTP/1.1
+Host: https://lmpessoa.com
+User-Agent: HTTPTool/1.0
+Content-Type: multipart/form-data; boundary=AaB03x
+Content-Length: 271
+
+--AaB03x
+Content-Disposition: form-data; name="id"
+
+12
+--AaB03x
+Content-Disposition: form-data; name="message"
+
+Test
+--AaB03x
+Content-Disposition: form-data; name="file"; filename="file1.txt"
+Content-Type: text/plain
+
+...contents of file1.txt...
+--AaB03x--

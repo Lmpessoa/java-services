@@ -66,7 +66,7 @@ final class HttpResponse implements HttpServletResponse {
          for (String line : statuses) {
             String[] parts = line.split("=", 2);
             if (parts.length == 2) {
-               try {
+               try { // NOSONAR
                   int code = Integer.parseInt(parts[0]);
                   STATUSES.put(code, parts[1]);
                } catch (NumberFormatException e) {
@@ -76,7 +76,7 @@ final class HttpResponse implements HttpServletResponse {
          }
       } catch (IOException | URISyntaxException e) {
          // Any error here is treated as fatal
-         e.printStackTrace();
+         e.printStackTrace(); // NOSONAR
          System.exit(1);
       }
    }

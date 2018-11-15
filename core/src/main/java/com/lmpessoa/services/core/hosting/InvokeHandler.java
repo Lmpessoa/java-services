@@ -28,7 +28,7 @@ import com.lmpessoa.services.util.logging.NonTraced;
 @NonTraced
 final class InvokeHandler {
 
-   public InvokeHandler(NextHandler next) {
+   public InvokeHandler(NextHandler next) { // NOSONAR
       // Last handler, no need for next
    }
 

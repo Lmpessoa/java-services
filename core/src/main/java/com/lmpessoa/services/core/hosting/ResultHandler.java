@@ -32,7 +32,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.lmpessoa.services.core.ContentType;
-import com.lmpessoa.services.core.MediaType;
+import com.lmpessoa.services.core.HttpInputStream;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.routing.content.Serializer;
 import com.lmpessoa.services.util.logging.NonTraced;
@@ -49,14 +49,14 @@ final class ResultHandler {
    public HttpResult invoke(HttpRequest request, RouteMatch route) {
       Object obj = getResultObject();
       int statusCode = getStatusCode(obj);
-      HttpResultInputStream is = getContentBody(obj, request, route != null ? route.getMethod() : null);
+      HttpInputStream is = getContentBody(obj, request, route != null ? route.getMethod() : null);
       return new HttpResult(request, statusCode, obj, is);
    }
 
    private Object getResultObject() {
       try {
          return next.invoke();
-      } catch (Throwable t) {
+      } catch (Throwable t) { // NOSONAR
          // This is correct; we capture every kind of exception here
          return t;
       }
@@ -71,7 +71,7 @@ final class ResultHandler {
       return 200;
    }
 
-   private HttpResultInputStream getContentBody(Object obj, HttpRequest request, Method method) {
+   private HttpInputStream getContentBody(Object obj, HttpRequest request, Method method) {
       Object objx = obj;
       while (objx instanceof InternalServerError) {
          objx = ((InternalServerError) obj).getCause();
@@ -91,19 +91,19 @@ final class ResultHandler {
       if (result instanceof byte[]) {
          result = new ByteArrayInputStream((byte[]) result);
       }
-      if (result instanceof HttpResultInputStream) {
-         return (HttpResultInputStream) result;
+      if (result instanceof HttpInputStream) {
+         return (HttpInputStream) result;
       } else if (result instanceof InputStream) {
          ContentType contentAnn = method == null ? null : method.getAnnotation(ContentType.class);
          String contentType;
          if (contentAnn != null) {
             contentType = contentAnn.value();
          } else if (objx instanceof String) {
-            contentType = MediaType.TEXT;
+            contentType = ContentType.TEXT;
          } else {
-            contentType = MediaType.BINARY;
+            contentType = ContentType.BINARY;
          }
-         return new HttpResultInputStream(contentType, (InputStream) result);
+         return new HttpInputStream(contentType, (InputStream) result);
       }
       String[] accepts;
       if (request.getHeaders().contains("Accept")) {
@@ -112,7 +112,7 @@ final class ResultHandler {
                   s -> Arrays.stream(s).map(String::trim).forEach(acceptList::add));
          accepts = acceptList.toArray(new String[0]);
       } else {
-         accepts = new String[] { MediaType.JSON };
+         accepts = new String[] { ContentType.JSON };
       }
       try {
          return Serializer.produce(accepts, obj);

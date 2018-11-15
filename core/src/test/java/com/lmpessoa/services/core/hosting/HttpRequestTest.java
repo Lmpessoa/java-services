@@ -71,14 +71,6 @@ public final class HttpRequestTest {
    }
 
    @Test
-   public void testFormPostRequest() throws IOException {
-      HttpRequest request = getRequest("form_post_request.txt");
-      assertEquals("POST", request.getMethod());
-      assertEquals("/path/script.cgi", request.getPath());
-      assertEquals(Arrays.asList("flies"), request.getForm().get("favorite flavor"));
-   }
-
-   @Test
    public void testJsonPutRequest() throws IOException {
       HttpRequest request = getRequest("json_put_request.txt");
       assertEquals("PUT", request.getMethod());

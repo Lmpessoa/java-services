@@ -160,7 +160,7 @@ public final class ApplicationServer {
       this.context = createApplicationContext(startupClass);
 
       this.log.setConnectionSupplier(context);
-      this.log.enableTracing(true);// enable.contains("trace"));
+      this.log.enableTracing(enable.contains("trace"));
    }
 
    IHostEnvironment getEnvironment() {
@@ -209,7 +209,7 @@ public final class ApplicationServer {
          while (!threadPool.awaitTermination(1, TimeUnit.SECONDS)) {
             // Just sit and wait
          }
-      } catch (InterruptedException e) {
+      } catch (InterruptedException e) { // NOSONAR
          log.error(e);
       }
       logShutdownMessage();
@@ -217,8 +217,7 @@ public final class ApplicationServer {
    }
 
    private static boolean isStandalone() {
-      // Theoretically, we can ensure we're running from a standalone application if the current
-      // thread
+      // Theoretically, we can ensure we're running from a standalone application if the current thread
       // has only four methods and was started with a 'main' method:
       // - [0] Thread::getStackTrace()
       // - [1] ApplicationServer::isStandalone()
@@ -268,8 +267,7 @@ public final class ApplicationServer {
       if (name == null) {
          name = "Development";
       }
-      final String envName = Character.toUpperCase(name.charAt(0))
-               + name.substring(1).toLowerCase();
+      final String envName = Character.toUpperCase(name.charAt(0)) + name.substring(1).toLowerCase();
       return () -> envName;
    }
 
@@ -310,13 +308,11 @@ public final class ApplicationServer {
          }
          Class<?> writerClass = writer.getClass();
          for (Entry<String, String> param : logParams.entrySet()) {
-            String methodName = String.format("set%s%s",
-                     Character.toUpperCase(param.getKey().charAt(0)), param.getKey().substring(1));
-            Method[] methods = ClassUtils.findMethods(writerClass,
-                     m -> m.getName().equals(methodName));
+            String methodName = String.format("set%s%s", Character.toUpperCase(param.getKey().charAt(0)),
+                     param.getKey().substring(1));
+            Method[] methods = ClassUtils.findMethods(writerClass, m -> m.getName().equals(methodName));
             if (methods.length == 1 && methods[0].getParameterCount() == 1
-                     && methods[0].getParameterTypes()[0]
-                              .isAssignableFrom(param.getValue().getClass())) {
+                     && methods[0].getParameterTypes()[0].isAssignableFrom(param.getValue().getClass())) {
                methods[0].invoke(writer, param.getValue());
             }
          }
@@ -359,8 +355,7 @@ public final class ApplicationServer {
       BigDecimal thousand = new BigDecimal(1000);
       Duration duration = Duration.between(this.startupTime, Instant.now());
       BigDecimal uptime = new BigDecimal(duration.toMillis()).divide(thousand);
-      BigDecimal vmUptime = new BigDecimal(ManagementFactory.getRuntimeMXBean().getUptime())
-               .divide(thousand);
+      BigDecimal vmUptime = new BigDecimal(ManagementFactory.getRuntimeMXBean().getUptime()).divide(thousand);
       log.info("Started application in %s seconds (VM running for %s seconds)", uptime, vmUptime);
    }
 

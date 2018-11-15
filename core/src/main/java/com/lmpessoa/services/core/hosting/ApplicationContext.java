@@ -288,8 +288,7 @@ class ApplicationContext implements ServletContext, Runnable, Supplier<Connectio
    }
 
    @Override
-   public javax.servlet.FilterRegistration.Dynamic addFilter(String filterName,
-      Class<? extends Filter> filterClass) {
+   public javax.servlet.FilterRegistration.Dynamic addFilter(String filterName, Class<? extends Filter> filterClass) {
       throw new UnsupportedOperationException();
    }
 
@@ -368,8 +367,7 @@ class ApplicationContext implements ServletContext, Runnable, Supplier<Connectio
       throw new UnsupportedOperationException();
    }
 
-   ApplicationContext(ApplicationServer applicationServer, String name, InetAddress addr,
-      int port) {
+   ApplicationContext(ApplicationServer applicationServer, String name, InetAddress addr, int port) {
       this.server = Objects.requireNonNull(applicationServer);
       this.name = name;
       this.addr = addr;

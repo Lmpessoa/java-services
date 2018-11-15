@@ -22,8 +22,11 @@
  */
 package com.lmpessoa.services.core.routing;
 
+import java.lang.reflect.Method;
+
 import com.lmpessoa.services.core.hosting.HttpRequest;
 import com.lmpessoa.services.core.routing.IRouteTable;
+import com.lmpessoa.services.core.routing.MatchedRoute;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.routing.RouteTable;
 import com.lmpessoa.services.core.services.IServiceMap;
@@ -37,5 +40,23 @@ public final class RouteTableBridge {
 
    public static RouteMatch match(IRouteTable routes, HttpRequest request) {
       return ((RouteTable) routes).matches(request);
+   }
+
+   public static boolean isMatchedRoute(RouteMatch route) {
+      return route instanceof MatchedRoute;
+   }
+
+   public static Method getMatchedRouteMethod(RouteMatch route) {
+      if (isMatchedRoute(route)) {
+         return ((MatchedRoute) route).getMethod();
+      }
+      return null;
+   }
+
+   public static Object[] getMatchedRouteMethodArgs(RouteMatch route) {
+      if (isMatchedRoute(route)) {
+         return ((MatchedRoute) route).getMethodArgs();
+      }
+      return null;
    }
 }

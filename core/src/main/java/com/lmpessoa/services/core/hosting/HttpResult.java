@@ -22,21 +22,30 @@
  */
 package com.lmpessoa.services.core.hosting;
 
-import com.lmpessoa.services.Internal;
+import java.util.Objects;
 
-@Internal
+import com.lmpessoa.services.core.HttpInputStream;
+
 final class HttpResult {
 
-   private final HttpResultInputStream contentStream;
+   private final HttpInputStream contentStream;
    private final HttpRequest request;
-   private final Object object;
+   private final int contentLength;
    private final int statusCode;
+   private final Object object;
 
-   HttpResult(HttpRequest request, int statusCode, Object contentObject, HttpResultInputStream contentStream) {
-      this.request = request;
+   HttpResult(HttpRequest request, int statusCode, Object contentObject, HttpInputStream contentStream) {
+      this.request = Objects.requireNonNull(request);
       this.statusCode = statusCode;
       this.object = contentObject;
       this.contentStream = contentStream;
+      int size = 0;
+      try {
+         size = contentStream.available();
+      } catch (Exception e) {
+         // Just ignore for now
+      }
+      this.contentLength = size;
    }
 
    public int getStatusCode() {
@@ -47,19 +56,16 @@ final class HttpResult {
       return object;
    }
 
-   public HttpResultInputStream getInputStream() {
+   public HttpInputStream getInputStream() {
       return contentStream;
    }
 
    @Override
    public String toString() {
-      int contentLength = 0;
-      if (contentStream != null) {
-         contentLength = contentStream.size();
-      }
       String userAgent = request.getHeaders().get(HeaderMap.USER_AGENT);
-      return String.format("\"%s %s %s\" %s %s \"%s\"", request.getMethod(),
+      String resultType = contentStream != null ? contentStream.getContentType() : "(empty)";
+      return String.format("\"%s %s %s\" %s %s %s \"%s\"", request.getMethod(),
                request.getPath() + (request.getQueryString() != null ? "?" + request.getQueryString() : ""),
-               request.getProtocol(), statusCode, contentLength, userAgent);
+               request.getProtocol(), statusCode, contentLength, resultType, userAgent);
    }
 }

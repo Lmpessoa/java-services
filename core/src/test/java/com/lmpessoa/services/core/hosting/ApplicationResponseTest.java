@@ -35,15 +35,15 @@ import javax.servlet.ServletException;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.lmpessoa.services.core.ContentType;
 import com.lmpessoa.services.core.HttpGet;
-import com.lmpessoa.services.core.MediaType;
+import com.lmpessoa.services.core.HttpInputStream;
 import com.lmpessoa.services.core.Route;
 import com.lmpessoa.services.core.hosting.ApplicationConfig;
 import com.lmpessoa.services.core.hosting.ApplicationContext;
 import com.lmpessoa.services.core.hosting.ApplicationServlet;
 import com.lmpessoa.services.core.hosting.HttpRequest;
 import com.lmpessoa.services.core.hosting.HttpResponse;
-import com.lmpessoa.services.core.hosting.HttpResultInputStream;
 import com.lmpessoa.services.core.routing.IRouteOptions;
 import com.lmpessoa.services.util.ConnectionInfo;
 import com.lmpessoa.services.util.logging.ILogger;
@@ -124,9 +124,9 @@ public final class ApplicationResponseTest {
 
       @HttpGet
       @Route("download")
-      public HttpResultInputStream download() {
-         HttpResultInputStream result = new HttpResultInputStream(MediaType.TEXT, "Test".getBytes());
-         result.setDownloadName("test.txt");
+      public HttpInputStream download() {
+         HttpInputStream result = new HttpInputStream(ContentType.TEXT, "Test".getBytes(), "test.txt");
+         result.setDownloadable(true);
          return result;
       }
    }

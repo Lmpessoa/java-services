@@ -138,7 +138,7 @@ final class ApplicationServerInfo {
             }
          }
       } catch (IOException e) {
-         e.printStackTrace();
+         e.printStackTrace(); // NOSONAR
          System.exit(1);
       }
       return Collections.emptyMap();

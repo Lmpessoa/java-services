@@ -63,12 +63,8 @@ public final class FileLogWriter extends FormattedLogWriter {
          file.createNewFile();
          out = new PrintWriter(file, "UTF-8");
       } catch (IOException e) {
-         logFake(e);
+         // Ignore this exception for now
       }
-   }
-
-   private void logFake(Exception e) {
-      // Nothing to do here now
    }
 
    @Override

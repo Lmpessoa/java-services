@@ -22,7 +22,7 @@
  */
 package com.lmpessoa.services.core.routing;
 
-import java.io.IOException;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -39,7 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Scanner;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
@@ -52,6 +51,7 @@ import com.lmpessoa.services.core.HttpPatch;
 import com.lmpessoa.services.core.HttpPost;
 import com.lmpessoa.services.core.HttpPut;
 import com.lmpessoa.services.core.NonResource;
+import com.lmpessoa.services.core.hosting.HeaderMap;
 import com.lmpessoa.services.core.hosting.HttpRequest;
 import com.lmpessoa.services.core.hosting.InternalServerError;
 import com.lmpessoa.services.core.hosting.MethodNotAllowedException;
@@ -117,10 +117,17 @@ public final class RouteTable implements IRouteTable {
    }
 
    @Internal
+   @Override
+   public IRouteOptions getOptions() {
+      ClassUtils.checkInternalAccess();
+      return options;
+   }
+
+   @Internal
    public RouteMatch matches(HttpRequest request) {
       ClassUtils.checkInternalAccess();
       boolean found = false;
-      for (Entry<RoutePattern, Map<HttpMethod, MethodEntry>> entry : endpoints.entrySet()) {
+      for (Entry<RoutePattern, Map<HttpMethod, MethodEntry>> entry : endpoints.entrySet()) { // NOSONAR
          RoutePattern route = entry.getKey();
          Matcher matcher = route.getPattern().matcher(request.getPath());
          if (!matcher.find()) {
@@ -156,13 +163,6 @@ public final class RouteTable implements IRouteTable {
       }
    }
 
-   @Internal
-   @Override
-   public IRouteOptions getOptions() {
-      ClassUtils.checkInternalAccess();
-      return options;
-   }
-
    boolean hasRoute(String route) throws ParseException {
       RoutePattern pat = new RoutePattern(RoutePatternParser.parse(route, options), null);
       return endpoints.containsKey(pat);
@@ -188,22 +188,26 @@ public final class RouteTable implements IRouteTable {
    }
 
    private Object parseContentBody(HttpRequest request, Class<?> contentClass) {
-      InputStream body;
-      try {
-         body = request.getBody();
-      } catch (IOException e) {
-         log.error(e);
-         return null;
-      }
-      if (request.getContentType() != null && body != null && request.getContentLength() > 0) {
-         try (Scanner scanner = new Scanner(body)) {
-            scanner.useDelimiter("\\A");
-            if (scanner.hasNext()) {
-               return Serializer.parse(request.getContentType(), scanner.next(), contentClass);
-            }
-         }
+      InputStream body = request.getBody();
+      byte[] content = readContentBody(body);
+      if (request.getContentType() != null && content != null && request.getContentLength() > 0) {
+         return Serializer.read(request.getHeader(HeaderMap.CONTENT_TYPE), content, contentClass);
       }
       return null;
+   }
+
+   private byte[] readContentBody(InputStream input) {
+      ByteArrayOutputStream output = new ByteArrayOutputStream();
+      byte[] buffer = new byte[1024];
+      int len;
+      try {
+         while ((len = input.read(buffer)) != -1) {
+            output.write(buffer, 0, len);
+         }
+      } catch (Exception e) {
+         return null;
+      }
+      return output.toByteArray();
    }
 
    private void putClasses(Map<Class<?>, String> classes) {
@@ -298,7 +302,7 @@ public final class RouteTable implements IRouteTable {
       for (HttpMethod value : HttpMethod.values()) {
          // TO SONARQUBE: This is actually meant to be this way and behaves differently
          // from what SonarQube is suggesting that should be implemented. Ignore SonarQube here.
-         if (value.name().toLowerCase().equals(methodName)) {
+         if (value.name().toLowerCase().equals(methodName)) { // NOSONAR
             return new HttpMethod[] { value };
          }
       }

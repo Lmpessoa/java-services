@@ -37,7 +37,7 @@ public abstract class FormattedLogWriter extends LogWriter {
          this.template = LogFormatter.parse(DEFAULT);
       } catch (ParseException e) {
          // If it falls here, something is wrong with our code
-         e.printStackTrace();
+         e.printStackTrace(); // NOSONAR
          System.exit(1);
       }
    }

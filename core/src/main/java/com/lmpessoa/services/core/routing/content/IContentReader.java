@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,7 +22,7 @@
  */
 package com.lmpessoa.services.core.routing.content;
 
-interface IContentParser {
+interface IContentReader {
 
-   <T> T parse(String content, Class<T> resultClass);
+   <T> T read(byte[] content, String contentType, Class<T> resultClass);
 }

@@ -22,24 +22,19 @@
  */
 package com.lmpessoa.services.core.routing.content;
 
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.net.URLDecoder;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.nio.charset.Charset;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-final class FormSerializer implements IContentParser {
+final class FormSerializer implements IContentReader {
 
    private static final Map<Class<?>, Class<?>> primitives = new HashMap<>();
-   private static final String UTF_8 = "UTF-8";
 
    static {
       primitives.put(char.class, Character.class);
@@ -79,59 +74,15 @@ final class FormSerializer implements IContentParser {
       }
    }
 
-   public static Map<String, Object> parseQueryString(String body) {
-      String[][] values = Arrays.stream(body.split("&")).map(s -> s.split("=", 2)).toArray(String[][]::new);
-      Map<String, List<String>> groups = new HashMap<>();
-      for (String[] value : values) {
-         try {
-            String key = URLDecoder.decode(value[0], UTF_8);
-            if (key.endsWith("[]")) {
-               key = key.substring(0, key.length() - 2);
-            }
-            if (!groups.containsKey(key)) {
-               groups.put(key, new ArrayList<>());
-            }
-            groups.get(key).add(URLDecoder.decode(value[1], UTF_8));
-         } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-         }
-      }
-      Map<String, Object> result = new HashMap<>();
-      for (Entry<String, List<String>> entry : groups.entrySet()) {
-         String key = entry.getKey();
-         List<String> value = entry.getValue();
-         if (value.size() > 1) {
-            result.put(key, value.toArray(new String[0]));
-         } else if (value.size() == 1) {
-            result.put(key, value.get(0));
-         }
-      }
-      return result;
-   }
-
    @Override
-   public <T> T parse(String content, Class<T> type) {
-      Map<String, Object> values = parseQueryString(content);
-      try {
-         T result = type.newInstance();
-         for (Entry<String, Object> value : values.entrySet()) {
-            Field field = findField(value.getKey(), type);
-            if (field == null) {
-               return null;
-            }
-            Class<?> fieldType = field.getType();
-            Object fieldValue = fieldType == String.class || fieldType == String[].class ? value.getValue()
-                     : convertToValue(value.getValue(), field.getType());
-            field.setAccessible(true);
-            field.set(result, fieldValue);
-         }
-         return result;
-      } catch (InstantiationException | IllegalAccessException e) {
-         throw new RuntimeException(e);
-      }
+   public <T> T read(byte[] content, String contentType, Class<T> resultClass) {
+      String charset = Serializer.getContentTypeVariable(contentType, "charset");
+      Charset encoding = Charset.forName(charset == null ? "utf-8" : charset);
+      String contentStr = new String(content, encoding);
+      return read(contentStr, resultClass);
    }
 
-   private Field findField(String fieldName, Class<?> type) {
+   static Field findField(String fieldName, Class<?> type) {
       Class<?> superType = type;
       while (superType != null) {
          try {
@@ -145,7 +96,7 @@ final class FormSerializer implements IContentParser {
       return null;
    }
 
-   private Object convertToValue(Object value, Class<?> clazz) {
+   Object convertToValue(Object value, Class<?> clazz) {
       if (value.getClass().isArray() != clazz.isArray()) {
          throw new IllegalArgumentException("Could not convert value to type");
       }
@@ -168,6 +119,29 @@ final class FormSerializer implements IContentParser {
          return result;
       } else {
          return convert((String) value, clazz);
+      }
+   }
+
+   private <T> T read(String content, Class<T> resultClass) {
+      Map<String, Object> values = Serializer.parseQueryString(content);
+      try {
+         T result = resultClass.newInstance();
+         for (Entry<String, Object> value : values.entrySet()) {
+            Field field = findField(value.getKey(), resultClass);
+            if (field == null) {
+               return null;
+            }
+            Class<?> fieldType = field.getType();
+            Object fieldValue = fieldType == String.class || fieldType == String[].class ? value.getValue()
+                     : convertToValue(value.getValue(), field.getType());
+            field.setAccessible(true);
+            field.set(result, fieldValue);
+         }
+         return result;
+      } catch (IllegalArgumentException e) {
+         throw new TypeConvertException(e);
+      } catch (InstantiationException | IllegalAccessException e) {
+         throw new RuntimeException(e);
       }
    }
 }

@@ -37,7 +37,7 @@ import javax.xml.bind.Unmarshaller;
 
 import com.lmpessoa.services.core.hosting.InternalServerError;
 
-final class XmlSerializer implements IContentParser, IContentProducer {
+final class XmlSerializer implements IContentReader, IContentProducer {
 
    private static final Map<Class<?>, String> types = new HashMap<>();
    private static final String XML_HEAD = "<?xml version=\"1.0\"?>";
@@ -54,15 +54,11 @@ final class XmlSerializer implements IContentParser, IContentProducer {
    }
 
    @Override
-   @SuppressWarnings("unchecked")
-   public <T> T parse(String content, Class<T> clazz) {
-      try {
-         JAXBContext context = JAXBContext.newInstance(clazz);
-         Unmarshaller unmarshaller = context.createUnmarshaller();
-         return (T) unmarshaller.unmarshal(new StringReader(content));
-      } catch (JAXBException e) {
-         throw new RuntimeException(e);
-      }
+   public <T> T read(byte[] content, String contentType, Class<T> resultClass) {
+      String charset = Serializer.getContentTypeVariable(contentType, "charset");
+      Charset encoding = Charset.forName(charset == null ? Serializer.UTF_8 : charset);
+      String contentStr = new String(content, encoding);
+      return read(contentStr, resultClass);
    }
 
    @Override
@@ -77,6 +73,17 @@ final class XmlSerializer implements IContentParser, IContentProducer {
       }
       byte[] data = result.getBytes(Charset.forName("UTF-8"));
       return new ByteArrayInputStream(data);
+   }
+
+   @SuppressWarnings("unchecked")
+   private <T> T read(String content, Class<T> clazz) {
+      try {
+         JAXBContext context = JAXBContext.newInstance(clazz);
+         Unmarshaller unmarshaller = context.createUnmarshaller();
+         return (T) unmarshaller.unmarshal(new StringReader(content));
+      } catch (JAXBException e) {
+         throw new RuntimeException(e);
+      }
    }
 
    private String producePrimitive(String name, String value) {
