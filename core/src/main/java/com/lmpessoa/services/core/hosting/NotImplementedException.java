@@ -33,12 +33,6 @@ public class NotImplementedException extends HttpException {
     * Creates a new <code>NotImplementedException</code>.
     */
    public NotImplementedException() {
-      super();
+      super(501);
    }
-
-   @Override
-   public int getStatusCode() {
-      return 501;
-   }
-
 }

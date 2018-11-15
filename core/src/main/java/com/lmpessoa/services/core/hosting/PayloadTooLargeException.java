@@ -26,9 +26,7 @@ final class PayloadTooLargeException extends HttpException {
 
    private static final long serialVersionUID = 1L;
 
-   @Override
-   public int getStatusCode() {
-      return 413;
+   public PayloadTooLargeException() {
+      super(413);
    }
-
 }

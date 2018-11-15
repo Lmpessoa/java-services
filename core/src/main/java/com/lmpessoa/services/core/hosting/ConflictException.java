@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,12 +22,26 @@
  */
 package com.lmpessoa.services.core.hosting;
 
-interface IHttpStatusSupplier {
+/**
+ * Thrown when there is a conflict with the current state of the requested resource.
+ */
+public final class ConflictException extends HttpException {
+
+   private static final long serialVersionUID = 1L;
 
    /**
-    * Returns the HTTP status code of this exception.
-    *
-    * @return the HTTP status code of this exception.
+    * Creates a new <code>ConflictException</code>.
     */
-   int getStatusCode();
+   public ConflictException() {
+      super(409);
+   }
+
+   /**
+    * Creates a new <code>ConflictException</code> with the given detail message.
+    *
+    * @param message the detail message.
+    */
+   public ConflictException(String message) {
+      super(409, message);
+   }
 }

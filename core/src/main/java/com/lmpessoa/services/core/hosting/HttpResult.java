@@ -26,39 +26,39 @@ import com.lmpessoa.services.core.HttpInputStream;
 
 final class HttpResult {
 
-   private final HttpInputStream contentStream;
-   private final Object contentObject;
-   private final int contentLength;
+   private final HttpInputStream stream;
+   private final HeaderMap headers;
    private final int statusCode;
+   private final int length;
 
    public int getStatusCode() {
       return statusCode;
    }
 
-   public Object getObject() {
-      return contentObject;
+   public HeaderMap getHeaders() {
+      return headers;
    }
 
    public HttpInputStream getInputStream() {
-      return contentStream;
+      return stream;
    }
 
    @Override
    public String toString() {
-      String resultType = contentStream != null ? contentStream.getContentType() : "(empty)";
-      return String.format("%s %s %s", statusCode, contentLength, resultType);
+      String resultType = stream != null ? stream.getType() : "(empty)";
+      return String.format("%s %s %s", statusCode, length, resultType);
    }
 
-   HttpResult(int statusCode, Object contentObject, HttpInputStream contentStream) {
+   HttpResult(int statusCode, HeaderMap headers, HttpInputStream stream) {
       this.statusCode = statusCode;
-      this.contentObject = contentObject;
-      this.contentStream = contentStream;
+      this.headers = headers;
+      this.stream = stream;
       int size = 0;
       try {
-         size = contentStream.available();
+         size = stream.available();
       } catch (Exception e) {
          // Just ignore for now
       }
-      this.contentLength = size;
+      this.length = size;
    }
 }

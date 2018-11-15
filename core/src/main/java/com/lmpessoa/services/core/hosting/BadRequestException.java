@@ -33,7 +33,7 @@ public final class BadRequestException extends HttpException {
     * Creates a new <code>BadRequestException</code>.
     */
    public BadRequestException() {
-      super();
+      super(400);
    }
 
    /**
@@ -42,12 +42,6 @@ public final class BadRequestException extends HttpException {
     * @param message the detail message.
     */
    public BadRequestException(String message) {
-      super(message);
+      super(400, message);
    }
-
-   @Override
-   public int getStatusCode() {
-      return 400;
-   }
-
 }

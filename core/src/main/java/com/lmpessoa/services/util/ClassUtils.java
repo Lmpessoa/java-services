@@ -47,6 +47,52 @@ import com.lmpessoa.services.Internal;
 public final class ClassUtils {
 
    /**
+    * Ensures a class is not a primitive class.
+    *
+    * <p>
+    * If the given class is a primitive, its non-primitive version will be returned instead. Other
+    * classes will remain unchanged.
+    * </p>
+    *
+    * @param clazz the class to ensure not to be a primitive class.
+    * @return the class ensured not to be a primitive class.
+    */
+   public static Class<?> box(Class<?> clazz) {
+      if (clazz == byte.class) {
+         return Byte.class;
+      } else if (clazz == short.class) {
+         return Short.class;
+      } else if (clazz == int.class) {
+         return Integer.class;
+      } else if (clazz == long.class) {
+         return Long.class;
+      } else if (clazz == boolean.class) {
+         return Boolean.class;
+      } else if (clazz == float.class) {
+         return Float.class;
+      } else if (clazz == double.class) {
+         return Double.class;
+      } else if (clazz == char.class) {
+         return Character.class;
+      }
+      return clazz;
+   }
+
+   /**
+    * Ensures classes in a list are not primitive classes.
+    * <p>
+    * If any given class is a primitive, its non-primitive version will be returned instead. Other
+    * classes will remain unchanged.
+    * </p>
+    *
+    * @param classes the classes to ensure not to be primitive.
+    * @return the classes with primitives replaces by their non-primitive versions.
+    */
+   public static Class<?>[] box(Class<?>... classes) {
+      return Arrays.stream(classes).map(ClassUtils::box).toArray(Class<?>[]::new);
+   }
+
+   /**
     * Finds all public methods in a given class which match the given predicate.
     *
     * @param clazz the class to search for methods.
@@ -58,6 +104,14 @@ public final class ClassUtils {
       return Arrays.stream(clazz.getMethods()).filter(predicate).toArray(Method[]::new);
    }
 
+   /**
+    * Returns a list of <code>Constructor</code> objects that match the given predicate.
+    * 
+    * @param clazz the class from which to find the constructors.
+    * @param predicate a predicate used to filter constructors.
+    * @return a list of <code>Constructor</code> objects that match the given predicate or an empty
+    * list if none match the predicate.
+    */
    public static Constructor<?>[] findConstructor(Class<?> clazz, Predicate<? super Constructor<?>> predicate) {
       return Arrays.stream(clazz.getConstructors()).filter(predicate).toArray(Constructor<?>[]::new);
    }

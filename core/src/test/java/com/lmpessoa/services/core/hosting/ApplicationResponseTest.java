@@ -88,7 +88,7 @@ public final class ApplicationResponseTest {
       assertArrayEquals(new String[] { //
                "HTTP/1.1 200 OK", //
                "Content-Length: 4", //
-               "Content-Type: text/plain", //
+               "Content-Type: text/plain; charset=\"utf-8\"", //
                "", //
                "Test" }, result);
    }
@@ -100,7 +100,7 @@ public final class ApplicationResponseTest {
                "HTTP/1.1 200 OK", //
                "Content-Disposition: attachment; filename=\"test.txt\"", //
                "Content-Length: 4", //
-               "Content-Type: text/plain; charset=utf-8", //
+               "Content-Type: text/plain; charset=\"utf-8\"", //
                "", //
                "Test" }, result);
    }

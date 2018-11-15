@@ -26,9 +26,7 @@ final class LengthRequiredException extends HttpException {
 
    private static final long serialVersionUID = 1L;
 
-   @Override
-   public int getStatusCode() {
-      return 411;
+   public LengthRequiredException() {
+      super(411);
    }
-
 }

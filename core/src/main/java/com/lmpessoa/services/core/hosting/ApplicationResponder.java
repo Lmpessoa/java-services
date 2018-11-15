@@ -22,10 +22,8 @@
  */
 package com.lmpessoa.services.core.hosting;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -57,17 +55,16 @@ final class ApplicationResponder implements Runnable {
    public void run() {
       try (Socket socket = this.client) {
          HttpRequest request = new HttpRequestImpl(socket.getInputStream());
-         ConnectionInfo connection = new ConnectionInfo(socket, request.getHeader("Host"));
+
+         String host = request.getHeader(HeaderMap.HOST);
+         if (host == null) {
+            host = String.format("localhost:%d", context.getPort());
+         }
+         ConnectionInfo connection = new ConnectionInfo(socket, host);
+
          HttpResult result = resolveRequest(request, connection);
 
          log.info("\"%s\" %s \"%s\"", request, result, request.getHeader(HeaderMap.USER_AGENT));
-         if (result.getObject() instanceof Throwable) {
-            Throwable t = (Throwable) result.getObject();
-            while (t instanceof InternalServerError || t instanceof InvocationTargetException) {
-               t = t.getCause();
-            }
-            log.error(t);
-         }
 
          int statusCode = result.getStatusCode();
          StringBuilder response = new StringBuilder();
@@ -76,34 +73,17 @@ final class ApplicationResponder implements Runnable {
          response.append(' ');
          response.append(STATUSES.get(statusCode));
          response.append(CRLF);
-         byte[] data = new byte[0];
-         HttpInputStream contentStream = result.getInputStream();
-         HeaderMap headers = new HeaderMap();
-         if (contentStream != null) {
-            ByteArrayOutputStream tmp = new ByteArrayOutputStream();
-            contentStream.copyTo(tmp);
-            data = tmp.toByteArray();
-            String contentType = contentStream.getContentType();
-            if (contentStream.getContentEncoding() != null) {
-               contentType += "; charset="
-                        + contentStream.getContentEncoding().name().toLowerCase();
-            }
-            headers.set(HeaderMap.CONTENT_TYPE, contentType);
-            headers.set(HeaderMap.CONTENT_LENGTH, String.valueOf(data.length));
-            if (contentStream.isDownloadable() && contentStream.getFilename() != null) {
-               headers.set(HeaderMap.CONTENT_DISPOSITION,
-                        String.format("attachment; filename=\"%s\"", contentStream.getFilename()));
-            }
-         }
-         headers.stream().forEach(
+         result.getHeaders().stream().forEach(
                   e -> response.append(String.format("%s: %s%s", e.getKey(), e.getValue(), CRLF)));
+
          // TODO: Output cookies
+         HttpInputStream contentStream = result.getInputStream();
 
          response.append(CRLF);
          OutputStream output = socket.getOutputStream();
          output.write(response.toString().getBytes());
-         if (data.length > 0) {
-            output.write(data);
+         if (contentStream != null && contentStream.available() > 0) {
+            contentStream.sendTo(output);
          }
          output.flush();
       } catch (Exception e) {

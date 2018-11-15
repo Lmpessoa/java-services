@@ -26,10 +26,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.Socket;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 
@@ -50,12 +53,13 @@ import com.lmpessoa.services.core.hosting.HttpRequest;
 import com.lmpessoa.services.core.hosting.HttpRequestImpl;
 import com.lmpessoa.services.core.hosting.HttpResult;
 import com.lmpessoa.services.core.hosting.IApplicationInfo;
-import com.lmpessoa.services.core.hosting.InternalServerError;
 import com.lmpessoa.services.core.hosting.NotImplementedException;
+import com.lmpessoa.services.core.hosting.Redirect;
 import com.lmpessoa.services.core.routing.IRouteTable;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.routing.RouteTableBridge;
 import com.lmpessoa.services.core.services.ServiceMap;
+import com.lmpessoa.services.util.ConnectionInfo;
 import com.lmpessoa.services.util.logging.ILogger;
 import com.lmpessoa.services.util.logging.Logger;
 import com.lmpessoa.services.util.logging.NullLogWriter;
@@ -66,6 +70,7 @@ public final class NextHandlerFullTest {
    public ExpectedException thrown = ExpectedException.none();
 
    private final Logger log = new Logger(NextHandlerFullTest.class, new NullLogWriter());
+   private final ConnectionInfo connect;
    private ApplicationOptions app;
    private ServiceMap services;
 
@@ -73,10 +78,16 @@ public final class NextHandlerFullTest {
    private IRouteTable routes;
    private RouteMatch route;
 
+   public NextHandlerFullTest() {
+      Socket socket = mock(Socket.class);
+      connect = new ConnectionInfo(socket, "https://lmpessoa.com/");
+   }
+   
    @Before
    public void setup() throws NoSuchMethodException {
       services = new ServiceMap();
       services.useSingleton(ILogger.class, log);
+      services.useSingleton(ConnectionInfo.class, connect);
       services.useSingleton(IApplicationInfo.class, new IApplicationInfo() {
 
          @Override
@@ -103,16 +114,14 @@ public final class NextHandlerFullTest {
    public void testMediatorWithString() throws IOException {
       HttpResult result = perform("/test/string");
       assertEquals(200, result.getStatusCode());
-      assertEquals("Test", result.getObject());
       assertNotNull(result.getInputStream());
-      assertEquals(ContentType.TEXT, result.getInputStream().getContentType());
+      assertEquals(ContentType.TEXT, result.getInputStream().getType());
    }
 
    @Test
    public void testMediatorEmpty() throws IOException {
       HttpResult result = perform("/test/empty");
       assertEquals(204, result.getStatusCode());
-      assertNull(result.getObject());
    }
 
    @Test
@@ -125,9 +134,11 @@ public final class NextHandlerFullTest {
    public void testMediatorError() throws IOException {
       HttpResult result = perform("/test/error");
       assertEquals(500, result.getStatusCode());
-      assertTrue(result.getObject() instanceof InternalServerError);
-      InternalServerError e = (InternalServerError) result.getObject();
-      assertTrue(e.getCause() instanceof IllegalStateException);
+      HttpInputStream is = result.getInputStream();
+      assertEquals(ContentType.TEXT, is.getType());
+      ByteArrayOutputStream out = new ByteArrayOutputStream();
+      is.sendTo(out);
+      assertEquals("java.lang.IllegalStateException: Test", new String(out.toByteArray(), is.getEncoding()));
    }
 
    @Test
@@ -135,7 +146,7 @@ public final class NextHandlerFullTest {
       HttpResult result = perform("/test/object");
       assertEquals(200, result.getStatusCode());
       assertNotNull(result.getInputStream());
-      assertEquals(ContentType.JSON, result.getInputStream().getContentType());
+      assertEquals(ContentType.JSON, result.getInputStream().getType());
       String content = readAll(result.getInputStream());
       assertEquals("{\"id\":12,\"message\":\"Test\"}", content);
    }
@@ -145,7 +156,7 @@ public final class NextHandlerFullTest {
       HttpResult result = performFile("/http/multi_post_request.txt");
       assertEquals(200, result.getStatusCode());
       assertNotNull(result.getInputStream());
-      assertEquals(ContentType.JSON, result.getInputStream().getContentType());
+      assertEquals(ContentType.JSON, result.getInputStream().getType());
       String content = readAll(result.getInputStream());
       assertEquals("12", content);
 
@@ -163,7 +174,7 @@ public final class NextHandlerFullTest {
       assertTrue(obj.file instanceof HttpInputStream);
       HttpInputStream file = (HttpInputStream) obj.file;
       assertEquals("file1.txt", file.getFilename());
-      assertEquals(ContentType.TEXT, file.getContentType());
+      assertEquals(ContentType.TEXT, file.getType());
       content = readAll(file);
       assertEquals("...contents of file1.txt...", content);
    }
@@ -173,7 +184,7 @@ public final class NextHandlerFullTest {
       HttpResult result = perform("/test/binary");
       assertEquals(200, result.getStatusCode());
       assertNotNull(result.getInputStream());
-      assertEquals(ContentType.BINARY, result.getInputStream().getContentType());
+      assertEquals(ContentType.BINARY, result.getInputStream().getType());
       String content = readAll(result.getInputStream());
       assertEquals("Test", content);
    }
@@ -183,7 +194,7 @@ public final class NextHandlerFullTest {
       HttpResult result = perform("/test/typed");
       assertEquals(200, result.getStatusCode());
       assertNotNull(result.getInputStream());
-      assertEquals(ContentType.YAML, result.getInputStream().getContentType());
+      assertEquals(ContentType.YAML, result.getInputStream().getType());
       String content = readAll(result.getInputStream());
       assertEquals("Test", content);
    }
@@ -193,7 +204,7 @@ public final class NextHandlerFullTest {
       HttpResult result = perform("/test/result");
       assertEquals(200, result.getStatusCode());
       assertNotNull(result.getInputStream());
-      assertEquals(ContentType.YAML, result.getInputStream().getContentType());
+      assertEquals(ContentType.YAML, result.getInputStream().getType());
       String content = readAll(result.getInputStream());
       assertEquals("Test", content);
    }
@@ -203,9 +214,19 @@ public final class NextHandlerFullTest {
       HttpResult result = perform("/test/favicon.ico");
       assertEquals(200, result.getStatusCode());
       assertNotNull(result.getInputStream());
-      assertEquals(ContentType.ICO, result.getInputStream().getContentType());
+      assertEquals(ContentType.ICO, result.getInputStream().getType());
       File favicon = new File(ApplicationServer.class.getResource("/favicon.ico").toURI());
       assertEquals(favicon.length(), result.getInputStream().available());
+   }
+   
+   @Test
+   public void testMediatorWithRedirect() throws IOException {
+      HttpResult result = perform("/test/redirect");
+      assertEquals(302, result.getStatusCode());
+      assertNull(result.getInputStream());
+      HeaderMap headers = result.getHeaders();
+      assertTrue(headers.contains(HeaderMap.LOCATION));
+      assertEquals("https://lmpessoa.com/test/7", headers.get(HeaderMap.LOCATION));
    }
 
    private HttpResult perform(String path) throws IOException {
@@ -298,6 +319,12 @@ public final class NextHandlerFullTest {
       @ContentType(ContentType.ATOM)
       public InputStream result() {
          return new HttpInputStream(ContentType.YAML, "Test".getBytes());
+      }
+      
+      @HttpGet
+      @Route("redirect")
+      public Redirect redirect() {
+         return Redirect.to("/test/7");
       }
    }
 }

@@ -36,6 +36,7 @@ import org.junit.Test;
 
 import com.lmpessoa.services.core.ContentType;
 import com.lmpessoa.services.core.HttpInputStream;
+import com.lmpessoa.services.core.hosting.content.MultipartSerializer;
 
 public final class MultipartFormSerializerTest {
 
@@ -102,7 +103,7 @@ public final class MultipartFormSerializerTest {
    private void assertFile1(InputStream file) throws IOException {
       assertTrue(file instanceof HttpInputStream);
       HttpInputStream file1 = (HttpInputStream) file;
-      assertEquals(ContentType.TEXT, file1.getContentType());
+      assertEquals(ContentType.TEXT, file1.getType());
       assertEquals("file1.txt", file1.getFilename());
       String resultContent = new String(getContent(file1));
       assertEquals("...contents of file1.txt...", resultContent);
@@ -111,7 +112,7 @@ public final class MultipartFormSerializerTest {
    private void assertFile2(InputStream file) throws IOException {
       assertTrue(file instanceof HttpInputStream);
       HttpInputStream file2 = (HttpInputStream) file;
-      assertEquals(ContentType.GIF, file2.getContentType());
+      assertEquals(ContentType.GIF, file2.getType());
       assertEquals("file2.gif", file2.getFilename());
       String resultContent = new String(getContent(file2));
       assertEquals("...contents of file2.gif...", resultContent);

@@ -26,12 +26,15 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
@@ -96,6 +99,48 @@ public final class HeaderMap {
    private boolean modifiable = true;
 
    /**
+    * Splits an HTTP header value in a component map.
+    *
+    * <p>
+    * An HTTP header value is composed of a single direct value and, optionally, by multiple key/value
+    * pairs separated by semi-colons. This method parses a given HTTP header value in this format into
+    * a {@link Map} where keys can be easily read. The main value of the header value is stored in this
+    * map with an empty string as key.
+    * </p>
+    *
+    * @param headerValue the HTTP header value to be split.
+    * @return a map containing the main HTTP header value and any associated key/value pairs.
+    */
+   public static Map<String, String> split(String headerValue) {
+      int pos = 0;
+      int i = pos;
+      headerValue += ";";
+      Map<String, String> result = new HashMap<>();
+      while (pos < headerValue.length()) {
+         char ch = headerValue.charAt(i);
+         if (ch == '"' || ch == '\'') {
+            i = skipString(i, headerValue);
+         } else if (ch == ';') {
+            String[] subvalue = headerValue.substring(pos, i).split("=");
+            if (result.isEmpty()) {
+               result.put("", subvalue[0].trim());
+            } else {
+               subvalue[0] = subvalue[0].trim();
+               subvalue[1] = subvalue[1].trim();
+               Matcher m = Pattern.compile("\"([^\"]*)\"").matcher(subvalue[1]);
+               if (m.find()) {
+                  subvalue[1] = m.group(1);
+               }
+               result.put(subvalue[0], subvalue[1]);
+            }
+            pos = i + 1;
+         }
+         i += 1;
+      }
+      return result;
+   }
+
+   /**
     * Changes the value(s) of the given header to the given values.
     *
     * <p>
@@ -107,12 +152,27 @@ public final class HeaderMap {
     * @param values the values to set for the given header.
     */
    public void set(String headerName, String... values) {
+      set(headerName, Arrays.asList(values));
+   }
+
+   /**
+    * Changes the value(s) of the given header to the given values.
+    *
+    * <p>
+    * Note that, different from {@link #add(String, Collection<String>)}, this method will replace all
+    * previously set values for the given header with the values given in the call to this method.
+    * </p>
+    *
+    * @param headerName the name of the header to set values for.
+    * @param values the values to set for the given header.
+    */
+   public void set(String headerName, Collection<String> values) {
       if (!modifiable) {
          throw new UnsupportedOperationException();
       }
       String header = normalise(headerName);
-      List<String> valueList = new ArrayList<>(values.length);
-      Arrays.stream(values).filter(Objects::nonNull).forEach(valueList::add);
+      List<String> valueList = new ArrayList<>();
+      values.stream().filter(Objects::nonNull).forEach(valueList::add);
       this.values.put(header, valueList);
    }
 
@@ -129,6 +189,22 @@ public final class HeaderMap {
     * @param values the values to add for the given header.
     */
    public void add(String headerName, String... values) {
+      add(headerName, Arrays.asList(values));
+   }
+
+   /**
+    * Adds the values from the given collection to the given header.
+    *
+    * <p>
+    * Note that, different from {@link #set(String, Collection<String>)}, this method will not replace
+    * the previously set values for the given header but add the values given in the call to this
+    * method to the list of existing values.
+    * </p>
+    *
+    * @param headerName the name of the header to add values for.
+    * @param values the values to add for the given header.
+    */
+   public void add(String headerName, Collection<String> values) {
       if (!modifiable) {
          throw new UnsupportedOperationException();
       }
@@ -138,7 +214,7 @@ public final class HeaderMap {
          valueList = new ArrayList<>();
          this.values.put(header, valueList);
       }
-      Arrays.stream(values).filter(Objects::nonNull).forEach(valueList::add);
+      values.stream().filter(Objects::nonNull).forEach(valueList::add);
    }
 
    /**
@@ -176,6 +252,16 @@ public final class HeaderMap {
          return null;
       }
       return Collections.unmodifiableList(headerList);
+   }
+
+   /**
+    * Removes all values from this header map. The map will be empty after this call returns.
+    */
+   public void clear() {
+      if (!modifiable) {
+         throw new UnsupportedOperationException();
+      }
+      values.clear();
    }
 
    /**
@@ -255,6 +341,15 @@ public final class HeaderMap {
 
    void freeze() {
       modifiable = false;
+   }
+
+   private static int skipString(int pos, String str) {
+      char delimiter = str.charAt(pos);
+      pos += 1;
+      while (str.charAt(pos) != delimiter) {
+         pos += 1;
+      }
+      return pos;
    }
 
    private static String normalise(String headerName) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,33 +22,26 @@
  */
 package com.lmpessoa.services.core.hosting;
 
-import com.lmpessoa.services.core.routing.RouteMatch;
-
 /**
- * Thrown when the requested resource endpoint does not exist.
+ * Thrown when the requested resource was not modified since the previous client request.
  */
-public final class NotFoundException extends HttpException implements RouteMatch {
+public final class NotModifiedException extends HttpException {
 
    private static final long serialVersionUID = 1L;
 
    /**
-    * Creates a new <code>NotFoundException</code>.
+    * Creates a new <code>NotModifiedException</code>.
     */
-   public NotFoundException() {
-      super(404);
+   public NotModifiedException() {
+      super(304);
    }
 
    /**
-    * Creates a new <code>NotFoundException</code> with the given detail message.
+    * Creates a new <code>NotModifiedException</code> with the given detail message.
     *
     * @param message the detail message.
     */
-   public NotFoundException(String message) {
-      super(404, message);
-   }
-
-   @Override
-   public Object invoke() {
-      throw this;
+   public NotModifiedException(String message) {
+      super(304, message);
    }
 }

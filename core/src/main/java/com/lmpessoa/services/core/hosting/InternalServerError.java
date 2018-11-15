@@ -31,7 +31,7 @@ package com.lmpessoa.services.core.hosting;
  * wrapped in an instance of this class.
  * </p>
  */
-public final class InternalServerError extends Error implements IHttpStatusSupplier {
+public final class InternalServerError extends Error {
 
    private static final long serialVersionUID = 1L;
 
@@ -51,20 +51,5 @@ public final class InternalServerError extends Error implements IHttpStatusSuppl
     */
    public InternalServerError(Throwable cause) {
       super(cause);
-   }
-
-   /**
-    * Creates a new <code>InternalServerException</code> with the given detail message and cause.
-    *
-    * @param message the detail message.
-    * @param cause the cause.
-    */
-   public InternalServerError(String message, Throwable cause) {
-      super(message, cause);
-   }
-
-   @Override
-   public int getStatusCode() {
-      return 500;
    }
 }

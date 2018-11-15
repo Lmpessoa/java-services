@@ -364,25 +364,6 @@ public final class ApplicationServer implements IApplicationInfo {
       return Character.toUpperCase(name.charAt(0)) + name.substring(1).toLowerCase();
    }
 
-   private void logStartupMessage(Class<?> startupClass, ApplicationServerInfo info) {
-      StringBuilder message = new StringBuilder();
-      message.append("Starting application");
-      Optional<String> name = info.getProperty("application.name");
-      if (name.isPresent()) {
-         message.append(' ');
-         message.append(name.get());
-      }
-      String packVersion = startupClass.getPackage().getImplementationVersion();
-      if (packVersion != null && !packVersion.isEmpty()) {
-         message.append(" v");
-         message.append(packVersion);
-      }
-      message.append(" on '");
-      message.append(getEnvironment().getName());
-      message.append("' environment");
-      log.info(message);
-   }
-
    private void configureServices(IServiceMap services) {
       String envSpecific = CONFIGURE + environment.getName() + "Services";
       Method configMethod = ClassUtils.getMethod(startupClass, envSpecific, IServiceMap.class);
@@ -476,6 +457,25 @@ public final class ApplicationServer implements IApplicationInfo {
       jobQueue.shutdown();
       logShutdownMessage();
       log.join();
+   }
+
+   private void logStartupMessage(Class<?> startupClass, ApplicationServerInfo info) {
+      StringBuilder message = new StringBuilder();
+      message.append("Starting application");
+      Optional<String> name = info.getProperty("application.name");
+      if (name.isPresent()) {
+         message.append(' ');
+         message.append(name.get());
+      }
+      String packVersion = startupClass.getPackage().getImplementationVersion();
+      if (packVersion != null && !packVersion.isEmpty()) {
+         message.append(" v");
+         message.append(packVersion);
+      }
+      message.append(" on '");
+      message.append(getEnvironment().getName());
+      message.append("' environment");
+      log.info(message);
    }
 
    private void logStartedMessage() {

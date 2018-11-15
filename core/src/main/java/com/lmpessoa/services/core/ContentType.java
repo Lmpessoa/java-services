@@ -33,9 +33,9 @@ import java.lang.annotation.Target;
  *
  * <p>
  * Methods returning objects are usually automatically cast into an REST representation according to
- * the Accept header sent by the client. In methods that return input streams and byte arrays the
- * result is assumed to be in raw format and should be sent straight to the client without further
- * transformation.
+ * the <code>Accept</code> header sent by the client. In methods that return input streams and byte
+ * arrays the result is assumed to be in raw format and should be sent straight to the client
+ * without further transformation.
  * </p>
  *
  * <p>
@@ -74,7 +74,8 @@ public @interface ContentType {
    public static final String WEBP = "image/webp";
    public static final String WSDL = "application/wdsl+xml";
    public static final String XHTML = "application/xhtml+xml";
-   public static final String XML = "text/xml";
+   public static final String XML = "application/xml";
+   public static final String XML_TEXT = "text/xml";
    public static final String YAML = "text/yaml";
 
    public static final String FORM = "application/x-www-form-urlencoded";

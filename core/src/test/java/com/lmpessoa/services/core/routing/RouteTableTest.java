@@ -25,6 +25,7 @@ package com.lmpessoa.services.core.routing;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
@@ -202,6 +203,26 @@ public final class RouteTableTest {
       assertEquals(0, result.size());
       assertTrue(table.hasRoute("/test"));
       assertArrayEquals(new HttpMethod[] { HttpMethod.GET }, table.listMethodsOf("/test"));
+   }
+
+   @Test
+   public void testRouteProduced() {
+      table.put("", TestResource.class);
+      String url = table.findPathTo(TestResource.class, "get");
+      assertEquals("/test", url);
+   }
+
+   @Test
+   public void testRouteProducedWithArgs() {
+      table.put("", TestResource.class);
+      String url = table.findPathTo(TestResource.class, "get", 1);
+      assertEquals("/test/1", url);
+   }
+
+   @Test
+   public void testRouteProduceNoMethod() {
+      table.put("", TestResource.class);
+      assertNull(table.findPathTo(TestResource.class, "post", 1));
    }
 
    public static class TestResource {

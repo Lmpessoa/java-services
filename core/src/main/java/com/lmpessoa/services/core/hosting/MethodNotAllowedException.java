@@ -35,7 +35,7 @@ public final class MethodNotAllowedException extends HttpException implements Ro
     * Creates a new <code>MethodNotAllowedException</code>.
     */
    public MethodNotAllowedException() {
-      super();
+      super(405);
    }
 
    /**
@@ -44,12 +44,7 @@ public final class MethodNotAllowedException extends HttpException implements Ro
     * @param message the detail message.
     */
    public MethodNotAllowedException(String message) {
-      super(message);
-   }
-
-   @Override
-   public int getStatusCode() {
-      return 405;
+      super(405, message);
    }
 
    @Override

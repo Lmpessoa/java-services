@@ -97,14 +97,12 @@ public final class RouteTable implements IRouteTable {
       putClasses(classes.stream().filter(c -> area != null).collect(Collectors.toMap(c -> c, c -> area)));
    }
 
-   @Internal
    @Override
    public String findArea(String packageName) {
       ClassUtils.checkInternalAccess();
       return options.findArea(packageName);
    }
 
-   @Internal
    @Override
    public IRouteOptions getOptions() {
       ClassUtils.checkInternalAccess();
@@ -149,6 +147,21 @@ public final class RouteTable implements IRouteTable {
       } else {
          return new MethodNotAllowedException();
       }
+   }
+
+   public String findPathTo(Class<?> clazz, String methodName, Object... args) {
+      ClassUtils.checkInternalAccess();
+      Objects.requireNonNull(clazz);
+      Objects.requireNonNull(methodName);
+      for (Entry<RoutePattern, Map<HttpMethod, MethodEntry>> endpoint : endpoints.entrySet()) {
+         for (Entry<HttpMethod, MethodEntry> entry : endpoint.getValue().entrySet()) {
+            final MethodEntry methodEntry = entry.getValue();
+            if (clazz == methodEntry.getResourceClass() && isMethodArgsCompatible(methodEntry, methodName, args)) {
+               return endpoint.getKey().getPathWithArgs(args);
+            }
+         }
+      }
+      return null;
    }
 
    boolean hasRoute(String route) throws ParseException {
@@ -346,5 +359,25 @@ public final class RouteTable implements IRouteTable {
          Method valueOf = clazz.getMethod("valueOf", String.class);
          return valueOf.invoke(null, value);
       }
+   }
+
+   private boolean isMethodArgsCompatible(MethodEntry methodEntry, String methodName, Object[] args) {
+      Method method = methodEntry.getMethod();
+      if (!method.getName().equals(methodName)) {
+         return false;
+      }
+      Class<?>[] methodArgs = ClassUtils.box(method.getParameterTypes());
+      if (methodEntry.getContentClass() != null) {
+         methodArgs = Arrays.copyOf(methodArgs, methodArgs.length - 1);
+      }
+      if (methodArgs.length != args.length) {
+         return false;
+      }
+      for (int i = 0; i < methodArgs.length; ++i) {
+         if (!methodArgs[i].isAssignableFrom(args[i].getClass())) {
+            return false;
+         }
+      }
+      return true;
    }
 }

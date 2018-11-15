@@ -100,6 +100,10 @@ class ApplicationContext implements Runnable {
       return routes;
    }
 
+   int getPort() {
+      return port;
+   }
+
    private void acceptClientToHandle() {
       try {
          Socket client = socket.accept();

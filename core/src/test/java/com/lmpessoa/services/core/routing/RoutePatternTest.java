@@ -327,6 +327,68 @@ public final class RoutePatternTest {
       assertTrue(matcher.find());
    }
 
+   // URI Production ----------
+
+   @Test
+   public void testBuildParameterless() throws NoSuchMethodException, ParseException, NoSingleMethodException {
+      RoutePattern parentPat = RoutePattern.build(null, TestResource.class, serviceMap, options);
+      RoutePattern pat = RoutePattern.build(parentPat, TestResource.class.getMethod("test"), options);
+      String url = pat.getPathWithArgs(new Object[0]);
+      assertEquals("/test", url);
+   }
+
+   @Test
+   public void testBuildParameterlessWithArgs() throws NoSuchMethodException, ParseException, NoSingleMethodException {
+      RoutePattern parentPat = RoutePattern.build(null, TestResource.class, serviceMap, options);
+      RoutePattern pat = RoutePattern.build(parentPat, TestResource.class.getMethod("test"), options);
+      String url = pat.getPathWithArgs(new Object[] { 1 });
+      assertEquals("/test", url);
+   }
+
+   @Test
+   public void testBuildWithArgs() throws NoSuchMethodException, ParseException, NoSingleMethodException {
+      RoutePattern parentPat = RoutePattern.build(null, TestResource.class, serviceMap, options);
+      RoutePattern pat = RoutePattern.build(parentPat, TestResource.class.getMethod("test", int.class), options);
+      String url = pat.getPathWithArgs(new Object[] { 1 });
+      assertEquals("/test/1", url);
+   }
+
+   @Test
+   public void testBuildWithFewerArgs() throws NoSuchMethodException, ParseException, NoSingleMethodException {
+      thrown.expect(ArrayIndexOutOfBoundsException.class);
+      RoutePattern parentPat = RoutePattern.build(null, TestResource.class, serviceMap, options);
+      RoutePattern pat = RoutePattern.build(parentPat, TestResource.class.getMethod("test", int.class, String.class),
+               options);
+      pat.getPathWithArgs(new Object[] { 1 });
+   }
+
+   @Test
+   public void testBuildWithWrongArgs() throws NoSuchMethodException, ParseException, NoSingleMethodException {
+      RoutePattern parentPat = RoutePattern.build(null, TestResource.class, serviceMap, options);
+      RoutePattern pat = RoutePattern.build(parentPat, TestResource.class.getMethod("test", int.class, String.class),
+               options);
+      String url = pat.getPathWithArgs(new Object[] { "test", 1 });
+      assertEquals("/test/test/1", url);
+   }
+
+   @Test
+   public void testBuildWithRouteArgs() throws NoSuchMethodException, ParseException, NoSingleMethodException {
+      RoutePattern parentPat = RoutePattern.build(null, TestResource.class, serviceMap, options);
+      RoutePattern pat = RoutePattern.build(parentPat, TestResource.class.getMethod("routed", int.class, String.class),
+               options);
+      String url = pat.getPathWithArgs(new Object[] { 1, "test" });
+      assertEquals("/test/route1-test", url);
+   }
+
+   @Test
+   public void testBuildWithWrongRouteArgs() throws NoSuchMethodException, ParseException, NoSingleMethodException {
+      RoutePattern parentPat = RoutePattern.build(null, TestResource.class, serviceMap, options);
+      RoutePattern pat = RoutePattern.build(parentPat,
+               TestResource.class.getMethod("content", SimpleTestResource.class), options);
+      String url = pat.getPathWithArgs(new Object[0]);
+      assertEquals("/test", url);
+   }
+
    // Test data ----------
 
    public static class MultipleInitResource {

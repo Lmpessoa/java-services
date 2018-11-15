@@ -37,6 +37,7 @@ import com.lmpessoa.services.core.Route;
 import com.lmpessoa.services.core.services.NoSingleMethodException;
 import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.util.parsing.ITemplatePart;
+import com.lmpessoa.services.util.parsing.IVariablePart;
 import com.lmpessoa.services.util.parsing.LiteralPart;
 import com.lmpessoa.services.util.parsing.TypeMismatchException;
 
@@ -49,6 +50,70 @@ final class RoutePattern {
    private final List<ITemplatePart> parts;
    private final Class<?> contentClass;
    private Pattern pattern = null;
+
+   @Override
+   public String toString() {
+      if (parts.isEmpty()) {
+         return SEPARATOR;
+      }
+      StringBuilder result = new StringBuilder();
+      for (ITemplatePart part : parts) {
+         result.append(part.toString());
+      }
+      return result.toString();
+   }
+
+   @Override
+   public boolean equals(Object obj) {
+      if (obj instanceof RoutePattern) {
+         return toString().equals(obj.toString());
+      }
+      return false;
+   }
+
+   @Override
+   public int hashCode() {
+      return toString().hashCode();
+   }
+
+   public static String getResourceName(Class<?> clazz) {
+      String[] nameParts = clazz.getName().replaceAll("\\$", ".").split("\\.");
+      String name = nameParts[nameParts.length - 1].replaceAll("([A-Z])", "_$1").toLowerCase().replaceAll("^_", "");
+      if (name.endsWith("_resource")) {
+         name = name.substring(0, name.length() - 8).replaceAll("_$", "");
+      }
+      return name;
+   }
+
+   RoutePattern(List<ITemplatePart> parts, Class<?> contentClass) {
+      this.contentClass = contentClass;
+      List<ITemplatePart> result = new ArrayList<>();
+      StringBuilder literal = new StringBuilder();
+      for (ITemplatePart part : parts) {
+         if (part instanceof LiteralPart) {
+            literal.append(((LiteralPart) part).getValue());
+         } else {
+            if (literal.length() != 0) {
+               result.add(new LiteralPart(literal.toString()));
+               literal.delete(0, literal.length());
+            }
+            result.add(part);
+         }
+      }
+      if (literal.length() > 0) {
+         result.add(new LiteralPart(literal.toString()));
+      }
+      if (!result.isEmpty() && result.get(result.size() - 1) instanceof LiteralPart) {
+         LiteralPart lit = (LiteralPart) result.get(result.size() - 1);
+         String litValue = lit.getValue();
+         if (litValue.endsWith(SEPARATOR) && !SEPARATOR.equals(litValue)) {
+            result.remove(lit);
+            lit = new LiteralPart(litValue.replaceAll("/$", ""));
+            result.add(lit);
+         }
+      }
+      this.parts = Collections.unmodifiableList(result);
+   }
 
    static RoutePattern build(String area, Class<?> clazz, ServiceMap serviceMap, RouteOptions options)
       throws NoSingleMethodException, ParseException {
@@ -118,6 +183,47 @@ final class RoutePattern {
       return new RoutePattern(pattern, lastArgument);
    }
 
+   int getVariableCount() {
+      return (int) parts.stream().filter(p -> p instanceof AbstractRouteType).count();
+   }
+
+   Class<?> getContentClass() {
+      return contentClass;
+   }
+
+   Pattern getPattern() {
+      if (pattern == null) {
+         StringBuilder result = new StringBuilder();
+         result.append('^');
+         for (ITemplatePart part : parts) {
+            if (part instanceof LiteralPart) {
+               result.append(((LiteralPart) part).getValue().replaceAll("([\\\\/$^?\\{\\}\\[\\]\\(\\)-])", "\\\\$1"));
+            } else {
+               result.append('(');
+               result.append(((AbstractRouteType) part).getRegex().replaceAll("([\\(\\)])", "\\\\$1"));
+               result.append(')');
+            }
+         }
+         result.append('$');
+         pattern = Pattern.compile(result.toString());
+      }
+      return pattern;
+   }
+
+   String getPathWithArgs(Object[] args) {
+      StringBuilder result = new StringBuilder();
+      int i = 0;
+      for (ITemplatePart part : parts) {
+         if (part instanceof IVariablePart) {
+            result.append(args[i]);
+            i += 1;
+         } else {
+            result.append(((LiteralPart) part).getValue());
+         }
+      }
+      return result.toString();
+   }
+
    private static String buildRouteFromParams(String prefix, Class<?>[] parameterTypes) throws TypeMismatchException {
       StringBuilder result = new StringBuilder();
       if (prefix != null) {
@@ -185,97 +291,6 @@ final class RoutePattern {
       }
       return false;
    }
-
-   public static String getResourceName(Class<?> clazz) {
-      String[] nameParts = clazz.getName().replaceAll("\\$", ".").split("\\.");
-      String name = nameParts[nameParts.length - 1].replaceAll("([A-Z])", "_$1").toLowerCase().replaceAll("^_", "");
-      if (name.endsWith("_resource")) {
-         name = name.substring(0, name.length() - 8).replaceAll("_$", "");
-      }
-      return name;
-   }
-
-   RoutePattern(List<ITemplatePart> parts, Class<?> contentClass) {
-      this.contentClass = contentClass;
-      List<ITemplatePart> result = new ArrayList<>();
-      StringBuilder literal = new StringBuilder();
-      for (ITemplatePart part : parts) {
-         if (part instanceof LiteralPart) {
-            literal.append(((LiteralPart) part).getValue());
-         } else {
-            if (literal.length() != 0) {
-               result.add(new LiteralPart(literal.toString()));
-               literal.delete(0, literal.length());
-            }
-            result.add(part);
-         }
-      }
-      if (literal.length() > 0) {
-         result.add(new LiteralPart(literal.toString()));
-      }
-      if (!result.isEmpty() && result.get(result.size() - 1) instanceof LiteralPart) {
-         LiteralPart lit = (LiteralPart) result.get(result.size() - 1);
-         String litValue = lit.getValue();
-         if (litValue.endsWith(SEPARATOR) && !SEPARATOR.equals(litValue)) {
-            result.remove(lit);
-            lit = new LiteralPart(litValue.replaceAll("/$", ""));
-            result.add(lit);
-         }
-      }
-      this.parts = Collections.unmodifiableList(result);
-   }
-
-   int getVariableCount() {
-      return (int) parts.stream().filter(p -> p instanceof AbstractRouteType).count();
-   }
-
-   Class<?> getContentClass() {
-      return contentClass;
-   }
-
-   Pattern getPattern() {
-      if (pattern == null) {
-         StringBuilder result = new StringBuilder();
-         result.append('^');
-         for (ITemplatePart part : parts) {
-            if (part instanceof LiteralPart) {
-               result.append(((LiteralPart) part).getValue().replaceAll("([\\\\/$^?\\{\\}\\[\\]\\(\\)-])", "\\\\$1"));
-            } else {
-               result.append('(');
-               result.append(((AbstractRouteType) part).getRegex().replaceAll("([\\(\\)])", "\\\\$1"));
-               result.append(')');
-            }
-         }
-         result.append('$');
-         pattern = Pattern.compile(result.toString());
-      }
-      return pattern;
-   }
-
-   @Override
-   public String toString() {
-      if (parts.isEmpty()) {
-         return SEPARATOR;
-      }
-      StringBuilder result = new StringBuilder();
-      for (ITemplatePart part : parts) {
-         result.append(part.toString());
-      }
-      return result.toString();
-   }
-
-   @Override
-   public boolean equals(Object obj) {
-      if (obj instanceof RoutePattern) {
-         return toString().equals(obj.toString());
-      }
-      return false;
-   }
-
-   @Override
-   public int hashCode() {
-      return toString().hashCode();
-   }
 }
 
 // There will be only four types for route constraint on content:
@@ -287,7 +302,7 @@ final class RoutePattern {
 // Also there will only be designators for length:
 // (n,) = minimum length of n
 // (,n) = maximum length of n (minimum is at most zero)
-// (n,m) = minumum length of n and maximum of m
+// (n,m) = minimum length of n and maximum of m
 // (n) = exact length of n
 // [nothing] = any length
 

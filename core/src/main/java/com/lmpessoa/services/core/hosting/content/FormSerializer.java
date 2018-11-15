@@ -28,36 +28,19 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.lmpessoa.services.util.ClassUtils;
+
 final class FormSerializer implements IContentReader {
-
-   private static final Map<Class<?>, Class<?>> primitives = new HashMap<>();
-
-   static {
-      primitives.put(char.class, Character.class);
-      primitives.put(int.class, Integer.class);
-   }
 
    @SuppressWarnings("unchecked")
    public static <T> T convert(String value, Class<T> type) {
       if (value == null) {
          return null;
       }
-      Class<?> atype = type;
-      if (primitives.containsKey(type)) {
-         atype = primitives.get(type);
-      } else if (type.isPrimitive()) {
-         String name = type.getSimpleName();
-         name = Character.toUpperCase(name.charAt(0)) + name.substring(1);
-         try {
-            atype = Class.forName("java.lang." + name);
-         } catch (ClassNotFoundException e) {
-            throw new TypeConvertException(e);
-         }
-      }
+      Class<?> atype = ClassUtils.box(type);
       Method valueOf;
       try {
          valueOf = atype.getMethod("valueOf", String.class);
@@ -65,8 +48,7 @@ final class FormSerializer implements IContentReader {
          throw new TypeConvertException(e);
       }
       if (!Modifier.isStatic(valueOf.getModifiers())) {
-         throw new TypeConvertException(
-                  new NoSuchMethodException("Method 'valueOf' is not static"));
+         throw new TypeConvertException(new NoSuchMethodException("Method 'valueOf' is not static"));
       }
       try {
          return (T) valueOf.invoke(null, value);
@@ -89,8 +71,7 @@ final class FormSerializer implements IContentReader {
          try {
             return superType.getDeclaredField(fieldName);
          } catch (NoSuchFieldException e) {
-            superType = superType.getSuperclass() == Object.class ? null
-                     : superType.getSuperclass();
+            superType = superType.getSuperclass() == Object.class ? null : superType.getSuperclass();
          } catch (NullPointerException e) {
             break;
          }
@@ -113,8 +94,7 @@ final class FormSerializer implements IContentReader {
                try {
                   Method primValue = cvalue.getClass().getMethod(type.getName() + "Value");
                   Array.set(result, i, primValue.invoke(cvalue));
-               } catch (NoSuchMethodException | IllegalAccessException
-                        | InvocationTargetException e) {
+               } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
                   // Ignore
                }
             }
@@ -135,8 +115,7 @@ final class FormSerializer implements IContentReader {
                return null;
             }
             Class<?> fieldType = field.getType();
-            Object fieldValue = fieldType == String.class || fieldType == String[].class
-                     ? value.getValue()
+            Object fieldValue = fieldType == String.class || fieldType == String[].class ? value.getValue()
                      : convertToValue(value.getValue(), field.getType());
             field.setAccessible(true);
             field.set(result, fieldValue);
