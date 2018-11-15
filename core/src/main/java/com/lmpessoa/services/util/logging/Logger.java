@@ -250,6 +250,9 @@ public final class Logger implements ILogger {
    }
 
    private void log(Severity level, Object message) {
+      if (message == null) {
+         return;
+      }
       Map<Class<?>, Object> extraInfo = new HashMap<>();
       for (Entry<Class<?>, Supplier<?>> entry : suppliers.entrySet()) {
          extraInfo.put(entry.getKey(), entry.getValue().get());

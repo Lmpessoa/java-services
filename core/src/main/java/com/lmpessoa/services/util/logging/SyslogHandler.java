@@ -133,8 +133,7 @@ public final class SyslogHandler extends Handler {
     * @throws UnknownHostException if no IP address for the host could be found, or if a scope_id
     *            was specified for a global IPv6 address.
     */
-   public SyslogHandler(String appName, String host, int port, Predicate<LogEntry> filter)
-      throws UnknownHostException {
+   public SyslogHandler(String appName, String host, int port, Predicate<LogEntry> filter) throws UnknownHostException {
       super(filter);
       try {
          this.template = LogFormatter.parse(DEFAULT);
@@ -197,8 +196,7 @@ public final class SyslogHandler extends Handler {
    /**
     * Sets the transport mechanism to be used when sending messages to the syslog server.
     *
-    * @param transport the transport mechanism to be used when sending messages to the syslog
-    *           server.
+    * @param transport the transport mechanism to be used when sending messages to the syslog server.
     */
    public void setTransport(SyslogTransportFormat transport) {
       this.transport = Objects.requireNonNull(transport);
@@ -257,14 +255,14 @@ public final class SyslogHandler extends Handler {
       switch (format) {
          case BSD:
             formatter = DateTimeFormatter.ofPattern("MMM dd HH:mm:ss", Locale.US);
-            return String.format("<%d>%s %s %s %s", pri, formatter.format(entry.getTime()),
-                     hostname, appName == null ? "-" : appName, message.trim());
+            return String.format("<%d>%s %s %s %s", pri, formatter.format(entry.getTime()), hostname,
+                     appName == null ? "-" : appName, message.trim());
          case IETF:
             formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
             int msgId = sequence.incrementAndGet();
-            return String.format("<%d>%d %s %s %s - ID%d - %s", pri, RFC_5424_VERSION,
-                     formatter.format(entry.getTime()), hostname, appName == null ? "-" : appName,
-                     msgId, message.trim());
+            return String.format("<%d>%d %s %s %s - ID%d - \u00EF\u00BB\u00BF%s", pri, RFC_5424_VERSION,
+                     formatter.format(entry.getTime()), hostname, appName == null ? "-" : appName, msgId,
+                     message.trim());
          default:
             throw new IllegalArgumentException("Unknown syslog format: " + format);
       }
@@ -348,7 +346,7 @@ public final class SyslogHandler extends Handler {
          try {
             socket.close();
          } catch (IOException e) {
-            // Ignore
+            // Ignoere
          }
       }
    }

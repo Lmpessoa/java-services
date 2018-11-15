@@ -177,7 +177,8 @@ public final class LogHandlerTest {
          assertEquals(" ", dataStr.substring(31, 32));
          String hostname = InetAddress.getLocalHost().getHostName();
          assertEquals(hostname, dataStr.substring(32, 32 + hostname.length()));
-         assertEquals(" Test - ID1 - " + MESSAGE, dataStr.substring(32 + hostname.length()));
+         assertEquals(" Test - ID1 - \u00EF\u00BB\u00BF" + MESSAGE,
+                  dataStr.substring(32 + hostname.length()));
       }
    }
 
@@ -230,7 +231,8 @@ public final class LogHandlerTest {
          assertEquals(" ", dataStr.substring(31, 32));
          String hostname = InetAddress.getLocalHost().getHostName();
          assertEquals(hostname, dataStr.substring(32, 32 + hostname.length()));
-         assertEquals(" Test - ID1 - " + MESSAGE, dataStr.substring(32 + hostname.length()));
+         assertEquals(" Test - ID1 - \u00EF\u00BB\u00BF" + MESSAGE,
+                  dataStr.substring(32 + hostname.length()));
       }
    }
 

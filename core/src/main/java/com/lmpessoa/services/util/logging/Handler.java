@@ -93,10 +93,10 @@ public abstract class Handler {
    }
 
    /**
-    * Logged messages may be sent in batches to Handler classes. This method is called once before
-    * the first entry of each batch is actually sent for logging. Subclasses may use this method to
-    * perform any initialisation they require before logging messages, like allocating resources or
-    * connecting to remote services.
+    * Logged messages may be sent in batches to Handler classes. This method is called once before the
+    * first entry of each batch is actually sent for logging. Subclasses may use this method to perform
+    * any initialisation they require before logging messages, like allocating resources or connecting
+    * to remote services.
     */
    protected void prepare() {
       // Must be overridden by subclasses
@@ -104,18 +104,18 @@ public abstract class Handler {
 
    /**
     * Appends a message to the log destination. This method is called once for each log entry in a
-    * batch. Subclasses must implement in this method any operations required to be done to export
-    * the log entry to its destination.
+    * batch. Subclasses must implement in this method any operations required to be done to export the
+    * log entry to its destination.
     *
     * @param entry the log entry to be exported.
     */
    protected abstract void append(LogEntry entry);
 
    /**
-    * Logged messages may be sent in batches to Handler classes. This method is called once after
-    * the last entry of each batch has been appended by the handler. Subclasses may use this method
-    * to perform any finalisation the require after logging messages, like releasing resources or
-    * closing connection to remote services.
+    * Logged messages may be sent in batches to Handler classes. This method is called once after the
+    * last entry of each batch has been appended by the handler. Subclasses may use this method to
+    * perform any finalisation the require after logging messages, like releasing resources or closing
+    * connection to remote services.
     */
    protected void finished() {
       // Must be overridden by subclasses
