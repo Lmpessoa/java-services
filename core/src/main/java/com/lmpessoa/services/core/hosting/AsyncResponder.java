@@ -23,9 +23,12 @@
 package com.lmpessoa.services.core.hosting;
 
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
@@ -48,10 +51,10 @@ final class AsyncResponder {
       AsyncResponder.executor = Objects.requireNonNull(executor);
    }
 
-   public Object invoke(HttpRequest request, RouteMatch route) {
+   public Object invoke(HttpRequest request, RouteMatch route, ConnectionInfo connect) {
       if (executor != null) {
          if (request.getPath().startsWith(feedbackPath)) {
-            return respondToStatusRequest(request, feedbackPath);
+            return respondToStatusRequest(request, feedbackPath, connect);
          }
          if (route != null && (isCallableResult(route) || isAsync(route))) {
             return respondToAsyncCall(route, feedbackPath);
@@ -84,7 +87,7 @@ final class AsyncResponder {
       return Redirect.accepted(asyncPath + id);
    }
 
-   private Object respondToStatusRequest(HttpRequest request, String asyncPath) {
+   private Object respondToStatusRequest(HttpRequest request, String asyncPath, ConnectionInfo connect) {
       UUID id;
       try {
          id = UUID.fromString(request.getPath().substring(asyncPath.length()));
@@ -94,6 +97,19 @@ final class AsyncResponder {
       Future<?> result = executor.get(id.toString());
       if (result == null) {
          throw new NotFoundException();
+      }
+      if (result.isDone()) {
+         try {
+            Object obj = result.get();
+            if (obj instanceof Redirect) {
+               obj = ((Redirect) obj).getUrl(connect);
+            }
+            if (obj instanceof URL) {
+               return Redirect.seeOther((URL) obj);
+            }
+         } catch (InterruptedException | ExecutionException | MalformedURLException e) {
+            // Ignore and return the very same result
+         }
       }
       return result;
    }

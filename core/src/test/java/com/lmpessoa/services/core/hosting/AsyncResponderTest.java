@@ -33,6 +33,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.Socket;
+import java.net.URL;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -89,7 +90,7 @@ public final class AsyncResponderTest {
       ExecutionException, IllegalAccessException, InvocationTargetException {
       match = matchOfMethod("asyncMethod");
 
-      Object result = handler.invoke(request, match);
+      Object result = handler.invoke(request, match, connect);
       assertTrue(result instanceof Redirect);
       Redirect redirect = (Redirect) result;
       assertEquals(202, redirect.getStatusCode());
@@ -104,7 +105,7 @@ public final class AsyncResponderTest {
       ExecutionException, IllegalAccessException, InvocationTargetException {
       match = matchOfMethod("callableResult");
 
-      Object result = handler.invoke(request, match);
+      Object result = handler.invoke(request, match, connect);
       assertTrue(result instanceof Redirect);
       Redirect redirect = (Redirect) result;
       assertEquals(202, redirect.getStatusCode());
@@ -119,7 +120,7 @@ public final class AsyncResponderTest {
       ExecutionException, IllegalAccessException, InvocationTargetException {
       match = matchOfMethod("runnableResult");
 
-      Object result = handler.invoke(request, match);
+      Object result = handler.invoke(request, match, connect);
       assertTrue(result instanceof Redirect);
       Redirect redirect = (Redirect) result;
       assertEquals(202, redirect.getStatusCode());
@@ -135,14 +136,14 @@ public final class AsyncResponderTest {
       throws NoSuchMethodException, MalformedURLException, InterruptedException, ExecutionException {
       match = matchOfMethod("sleeper");
 
-      Object result = handler.invoke(request, match);
+      Object result = handler.invoke(request, match, connect);
       assertTrue(result instanceof Redirect);
       Redirect redirect = (Redirect) result;
       String url = redirect.getUrl(connect).getPath();
 
       match = null;
       when(request.getPath()).thenReturn(url);
-      result = handler.invoke(request, match);
+      result = handler.invoke(request, match, connect);
       assertTrue(result instanceof Future);
       Future<?> fresult = (Future<?>) result;
       assertFalse(fresult.isDone());
@@ -150,10 +151,48 @@ public final class AsyncResponderTest {
       assertTrue(fresult.isDone());
    }
 
+   @Test
+   public void testCheckRedirectResult() throws NoSuchMethodException, InterruptedException, MalformedURLException {
+      match = matchOfMethod("redirect");
+
+      Object result = handler.invoke(request, match, connect);
+      Redirect redirect = (Redirect) result;
+      String url = redirect.getUrl(connect).getPath();
+      Thread.sleep(100);
+
+      match = null;
+      when(request.getPath()).thenReturn(url);
+      result = handler.invoke(request, match, connect);
+      assertTrue(result instanceof Redirect);
+      redirect = (Redirect) result;
+      assertEquals(303, redirect.getStatusCode());
+      url = redirect.getUrl(connect).toExternalForm();
+      assertEquals("https://lmpessoa.com/test", url);
+   }
+
+   @Test
+   public void testCheckUrlResult() throws NoSuchMethodException, InterruptedException, MalformedURLException {
+      match = matchOfMethod("redirectUrl");
+
+      Object result = handler.invoke(request, match, connect);
+      Redirect redirect = (Redirect) result;
+      String url = redirect.getUrl(connect).getPath();
+      Thread.sleep(100);
+
+      match = null;
+      when(request.getPath()).thenReturn(url);
+      result = handler.invoke(request, match, connect);
+      assertTrue(result instanceof Redirect);
+      redirect = (Redirect) result;
+      assertEquals(303, redirect.getStatusCode());
+      url = redirect.getUrl(connect).toExternalForm();
+      assertEquals("https://lmpessoa.com/test", url);
+   }
+
    @Test(expected = NotFoundException.class)
    public void testNonExistentResult() {
       when(request.getPath()).thenReturn("/feedback/test");
-      handler.invoke(request, match);
+      handler.invoke(request, match, null);
    }
 
    private RouteMatch matchOfMethod(String methodName) throws NoSuchMethodException {
@@ -192,5 +231,15 @@ public final class AsyncResponderTest {
    @Async
    public void sleeper() throws InterruptedException {
       Thread.sleep(10);
+   }
+
+   @Async
+   public Redirect redirect() {
+      return Redirect.to("/test");
+   }
+
+   @Async
+   public URL redirectUrl() throws MalformedURLException {
+      return new URL("https://lmpessoa.com/test");
    }
 }

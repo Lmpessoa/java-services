@@ -247,6 +247,10 @@ public final class Redirect {
       return new Redirect(202, new PathParameter(url));
    }
 
+   static Object seeOther(URL url) {
+      return new Redirect(303, new PathParameter(url.toExternalForm()));
+   }
+
    URL getUrl(ConnectionInfo info) throws MalformedURLException {
       String result = params.getPath();
       if (result == null) {
