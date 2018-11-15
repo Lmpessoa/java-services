@@ -70,8 +70,7 @@ final class FormSerializer implements IContentParser {
          throw new TypeConvertException(e);
       }
       if (!Modifier.isStatic(valueOf.getModifiers())) {
-         throw new TypeConvertException(
-                  new NoSuchMethodException("Method 'valueOf' is not static"));
+         throw new TypeConvertException(new NoSuchMethodException("Method 'valueOf' is not static"));
       }
       try {
          return (T) valueOf.invoke(null, value);
@@ -81,8 +80,7 @@ final class FormSerializer implements IContentParser {
    }
 
    public static Map<String, Object> parseQueryString(String body) {
-      String[][] values = Arrays.stream(body.split("&")).map(s -> s.split("=", 2)).toArray(
-               String[][]::new);
+      String[][] values = Arrays.stream(body.split("&")).map(s -> s.split("=", 2)).toArray(String[][]::new);
       Map<String, List<String>> groups = new HashMap<>();
       for (String[] value : values) {
          try {
@@ -122,8 +120,7 @@ final class FormSerializer implements IContentParser {
                return null;
             }
             Class<?> fieldType = field.getType();
-            Object fieldValue = fieldType == String.class || fieldType == String[].class
-                     ? value.getValue()
+            Object fieldValue = fieldType == String.class || fieldType == String[].class ? value.getValue()
                      : convertToValue(value.getValue(), field.getType());
             field.setAccessible(true);
             field.set(result, fieldValue);
@@ -140,8 +137,7 @@ final class FormSerializer implements IContentParser {
          try {
             return superType.getDeclaredField(fieldName);
          } catch (NoSuchFieldException e) {
-            superType = superType.getSuperclass() == Object.class ? null
-                     : superType.getSuperclass();
+            superType = superType.getSuperclass() == Object.class ? null : superType.getSuperclass();
          } catch (NullPointerException e) {
             break;
          }
@@ -164,8 +160,7 @@ final class FormSerializer implements IContentParser {
                try {
                   Method primValue = cvalue.getClass().getMethod(type.getName() + "Value");
                   Array.set(result, i, primValue.invoke(cvalue));
-               } catch (NoSuchMethodException | IllegalAccessException
-                        | InvocationTargetException e) {
+               } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
                   // Ignore
                }
             }

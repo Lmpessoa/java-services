@@ -76,11 +76,9 @@ public abstract class AbstractRouteType implements IVariablePart {
    }
 
    /**
-    * Returns the expected regular expression modifier for the length requirements of this route
-    * type.
+    * Returns the expected regular expression modifier for the length requirements of this route type.
     *
-    * @return the expected regular expression modifier for the length requirements of this route
-    * type.
+    * @return the expected regular expression modifier for the length requirements of this route type.
     */
    protected final String getRegexLength() {
       if (minLength == 1 && maxLength == -1) {
@@ -99,9 +97,8 @@ public abstract class AbstractRouteType implements IVariablePart {
     * Returns the regular expression used to validate this type in routes.
     *
     * <p>
-    * Subclasses must provide an implementation of this method which returns a valid regular
-    * expression to match only the part of this route type. The returned value must not use
-    * parenthesis.
+    * Subclasses must provide an implementation of this method which returns a valid regular expression
+    * to match only the part of this route type. The returned value must not use parenthesis.
     * </p>
     *
     * @return the regular expression used to validate this type in routes.
@@ -109,14 +106,13 @@ public abstract class AbstractRouteType implements IVariablePart {
    protected abstract String getRegex();
 
    /**
-    * Returns whether values matched by this route type can be assigned to variables of the given
-    * type.
+    * Returns whether values matched by this route type can be assigned to variables of the given type.
     *
     * <p>
-    * It is possible many classes are capable of accepting values matched by a route type.
-    * Subclasses implementing this method should test only for the preferred known types. Note that
-    * any route type will always be assignable to a <code>String</code> variable so there is no need
-    * to test for this type.
+    * It is possible many classes are capable of accepting values matched by a route type. Subclasses
+    * implementing this method should test only for the preferred known types. Note that any route type
+    * will always be assignable to a <code>String</code> variable so there is no need to test for this
+    * type.
     * </p>
     *
     * @param clazz the type to check if it is compatible with this route type.
@@ -146,8 +142,8 @@ public abstract class AbstractRouteType implements IVariablePart {
     * Returns the maximum length this route type instance will recognise.
     *
     * <p>
-    * If the value returned by this method is negative (<code>-1</code>) means this route type does
-    * not have a constraint on the maximum length a URL segment might have to match it.
+    * If the value returned by this method is negative (<code>-1</code>) means this route type does not
+    * have a constraint on the maximum length a URL segment might have to match it.
     * </p>
     *
     * @return the maximum length this route type instance will recognise.

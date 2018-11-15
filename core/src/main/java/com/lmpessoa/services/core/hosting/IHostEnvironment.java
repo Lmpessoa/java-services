@@ -30,9 +30,29 @@ package com.lmpessoa.services.core.hosting;
  * different environments as required but it tests for these environments will have to be made
  * manually.
  * </p>
+ *
+ * <p>
+ * The name of the host environment is defined as the first of the following:
+ * <ul>
+ * <li>the Java system property <code>service.environment</code>;</li>
+ * <li>the variable <code>environment</code> on the configuration file of the application;</li>
+ * <li>the system environment variable <code>SERVICES_ENVIRONMENT_NAME</code>; or</li>
+ * <li>the default value '<code>Development</code>'.
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Note that when running from another application server the configuration file of the application
+ * is not used since the Application Server is not started.
+ * </p>
  */
 public interface IHostEnvironment {
 
+   /**
+    * Returns the name of the running development environment.
+    *
+    * @return the name of the running development environment.
+    */
    String getName();
 
    /**

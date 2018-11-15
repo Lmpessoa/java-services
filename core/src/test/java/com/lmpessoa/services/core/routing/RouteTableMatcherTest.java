@@ -45,6 +45,7 @@ import com.lmpessoa.services.core.hosting.NotFoundException;
 import com.lmpessoa.services.core.hosting.NotImplementedException;
 import com.lmpessoa.services.core.routing.HttpMethod;
 import com.lmpessoa.services.core.routing.MatchedRoute;
+import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.routing.RouteTable;
 import com.lmpessoa.services.core.services.IServiceMap;
 import com.lmpessoa.services.core.services.ServiceMap;
@@ -68,121 +69,142 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchesGetRoot() throws NoSuchMethodException, HttpException {
-      MatchedRoute result = table.matches(HttpMethod.GET, "/test");
-      assertEquals(TestResource.class, result.getResourceClass());
-      assertEquals(TestResource.class.getMethod("get"), result.getMethod());
-      assertArrayEquals(new Object[0], result.getMethodArgs());
+   public void testMatchesGetRoot() throws NoSuchMethodException, HttpException, IOException {
+      RouteMatch result = table.matches(HttpRequestBuilder.build(HttpMethod.GET.name(), "/test"));
+      assertTrue(result instanceof MatchedRoute);
+      MatchedRoute route = (MatchedRoute) result;
+      assertEquals(TestResource.class, route.getResourceClass());
+      assertEquals(TestResource.class.getMethod("get"), route.getMethod());
+      assertArrayEquals(new Object[0], route.getMethodArgs());
       assertEquals("GET/Test", result.invoke());
    }
 
    @Test
-   public void testMatchesGetOneArg() throws NoSuchMethodException, HttpException {
-      MatchedRoute result = table.matches(HttpMethod.GET, "/test/7");
-      assertEquals(TestResource.class, result.getResourceClass());
-      assertEquals(TestResource.class.getMethod("get", int.class), result.getMethod());
-      assertArrayEquals(new Object[] { 7 }, result.getMethodArgs());
+   public void testMatchesGetOneArg() throws NoSuchMethodException, HttpException, IOException {
+      RouteMatch result = table.matches(HttpRequestBuilder.build(HttpMethod.GET.name(), "/test/7"));
+      assertTrue(result instanceof MatchedRoute);
+      MatchedRoute route = (MatchedRoute) result;
+      assertEquals(TestResource.class, route.getResourceClass());
+      assertEquals(TestResource.class.getMethod("get", int.class), route.getMethod());
+      assertArrayEquals(new Object[] { 7 }, route.getMethodArgs());
       assertEquals("GET/7", result.invoke());
    }
 
    @Test
-   public void testMatchesConstrainedRoute() throws NoSuchMethodException, HttpException {
-      MatchedRoute result = table.matches(HttpMethod.GET, "/test/abcd");
-      assertEquals(TestResource.class, result.getResourceClass());
-      assertEquals(TestResource.class.getMethod("get", String.class), result.getMethod());
-      assertArrayEquals(new Object[] { "abcd" }, result.getMethodArgs());
+   public void testMatchesConstrainedRoute() throws NoSuchMethodException, HttpException, IOException {
+      RouteMatch result = table.matches(HttpRequestBuilder.build(HttpMethod.GET.name(), "/test/abcd"));
+      assertTrue(result instanceof MatchedRoute);
+      MatchedRoute route = (MatchedRoute) result;
+      assertEquals(TestResource.class, route.getResourceClass());
+      assertEquals(TestResource.class.getMethod("get", String.class), route.getMethod());
+      assertArrayEquals(new Object[] { "abcd" }, route.getMethodArgs());
       assertEquals("GET/abcd", result.invoke());
    }
 
    @Test
-   public void testMatchesConstrainedRouteTooShort() throws NoSuchMethodException, HttpException {
+   public void testMatchesConstrainedRouteTooShort() throws NoSuchMethodException, HttpException, IOException {
       thrown.expect(NotFoundException.class);
-      table.matches(HttpMethod.GET, "/test/ab");
-   }
-
-   @Test
-   public void testMatchesConstrainedRouteTooLong() throws NoSuchMethodException, HttpException {
-      thrown.expect(NotFoundException.class);
-      table.matches(HttpMethod.GET, "/test/abcdefg");
-   }
-
-   @Test
-   public void testMatchesGetTwoArgs() throws NoSuchMethodException, HttpException {
-      MatchedRoute result = table.matches(HttpMethod.GET, "/test/6/9");
-      assertEquals(TestResource.class, result.getResourceClass());
-      assertEquals(TestResource.class.getMethod("get", int.class, int.class), result.getMethod());
-      assertArrayEquals(new Object[] { 6, 9 }, result.getMethodArgs());
-      assertEquals("GET/6+9", result.invoke());
-   }
-
-   @Test
-   public void testMatchesPostRoot() throws NoSuchMethodException, HttpException {
-      MatchedRoute result = table.matches(HttpMethod.POST, "/test");
-      assertEquals(TestResource.class, result.getResourceClass());
-      assertEquals(TestResource.class.getMethod("post"), result.getMethod());
-      assertArrayEquals(new Object[0], result.getMethodArgs());
-      assertEquals("POST/Test", result.invoke());
-   }
-
-   @Test
-   public void testMatchesPostOneArg() throws NoSuchMethodException, HttpException {
-      MatchedRoute result = table.matches(HttpMethod.POST, "/test/7");
-      assertEquals(TestResource.class, result.getResourceClass());
-      assertEquals(TestResource.class.getMethod("post", int.class), result.getMethod());
-      assertArrayEquals(new Object[] { 7 }, result.getMethodArgs());
-      assertEquals("POST/7", result.invoke());
-   }
-
-   @Test
-   public void testMatchesUnregisteredPath() throws NotFoundException, MethodNotAllowedException {
-      thrown.expect(NotFoundException.class);
-      table.matches(HttpMethod.GET, "/none");
-   }
-
-   @Test
-   public void testMatchesUnregisteredMethod() throws NotFoundException, MethodNotAllowedException {
-      thrown.expect(MethodNotAllowedException.class);
-      table.matches(HttpMethod.DELETE, "/test/7");
-   }
-
-   @Test
-   public void testMatchesHttpException() throws NoSuchMethodException, HttpException {
-      thrown.expect(NotImplementedException.class);
-      MatchedRoute result = table.matches(HttpMethod.PATCH, "/test");
-      assertEquals(TestResource.class, result.getResourceClass());
-      assertEquals(TestResource.class.getMethod("patch"), result.getMethod());
+      RouteMatch result = table.matches(HttpRequestBuilder.build(HttpMethod.GET.name(), "/test/ab"));
       result.invoke();
    }
 
    @Test
-   public void testMatchesWithService() throws NoSuchMethodException, HttpException {
+   public void testMatchesConstrainedRouteTooLong() throws NoSuchMethodException, HttpException, IOException {
+      thrown.expect(NotFoundException.class);
+      RouteMatch result = table.matches(HttpRequestBuilder.build(HttpMethod.GET.name(), "/test/abcdefg"));
+      result.invoke();
+   }
+
+   @Test
+   public void testMatchesGetTwoArgs() throws NoSuchMethodException, HttpException, IOException {
+      RouteMatch result = table.matches(HttpRequestBuilder.build(HttpMethod.GET.name(), "/test/6/9"));
+      assertTrue(result instanceof MatchedRoute);
+      MatchedRoute route = (MatchedRoute) result;
+      assertEquals(TestResource.class, route.getResourceClass());
+      assertEquals(TestResource.class.getMethod("get", int.class, int.class), route.getMethod());
+      assertArrayEquals(new Object[] { 6, 9 }, route.getMethodArgs());
+      assertEquals("GET/6+9", result.invoke());
+   }
+
+   @Test
+   public void testMatchesPostRoot() throws NoSuchMethodException, HttpException, IOException {
+      RouteMatch result = table.matches(HttpRequestBuilder.build(HttpMethod.POST.name(), "/test"));
+      assertTrue(result instanceof MatchedRoute);
+      MatchedRoute route = (MatchedRoute) result;
+      assertEquals(TestResource.class, route.getResourceClass());
+      assertEquals(TestResource.class.getMethod("post"), route.getMethod());
+      assertArrayEquals(new Object[0], route.getMethodArgs());
+      assertEquals("POST/Test", result.invoke());
+   }
+
+   @Test
+   public void testMatchesPostOneArg() throws NoSuchMethodException, HttpException, IOException {
+      RouteMatch result = table.matches(HttpRequestBuilder.build(HttpMethod.POST.name(), "/test/7"));
+      assertTrue(result instanceof MatchedRoute);
+      MatchedRoute route = (MatchedRoute) result;
+      assertEquals(TestResource.class, route.getResourceClass());
+      assertEquals(TestResource.class.getMethod("post", int.class), route.getMethod());
+      assertArrayEquals(new Object[] { 7 }, route.getMethodArgs());
+      assertEquals("POST/7", result.invoke());
+   }
+
+   @Test
+   public void testMatchesUnregisteredPath() throws IOException {
+      thrown.expect(NotFoundException.class);
+      RouteMatch result = table.matches(HttpRequestBuilder.build(HttpMethod.GET.name(), "/none"));
+      result.invoke();
+   }
+
+   @Test
+   public void testMatchesUnregisteredMethod() throws IOException {
+      thrown.expect(MethodNotAllowedException.class);
+      RouteMatch result = table.matches(HttpRequestBuilder.build(HttpMethod.DELETE.name(), "/test/7"));
+      result.invoke();
+   }
+
+   @Test
+   public void testMatchesHttpException() throws NoSuchMethodException, HttpException, IOException {
+      thrown.expect(NotImplementedException.class);
+      RouteMatch result = table.matches(HttpRequestBuilder.build(HttpMethod.PATCH.name(), "/test"));
+      assertTrue(result instanceof MatchedRoute);
+      MatchedRoute route = (MatchedRoute) result;
+      assertEquals(TestResource.class, route.getResourceClass());
+      assertEquals(TestResource.class.getMethod("patch"), route.getMethod());
+      result.invoke();
+   }
+
+   @Test
+   public void testMatchesWithService() throws NoSuchMethodException, HttpException, IOException {
       Message message = new Message();
       serviceMap.useSingleton(Message.class, message);
       table.put("", ServiceTestResource.class);
-      MatchedRoute result = table.matches(HttpMethod.GET, "/service");
-      assertEquals(ServiceTestResource.class, result.getResourceClass());
-      assertEquals(ServiceTestResource.class.getMethod("get"), result.getMethod());
-      assertArrayEquals(new Object[] { message }, result.getConstructorArgs());
+      RouteMatch result = table.matches(HttpRequestBuilder.build(HttpMethod.GET.name(), "/service"));
+      assertTrue(result instanceof MatchedRoute);
+      MatchedRoute route = (MatchedRoute) result;
+      assertEquals(ServiceTestResource.class, route.getResourceClass());
+      assertEquals(ServiceTestResource.class.getMethod("get"), route.getMethod());
+      assertArrayEquals(new Object[] { message }, route.getConstructorArgs());
       assertEquals(message.get(), result.invoke());
    }
 
    @Test
-   public void testMatchesWithContent()
-      throws IOException, NotFoundException, MethodNotAllowedException, NoSuchMethodException {
+   public void testMatchesWithContent() throws IOException, NoSuchMethodException {
       HttpRequest request = new HttpRequestBuilder().setMethod("PUT")
                .setPath("/test/12")
                .setBody("id=12&name=Test&email=test%40test.com&checked=true")
                .setContentType(MediaType.FORM)
                .build();
-      MatchedRoute result = table.matches(request);
-      assertEquals(TestResource.class, result.getResourceClass());
-      assertEquals(TestResource.class.getMethod("put", int.class, ContentObject.class), result.getMethod());
-      assertEquals(2, result.getMethodArgs().length);
-      assertEquals(12, result.getMethodArgs()[0]);
-      Object obj = result.getMethodArgs()[1];
+      RouteMatch result = table.matches(request);
+      assertTrue(result instanceof MatchedRoute);
+      MatchedRoute route = (MatchedRoute) result;
+      assertEquals(TestResource.class, route.getResourceClass());
+      assertEquals(TestResource.class.getMethod("put", int.class, ContentObject.class), route.getMethod());
+      assertEquals(2, route.getMethodArgs().length);
+      assertEquals(12, route.getMethodArgs()[0]);
+      Object obj = route.getMethodArgs()[1];
       assertNotNull(obj);
       assertTrue(obj instanceof ContentObject);
-      ContentObject cobj = (ContentObject) result.getMethodArgs()[1];
+      ContentObject cobj = (ContentObject) route.getMethodArgs()[1];
       assertEquals(12, cobj.id);
       assertEquals("Test", cobj.name);
       assertEquals("test@test.com", cobj.email);

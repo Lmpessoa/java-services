@@ -22,27 +22,22 @@
  */
 package com.lmpessoa.services.core.hosting;
 
-import java.net.InetAddress;
-import java.util.Map;
-import java.util.Optional;
+/**
+ * Provides an interface for retrieving information about the current application.
+ */
+public interface IApplicationInfo {
 
-interface IApplicationInfo {
-
-   String getName();
-
-   int getPort();
-
-   InetAddress getBindAddress();
-
-   int getMaxConcurrentJobs();
-
-   long getVMUpTime();
-
-   long getUpTime();
-
-   boolean isXmlEnabled();
-
-   Optional<String> getProperty(String key);
-
-   Map<String, String> getProperties(String parent);
+   /**
+    * Returns the start-up class for this application.
+    *
+    * <p>
+    * The start-up class is the class used to configure the application and the injected services used
+    * during the lifetime of the application. This class must be informed through an initialization
+    * parameter (<code>leeow.startup.classname</code>) if the application is run using an alternate
+    * application server, or the same class that called {@link ApplicationServer#start()}.
+    * </p>
+    *
+    * @return the start-up class for this application.
+    */
+   Class<?> getStartupClass();
 }

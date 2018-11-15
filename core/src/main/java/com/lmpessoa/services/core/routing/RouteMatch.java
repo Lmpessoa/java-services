@@ -22,20 +22,39 @@
  */
 package com.lmpessoa.services.core.routing;
 
-import com.lmpessoa.services.core.hosting.HttpRequest;
-import com.lmpessoa.services.core.routing.IRouteTable;
-import com.lmpessoa.services.core.routing.RouteMatch;
-import com.lmpessoa.services.core.routing.RouteTable;
-import com.lmpessoa.services.core.services.IServiceMap;
-import com.lmpessoa.services.util.logging.ILogger;
+import java.lang.reflect.Method;
 
-public final class RouteTableBridge {
+/**
+ * A <code>RouteMatch</code> represents a set of information about a matched request route to enable
+ * the resolved route method to be executed.
+ *
+ * <p>
+ * Instances of this class are produced by matching HTTP request information with the route table of
+ * the application. Thus, instances of this class represent an abstraction of the request from the
+ * HTTP protocol.
+ * </p>
+ */
+public interface RouteMatch {
 
-   public static IRouteTable get(IServiceMap serviceMap, ILogger log) throws NoSuchMethodException {
-      return new RouteTable(serviceMap, log);
+   /**
+    * Returns the method of the resource class matched by this route.
+    *
+    * @return the method of the resource class matched by this route.
+    */
+   default Method getMethod() {
+      return null;
    }
 
-   public static RouteMatch match(IRouteTable routes, HttpRequest request) {
-      return ((RouteTable) routes).matches(request);
-   }
+   /**
+    * Calls the resolved method.
+    *
+    * <p>
+    * This method does not expect arguments provided by the developer since all the expected arguments
+    * gathered from the HTTP request are internally known to this class.
+    * </p>
+    *
+    * @return a object result returned by the called method or <code>null</code> if nothing was
+    * returned.
+    */
+   Object invoke();
 }

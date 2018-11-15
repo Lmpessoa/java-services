@@ -22,56 +22,57 @@
  */
 package com.lmpessoa.services.core.hosting;
 
-import java.io.IOException;
 import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 
-final class HttpServerJob implements Runnable {
+import javax.servlet.ServletRequest;
 
-   private final ApplicationServer server;
-   private final Application app;
+import com.lmpessoa.services.util.ConnectionInfo;
 
-   private ServerSocket socket;
+final class ServletConnectionInfo implements ConnectionInfo {
 
-   HttpServerJob(ApplicationServer server, Application app) {
-      this.server = server;
-      this.app = app;
+   private final ServletRequest request;
+   private final InetAddress remoteAddr;
+
+   @Override
+   public int getLocalPort() {
+      return request.getLocalPort();
    }
 
    @Override
-   public void run() {
-      int port = getPort();
-      InetAddress addr = server.getApplicationInfo().getBindAddress();
-      try (ServerSocket serverSocket = new ServerSocket(port, 0, addr)) {
-         socket = serverSocket;
-         serverSocket.setSoTimeout(1);
-         while (socket != null && !socket.isClosed()) {
-            acceptClient();
-         }
-      } catch (IOException e) {
-         app.getLogger().error(e);
-      }
+   public synchronized InetAddress getRemoteAddress() {
+      return remoteAddr;
    }
 
-   private void acceptClient() {
+   @Override
+   public int getRemotePort() {
+      return request.getRemotePort();
+   }
+
+   @Override
+   public String getServerName() {
+      return request.getServerName();
+   }
+
+   @Override
+   public int getServerPort() {
+      return request.getServerPort();
+   }
+
+   ServletConnectionInfo(ServletRequest request) {
+      this.request = request;
+      InetAddress remote = null;
       try {
-         Socket client = socket.accept();
-         Runnable job = new HttpRequestJob(app, client);
-         server.getThreadPool().execute(job);
-      } catch (SocketTimeoutException e) {
-         // just ignore
-      } catch (IOException e) {
-         app.getLogger().error(e);
+         byte[] addrBytes = InetAddress.getByName(request.getRemoteAddr()).getAddress();
+         remote = InetAddress.getByAddress(request.getRemoteHost(), addrBytes);
+      } catch (UnknownHostException e) {
+         // Should not throw given IP address and API description
       }
+      this.remoteAddr = remote;
    }
 
-   public void stop() {
-      socket = null;
-   }
-
-   public int getPort() {
-      return server.getApplicationInfo().getPort();
+   @Override
+   public boolean isSecure() {
+      return request.isSecure();
    }
 }

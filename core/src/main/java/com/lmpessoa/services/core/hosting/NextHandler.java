@@ -73,7 +73,6 @@ public final class NextHandler {
       NextHandler next = new NextHandler(services, handlers.subList(1, handlers.size()));
       try {
          Constructor<?> constructor = handlerClass.getConstructor(NextHandler.class);
-         constructor.setAccessible(true);
          Object handler = constructor.newInstance(next);
          return invokeService(handler);
       } catch (InvocationTargetException e) {

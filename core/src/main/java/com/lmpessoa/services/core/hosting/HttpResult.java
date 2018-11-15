@@ -27,7 +27,7 @@ import java.io.IOException;
 import com.lmpessoa.services.Internal;
 
 @Internal
-public final class HttpResult {
+final class HttpResult {
 
    private final HttpResultInputStream contentStream;
    private final HttpRequest request;
@@ -63,7 +63,7 @@ public final class HttpResult {
             contentLength = 0;
          }
       }
-      String userAgent = request.getHeaders().get("User-Agent");
+      String userAgent = request.getHeaders().get(HeaderMap.USER_AGENT);
       return String.format("\"%s %s %s\" %s %s \"%s\"", request.getMethod(),
                request.getPath() + (request.getQueryString() != null ? "?" + request.getQueryString() : ""),
                request.getProtocol(), statusCode, contentLength, userAgent);

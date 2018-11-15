@@ -23,35 +23,35 @@
 package com.lmpessoa.services.core.hosting;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.Socket;
 
 import com.lmpessoa.services.util.ConnectionInfo;
 
 final class HttpRequestJob implements Runnable {
 
-   private final Application app;
+   private final ApplicationServlet servlet;
    private final Socket client;
 
-   public HttpRequestJob(Application app, Socket client) {
+   public HttpRequestJob(ApplicationServlet servlet, Socket client) {
       this.client = client;
-      this.app = app;
+      this.servlet = servlet;
    }
 
    @Override
    public void run() {
+      Thread.currentThread().setName("http-request");
       try {
          try {
             HttpRequest request = new HttpRequestImpl(client.getInputStream());
-            ConnectionInfo connInfo = new ConnectionInfo(client);
-            OutputStream output = client.getOutputStream();
-            app.respondTo(request, connInfo, output);
-            output.flush();
+            ConnectionInfo connInfo = new SocketConnectionInfo(client, request.getHeader("Host"));
+            HttpResponse response = new HttpResponse(client.getOutputStream());
+            servlet.service(request, connInfo, response);
+            response.commit(servlet.getLogger());
          } finally {
             client.close();
          }
       } catch (IOException e) {
-         app.getLogger().fatal(e);
+         servlet.getLogger().fatal(e);
       }
    }
 }

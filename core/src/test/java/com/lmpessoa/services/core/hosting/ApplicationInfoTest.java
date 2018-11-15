@@ -22,26 +22,24 @@
  */
 package com.lmpessoa.services.core.hosting;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
-import java.net.InetAddress;
-import java.nio.file.Files;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.lmpessoa.services.util.logging.ILogger;
-import com.lmpessoa.services.util.logging.Logger;
+import com.lmpessoa.services.core.hosting.ApplicationServerInfo;
 
 public final class ApplicationInfoTest {
 
-   private ApplicationInfo info;
+   private ApplicationServerInfo info;
    private File logFile;
 
    @Before
@@ -63,11 +61,10 @@ public final class ApplicationInfoTest {
                "logging.writer.template=[{Severity}] {Message}\n" + //
                "logging.default=WARNING\n" + //
                "logging.packages.0.name=com.lmpessoa.services.util.logging\n" + //
-               "logging.packages.0.level=ERROR\n" + //
+               "logging.packages.0.level=INFO\n" + //
                "logging.packages.1.name=com.lmpessoa.services.data\n" + //
                "logging.packages.1.level=DEBUG");
-      info = new ApplicationInfo(ApplicationInfoTest.class,
-               ApplicationInfo.parseConfigMapFile("PROPERTIES", config));
+      info = new ApplicationServerInfo("PROPERTIES", config);
       assertParsedConfig(info);
    }
 
@@ -85,11 +82,10 @@ public final class ApplicationInfoTest {
                         "   default: WARNING\n" + //
                         "   packages:\n" + //
                         "      - name: com.lmpessoa.services.util.logging\n" + //
-                        "        level: ERROR\n" + //
+                        "        level: INFO\n" + //
                         "      - name: com.lmpessoa.services.data\n" + //
                         "        level: DEBUG\n");
-      info = new ApplicationInfo(ApplicationInfoTest.class,
-               ApplicationInfo.parseConfigMapFile("YML", config));
+      info = new ApplicationServerInfo("YML", config);
       assertParsedConfig(info);
    }
 
@@ -119,20 +115,19 @@ public final class ApplicationInfoTest {
                "    ]\n" + //
                "  }\n" + //
                "}\n");
-      info = new ApplicationInfo(ApplicationInfoTest.class,
-               ApplicationInfo.parseConfigMapFile("JSON", config));
+      info = new ApplicationServerInfo("JSON", config);
       assertParsedConfig(info);
    }
 
-   private void assertParsedConfig(ApplicationInfo info) throws IOException {
-      assertEquals(5050, info.getPort());
-      assertEquals(InetAddress.getByAddress(new byte[] { 0, 0, 0, 0 }), info.getBindAddress());
-      assertFalse(info.isXmlEnabled());
-      ILogger log = info.getLogger();
-      log.info("Test 1");
-      log.error("Test 2");
-      ((Logger) log).join();
-      String[] logLines = Files.readAllLines(logFile.toPath()).toArray(new String[0]);
-      assertArrayEquals(new String[] { "[ERROR] Test 2", "" }, logLines);
+   private void assertParsedConfig(ApplicationServerInfo info) throws IOException {
+      assertEquals(Optional.of("0.0.0.0"), info.getProperty("server.address"));
+      assertEquals(Optional.of(5050), info.getIntProperty("server.port"));
+      assertEquals(Optional.of("file"), info.getProperty("logging.writer.type"));
+      Map<String, String> packages = new HashMap<>();
+      packages.put("0.name", "com.lmpessoa.services.util.logging");
+      packages.put("0.level", "INFO");
+      packages.put("1.name", "com.lmpessoa.services.data");
+      packages.put("1.level", "DEBUG");
+      assertEquals(packages, info.getProperties("logging.packages"));
    }
 }

@@ -20,22 +20,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.routing;
+package com.lmpessoa.services.core.hosting;
 
-import com.lmpessoa.services.core.hosting.HttpRequest;
-import com.lmpessoa.services.core.routing.IRouteTable;
-import com.lmpessoa.services.core.routing.RouteMatch;
-import com.lmpessoa.services.core.routing.RouteTable;
-import com.lmpessoa.services.core.services.IServiceMap;
-import com.lmpessoa.services.util.logging.ILogger;
+import java.util.Enumeration;
+import java.util.Objects;
 
-public final class RouteTableBridge {
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
 
-   public static IRouteTable get(IServiceMap serviceMap, ILogger log) throws NoSuchMethodException {
-      return new RouteTable(serviceMap, log);
+final class ApplicationConfig implements ServletConfig {
+
+   private final ApplicationContext context;
+   private final String servletName;
+
+   @Override
+   public String getServletName() {
+      return servletName;
    }
 
-   public static RouteMatch match(IRouteTable routes, HttpRequest request) {
-      return ((RouteTable) routes).matches(request);
+   @Override
+   public ServletContext getServletContext() {
+      return context;
+   }
+
+   @Override
+   public String getInitParameter(String name) {
+      return context.getInitParameter(name);
+   }
+
+   @Override
+   public Enumeration<String> getInitParameterNames() {
+      return context.getInitParameterNames();
+   }
+
+   ApplicationConfig(ApplicationContext context, String servletName) {
+      this.context = Objects.requireNonNull(context);
+      this.servletName = servletName;
    }
 }

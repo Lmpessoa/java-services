@@ -22,6 +22,8 @@
  */
 package com.lmpessoa.services.core.routing;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -70,6 +72,8 @@ public final class RouteTable implements IRouteTable {
    private final IServiceMap serviceMap;
    private final ILogger log;
 
+   private Collection<Exception> lastExceptions;
+
    static {
       Map<Class<?>, Function<String, ?>> special = new HashMap<>();
       special.put(long.class, Long::valueOf);
@@ -88,19 +92,19 @@ public final class RouteTable implements IRouteTable {
    }
 
    @Override
-   public Collection<Exception> put(Class<?> clazz) {
-      return putAll(options.findArea(clazz), Arrays.asList(clazz));
+   public void put(Class<?> clazz) {
+      putAll(options.findArea(clazz), Arrays.asList(clazz));
    }
 
    @Override
-   public Collection<Exception> putAll(Collection<Class<?>> classes) {
-      return putClasses(classes.stream().filter(c -> options.findArea(c) != null).collect(
+   public void putAll(Collection<Class<?>> classes) {
+      putClasses(classes.stream().filter(c -> options.findArea(c) != null).collect(
                Collectors.toMap(c -> c, options::findArea)));
    }
 
    @Override
-   public Collection<Exception> putAll(String area, Collection<Class<?>> classes) {
-      return putClasses(classes.stream().filter(c -> area != null).collect(Collectors.toMap(c -> c, c -> area)));
+   public void putAll(String area, Collection<Class<?>> classes) {
+      putClasses(classes.stream().filter(c -> area != null).collect(Collectors.toMap(c -> c, c -> area)));
    }
 
    @Internal
@@ -111,8 +115,7 @@ public final class RouteTable implements IRouteTable {
    }
 
    @Internal
-   @Override
-   public MatchedRoute matches(HttpRequest request) {
+   public RouteMatch matches(HttpRequest request) {
       ClassUtils.checkInternalAccess();
       boolean found = false;
       for (Entry<RoutePattern, Map<HttpMethod, MethodEntry>> entry : endpoints.entrySet()) {
@@ -145,9 +148,9 @@ public final class RouteTable implements IRouteTable {
          return new MatchedRoute(methodEntry, result.toArray());
       }
       if (!found) {
-         throw new NotFoundException();
+         return new NotFoundException();
       } else {
-         throw new MethodNotAllowedException();
+         return new MethodNotAllowedException();
       }
    }
 
@@ -178,24 +181,20 @@ public final class RouteTable implements IRouteTable {
       return map.get(method);
    }
 
-   MatchedRoute matches(HttpMethod method, String path) {
-      return matches(new HttpRequest() {
-
-         @Override
-         public String getMethod() {
-            return method.name();
-         }
-
-         @Override
-         public String getPath() {
-            return path;
-         }
-      });
+   Collection<Exception> getLastExceptions() {
+      return lastExceptions;
    }
 
    private Object parseContentBody(HttpRequest request, Class<?> contentClass) {
-      if (request.getContentType() != null && request.getBody() != null && request.getContentLength() > 0) {
-         try (Scanner scanner = new Scanner(request.getBody())) {
+      InputStream body;
+      try {
+         body = request.getBody();
+      } catch (IOException e) {
+         log.error(e);
+         return null;
+      }
+      if (request.getContentType() != null && body != null && request.getContentLength() > 0) {
+         try (Scanner scanner = new Scanner(body)) {
             scanner.useDelimiter("\\A");
             if (scanner.hasNext()) {
                return Serializer.parse(request.getContentType(), scanner.next(), contentClass);
@@ -205,7 +204,7 @@ public final class RouteTable implements IRouteTable {
       return null;
    }
 
-   private Collection<Exception> putClasses(Map<Class<?>, String> classes) {
+   private void putClasses(Map<Class<?>, String> classes) {
       List<Exception> exceptions = new ArrayList<>();
       synchronized (this) {
          for (Entry<Class<?>, String> entry : classes.entrySet()) {
@@ -225,7 +224,8 @@ public final class RouteTable implements IRouteTable {
             }
          }
       }
-      return Collections.unmodifiableCollection(exceptions);
+      this.lastExceptions = exceptions;
+      exceptions.forEach(log::warning);
    }
 
    private void putMethod(Class<?> clazz, RoutePattern classPat, Method method, List<Exception> exceptions) {
@@ -244,7 +244,9 @@ public final class RouteTable implements IRouteTable {
          Map<HttpMethod, MethodEntry> map = endpoints.get(methodPat);
          for (HttpMethod methodName : methodNames) {
             if (map.containsKey(methodName)) {
-               throw new DuplicateMethodException(methodName, methodPat, clazz);
+               log.info("Route '%s %s' is already assigned to another method; ignored", methodName, methodPat);
+               exceptions.add(new DuplicateMethodException(methodName, methodPat, clazz));
+               continue;
             }
             Constructor<?> constructor = clazz.getConstructors()[0];
             map.put(methodName,

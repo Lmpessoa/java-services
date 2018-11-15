@@ -22,10 +22,12 @@
  */
 package com.lmpessoa.services.core.hosting;
 
+import com.lmpessoa.services.core.routing.RouteMatch;
+
 /**
  * Thrown when the requested resource exists but is not allow to respond to the requested method.
  */
-public final class MethodNotAllowedException extends HttpException {
+public final class MethodNotAllowedException extends HttpException implements RouteMatch {
 
    private static final long serialVersionUID = 1L;
 
@@ -48,5 +50,10 @@ public final class MethodNotAllowedException extends HttpException {
    @Override
    public int getStatusCode() {
       return 405;
+   }
+
+   @Override
+   public Object invoke() {
+      throw this;
    }
 }

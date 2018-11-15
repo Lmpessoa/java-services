@@ -42,8 +42,7 @@ import com.lmpessoa.services.util.parsing.TypeMismatchException;
 
 final class RoutePattern {
 
-   private static final Pattern areaPattern = Pattern
-            .compile("^(\\/)?[a-zA-Z0-9%_-]+(\\/[a-zA-Z0-9%_-]+)?$");
+   private static final Pattern areaPattern = Pattern.compile("^(\\/)?[a-zA-Z0-9%_-]+(\\/[a-zA-Z0-9%_-]+)?$");
    private static final IntRouteType intType = new IntRouteType();
    private static final String SEPARATOR = "/";
 
@@ -51,29 +50,25 @@ final class RoutePattern {
    private final Class<?> contentClass;
    private Pattern pattern = null;
 
-   static RoutePattern build(String area, Class<?> clazz, IServiceMap serviceMap,
-      RouteOptions options) throws NoSingleMethodException, ParseException {
+   static RoutePattern build(String area, Class<?> clazz, IServiceMap serviceMap, RouteOptions options)
+      throws NoSingleMethodException, ParseException {
       final Constructor<?>[] constructors = clazz.getConstructors();
       if (constructors.length != 1) {
-         throw new NoSingleMethodException(
-                  "Class " + clazz.getName() + " must have only one constructor",
+         throw new NoSingleMethodException("Class " + clazz.getName() + " must have only one constructor",
                   constructors.length);
       }
       Route route = clazz.getAnnotation(Route.class);
       Class<?>[] paramTypes = Arrays.stream(constructors[0].getParameterTypes())
                .filter(c -> !serviceMap.contains(c))
                .toArray(Class<?>[]::new);
-      Optional<Class<?>> invalid = Arrays.stream(paramTypes)
-               .filter(c -> !hasValueOfMethod(c))
-               .findFirst();
+      Optional<Class<?>> invalid = Arrays.stream(paramTypes).filter(c -> !hasValueOfMethod(c)).findFirst();
       if (invalid.isPresent()) {
          Class<?> invalidClass = invalid.get();
          String paramClassName = invalidClass.isArray() ? invalidClass.getComponentType() + "[]"
                   : invalidClass.getName();
          throw new TypeMismatchException(paramClassName + " is not an acceptable route part");
       }
-      String routePath = route != null ? route.value()
-               : buildRouteFromParams(getResourceName(clazz), paramTypes);
+      String routePath = route != null ? route.value() : buildRouteFromParams(getResourceName(clazz), paramTypes);
       if (!routePath.startsWith(SEPARATOR)) {
          routePath = SEPARATOR + routePath;
       }
@@ -92,16 +87,14 @@ final class RoutePattern {
       return new RoutePattern(result, null);
    }
 
-   static RoutePattern build(RoutePattern resource, Method method, RouteOptions options)
-      throws ParseException {
+   static RoutePattern build(RoutePattern resource, Method method, RouteOptions options) throws ParseException {
       Route route = method.getAnnotation(Route.class);
       List<Class<?>> params = new ArrayList<>(Arrays.asList(method.getParameterTypes()));
       Class<?> lastArgument = null;
       if (!params.isEmpty()) {
          lastArgument = params.get(params.size() - 1);
          if (lastArgument != String.class && !lastArgument.isArray() && !lastArgument.isInterface()
-                  && !lastArgument.isPrimitive()
-                  && !Modifier.isAbstract(lastArgument.getModifiers())
+                  && !lastArgument.isPrimitive() && !Modifier.isAbstract(lastArgument.getModifiers())
                   && !hasValueOfMethod(lastArgument) && hasParameterlessConstructor(lastArgument)) {
             params.remove(params.size() - 1);
          } else {
@@ -125,8 +118,7 @@ final class RoutePattern {
       return new RoutePattern(pattern, lastArgument);
    }
 
-   private static String buildRouteFromParams(String prefix, Class<?>[] parameterTypes)
-      throws TypeMismatchException {
+   private static String buildRouteFromParams(String prefix, Class<?>[] parameterTypes) throws TypeMismatchException {
       StringBuilder result = new StringBuilder();
       if (prefix != null) {
          result.append('/');
@@ -166,12 +158,11 @@ final class RoutePattern {
       return intType.isAssignableTo(clazz) ? "int" : "any";
    }
 
-   private static void validateRoute(List<ITemplatePart> route, Class<?>[] parameterTypes)
-      throws ParseException {
+   private static void validateRoute(List<ITemplatePart> route, Class<?>[] parameterTypes) throws ParseException {
       long count = route.stream().filter(p -> p instanceof AbstractRouteType).count();
       if (count != parameterTypes.length) {
-         throw new ParseException("Wrong parameter count in route (found: " + count + ", expected: "
-                  + parameterTypes.length + ")", 0);
+         throw new ParseException(
+                  "Wrong parameter count in route (found: " + count + ", expected: " + parameterTypes.length + ")", 0);
       }
       List<Class<?>> parameters = new ArrayList<>();
       parameters.addAll(Arrays.asList(parameterTypes));
@@ -180,8 +171,7 @@ final class RoutePattern {
             AbstractRouteType var = (AbstractRouteType) part;
             Class<?> param = parameters.remove(0);
             if (param != String.class && !var.isAssignableTo(param)) {
-               throw new TypeMismatchException(
-                        "Cannot cast '" + var.getName() + "' to " + param.getName());
+               throw new TypeMismatchException("Cannot cast '" + var.getName() + "' to " + param.getName());
             }
          }
       }
@@ -198,9 +188,7 @@ final class RoutePattern {
 
    public static String getResourceName(Class<?> clazz) {
       String[] nameParts = clazz.getName().replaceAll("\\$", ".").split("\\.");
-      String name = nameParts[nameParts.length - 1].replaceAll("([A-Z])", "_$1")
-               .toLowerCase()
-               .replaceAll("^_", "");
+      String name = nameParts[nameParts.length - 1].replaceAll("([A-Z])", "_$1").toLowerCase().replaceAll("^_", "");
       if (name.endsWith("_resource")) {
          name = name.substring(0, name.length() - 8).replaceAll("_$", "");
       }
@@ -251,12 +239,10 @@ final class RoutePattern {
          result.append('^');
          for (ITemplatePart part : parts) {
             if (part instanceof LiteralPart) {
-               result.append(((LiteralPart) part).getValue()
-                        .replaceAll("([\\\\/$^?\\{\\}\\[\\]\\(\\)-])", "\\\\$1"));
+               result.append(((LiteralPart) part).getValue().replaceAll("([\\\\/$^?\\{\\}\\[\\]\\(\\)-])", "\\\\$1"));
             } else {
                result.append('(');
-               result.append(
-                        ((AbstractRouteType) part).getRegex().replaceAll("([\\(\\)])", "\\\\$1"));
+               result.append(((AbstractRouteType) part).getRegex().replaceAll("([\\(\\)])", "\\\\$1"));
                result.append(')');
             }
          }
@@ -301,7 +287,7 @@ final class RoutePattern {
 // Also there will only be designators for length:
 // (n,) = minimum length of n
 // (,n) = maximum length of n (minimum is at most zero)
-// (n,m) = minimum length of n and maximum of m
+// (n,m) = minumum length of n and maximum of m
 // (n) = exact length of n
 // [nothing] = any length
 

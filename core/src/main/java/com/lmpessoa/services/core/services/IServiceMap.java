@@ -53,8 +53,7 @@ public interface IServiceMap {
 
    /**
     * Adds the given class to the service map as a singleton service. The given class must be a
-    * concrete class and is used both for service discovery and instantiation of the service
-    * responder.
+    * concrete class and is used both for service discovery and instantiation of the service responder.
     * <p>
     * Each request for a singleton service will return the same object regardless.
     * </p>
@@ -66,8 +65,8 @@ public interface IServiceMap {
    }
 
    /**
-    * Adds the given class pair to the service map as a singleton service. The given service class
-    * is used for service discovery while the provider class must be a concrete class and is used to
+    * Adds the given class pair to the service map as a singleton service. The given service class is
+    * used for service discovery while the provider class must be a concrete class and is used to
     * create the instance object that will respond to service requests.
     * <p>
     * Each request for a singleton service will return the same object regardless.
@@ -81,9 +80,9 @@ public interface IServiceMap {
    }
 
    /**
-    * Adds the given provider function to the service map as singleton service. The given service
-    * class is used for service discovery and the provider function is used to create the instance
-    * object that will respond to service requests.
+    * Adds the given provider function to the service map as singleton service. The given service class
+    * is used for service discovery and the provider function is used to create the instance object
+    * that will respond to service requests.
     * <p>
     * Each request for a singleton service will return the same object regardless.
     * </p>
@@ -95,8 +94,8 @@ public interface IServiceMap {
    <T> void useSingleton(Class<T> service, Supplier<T> provider);
 
    /**
-    * Adds the given object instance to the service map as a singleton service. No other instances
-    * of the responder will be created through this call.
+    * Adds the given object instance to the service map as a singleton service. No other instances of
+    * the responder will be created through this call.
     * <p>
     * Each request for a singleton service will return the same object regardless.
     * </p>
@@ -110,8 +109,7 @@ public interface IServiceMap {
 
    /**
     * Adds the given class to the service map as a per request service. The given class must be a
-    * concrete class and is used both for service discovery and instantiation of the service
-    * responder.
+    * concrete class and is used both for service discovery and instantiation of the service responder.
     * <p>
     * As the name implies, each request for a per request service will return the same object within
     * each different request.
@@ -124,8 +122,8 @@ public interface IServiceMap {
    }
 
    /**
-    * Adds the given class pair to the service map as a per request service. The given service class
-    * is used for service discovery while the provider class must be a concrete class and is used to
+    * Adds the given class pair to the service map as a per request service. The given service class is
+    * used for service discovery while the provider class must be a concrete class and is used to
     * create the instance object that will respond to service requests.
     * <p>
     * As the name implies, each request for a per request service will return the same object within
@@ -158,8 +156,7 @@ public interface IServiceMap {
 
    /**
     * Adds the given class to the service map as a transient service. The given class must be a
-    * concrete class and is used both for service discovery and instantiation of the service
-    * responder.
+    * concrete class and is used both for service discovery and instantiation of the service responder.
     * <p>
     * Each request for a transient object will return a new object.
     * </p>
@@ -171,8 +168,8 @@ public interface IServiceMap {
    }
 
    /**
-    * Adds the given class pair to the service map as a transient service. The given service class
-    * is used for service discovery while the provider class must be a concrete class and is used to
+    * Adds the given class pair to the service map as a transient service. The given service class is
+    * used for service discovery while the provider class must be a concrete class and is used to
     * create the instance object that will respond to service requests.
     * <p>
     * Each request for a transient object will return a new object.
@@ -186,9 +183,9 @@ public interface IServiceMap {
    }
 
    /**
-    * Adds the given provider function to the service map as transient service. The given service
-    * class is used for service discovery and the provider function is used to create the instance
-    * object that will respond to service requests.
+    * Adds the given provider function to the service map as transient service. The given service class
+    * is used for service discovery and the provider function is used to create the instance object
+    * that will respond to service requests.
     * <p>
     * Each request for a transient object will return a new object.
     * </p>
@@ -224,17 +221,16 @@ public interface IServiceMap {
    default Object invoke(Object obj, String methodName)
       throws NoSingleMethodException, IllegalAccessException, InvocationTargetException {
       Class<?> clazz = obj instanceof Class<?> ? (Class<?>) obj : obj.getClass();
-      Method[] methods = Arrays.stream(clazz.getMethods())
-               .filter(m -> methodName.equals(m.getName()))
-               .toArray(Method[]::new);
+      Method[] methods = Arrays.stream(clazz.getMethods()).filter(m -> methodName.equals(m.getName())).toArray(
+               Method[]::new);
       if (methods.length != 1) {
-         throw new NoSingleMethodException("Class " + clazz.getName()
-                  + " must have exactly one method named '" + methodName + "'", methods.length);
+         throw new NoSingleMethodException(
+                  "Class " + clazz.getName() + " must have exactly one method named '" + methodName + "'",
+                  methods.length);
       }
       return invoke(obj, methods[0]);
    }
 
    @Internal
-   Object invoke(Object obj, Method method)
-      throws IllegalAccessException, InvocationTargetException;
+   Object invoke(Object obj, Method method) throws IllegalAccessException, InvocationTargetException;
 }

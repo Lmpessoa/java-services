@@ -30,7 +30,6 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.lmpessoa.services.core.hosting.HttpRequest;
 import com.lmpessoa.services.core.hosting.NextHandler;
 import com.lmpessoa.services.core.services.ServiceMap;
 
@@ -79,21 +78,9 @@ public final class NextHandlerTest {
       assertEquals(2, result.code);
    }
 
-   public static class Request implements HttpRequest {
+   public static class Request {
 
       public int code;
-
-      @Override
-      public String getMethod() {
-         // TODO Auto-generated method stub
-         return null;
-      }
-
-      @Override
-      public String getPath() {
-         // TODO Auto-generated method stub
-         return null;
-      }
    }
 
    public static class Result {

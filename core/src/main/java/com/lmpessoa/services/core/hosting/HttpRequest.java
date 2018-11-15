@@ -22,7 +22,9 @@
  */
 package com.lmpessoa.services.core.hosting;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collection;
 import java.util.Map;
 
 /**
@@ -66,18 +68,14 @@ public interface HttpRequest {
     *
     * @return the protocol used with this HTTP request.
     */
-   default String getProtocol() {
-      return "HTTP/1.1";
-   }
+   String getProtocol();
 
    /**
     * Returns the query parameters of this HTTP request as a single string.
     *
     * @return the query parameters of this HTTP request.
     */
-   default String getQueryString() {
-      return null;
-   }
+   String getQueryString();
 
    /**
     * Returns the content length of the body of this HTTP request.
@@ -90,54 +88,45 @@ public interface HttpRequest {
     * @return the content length of the body of this HTTP request, or <code>0</code> if this value
     * is not present.
     */
-   default long getContentLength() {
-      return 0;
-   }
+   long getContentLength();
 
    /**
     * Returns the content type of the body of this HTTP request.
     *
     * @return the content type of the body of this HTTP request.
     */
-   default String getContentType() {
-      return null;
-   }
-
-   /**
-    * Returns the host name associated as source of this HTTP request.
-    *
-    * @return the host name associated as source of this HTTP request.
-    */
-   default String getHost() {
-      return null;
-   }
+   String getContentType();
 
    /**
     * Returns a stream with the content of this HTTP request.
     *
     * @return a stream with the content of this HTTP request.
+    * @throws IOException
     */
-   default InputStream getBody() {
-      return null;
-   }
+   InputStream getBody() throws IOException;
 
    /**
     * Returns a map with the headers of this HTTP request.
     *
     * @return a map with the headers of this HTTP request.
     */
-   default Map<String, String> getHeaders() {
-      return null;
-   }
+   HeaderMap getHeaders();
+
+   /**
+    * Returns the first value associated with the given header name of this HTTP request.
+    *
+    * @param headerName the name of the header to retrieve.
+    * @return the first value associated with the given header name, or <code>null</code> if no such
+    * value exists.
+    */
+   String getHeader(String headerName);
 
    /**
     * Returns a map with the parsed values of the query string of this HTTP request.
     *
     * @return a map with the parsed values of the query string of this HTTP request.
     */
-   default Map<String, String> getQuery() {
-      return null;
-   }
+   Map<String, Collection<String>> getQuery();
 
    /**
     * Returns a map with the parsed values of the body of this HTTP request, if this body is an URL
@@ -145,17 +134,12 @@ public interface HttpRequest {
     *
     * @return a map with the parsed values of the body of this HTTP request.
     */
-   default Map<String, String> getForm() {
-      return null;
-   }
+   Map<String, Collection<String>> getForm();
 
    /**
     * Returns a map of the cookies sent with this HTTP request.
     *
     * @return a map of the cookies sent with this HTTP request.
     */
-   default Map<String, String> getCookies() {
-      return null;
-   }
-
+   Map<String, String> getCookies();
 }

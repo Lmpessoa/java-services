@@ -20,22 +20,50 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.routing;
+package com.lmpessoa.services.core.hosting;
 
-import com.lmpessoa.services.core.hosting.HttpRequest;
-import com.lmpessoa.services.core.routing.IRouteTable;
-import com.lmpessoa.services.core.routing.RouteMatch;
-import com.lmpessoa.services.core.routing.RouteTable;
-import com.lmpessoa.services.core.services.IServiceMap;
-import com.lmpessoa.services.util.logging.ILogger;
+import java.io.IOException;
 
-public final class RouteTableBridge {
+import javax.servlet.ReadListener;
+import javax.servlet.ServletInputStream;
 
-   public static IRouteTable get(IServiceMap serviceMap, ILogger log) throws NoSuchMethodException {
-      return new RouteTable(serviceMap, log);
+final class ServletInputStreamImpl extends ServletInputStream {
+
+   private final byte[] content;
+
+   private int pos = 0;
+
+   @Override
+   public boolean isFinished() {
+      return pos >= content.length;
    }
 
-   public static RouteMatch match(IRouteTable routes, HttpRequest request) {
-      return ((RouteTable) routes).matches(request);
+   @Override
+   public boolean isReady() {
+      return true;
+   }
+
+   @Override
+   public void setReadListener(ReadListener listener) {
+      throw new UnsupportedOperationException();
+   }
+
+   @Override
+   public int read() throws IOException {
+      return isFinished() ? -1 : content[pos++];
+   }
+
+   @Override
+   public boolean markSupported() {
+      return false;
+   }
+
+   @Override
+   public synchronized void reset() throws IOException {
+      pos = 0;
+   }
+
+   ServletInputStreamImpl(byte[] content) {
+      this.content = content;
    }
 }

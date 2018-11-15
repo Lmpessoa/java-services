@@ -30,15 +30,17 @@ import java.util.List;
 import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.util.ClassUtils;
 
-final class ApplicationOptions {
+final class ApplicationOptions implements IApplicationOptions {
 
    private static final List<Class<?>> LAST_HANDLERS = Arrays.asList(InvokeHandler.class);
    private final List<Class<?>> handlers = new ArrayList<>();
 
    ApplicationOptions() {
       handlers.add(ResultHandler.class);
+      handlers.add(FaviconHandler.class);
    }
 
+   @Override
    public void useHandler(Class<?> handlerClass) {
       if (handlers.contains(handlerClass) || LAST_HANDLERS.contains(handlerClass)) {
          throw new IllegalArgumentException("Handler is already registered");

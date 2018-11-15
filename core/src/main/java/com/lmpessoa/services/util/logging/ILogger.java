@@ -22,6 +22,8 @@
  */
 package com.lmpessoa.services.util.logging;
 
+import com.lmpessoa.services.Internal;
+
 /**
  * Enables logging messages throughout the application.
  *
@@ -193,4 +195,7 @@ public interface ILogger {
    default void debug(String message, Object... args) {
       debug(String.format(message, args));
    }
+
+   @Internal
+   void join();
 }

@@ -25,7 +25,6 @@ package com.lmpessoa.services.core.routing;
 import java.util.Arrays;
 import java.util.Collection;
 
-import com.lmpessoa.services.core.hosting.HttpRequest;
 import com.lmpessoa.services.core.services.IConfigurable;
 
 /**
@@ -45,7 +44,7 @@ public interface IRouteTable extends IConfigurable<IRouteOptions> {
     * @param clazz the class to add to the route table.
     * @return a list of exceptions raised during this call.
     */
-   Collection<Exception> put(Class<?> clazz);
+   void put(Class<?> clazz);
 
    /**
     * Adds the methods of the given resource class to this route table under the given area. If any
@@ -55,8 +54,8 @@ public interface IRouteTable extends IConfigurable<IRouteOptions> {
     * @param clazz the class to add to the route table.
     * @return a list of exceptions raised during this call.
     */
-   default Collection<Exception> put(String area, Class<?> clazz) {
-      return putAll(area, Arrays.asList(clazz));
+   default void put(String area, Class<?> clazz) {
+      putAll(area, Arrays.asList(clazz));
    }
 
    /**
@@ -66,7 +65,7 @@ public interface IRouteTable extends IConfigurable<IRouteOptions> {
     * @param classes the collection of classes to add to the route table.
     * @return a list of exceptions raised during this call.
     */
-   Collection<Exception> putAll(Collection<Class<?>> classes);
+   void putAll(Collection<Class<?>> classes);
 
    /**
     * Adds the methods of all the given resource class to this route table under the given area. If any
@@ -76,7 +75,7 @@ public interface IRouteTable extends IConfigurable<IRouteOptions> {
     * @param classes the collection of classes to add to the route table.
     * @return a list of exceptions raised during this call.
     */
-   Collection<Exception> putAll(String area, Collection<Class<?>> classes);
+   void putAll(String area, Collection<Class<?>> classes);
 
    /**
     * Returns the name of the area classes in the given package name should belong to.
@@ -86,6 +85,4 @@ public interface IRouteTable extends IConfigurable<IRouteOptions> {
     * <code>null</code> if no area captures classes in the given package name.
     */
    String findArea(String packageName);
-
-   MatchedRoute matches(HttpRequest request);
 }

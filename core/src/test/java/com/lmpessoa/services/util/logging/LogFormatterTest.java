@@ -43,9 +43,8 @@ public final class LogFormatterTest {
    }
 
    private final LogEntry entry = new LogEntry(
-            ZonedDateTime.of(LocalDateTime.of(2017, 6, 5, 5, 42, 7),
-                     ZoneId.of("America/Sao_Paulo")),
-            Severity.ERROR, "Test", null, LogFormatterTest.class);
+            ZonedDateTime.of(LocalDateTime.of(2017, 6, 5, 5, 42, 7), ZoneId.of("America/Sao_Paulo")), Severity.ERROR,
+            "Test", null, LogFormatterTest.class);
 
    @Test
    public void testFormatTimeWeb() throws ParseException {

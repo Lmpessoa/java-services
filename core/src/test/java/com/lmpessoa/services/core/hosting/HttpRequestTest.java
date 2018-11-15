@@ -25,10 +25,15 @@ package com.lmpessoa.services.core.hosting;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import com.lmpessoa.services.core.hosting.HttpRequest;
+import com.lmpessoa.services.core.hosting.HttpRequestImpl;
+import com.lmpessoa.services.core.hosting.LengthRequiredException;
 
 public final class HttpRequestTest {
 
@@ -52,9 +57,9 @@ public final class HttpRequestTest {
       HttpRequest request = getRequest("query_get_request.txt");
       assertEquals("GET", request.getMethod());
       assertEquals("/b/ss/rsid/0", request.getPath());
-      assertEquals("apps.sillystring.com/summary.do", request.getQuery().get("g"));
-      assertEquals("http://apps.sillystring.com/summary.do", request.getQuery().get("r"));
-      assertEquals("2009-03-05T01:00:01-05", request.getQuery().get("ts"));
+      assertEquals(Arrays.asList("apps.sillystring.com/summary.do"), request.getQuery().get("g"));
+      assertEquals(Arrays.asList("http://apps.sillystring.com/summary.do"), request.getQuery().get("r"));
+      assertEquals(Arrays.asList("2009-03-05T01:00:01-05"), request.getQuery().get("ts"));
    }
 
    @Test
@@ -62,7 +67,7 @@ public final class HttpRequestTest {
       HttpRequest request = getRequest("hosted_get_request.txt");
       assertEquals("GET", request.getMethod());
       assertEquals("/path/file.html", request.getPath());
-      assertEquals("https://lmpessoa.com", request.getHost());
+      assertEquals("https://lmpessoa.com", request.getHeader("Host"));
    }
 
    @Test
@@ -70,7 +75,7 @@ public final class HttpRequestTest {
       HttpRequest request = getRequest("form_post_request.txt");
       assertEquals("POST", request.getMethod());
       assertEquals("/path/script.cgi", request.getPath());
-      assertEquals("flies", request.getForm().get("favorite flavor"));
+      assertEquals(Arrays.asList("flies"), request.getForm().get("favorite flavor"));
    }
 
    @Test

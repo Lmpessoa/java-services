@@ -31,68 +31,24 @@ import com.lmpessoa.services.core.hosting.HttpException;
 import com.lmpessoa.services.core.hosting.InternalServerError;
 import com.lmpessoa.services.util.logging.NonTraced;
 
-/**
- * A <code>MatchedRoute</code> represents a set of information about a matched request route to
- * enable the resolved route method to be executed.
- *
- * <p>
- * Instances of this class are produced by matching HTTP request information with the route table of
- * the application. Thus, instances of this class represent an abstraction of the request from th
- * HTTP protocol.
- * </p>
- */
 @NonTraced
-public final class MatchedRoute {
+final class MatchedRoute implements RouteMatch {
 
    private final Class<?> resourceClass;
    private final Object[] constructorArgs;
    private final Method method;
    private final Object[] methodArgs;
 
-   MatchedRoute(MethodEntry entry, Object[] args) {
-      this.resourceClass = entry.getResourceClass();
-      this.constructorArgs = Arrays.copyOfRange(args, 0, entry.getResourceArgumentCount());
-      this.method = entry.getMethod();
-      this.methodArgs = Arrays.copyOfRange(args, entry.getResourceArgumentCount(), args.length);
-   }
-
-   /**
-    * Returns the class of the resource matched by this route.
-    *
-    * @return the class of the resource matched by this route.
-    */
    public Class<?> getResourceClass() {
       return resourceClass;
    }
 
-   Object[] getConstructorArgs() {
-      return constructorArgs;
-   }
-
-   /**
-    * Returns the method of the resource class matched by this route.
-    *
-    * @return the method of the resource class matched by this route.
-    */
+   @Override
    public Method getMethod() {
       return method;
    }
 
-   Object[] getMethodArgs() {
-      return methodArgs;
-   }
-
-   /**
-    * Calls the resolved method.
-    *
-    * <p>
-    * This method does not expect arguments provided by the developer since all the expected arguments
-    * gathered from the HTTP request are internally known to this class.
-    * </p>
-    *
-    * @return a object result returned by the called method or <code>null</code> if nothing was
-    * returned.
-    */
+   @Override
    public Object invoke() {
       try {
          Constructor<?> constructor = resourceClass.getConstructors()[0];
@@ -109,5 +65,27 @@ public final class MatchedRoute {
       } catch (Exception e) {
          throw new InternalServerError(e);
       }
+   }
+
+   MatchedRoute(MethodEntry entry, Object[] args) {
+      this.resourceClass = entry.getResourceClass();
+      this.constructorArgs = Arrays.copyOfRange(args, 0, entry.getResourceArgumentCount());
+      this.method = entry.getMethod();
+      this.methodArgs = Arrays.copyOfRange(args, entry.getResourceArgumentCount(), args.length);
+   }
+
+   MatchedRoute() {
+      this.resourceClass = null;
+      this.constructorArgs = null;
+      this.method = null;
+      this.methodArgs = null;
+   }
+
+   Object[] getConstructorArgs() {
+      return constructorArgs;
+   }
+
+   Object[] getMethodArgs() {
+      return methodArgs;
    }
 }

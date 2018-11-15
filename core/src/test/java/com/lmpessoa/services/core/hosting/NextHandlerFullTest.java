@@ -27,8 +27,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 
 import org.junit.Before;
@@ -40,13 +42,17 @@ import com.lmpessoa.services.core.ContentType;
 import com.lmpessoa.services.core.HttpGet;
 import com.lmpessoa.services.core.MediaType;
 import com.lmpessoa.services.core.Route;
+import com.lmpessoa.services.core.hosting.ApplicationInfo;
 import com.lmpessoa.services.core.hosting.ApplicationOptions;
+import com.lmpessoa.services.core.hosting.ApplicationServer;
 import com.lmpessoa.services.core.hosting.HttpRequest;
 import com.lmpessoa.services.core.hosting.HttpResult;
 import com.lmpessoa.services.core.hosting.HttpResultInputStream;
+import com.lmpessoa.services.core.hosting.IApplicationInfo;
 import com.lmpessoa.services.core.hosting.InternalServerError;
+import com.lmpessoa.services.core.hosting.NotImplementedException;
 import com.lmpessoa.services.core.routing.IRouteTable;
-import com.lmpessoa.services.core.routing.MatchedRoute;
+import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.routing.RouteTableBridge;
 import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.util.logging.ILogger;
@@ -63,12 +69,14 @@ public final class NextHandlerFullTest {
 
    private HttpRequest request;
    private IRouteTable routes;
-   private MatchedRoute route;
+   private RouteMatch route;
 
    @Before
    public void setup() throws NoSuchMethodException {
       services = new ServiceMap();
-      services.useTransient(MatchedRoute.class, () -> route);
+      services.useSingleton(ILogger.class, log);
+      services.useSingleton(IApplicationInfo.class, new ApplicationInfo(NextHandlerFullTest.class));
+      services.useTransient(RouteMatch.class, () -> route);
 
       routes = RouteTableBridge.get(services, log);
       routes.put("", TestResource.class);
@@ -161,6 +169,16 @@ public final class NextHandlerFullTest {
       assertEquals(MediaType.YAML, result.getInputStream().getContentType());
       String content = readAll(result.getInputStream());
       assertEquals("Test", content);
+   }
+
+   @Test
+   public void testMediatorWithFavicon() throws IOException, URISyntaxException {
+      HttpResult result = perform("/test/favicon.ico");
+      assertEquals(200, result.getStatusCode());
+      assertNotNull(result.getInputStream());
+      assertEquals(MediaType.ICO, result.getInputStream().getContentType());
+      File favicon = new File(ApplicationServer.class.getResource("/favicon.ico").toURI());
+      assertEquals(favicon.length(), result.getInputStream().available());
    }
 
    public static class TestObject {

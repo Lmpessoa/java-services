@@ -22,184 +22,157 @@
  */
 package com.lmpessoa.services.core.hosting;
 
-import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Modifier;
+import java.lang.management.ManagementFactory;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.regex.Pattern;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
-import com.lmpessoa.services.core.NonResource;
-import com.lmpessoa.services.core.Resource;
 import com.lmpessoa.services.util.ClassUtils;
+import com.lmpessoa.services.util.logging.ConsoleLogWriter;
+import com.lmpessoa.services.util.logging.FileLogWriter;
 import com.lmpessoa.services.util.logging.ILogger;
+import com.lmpessoa.services.util.logging.ILoggerOptions;
+import com.lmpessoa.services.util.logging.LogWriter;
+import com.lmpessoa.services.util.logging.Logger;
 import com.lmpessoa.services.util.logging.NonTraced;
+import com.lmpessoa.services.util.logging.Severity;
 
+/**
+ * Represents the Application Server.
+ *
+ * <p>
+ * The static methods in this class are used to start and stop the embedded application server for
+ * applications. Applications must call {@link #start()} from their <code>main</code> method
+ * to start the application server.
+ * </p>
+ *
+ * <p>
+ * The application server can only be configured through a file named either
+ * <code>settings.yml</code>, <code>settings.json</code> or <code>application.properties</code>
+ * placed next to the application itself (refer to the extended documentation for the available
+ * parameters). Files are searched in this exact order; once the first is found, any other files
+ * present are ignored.
+ *
+ * </p>
+ */
 @NonTraced
-public class ApplicationServer {
+public final class ApplicationServer {
 
    private static ApplicationServer instance;
 
-   private final Class<?> startupClass;
-   private final ApplicationInfo info;
+   private final Instant startupTime = Instant.now();
+   private final ApplicationContext context;
+   private final ExecutorService threadPool;
+   private final IHostEnvironment env;
+   private final ILogger log;
 
-   private Collection<Class<?>> resources = null;
-   private IHostEnvironment env = null;
-   private HttpServerJob server;
-
-   static {
-      Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-         if (instance != null) {
-            ILogger log = instance.getLogger();
-            final BigDecimal uptime = toSeconds(instance.info.getUpTime());
-            log.info("Stopped application after %s seconds", uptime);
-         }
-      }));
-   }
-
+   /**
+    * Starts the Application Server.
+    *
+    * <p>
+    * This method has no effect if the application is running under a different application server.
+    * </p>
+    */
    public static void start() {
       if (instance == null) {
-         instance = new ApplicationServer();
+         Class<?> startupClass = findStartupClass();
+         outputBanner(startupClass);
+         instance = new ApplicationServer(startupClass);
          instance.run();
       }
    }
 
+   /**
+    * Requests that the Application Server be shutdown.
+    *
+    * <p>
+    * Calling this method does not immediately shuts down the server. Any requests in course will be
+    * allowed to be completed and any log entries will be written out before the server effectively
+    * shuts down.
+    * </p>
+    *
+    * <p>
+    * This method has no effect if the application is running under a different application server.
+    * </p>
+    */
    public static void shutdown() {
       if (instance != null) {
-         ILogger log = instance.getLogger();
-         log.info("Application was requested to shutdown");
-         instance.info.getThreadPool().shutdown();
-         instance.server.stop();
+         instance.log.info("Requested application server to shut down");
+         instance.context.stop();
       }
    }
 
-   public Class<?> getStartupClass() {
-      return startupClass;
-   }
-
-   public ApplicationInfo getApplicationInfo() {
-      return info;
-   }
-
-   public ILogger getLogger() {
-      return info.getLogger();
-   }
-
-   public ExecutorService getThreadPool() {
-      return info.getThreadPool();
-   }
-
-   public IHostEnvironment getEnvironment() {
-      if (env == null) {
-         String name = getApplicationInfo().getProperty("environment")
-                  .orElse(Optional.ofNullable(System.getenv("SERVICES_ENVIRONMENT_NAME"))
-                           .orElse("Development"));
-         final String envName = Character.toUpperCase(name.charAt(0))
-                  + name.substring(1).toLowerCase();
-         env = () -> envName;
+   /**
+    * Returns the version number of the Application Server.
+    * <p>
+    * The version number of the server coincides with the version number for the microservice engine itself,
+    * and thus may be used interchangeably.
+    * </p>
+    *
+    * @return the version number of the Application Server.
+    */
+   public static String getVersion() {
+      String version = ApplicationServer.class.getPackage().getImplementationVersion();
+      if (version == null) {
+         URL versionFile = ApplicationServer.class.getResource("/application.version");
+         Collection<String> versionLines;
+         try {
+            versionLines = Files.readAllLines(Paths.get(versionFile.toURI()));
+            version = versionLines.toArray()[0].toString();
+         } catch (IOException | URISyntaxException e) {
+            // Should never get here, but...
+            version = null;
+         }
       }
+      if (version != null) {
+         return version.split("-")[0];
+      }
+      return "";
+   }
+
+   ApplicationServer(Class<?> startupClass) {
+      ApplicationServerInfo info = new ApplicationServerInfo(startupClass);
+      this.log = createLogger(info, startupClass);
+      this.env = createEnvironment(info);
+      logStartupMessage(startupClass, info);
+      this.threadPool = createJobQueue(info);
+      this.context = createApplicationContext(startupClass);
+   }
+
+   IHostEnvironment getEnvironment() {
       return env;
    }
 
-   public static String getVersion() {
-      URL versionFile = ApplicationServer.class.getResource("/version.txt");
-      Collection<String> versionLines;
-      try {
-         versionLines = Files.readAllLines(Paths.get(versionFile.toURI()));
-         return versionLines.toArray(new String[0])[0];
-      } catch (IOException | URISyntaxException e) {
-         // Should never get here, but...
-         return null;
-      }
+   ILogger getLogger() {
+      return log;
    }
 
-   public Collection<Class<?>> getResourceClasses() {
-      if (resources == null) {
-         Collection<String> classes;
-         try {
-            classes = ClassUtils.scanInProjectOf(getStartupClass());
-         } catch (IOException e) {
-            getLogger().error(e);
-            return null;
-         }
-         Collection<Class<?>> result = new ArrayList<>();
-         final Pattern endsInResource = Pattern.compile("[a-zA-Z0-9]Resource$");
-         for (String className : classes) {
-            try {
-               Class<?> clazz = Class.forName(className);
-               if (ClassUtils.isConcreteClass(clazz) && Modifier.isPublic(clazz.getModifiers())
-                        && (endsInResource.matcher(clazz.getSimpleName()).find()
-                                 || clazz.isAnnotationPresent(Resource.class))
-                        && !clazz.isAnnotationPresent(NonResource.class)) {
-                  result.add(clazz);
-               }
-            } catch (ClassNotFoundException e) {
-               // Should never get here since we fetched existing class names
-               getLogger().debug(e);
-            }
-         }
-         resources = Collections.unmodifiableCollection(result);
-      }
-      return resources;
+   Future<?> queueJob(Runnable job) {
+      return threadPool.submit(job);
    }
 
-   private ApplicationServer() {
-      this.startupClass = findStartupClass();
-      File location = findLocation();
-      this.info = new ApplicationInfo(startupClass, location);
-      outputBanner(startupClass);
-      logStartupMessage(info);
+   <T> Future<T> queueJob(Callable<T> job) {
+      return threadPool.submit(job);
    }
 
-   private void logStartupMessage(ApplicationInfo info) {
-      StringBuilder message = new StringBuilder();
-      message.append("Starting application");
-      if (info.getName() != null) {
-         message.append(' ');
-         message.append(info.getName());
-      }
-      String packVersion = startupClass.getPackage().getImplementationVersion();
-      if (packVersion != null && !packVersion.isEmpty()) {
-         message.append(" v");
-         message.append(packVersion);
-      }
-      message.append(" on '");
-      message.append(getEnvironment().getName());
-      message.append("' environment");
-      getLogger().info(message);
-   }
-
-   private static void outputBanner(Class<?> startupClass) {
-      URL bannerUrl = startupClass.getResource("/banner.txt");
-      if (bannerUrl == null) {
-         bannerUrl = Application.class.getResource("/banner.txt");
-      }
-      if (bannerUrl == null) {
-         return;
-      }
-      try {
-         Collection<String> banner = Files.readAllLines(Paths.get(bannerUrl.toURI()));
-         banner.stream() //
-                  .map(s -> s.replaceAll("\\$\\{project.version\\}", getVersion())) //
-                  .forEach(System.out::println);
-      } catch (IOException | URISyntaxException e) {
-         // Should never happen but may just ignore
-      }
-   }
-
-   private static BigDecimal toSeconds(long millis) {
-      return new BigDecimal(millis).divide(new BigDecimal(1000));
-   }
-
-   private Class<?> findStartupClass() {
+   private static Class<?> findStartupClass() {
       Class<?>[] stackClasses = new SecurityManager() {
 
          public Class<?>[] getStack() {
@@ -214,48 +187,197 @@ public class ApplicationServer {
       return null;
    }
 
-   private File findLocation() {
-      String pathOfClass = File.separator + startupClass.getName().replaceAll("\\.", File.separator)
-               + ".class";
-      String fullPathOfClass = startupClass.getResource(startupClass.getSimpleName() + ".class")
-               .toString();
-      String result = fullPathOfClass.substring(0, fullPathOfClass.length() - pathOfClass.length());
-      if (result.startsWith("jar:")) {
-         int lastSep = result.lastIndexOf(File.separator);
-         result = result.substring(4, lastSep);
+   private void run() {
+      Thread ct = new Thread(this.context);
+      ct.start();
+      logStartedMessage();
+      try {
+         ct.join();
+      } catch (InterruptedException e) {
+         log.error(e);
+         ct.interrupt();
       }
-      if (result.startsWith("file:")) {
-         result = result.substring(5);
-         while (result.startsWith(File.separator + File.separator)) {
-            result = result.substring(1);
+      threadPool.shutdown();
+      try {
+         while (!threadPool.awaitTermination(5, TimeUnit.SECONDS)) {
+            // Just sit and wait
          }
-         String sep = File.separator;
-         if (sep.equals("\\")) {
-            sep = "\\\\";
-         }
-         if (result.matches(String.format("%s[a-zA-Z]:%s.*", sep, sep))) {
-            result = result.substring(1).replaceAll("/", "\\");
-         }
+      } catch (InterruptedException e) {
+         log.error(e);
       }
-      if (result.matches("[a-zA-Z0-9]+:" + File.separator + ".*")) {
-         return null;
-      }
-      return new File(result);
+      logShutdownMessage();
+      log.join();
    }
 
-   private void run() {
-      Application app = new Application(this, startupClass);
-      server = new HttpServerJob(this, app);
-      Thread job = new Thread(server);
-      job.start();
-      getLogger().info("Server is listening on port %d (http)", server.getPort());
-      getLogger().info("Application started in %s seconds (JVM running for %s seconds)",
-               toSeconds(info.getUpTime()), toSeconds(info.getVMUpTime()));
-      try {
-         job.join();
-      } catch (InterruptedException e) {
-         getLogger().debug(e);
-         job.interrupt();
+   private static void outputBanner(Class<?> startupClass) {
+      Objects.requireNonNull(startupClass);
+      URL bannerUrl = startupClass.getResource("/banner.txt");
+      if (bannerUrl == null) {
+         bannerUrl = ApplicationServer.class.getResource("/banner.txt");
       }
+      if (bannerUrl == null) {
+         return;
+      }
+      try {
+         String version = getVersion();
+         Collection<String> banner = Files.readAllLines(Paths.get(bannerUrl.toURI()));
+         banner.stream() //
+                  .map(s -> s.replaceAll("\\$\\{project.version\\}", version)) //
+                  .forEach(System.out::println);
+      } catch (IOException | URISyntaxException e) {
+         // Should never happen but may just ignore
+      }
+   }
+
+   private ApplicationContext createApplicationContext(Class<?> startupClass) {
+      ApplicationContext result = new ApplicationContext(this, "http", null, 5617);
+      result.setAttribute("service.startup.class", startupClass);
+      result.addServlet("service", new ApplicationServlet());
+      return result;
+   }
+
+   private IHostEnvironment createEnvironment(ApplicationServerInfo info) {
+      String name = System.getProperty("service.environment");
+      if (name == null) {
+         name = info.getProperty("environment").orElse(null);
+      }
+      if (name == null) {
+         name = System.getenv("SERVICES_ENVIRONMENT_NAME");
+      }
+      if (name == null) {
+         name = "Development";
+      }
+      final String envName = Character.toUpperCase(name.charAt(0)) + name.substring(1).toLowerCase();
+      return () -> envName;
+   }
+
+   private ExecutorService createJobQueue(ApplicationServerInfo info) {
+      ThreadFactory factory = r -> {
+         Thread result = new Thread(r);
+         result.setUncaughtExceptionHandler((t, e) -> log.fatal(e));
+         return result;
+      };
+      int maxJobCount = info.getIntProperty("requests.limit").orElse(0);
+      if (maxJobCount > 0) {
+         return Executors.newFixedThreadPool(maxJobCount, factory);
+      } else {
+         return Executors.newCachedThreadPool(factory);
+      }
+   }
+
+   private ILogger createLogger(ApplicationServerInfo info, Class<?> startupClass) {
+      ILogger result;
+      try {
+         LogWriter writer;
+         Map<String, String> logParams = info.getProperties("logging.writer");
+         String writerType = logParams.getOrDefault("type", "console");
+         logParams.remove("type");
+         switch (writerType) {
+            case "console":
+               writer = new ConsoleLogWriter();
+               break;
+            case "file":
+               String filename = logParams.getOrDefault("filename", null);
+               logParams.remove("filename");
+               writer = new FileLogWriter(filename);
+               break;
+            default:
+               Class<?> writerClass = Class.forName(writerType);
+               writer = (LogWriter) writerClass.newInstance();
+               break;
+         }
+         Class<?> writerClass = writer.getClass();
+         for (Entry<String, String> param : logParams.entrySet()) {
+            String methodName = String.format("set%s%s", Character.toUpperCase(param.getKey().charAt(0)),
+                     param.getKey().substring(1));
+            Method[] methods = ClassUtils.findMethods(writerClass, m -> m.getName().equals(methodName));
+            if (methods.length == 1 && methods[0].getParameterCount() == 1
+                     && methods[0].getParameterTypes()[0].isAssignableFrom(param.getValue().getClass())) {
+               methods[0].invoke(writer, param.getValue());
+            }
+         }
+         result = new Logger(startupClass, writer);
+         ILoggerOptions logOpt = (ILoggerOptions) result;
+         Severity level = Severity.valueOf(info.getProperty("logging.default").orElse("INFO"));
+         logOpt.setDefaultLevel(level);
+         Map<String, String> packages = info.getProperties("logging.packages");
+         for (int i = 0; i < packages.size() / 2; ++i) {
+            String packageName = packages.get(String.format("%d.name", i));
+            level = Severity.valueOf(packages.get(String.format("%d.level", i)));
+            logOpt.setPackageLevel(packageName, level);
+         }
+      } catch (
+
+      Exception e) {
+         result = new Logger(startupClass);
+         result.error(e);
+      }
+      return result;
+   }
+
+   private void logStartupMessage(Class<?> startupClass, ApplicationServerInfo info) {
+      StringBuilder message = new StringBuilder();
+      message.append("Starting application");
+      Optional<String> name = info.getProperty("application.name");
+      if (name.isPresent()) {
+         message.append(' ');
+         message.append(name.get());
+      }
+      String packVersion = startupClass.getPackage().getImplementationVersion();
+      if (packVersion != null && !packVersion.isEmpty()) {
+         message.append(" v");
+         message.append(packVersion);
+      }
+      message.append(" on '");
+      message.append(getEnvironment().getName());
+      message.append("' environment");
+      log.info(message);
+   }
+
+   private void logStartedMessage() {
+      BigDecimal thousand = new BigDecimal(1000);
+      Duration duration = Duration.between(this.startupTime, Instant.now());
+      BigDecimal uptime = new BigDecimal(duration.toMillis()).divide(thousand);
+      BigDecimal vmUptime = new BigDecimal(ManagementFactory.getRuntimeMXBean().getUptime()).divide(thousand);
+      log.info("Started application in %s seconds (VM running for %s seconds)", uptime, vmUptime);
+   }
+
+   private void logShutdownMessage() {
+      Duration duration = Duration.between(this.startupTime, Instant.now());
+      long millis = duration.toMillis();
+      long seconds = millis / 1000;
+      long minutes = seconds / 60;
+      seconds -= minutes * 60;
+      long hours = minutes / 60;
+      minutes -= hours * 60;
+      StringBuilder durationStr = new StringBuilder();
+      if (hours > 0) {
+         durationStr.append(hours);
+         durationStr.append(" hour");
+         if (hours > 1) {
+            durationStr.append('s');
+         }
+      }
+      if (minutes > 0) {
+         if (durationStr.length() > 0) {
+            durationStr.append(", ");
+         }
+         durationStr.append(minutes);
+         durationStr.append(" minute");
+         if (minutes > 1) {
+            durationStr.append('s');
+         }
+      }
+      if (seconds > 0) {
+         if (durationStr.length() > 0) {
+            durationStr.append(", ");
+         }
+         durationStr.append(seconds);
+         durationStr.append(" second");
+         if (seconds > 1) {
+            durationStr.append('s');
+         }
+      }
+      log.info("Stopped application after %s", durationStr);
    }
 }

@@ -70,4 +70,9 @@ public final class NullLogger implements ILogger, ILoggerOptions {
    public void setConnectionSupplier(Supplier<ConnectionInfo> supplier) {
       // Test method, nothing to do
    }
+
+   @Override
+   public void join() {
+      // Test method, nothing to do
+   }
 }

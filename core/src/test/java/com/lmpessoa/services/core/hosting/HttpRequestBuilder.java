@@ -25,21 +25,20 @@ package com.lmpessoa.services.core.hosting;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 
+import com.lmpessoa.services.core.hosting.HeaderMap;
 import com.lmpessoa.services.core.hosting.HttpRequest;
-import com.lmpessoa.services.core.hosting.HttpRequestImpl;
 
 public final class HttpRequestBuilder {
 
-   private String method = "GET";
-   private String path = null;
-   private String protocol = "HTTP/1.1";
-   private String query = null;
-   private Map<String, String> headers = new HashMap<>();
    private Map<String, String> cookies = new HashMap<>();
+   private HeaderMap headers = new HeaderMap();
+   private String method = "GET";
+   private String query = null;
+   private String path = null;
    private String body;
 
    public HttpRequestBuilder setMethod(String method) {
@@ -55,34 +54,29 @@ public final class HttpRequestBuilder {
       return this;
    }
 
-   public HttpRequestBuilder setProtocol(String protocol) {
-      this.protocol = protocol.toUpperCase();
-      return this;
-   }
-
    public HttpRequestBuilder setQueryString(String query) {
       this.query = query;
       return this;
    }
 
    public HttpRequestBuilder setContentType(String contentType) {
-      this.headers.put("Content-Type", contentType);
+      this.headers.set("Content-Type", contentType);
       return this;
    }
 
    public HttpRequestBuilder setHost(String host) {
-      this.headers.put("Host", host);
+      this.headers.set("Host", host);
       return this;
    }
 
    public HttpRequestBuilder setBody(String body) {
-      this.headers.put("Content-Length", String.valueOf(body.length()));
+      this.headers.set("Content-Length", String.valueOf(body.length()));
       this.body = body;
       return this;
    }
 
    public HttpRequestBuilder addHeader(String name, String value) {
-      this.headers.put(name, value);
+      this.headers.set(name, value);
       return this;
    }
 
@@ -91,50 +85,82 @@ public final class HttpRequestBuilder {
       return this;
    }
 
-   public HttpRequest build() throws IOException {
-      return new HttpRequestImpl(buildInputStream());
+   public static HttpRequest build(String path) {
+      return new HttpRequestBuilder().setPath(path).build();
    }
 
-   private InputStream buildInputStream() {
-      StringBuilder sb = new StringBuilder();
-      sb.append(method);
-      sb.append(' ');
-      sb.append(path);
-      if (query != null) {
-         sb.append('?');
-         sb.append(query);
-      }
-      sb.append(' ');
-      sb.append(protocol);
-      sb.append("\r\n");
+   public static HttpRequest build(String method, String path) {
+      return new HttpRequestBuilder().setMethod(method).setPath(path).build();
+   }
 
-      for (Entry<String, String> header : headers.entrySet()) {
-         if (!"Cookie".equals(header.getKey())) {
-            sb.append(header.getKey());
-            sb.append(": ");
-            sb.append(header.getValue());
-            sb.append("\r\n");
+   public HttpRequest build() {
+      return new HttpRequest() {
+
+         @Override
+         public String getMethod() {
+            return method;
          }
-      }
 
-      StringBuilder cookies = new StringBuilder();
-      for (Entry<String, String> cookie : this.cookies.entrySet()) {
-         if (cookies.length() != 0) {
-            sb.append("; ");
+         @Override
+         public String getPath() {
+            return path;
          }
-         sb.append(cookie.getKey());
-         sb.append('=');
-         sb.append(cookie.getValue());
-      }
-      sb.append("Cookie: ");
-      sb.append(cookies.toString());
-      sb.append("\r\n");
 
-      if (body != null) {
-         sb.append("\r\n");
-         sb.append(body);
-      }
+         @Override
+         public String getProtocol() {
+            return "HTTP/1.1";
+         }
 
-      return new ByteArrayInputStream(sb.toString().getBytes());
+         @Override
+         public String getQueryString() {
+            return query;
+         }
+
+         @Override
+         public long getContentLength() {
+            try {
+               return Long.parseLong(headers.get("Content-Length"));
+            } catch (Exception e) {
+               return 0;
+            }
+         }
+
+         @Override
+         public String getContentType() {
+            return headers.get("Content-Type");
+         }
+
+         @Override
+         public InputStream getBody() throws IOException {
+            return new ByteArrayInputStream(body.getBytes());
+         }
+
+         @Override
+         public HeaderMap getHeaders() {
+            return headers;
+         }
+
+         @Override
+         public String getHeader(String headerName) {
+            return headers.get(headerName);
+         }
+
+         @Override
+         public Map<String, Collection<String>> getQuery() {
+            // TODO Auto-generated method stub
+            return null;
+         }
+
+         @Override
+         public Map<String, Collection<String>> getForm() {
+            // TODO Auto-generated method stub
+            return null;
+         }
+
+         @Override
+         public Map<String, String> getCookies() {
+            return cookies;
+         }
+      };
    }
 }

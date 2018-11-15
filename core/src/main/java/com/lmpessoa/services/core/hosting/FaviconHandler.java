@@ -20,22 +20,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.routing;
+package com.lmpessoa.services.core.hosting;
 
-import com.lmpessoa.services.core.hosting.HttpRequest;
-import com.lmpessoa.services.core.routing.IRouteTable;
-import com.lmpessoa.services.core.routing.RouteMatch;
-import com.lmpessoa.services.core.routing.RouteTable;
-import com.lmpessoa.services.core.services.IServiceMap;
+import java.io.IOException;
+import java.net.URL;
+
+import com.lmpessoa.services.core.MediaType;
 import com.lmpessoa.services.util.logging.ILogger;
+import com.lmpessoa.services.util.logging.NonTraced;
 
-public final class RouteTableBridge {
+@NonTraced
+final class FaviconHandler {
 
-   public static IRouteTable get(IServiceMap serviceMap, ILogger log) throws NoSuchMethodException {
-      return new RouteTable(serviceMap, log);
+   private static final String FAVICON = "/favicon.ico";
+   private final NextHandler next;
+
+   public FaviconHandler(NextHandler next) {
+      this.next = next;
    }
 
-   public static RouteMatch match(IRouteTable routes, HttpRequest request) {
-      return ((RouteTable) routes).matches(request);
+   public Object invoke(HttpRequest request, IApplicationInfo info, ILogger log) {
+      if (request.getPath().endsWith(FAVICON)) {
+         Class<?> startupClass = info.getStartupClass();
+         URL iconUrl = null;
+         if (startupClass != null) {
+            iconUrl = startupClass.getResource(FAVICON);
+         }
+         if (iconUrl == null) {
+            iconUrl = FaviconHandler.class.getResource(FAVICON);
+         }
+         if (iconUrl != null) {
+            try {
+               return new HttpResultInputStream(MediaType.ICO, iconUrl.openStream());
+            } catch (IOException e) {
+               log.error(e);
+            }
+         }
+      }
+      return next.invoke();
    }
 }

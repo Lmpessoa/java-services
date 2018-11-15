@@ -29,9 +29,12 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.SocketTimeoutException;
 import java.net.URLDecoder;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.lmpessoa.services.core.MediaType;
@@ -40,65 +43,16 @@ final class HttpRequestImpl implements HttpRequest {
 
    private static final String UTF8 = "UTF-8";
 
-   private final Map<String, String> headers;
    private final String queryString;
+   private final HeaderMap headers;
    private final String protocol;
    private final byte[] content;
    private final String method;
    private final String path;
 
    private Map<String, String> cookies;
-   private Map<String, String> query;
-   private Map<String, String> form;
-
-   HttpRequestImpl(InputStream clientStream) throws IOException {
-      String requestLine = readLine(clientStream);
-      if (requestLine.isEmpty()) {
-         throw new SocketTimeoutException();
-      }
-      String[] parts = requestLine.split(" ");
-      this.method = parts[0];
-      this.protocol = parts[2];
-      parts = parts[1].split("\\?", 2);
-      String thePath = parts[0];
-      Map<String, String> headerMap = new HashMap<>();
-      if (thePath.startsWith("http://") || thePath.startsWith("https://")) {
-         int index = thePath.indexOf('/', thePath.indexOf("://") + 3);
-         headerMap.put("Host", thePath.substring(0, index));
-         thePath = thePath.substring(index);
-      }
-      this.path = thePath;
-      this.queryString = parts.length > 1 ? parts[1] : null;
-      String headerLine;
-      while ((headerLine = readLine(clientStream)) != null && !headerLine.isEmpty()) {
-         String[] head = headerLine.split(":", 2);
-         if (head.length != 2) {
-            throw new IllegalStateException("Illegal header line: '" + headerLine + "'");
-         }
-         headerMap.put(head[0].trim(), head[1].trim());
-      }
-      this.headers = Collections.unmodifiableMap(headerMap);
-      if (headerMap.containsKey("Content-Type")) {
-         if (!headerMap.containsKey("Content-Length")) {
-            throw new LengthRequiredException();
-         }
-         if (getContentLength() > Integer.MAX_VALUE || getContentLength() < 0) {
-            throw new UnsupportedOperationException("Body content too large");
-         }
-         byte[] data = new byte[(int) getContentLength()];
-         while (clientStream.available() < data.length) {
-            // Do nothing, just sit and wait
-         }
-         int read = clientStream.read(data);
-         if (read != data.length) {
-            throw new AssertionError(
-                     "Error reading from client (expected: " + data.length + " bytes, found: " + read + " bytes)");
-         }
-         this.content = data;
-      } else {
-         this.content = new byte[0];
-      }
-   }
+   private Map<String, Collection<String>> query;
+   private Map<String, Collection<String>> form;
 
    @Override
    public String getMethod() {
@@ -132,70 +86,131 @@ final class HttpRequestImpl implements HttpRequest {
    }
 
    @Override
-   public String getHost() {
-      return headers.get("Host");
-   }
-
-   @Override
    public InputStream getBody() {
-      return new ByteArrayInputStream(content);
+      if (content != null) {
+         return new ByteArrayInputStream(content);
+      }
+      return null;
    }
 
    @Override
-   public Map<String, String> getHeaders() {
+   public HeaderMap getHeaders() {
       return headers;
    }
 
    @Override
-   public Map<String, String> getQuery() {
+   public String getHeader(String headerName) {
+      return headers.get(headerName);
+   }
+
+   @Override
+   public synchronized Map<String, Collection<String>> getQuery() {
       if (query == null && queryString != null) {
-         final Map<String, String> result = new HashMap<>();
-         Arrays.asList(queryString.split("&"))
-                  .stream() //
-                  .map(s -> s.split("=", 2)) //
-                  .forEach(s -> {
-                     try {
-                        result.put(s[0], URLDecoder.decode(s[1], UTF8));
-                     } catch (UnsupportedEncodingException e) {
-                        throw new AssertionError(e);
-                     }
-                  });
+         final Map<String, List<String>> result = new HashMap<>();
+         for (String var : queryString.split("&")) {
+            String[] parts = var.split("=", 2);
+            try {
+               parts[0] = URLDecoder.decode(parts[0], UTF8);
+               parts[1] = URLDecoder.decode(parts[1], UTF8);
+            } catch (UnsupportedEncodingException e) {
+               // Ignore
+            }
+            if (!result.containsKey(parts[0])) {
+               result.put(parts[0], new ArrayList<>());
+            }
+            result.get(parts[0]).add(parts[1]);
+         }
          query = Collections.unmodifiableMap(result);
       }
       return query;
    }
 
    @Override
-   public Map<String, String> getForm() {
+   public synchronized Map<String, Collection<String>> getForm() {
       if (form == null && MediaType.FORM.equals(getContentType())) {
-         Map<String, String> result = new HashMap<>();
-         Arrays.asList(new String(content).split("&"))
-                  .stream() //
-                  .map(s -> s.split("=", 2)) //
-                  .forEach(s -> {
-                     try {
-                        result.put(URLDecoder.decode(s[0], UTF8), URLDecoder.decode(s[1], UTF8));
-                     } catch (UnsupportedEncodingException e) {
-                        throw new AssertionError(e);
-                     }
-                  });
+         Map<String, List<String>> result = new HashMap<>();
+         for (String var : new String(content).split("&")) {
+            String[] parts = var.split("=", 2);
+            try {
+               parts[0] = URLDecoder.decode(parts[0], UTF8);
+               parts[1] = URLDecoder.decode(parts[1], UTF8);
+            } catch (UnsupportedEncodingException e) {
+               // Ignore
+            }
+            if (!result.containsKey(parts[0])) {
+               result.put(parts[0], new ArrayList<>());
+            }
+            result.get(parts[0]).add(parts[1]);
+         }
          form = Collections.unmodifiableMap(result);
       }
       return form;
    }
 
    @Override
-   public Map<String, String> getCookies() {
-      if (cookies == null && headers.containsKey("Cookie")) {
+   public synchronized Map<String, String> getCookies() {
+      if (cookies == null && headers.contains("Cookie")) {
          Map<String, String> result = new HashMap<>();
          String tmp = headers.get("Cookie");
-         Arrays.asList(tmp.split(";"))
-                  .stream() //
-                  .map(s -> s.split("=", 2)) //
-                  .forEach(s -> result.put(s[0].trim(), s[1].trim()));
+         if (tmp != null) {
+            Arrays.asList(tmp.split(";"))
+                     .stream() //
+                     .map(s -> s.split("=", 2)) //
+                     .forEach(s -> result.put(s[0].trim(), s[1].trim()));
+         }
          this.cookies = Collections.unmodifiableMap(result);
       }
       return cookies;
+   }
+
+   HttpRequestImpl(InputStream clientStream) throws IOException {
+      String requestLine = readLine(clientStream);
+      if (requestLine.isEmpty()) {
+         throw new SocketTimeoutException();
+      }
+      String[] parts = requestLine.split(" ");
+      this.method = parts[0];
+      this.protocol = parts[2];
+      parts = parts[1].split("\\?", 2);
+      String thePath = parts[0];
+      HeaderMap headerMap = new HeaderMap();
+      if (thePath.startsWith("http://") || thePath.startsWith("https://")) {
+         int index = thePath.indexOf('/', thePath.indexOf("://") + 3);
+         headerMap.add("Host", thePath.substring(0, index));
+         thePath = thePath.substring(index);
+      }
+      this.path = thePath;
+      this.queryString = parts.length > 1 ? parts[1] : null;
+      String headerLine;
+      while ((headerLine = readLine(clientStream)) != null && !headerLine.isEmpty()) {
+         String[] head = headerLine.split(":", 2);
+         if (head.length != 2) {
+            throw new IllegalStateException("Illegal header line: '" + headerLine + "'");
+         }
+         headerMap.add(head[0].trim(), head[1].trim());
+      }
+      headerMap.freeze();
+      this.headers = headerMap;
+      if (headerMap.contains("Content-Type")) {
+         if (!headerMap.contains("Content-Length")) {
+            throw new LengthRequiredException();
+         }
+         if (getContentLength() > Integer.MAX_VALUE || getContentLength() < 0) {
+            throw new UnsupportedOperationException("Body content too large");
+         }
+         byte[] data = new byte[(int) getContentLength()];
+         while (clientStream.available() < data.length) {
+            // Do nothing, just sit and wait
+         }
+         int read = clientStream.read(data);
+         if (read != data.length) {
+            throw new AssertionError(
+                     "Error reading from client (expected: " + data.length + " bytes, found: " + read + " bytes)");
+         }
+         this.content = data;
+      } else {
+         this.content = new byte[0];
+      }
    }
 
    private String readLine(InputStream input) throws IOException {

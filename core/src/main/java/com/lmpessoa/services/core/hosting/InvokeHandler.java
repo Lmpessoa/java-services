@@ -22,7 +22,7 @@
  */
 package com.lmpessoa.services.core.hosting;
 
-import com.lmpessoa.services.core.routing.MatchedRoute;
+import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.util.logging.NonTraced;
 
 @NonTraced
@@ -32,7 +32,7 @@ final class InvokeHandler {
       // Last handler, no need for next
    }
 
-   public Object invoke(MatchedRoute request) {
+   public Object invoke(RouteMatch request) {
       return request.invoke();
    }
 }

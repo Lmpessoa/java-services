@@ -23,61 +23,49 @@
 package com.lmpessoa.services.util;
 
 import java.net.InetAddress;
-import java.net.Socket;
 
-/**
- * Represents connection information about the source of an HTTP request.
- */
-public final class ConnectionInfo {
-
-   private final Socket socket;
-
-   public ConnectionInfo(Socket socket) {
-      this.socket = socket;
-   }
+public interface ConnectionInfo {
 
    /**
     * Returns the local port this connection is bound to.
     *
     * @return the local port this connection is bound to.
     */
-   public int getLocalPort() {
-      return socket.getLocalPort();
-   }
+   int getLocalPort();
 
    /**
     * Returns the remote address this connection is bound to.
     *
     * @return the remote address this connection is bound to.
     */
-   public InetAddress getRemoteAddress() {
-      return socket.getInetAddress();
-   }
+   InetAddress getRemoteAddress();
 
    /**
     * Returns the remote port this connection is bound to.
     *
     * @return the remote port this connection is bound to.
     */
-   public int getRemotePort() {
-      return socket.getPort();
-   }
+   int getRemotePort();
 
    /**
-    * Returns whether this connection is closed.
+    * Returns the name of the host of this connection.
     *
-    * @return <code>true</code> if this connection is closed, <code>false</code> otherwise.
+    * @return the name of the host of this connection
     */
-   public boolean isClosed() {
-      return socket.isClosed();
-   }
+   String getServerName();
 
    /**
-    * Returns whether this connection is still connected to its remote part.
-    *
-    * @return <code>true</code> if this connection is still open, <code>false</code> otherwise.
+    * Returns the server port that received this connection.
+    * 
+    * @return the server port that received this connection.
     */
-   public boolean isConnected() {
-      return socket.isConnected();
-   }
+   int getServerPort();
+
+   /**
+    * Returns whether the current connection is a secure connection.
+    *
+    * @return <code>true</code> if the current connection is a secure connection, <code>false</code>
+    * otherwise.
+    */
+   boolean isSecure();
 }

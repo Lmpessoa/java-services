@@ -27,11 +27,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import com.lmpessoa.services.core.ContentType;
 import com.lmpessoa.services.core.MediaType;
-import com.lmpessoa.services.core.routing.MatchedRoute;
+import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.routing.content.Serializer;
 import com.lmpessoa.services.util.logging.NonTraced;
 
@@ -44,10 +46,10 @@ final class ResultHandler {
       this.next = next;
    }
 
-   public HttpResult invoke(HttpRequest request, MatchedRoute route) {
+   public HttpResult invoke(HttpRequest request, RouteMatch route) {
       Object obj = getResultObject();
       int statusCode = getStatusCode(obj);
-      HttpResultInputStream is = getContentBody(obj, request, route == null ? null : route.getMethod());
+      HttpResultInputStream is = getContentBody(obj, request, route != null ? route.getMethod() : null);
       return new HttpResult(request, statusCode, obj, is);
    }
 
@@ -104,10 +106,11 @@ final class ResultHandler {
          return new HttpResultInputStream(contentType, (InputStream) result);
       }
       String[] accepts;
-      if (request.getHeaders().containsKey("Accept")) {
-         accepts = Arrays.stream(request.getHeaders().get("Accept").split("\\.")) //
-                  .map(String::trim) //
-                  .toArray(String[]::new);
+      if (request.getHeaders().contains("Accept")) {
+         List<String> acceptList = new ArrayList<>();
+         request.getHeaders().getAll("Accept").stream().map(s -> s.split(",")).forEach(
+                  s -> Arrays.stream(s).map(String::trim).forEach(acceptList::add));
+         accepts = acceptList.toArray(new String[0]);
       } else {
          accepts = new String[] { MediaType.JSON };
       }

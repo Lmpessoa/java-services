@@ -22,9 +22,11 @@
  */
 package com.lmpessoa.services.core.hosting;
 
-import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.Charset;
 import java.util.Objects;
 
 import com.lmpessoa.services.core.MediaType;
@@ -39,11 +41,15 @@ import com.lmpessoa.services.core.MediaType;
  *
  * @see MediaType
  */
-public final class HttpResultInputStream extends InputStream {
+public final class HttpResultInputStream extends InputStream implements AutoCloseable {
 
-   private final InputStream content;
+   private final InputStream contentStream;
    private final String contentType;
-   private final String downloadName;
+
+   private String downloadName = null;
+   private Charset encoding = null;
+   private byte[] content = null;
+   private int pos = 0;
 
    /**
     * Creates a new <code>HttpResultInputStream</code> with the given content type and content.
@@ -52,41 +58,20 @@ public final class HttpResultInputStream extends InputStream {
     * @param data the actual content of this result input stream.
     */
    public HttpResultInputStream(String contentType, byte[] content) {
-      this(contentType, content, null);
-   }
-
-   /**
-    * Creates a new <code>HttpResultInputStream</code> with the given content type and content.
-    *
-    * @param contentType the content type of this result input stream.
-    * @param content the actual content of this result input stream.
-    */
-   public HttpResultInputStream(String contentType, InputStream content) {
-      this(contentType, content, null);
-   }
-
-   /**
-    * Creates a new <code>HttpResultInputStream</code> with the given content type and content.
-    *
-    * @param contentType the content type of this result input stream.
-    * @param content the actual content of this result input stream.
-    * @param downloadName the suggested name for the file to contain this result input stream.
-    */
-   public HttpResultInputStream(String contentType, byte[] content, String downloadName) {
-      this(contentType, new ByteArrayInputStream(content), downloadName);
-   }
-
-   /**
-    * Creates a new <code>HttpResultInputStream</code> with the given content type and content.
-    *
-    * @param contentType the content type of this result input stream.
-    * @param content the actual content of this result input stream.
-    * @param downloadName the suggested name for the file to contain this result input stream.
-    */
-   public HttpResultInputStream(String contentType, InputStream content, String downloadName) {
-      this.contentType = contentType;
+      this.contentType = Objects.requireNonNull(contentType);
       this.content = Objects.requireNonNull(content);
-      this.downloadName = downloadName;
+      this.contentStream = null;
+   }
+
+   /**
+    * Creates a new <code>HttpResultInputStream</code> with the given content type and content.
+    *
+    * @param contentType the content type of this result input stream.
+    * @param content the actual content of this result input stream.
+    */
+   public HttpResultInputStream(String contentType, InputStream contentStream) {
+      this.contentType = Objects.requireNonNull(contentType);
+      this.contentStream = Objects.requireNonNull(contentStream);
    }
 
    /**
@@ -118,28 +103,110 @@ public final class HttpResultInputStream extends InputStream {
       return downloadName;
    }
 
+   /**
+    * Sets the name to use to download this content as a file.
+    *
+    * <p>
+    * Setting a download name for a result stream automatically forces this content to be downloaded
+    * (attached) instead of displayed inline.
+    * </p>
+    *
+    * @param downloadName the download name for this content as a file.
+    */
+   public void setDownloadName(String downloadName) {
+      this.downloadName = downloadName;
+   }
+
+   /**
+    * Returns the content encoding for this content.
+    *
+    * <p>
+    * This class does not enforce the content to be encoded with the returned encoding, as it is
+    * provided by the creator of instances of this class. However, this information is ignored for
+    * non-textual content types.
+    * </p>
+    *
+    * @return the content encoding for this content.
+    */
+   public Charset getContentEncoding() {
+      return encoding;
+   }
+
+   /**
+    * Sets the content encoding for this content.
+    *
+    * <p>
+    * This class does not enforce the content to be encoded with the given encoding, as it is provided
+    * by the creator of instances of this class. However, this information is ignored for non-textual
+    * content types.
+    * </p>
+    *
+    * @param encoding the content encoding of this content.
+    */
+   public void setContentEncoding(Charset encoding) {
+      this.encoding = encoding;
+   }
+
    @Override
    public int available() throws IOException {
-      return content.available();
+      ensureContents();
+      return content.length - pos;
    }
 
    @Override
    public void close() throws IOException {
-      content.close();
+      content = new byte[0];
    }
 
    @Override
    public int read() throws IOException {
-      return content.read();
-   }
-
-   @Override
-   public int read(byte[] b) throws IOException {
-      return content.read(b);
+      ensureContents();
+      if (pos < content.length) {
+         return content[pos++];
+      }
+      return -1;
    }
 
    @Override
    public void reset() throws IOException {
-      content.reset();
+      pos = 0;
+   }
+
+   /**
+    * Returns the size of this content.
+    *
+    * @return the size of this content.
+    * @throws IOException if an I/O error happens during the execution of this method.
+    */
+   public int size() throws IOException {
+      ensureContents();
+      return content.length;
+   }
+
+   /**
+    * Copies the contents of this input stream into a given output.
+    * 
+    * @param out the output stream to copy this content to.
+    * @throws IOException if an I/O error happened during the execution of this method.
+    */
+   public void copyTo(OutputStream out) throws IOException {
+      out.write(content);
+   }
+
+   private void copyStream(InputStream in, OutputStream out) throws IOException {
+      byte[] buffer = new byte[8192];
+      int len;
+      while ((len = in.read(buffer)) != -1) {
+         out.write(buffer, 0, len);
+      }
+   }
+
+   private synchronized void ensureContents() throws IOException {
+      if (content == null) {
+         ByteArrayOutputStream out = new ByteArrayOutputStream();
+         copyStream(contentStream, out);
+         content = out.toByteArray();
+         contentStream.close();
+      }
    }
 }

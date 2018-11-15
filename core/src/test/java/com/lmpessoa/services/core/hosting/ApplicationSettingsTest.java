@@ -28,14 +28,16 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.io.IOException;
 import java.util.Collection;
+
+import javax.servlet.ServletException;
 
 import org.junit.Before;
 import org.junit.Test;
 
-import com.lmpessoa.services.core.hosting.Application;
-import com.lmpessoa.services.core.hosting.ApplicationServer;
+import com.lmpessoa.services.core.hosting.ApplicationConfig;
+import com.lmpessoa.services.core.hosting.ApplicationContext;
+import com.lmpessoa.services.core.hosting.ApplicationServlet;
 import com.lmpessoa.services.core.hosting.IHostEnvironment;
 import com.lmpessoa.services.core.routing.IRouteOptions;
 import com.lmpessoa.services.core.services.IServiceMap;
@@ -48,59 +50,53 @@ public final class ApplicationSettingsTest {
    private static String servicesResult;
    private static String configResult;
 
-   private ApplicationServer server;
-   private Application app;
+   private ApplicationContext context;
+   private ApplicationConfig config;
+   private ApplicationServlet app;
 
    @Before
    public void setup() {
-      server = mock(ApplicationServer.class);
-      when(server.getResourceClasses()).thenCallRealMethod();
-      when(server.getStartupClass()).then(o -> ApplicationSettingsTest.class);
-      when(server.getEnvironment()).thenReturn(() -> "Development");
-      when(server.getLogger()).thenReturn(log);
-      servicesResult = configResult = null;
+      context = mock(ApplicationContext.class);
+      when(context.getEnvironment()).thenReturn(() -> "Development");
+      when(context.getLogger()).thenReturn(log);
+      config = new ApplicationConfig(context, "test");
+      app = new ApplicationServlet();
    }
 
    @Test
-   public void testConfigMultipleEnvironments() throws NoSuchMethodException, IllegalAccessException, IOException {
-      new Application(server, CommonEnv.class).getResources();
+   public void testConfigMultipleEnvironments() throws ServletException {
+      when(context.getAttribute("service.startup.class")).thenReturn(CommonEnv.class);
+      app.init(config);
       assertEquals("common", servicesResult);
       assertEquals("common", configResult);
    }
 
    @Test
-   public void testConfigDefaultEnvironment() throws NoSuchMethodException, IllegalAccessException, IOException {
-      new Application(server, DefaultEnv.class).getResources();
+   public void testConfigDefaultEnvironment() throws ServletException {
+      when(context.getAttribute("service.startup.class")).thenReturn(DefaultEnv.class);
+      app.init(config);
       assertEquals("common", servicesResult);
       assertEquals("dev", configResult);
    }
 
    @Test
-   public void testConfigSpecificEnvironment() throws NoSuchMethodException, IllegalAccessException, IOException {
-      when(server.getEnvironment()).thenReturn(() -> "Staging");
-      new Application(server, SpecificEnv.class).getResources();
+   public void testConfigSpecificEnvironment() throws ServletException {
+      when(context.getEnvironment()).thenReturn(() -> "Staging");
+      when(context.getAttribute("service.startup.class")).thenReturn(SpecificEnv.class);
+      app.init(config);
       assertEquals("staging", servicesResult);
       assertEquals("staging", configResult);
    }
 
    @Test
-   public void testScanDefault() throws IOException, IllegalAccessException, NoSuchMethodException {
-      app = new Application(server, ApplicationInfoTest.class);
+   public void testScanDefault() throws ServletException {
+      when(context.getAttribute("service.startup.class")).thenReturn(ApplicationInfoTest.class);
+      app.init(config);
       Collection<Class<?>> result = app.getResources();
       assertTrue(result.contains(com.lmpessoa.services.test.resources.IndexResource.class));
       assertTrue(result.contains(com.lmpessoa.services.test.resources.TestResource.class));
-      assertFalse(result.contains(com.lmpessoa.services.test.resources.AbstractResource.class));
-      assertFalse(result.contains(com.lmpessoa.services.test.resources.api.TestResource.class));
-   }
-
-   @Test
-   public void testScanUserDefined() throws IOException, IllegalAccessException, NoSuchMethodException {
-      app = new Application(server, MainWithApi.class);
-      Collection<Class<?>> result = app.getResources();
-      assertTrue(result.contains(com.lmpessoa.services.test.resources.IndexResource.class));
-      assertTrue(result.contains(com.lmpessoa.services.test.resources.TestResource.class));
-      assertFalse(result.contains(com.lmpessoa.services.test.resources.AbstractResource.class));
       assertTrue(result.contains(com.lmpessoa.services.test.resources.api.TestResource.class));
+      assertFalse(result.contains(com.lmpessoa.services.test.resources.AbstractResource.class));
    }
 
    public static class MainWithApi {

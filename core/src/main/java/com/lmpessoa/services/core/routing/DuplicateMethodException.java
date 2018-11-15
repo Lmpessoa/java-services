@@ -22,12 +22,21 @@
  */
 package com.lmpessoa.services.core.routing;
 
+/**
+ * Thrown when a method being added is already registered on a route table.
+ */
 public final class DuplicateMethodException extends Exception {
 
    private static final long serialVersionUID = 1L;
 
+   /**
+    * Creates a new <code>DuplicateMethodException</code> with the given detail.
+    * 
+    * @param methodName the duplicated HTTP method.
+    * @param methodPat the duplicated route pattern for the resource.
+    * @param clazz the resource class that defined the duplicated method.
+    */
    DuplicateMethodException(HttpMethod methodName, RoutePattern methodPat, Class<?> clazz) {
-      super("'" + methodName + " " + methodPat + "' redefined in " + clazz.getName());
+      super("Ignored redefining '" + methodName + " " + methodPat + "' using " + clazz.getName());
    }
-
 }

@@ -22,10 +22,12 @@
  */
 package com.lmpessoa.services.core.hosting;
 
+import com.lmpessoa.services.core.routing.RouteMatch;
+
 /**
  * Thrown when the requested resource endpoint does not exist.
  */
-public final class NotFoundException extends HttpException {
+public final class NotFoundException extends HttpException implements RouteMatch {
 
    private static final long serialVersionUID = 1L;
 
@@ -38,7 +40,7 @@ public final class NotFoundException extends HttpException {
 
    /**
     * Creates a new <code>NotFoundException</code> with the given detail message.
-    * 
+    *
     * @param message the detail message.
     */
    public NotFoundException(String message) {
@@ -48,5 +50,10 @@ public final class NotFoundException extends HttpException {
    @Override
    public int getStatusCode() {
       return 404;
+   }
+
+   @Override
+   public Object invoke() {
+      throw this;
    }
 }

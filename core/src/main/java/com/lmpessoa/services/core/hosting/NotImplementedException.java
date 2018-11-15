@@ -22,12 +22,16 @@
  */
 package com.lmpessoa.services.core.hosting;
 
-import com.lmpessoa.services.core.hosting.HttpException;
-
+/**
+ * Thrown when the requested method is recognised but effectively not implemented.
+ */
 public class NotImplementedException extends HttpException {
 
    private static final long serialVersionUID = 1L;
 
+   /**
+    * Creates a new <code>NotImplementedException</code>.
+    */
    public NotImplementedException() {
       super();
    }

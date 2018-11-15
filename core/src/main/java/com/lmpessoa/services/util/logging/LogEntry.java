@@ -148,6 +148,21 @@ public final class LogEntry {
       return threadId;
    }
 
+   /**
+    * Returns the message of the log entry as an object.
+    *
+    * <p>
+    * Log entries automatically convert any value registered with the log methods of the
+    * {@link ILogger} interface to a string message. This method returns the original object sent for
+    * registration with the logging subsystem.
+    * </p>
+    *
+    * @return the message of the log entry as an object.
+    */
+   public Object getObjectMessage() {
+      return message;
+   }
+
    @Override
    public String toString() {
       return String.format("[%s] %s: %s", getSeverity(), getClassName(), getMessage());

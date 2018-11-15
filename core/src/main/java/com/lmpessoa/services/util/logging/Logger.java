@@ -33,17 +33,20 @@ import com.lmpessoa.services.Internal;
 import com.lmpessoa.services.util.ClassUtils;
 import com.lmpessoa.services.util.ConnectionInfo;
 
+@Internal
 @NonTraced
 public final class Logger implements ILogger, ILoggerOptions, Runnable {
 
    private final Queue<LogEntry> entriesToLog = new ArrayDeque<>();
+
    private final Class<?> defaultClass;
    private final LogWriter writer;
 
-   private Map<String, Severity> packageLevels = new HashMap<>();
    private Supplier<ConnectionInfo> connSupplier;
-   private Severity defaultLevel = Severity.INFO;
    private Thread thread = null;
+
+   private Map<String, Severity> packageLevels = new HashMap<>();
+   private Severity defaultLevel = Severity.INFO;
 
    @Internal
    public Logger(Class<?> defaultClass) {
@@ -120,6 +123,7 @@ public final class Logger implements ILogger, ILoggerOptions, Runnable {
    }
 
    @Internal
+   @Override
    public void join() {
       ClassUtils.checkInternalAccess();
       if (thread != null) {
