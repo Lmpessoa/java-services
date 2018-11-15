@@ -22,11 +22,7 @@
  */
 package com.lmpessoa.services.core.hosting.content;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -34,28 +30,6 @@ import java.util.Map.Entry;
 import com.lmpessoa.services.util.ClassUtils;
 
 final class FormSerializer implements IContentReader {
-
-   @SuppressWarnings("unchecked")
-   public static <T> T convert(String value, Class<T> type) {
-      if (value == null) {
-         return null;
-      }
-      Class<?> atype = ClassUtils.box(type);
-      Method valueOf;
-      try {
-         valueOf = atype.getMethod("valueOf", String.class);
-      } catch (NoSuchMethodException e) {
-         throw new TypeConvertException(e);
-      }
-      if (!Modifier.isStatic(valueOf.getModifiers())) {
-         throw new TypeConvertException(new NoSuchMethodException("Method 'valueOf' is not static"));
-      }
-      try {
-         return (T) valueOf.invoke(null, value);
-      } catch (IllegalAccessException | InvocationTargetException e) {
-         throw new TypeConvertException(e);
-      }
-   }
 
    @Override
    public <T> T read(byte[] content, String contentType, Class<T> resultClass) {
@@ -79,44 +53,22 @@ final class FormSerializer implements IContentReader {
       return null;
    }
 
-   Object convertToValue(Object value, Class<?> clazz) {
-      if (value.getClass().isArray() != clazz.isArray()) {
-         throw new IllegalArgumentException("Could not convert value to type");
-      }
-      if (value instanceof String[]) {
-         Class<?> type = clazz.getComponentType();
-         String[] svalue = (String[]) value;
-         Object result = Array.newInstance(type, svalue.length);
-         for (int i = 0; i < svalue.length; ++i) {
-            Object cvalue = convert(svalue[i], type);
-            Array.set(result, i, cvalue);
-            if (cvalue != null) {
-               try {
-                  Method primValue = cvalue.getClass().getMethod(type.getName() + "Value");
-                  Array.set(result, i, primValue.invoke(cvalue));
-               } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                  // Ignore
-               }
-            }
-         }
-         return result;
-      } else {
-         return convert((String) value, clazz);
-      }
-   }
-
    private <T> T read(String content, Class<T> resultClass) {
       Map<String, Object> values = Serializer.parseQueryString(content);
       try {
          T result = resultClass.newInstance();
-         for (Entry<String, Object> value : values.entrySet()) {
-            Field field = findField(value.getKey(), resultClass);
+         for (Entry<String, Object> entry : values.entrySet()) {
+            Field field = findField(entry.getKey(), resultClass);
             if (field == null) {
                return null;
             }
             Class<?> fieldType = field.getType();
-            Object fieldValue = fieldType == String.class || fieldType == String[].class ? value.getValue()
-                     : convertToValue(value.getValue(), field.getType());
+            Object value = entry.getValue();
+            if (value instanceof String[]) {
+               value = String.join(",", (String[]) value);
+            }
+            Object fieldValue = fieldType == String.class || fieldType == String[].class ? entry.getValue()
+                     : ClassUtils.cast(value.toString(), field.getType());
             field.setAccessible(true);
             field.set(result, fieldValue);
          }

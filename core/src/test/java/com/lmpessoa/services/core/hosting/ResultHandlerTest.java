@@ -48,13 +48,13 @@ import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.util.ConnectionInfo;
 import com.lmpessoa.services.util.logging.ILogger;
 import com.lmpessoa.services.util.logging.Logger;
-import com.lmpessoa.services.util.logging.NullLogWriter;
+import com.lmpessoa.services.util.logging.NullHandler;
 
 public class ResultHandlerTest {
 
    private static final String TEST_URL = "https://lmpessoa.com/test";
    private static final ConnectionInfo connect = new ConnectionInfo(mock(Socket.class), "https://lmpessoa.com/");
-   private static final ILogger log = new Logger(ResultHandlerTest.class, new NullLogWriter());
+   private static final ILogger log = new Logger(new NullHandler());
 
    private HttpRequest request;
 

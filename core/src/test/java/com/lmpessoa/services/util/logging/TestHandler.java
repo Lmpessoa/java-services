@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,40 +20,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.hosting;
+package com.lmpessoa.services.util.logging;
 
-import java.io.IOException;
-import java.net.URL;
+import java.util.function.Predicate;
 
-import com.lmpessoa.services.util.logging.ILogger;
+final class TestHandler extends Handler {
 
-final class FaviconHandler {
-
-   private static final String FAVICON = "/favicon.ico";
-   private final NextHandler next;
-
-   public FaviconHandler(NextHandler next) {
-      this.next = next;
+   public TestHandler(Predicate<LogEntry> filter) {
+      super(filter);
    }
 
-   public Object invoke(HttpRequest request, IApplicationSettings settings, ILogger log) {
-      if (request.getPath().endsWith(FAVICON)) {
-         Class<?> startupClass = settings.getStartupClass();
-         URL iconUrl = null;
-         if (startupClass != null) {
-            iconUrl = startupClass.getResource(FAVICON);
-         }
-         if (iconUrl == null) {
-            iconUrl = FaviconHandler.class.getResource(FAVICON);
-         }
-         if (iconUrl != null) {
-            try {
-               return new HttpInputStream(ContentType.ICO, iconUrl.openStream());
-            } catch (IOException e) {
-               log.error(e);
-            }
-         }
-      }
-      return next.invoke();
+   private LogEntry lastEntry;
+
+   @Override
+   public void append(LogEntry entry) {
+      this.lastEntry = entry;
+   }
+
+   LogEntry getLastEntry() {
+      return lastEntry;
    }
 }

@@ -51,10 +51,6 @@ final class LogFormatter {
 
    private final List<ITemplatePart> parts;
 
-   static LogFormatter parse(String template) throws ParseException {
-      return new LogFormatter(LogFormatParser.parse(template, variables));
-   }
-
    static {
       variables.put("Time", LogFormatter::getTime);
       variables.put("Time.Web", LogFormatter::getTimeWeb);
@@ -84,8 +80,8 @@ final class LogFormatter {
       variables.put("Class.SimpleName", LogFormatter::getSimpleClassName);
    }
 
-   String format(LogEntry entry) {
-      return format(entry, null);
+   static LogFormatter parse(String template) throws ParseException {
+      return new LogFormatter(LogFormatParser.parse(template, variables));
    }
 
    String format(LogEntry entry, String message) {

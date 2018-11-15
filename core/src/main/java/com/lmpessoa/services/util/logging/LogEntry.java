@@ -22,14 +22,13 @@
  */
 package com.lmpessoa.services.util.logging;
 
-import java.lang.reflect.Modifier;
+import java.lang.reflect.Array;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
+import java.util.Collection;
 import java.util.Objects;
 
-import com.lmpessoa.services.util.ClassUtils;
 import com.lmpessoa.services.util.ConnectionInfo;
 
 /**
@@ -47,17 +46,15 @@ import com.lmpessoa.services.util.ConnectionInfo;
  */
 public final class LogEntry {
 
-   private static final String LOCATION = ClassUtils.findLocation(LogEntry.class);
-   private static final String AT = "...at ";
+   private static final String AT = "\n...at ";
 
-   private final StackTraceElement logPoint;
-   private final ConnectionInfo connInfo;
-   private final String defaultClass;
+   private final StackTraceElement[] logPoint;
+   private final ConnectionInfo connection;
    private final ZonedDateTime time;
    private final Severity severity;
    private final String threadName;
-   private final boolean internal;
    private final Object message;
+   private final Logger logger;
    private final long threadId;
 
    /**
@@ -89,7 +86,7 @@ public final class LogEntry {
     * @return the actual message of the log entry event.
     */
    public String getMessage() {
-      return message.toString();
+      return getMessageResult(message).trim();
    }
 
    /**
@@ -103,10 +100,11 @@ public final class LogEntry {
     * @return the name of the class in which the log entry was created.
     */
    public String getClassName() {
-      if (logPoint != null) {
-         return logPoint.getClassName();
+      if (logger == null) {
+         StackTraceElement[] trace = getStackTrace();
+         return trace.length > 0 ? trace[0].getClassName() : "";
       }
-      return defaultClass;
+      return logger.getClassName(logPoint);
    }
 
    /**
@@ -115,7 +113,7 @@ public final class LogEntry {
     * @return the connection information about the current request.
     */
    public ConnectionInfo getConnection() {
-      return connInfo;
+      return connection;
    }
 
    /**
@@ -141,6 +139,11 @@ public final class LogEntry {
       return threadId;
    }
 
+   public StackTraceElement[] getStackTrace() {
+      return logger != null ? logger.filterStack(logPoint)
+               : Arrays.stream(logPoint).filter(Logger::defaultStackFilter).toArray(StackTraceElement[]::new);
+   }
+
    /**
     * Returns the message of the log entry as an object.
     *
@@ -152,7 +155,7 @@ public final class LogEntry {
     *
     * @return the message of the log entry as an object.
     */
-   public Object getObjectMessage() {
+   public Object getMessageSource() {
       return message;
    }
 
@@ -161,126 +164,60 @@ public final class LogEntry {
       return String.format("[%s] %s: %s", getSeverity(), getClassName(), getMessage());
    }
 
-   LogEntry(Severity severity, Object message, ConnectionInfo connInfo, Class<?> defaultClass) {
-      this(ZonedDateTime.now(), severity, message, connInfo, defaultClass);
+   LogEntry(Severity severity, Object message, ConnectionInfo connection, Logger logger) {
+      this(ZonedDateTime.now(), severity, message, connection, logger);
    }
 
-   LogEntry(ZonedDateTime time, Severity severity, Object message, ConnectionInfo connInfo, Class<?> defaultClass) {
-      this.defaultClass = Objects.requireNonNull(defaultClass).getName();
+   LogEntry(ZonedDateTime time, Severity severity, Object message, ConnectionInfo connection, Logger logger) {
+      Thread thread = Thread.currentThread();
+      this.logPoint = message instanceof Throwable ? ((Throwable) message).getStackTrace() : thread.getStackTrace();
       this.severity = Objects.requireNonNull(severity);
       this.message = Objects.requireNonNull(message);
-      this.connInfo = connInfo;
-      this.time = time;
-   
-      Thread thread = Thread.currentThread();
-      StackTraceElement[] stack = message instanceof Throwable //
-               ? ((Throwable) message).getStackTrace()
-               : thread.getStackTrace();
-      this.internal = LOCATION.equals(ClassUtils.findLocation(getFirstNonLogger(stack)));
-      this.logPoint = getFirstNonTraced(stack);
       this.threadName = thread.getName();
       this.threadId = thread.getId();
+      this.connection = connection;
+      this.logger = logger;
+      this.time = time;
    }
 
-   String[] getAdditionalMessages() {
-      if (message instanceof Throwable) {
-         List<String> result = new ArrayList<>();
-         Throwable t = (Throwable) message;
-         for (StackTraceElement element : cleanNonTraced(t.getStackTrace())) {
-            result.add(AT + element);
+   private String getMessageResult(Object message) {
+      if (message.getClass().isArray()) {
+         Collection<Object> tmp = new ArrayList<>();
+         int len = Array.getLength(message);
+         for (int i = 0; i < len; ++i) {
+            tmp.add(Array.get(message, i));
          }
-         return result.toArray(new String[0]);
+         message = tmp;
       }
-      return new String[0];
-   }
-
-   LogEntry getTraceEntry() {
-      if (message instanceof Throwable) {
-         Throwable t = (Throwable) message;
-         if (t.getCause() != null) {
-            return new LogEntry(this, t.getCause());
-         }
-      } else if (!getMessage().startsWith(AT) && logPoint != null && !internal) {
-         return new LogEntry(this, AT + logPoint);
-      }
-      return null;
-   }
-
-   private LogEntry(LogEntry parentEntry, Object message) {
-      this.time = parentEntry.getTime();
-      this.message = Objects.requireNonNull(message);
-      this.severity = parentEntry.severity;
-      this.defaultClass = parentEntry.defaultClass;
-      this.internal = parentEntry.internal;
-      this.logPoint = parentEntry.logPoint;
-      this.threadName = parentEntry.threadName;
-      this.threadId = parentEntry.threadId;
-      this.connInfo = parentEntry.connInfo;
-   }
-
-   private static Class<?> getFirstNonLogger(StackTraceElement[] stack) {
-      boolean foundLogger = false;
-      for (StackTraceElement element : stack) {
-         if (Logger.class.getName().equals(element.getClassName())) {
-            if (!foundLogger) {
-               foundLogger = true;
+      StringBuilder result = new StringBuilder();
+      if (message instanceof Collection) {
+         for (Object o : (Collection<?>) message) {
+            String s = getMessageResult(o);
+            if (!s.isEmpty()) {
+               result.append(s);
             }
-         } else {
-            if (foundLogger) {
-               try {
-                  return Class.forName(element.getClassName());
-               } catch (ClassNotFoundException e) { // NOSONAR
-                  // Should never happen since we know the class exists
-               }
-            }
+            result.append("\n");
          }
-      }
-      return null;
-   }
-
-   private static boolean skipNonTraced(StackTraceElement element) {
-      if (element.isNativeMethod()) {
-         return true;
-      }
-      String className = element.getClassName();
-      if (className.startsWith("java.") || className.startsWith("javax.") || className.startsWith("sun.")) {
-         return true;
-      }
-      Class<?> clazz;
-      try {
-         clazz = Class.forName(className);
-      } catch (ClassNotFoundException e) {
-         return true;
-      }
-      if (!Modifier.isPublic(clazz.getModifiers())) {
-         return true;
-      }
-      if (LOCATION.equals(ClassUtils.findLocation(clazz))) {
-         return true;
-      }
-      final String methodName = element.getMethodName();
-      if ("<cinit>".equals(methodName)) {
-         return false;
-      }
-      Object[] methods;
-      if ("<init>".equals(methodName)) {
-         methods = ClassUtils.findConstructor(clazz, m -> !m.isSynthetic());
       } else {
-         methods = ClassUtils.findMethods(clazz, m -> m.getName().equals(methodName) && !m.isSynthetic());
+         result.append(message.toString());
       }
-      return methods.length == 0;
-   }
-
-   private static StackTraceElement getFirstNonTraced(StackTraceElement[] stack) {
-      for (StackTraceElement element : stack) {
-         if (!skipNonTraced(element)) {
-            return element;
+      if (message instanceof Throwable || isTracing()) {
+         StackTraceElement[] filteredStack = getStackTrace();
+         for (StackTraceElement item : filteredStack) {
+            result.append(AT + item);
          }
       }
-      return null;
+      if (message instanceof Throwable && isTracing()) {
+         Throwable cause;
+         while ((cause = ((Throwable) message).getCause()) != null) {
+            result.append('\n');
+            result.append(getMessageResult(cause));
+         }
+      }
+      return result.toString();
    }
 
-   private static StackTraceElement[] cleanNonTraced(StackTraceElement[] stack) {
-      return Arrays.stream(stack).filter(e -> !skipNonTraced(e)).toArray(StackTraceElement[]::new);
+   private boolean isTracing() {
+      return logger != null ? logger.isTracing() : false;
    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,16 +20,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.util.logging;
+package com.lmpessoa.services.core.hosting;
 
-public final class ConsoleLogWriter extends FormattedLogWriter {
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Predicate;
+
+import com.lmpessoa.services.util.logging.LogEntry;
+import com.lmpessoa.services.util.logging.Severity;
+
+final class Filter implements Predicate<LogEntry> {
+
+   private final Map<String, Predicate<Severity>> packages = new HashMap<>();
+   private final Predicate<Severity> defaultLevel;
+
+   Filter(Map<String, String> properties) {
+      Severity above = Severity.valueOf(properties.getOrDefault("above", "DEBUG"));
+      Severity below = Severity.valueOf(properties.getOrDefault("below", "FATAL"));
+      defaultLevel = level -> above.compareTo(level) <= 0 && below.compareTo(level) >= 0;
+   }
 
    @Override
-   public void append(Severity severity, String entry) {
-      if (Severity.ERROR.compareTo(severity) >= 0) {
-         System.err.print(entry); // NOSONAR
-      } else {
-         System.out.print(entry); // NOSONAR
+   public final boolean test(LogEntry entry) {
+      Predicate<Severity> result = packages.get(entry.getClassName());
+      if (result == null) {
+         result = defaultLevel;
       }
+      return result.test(entry.getSeverity());
    }
 }

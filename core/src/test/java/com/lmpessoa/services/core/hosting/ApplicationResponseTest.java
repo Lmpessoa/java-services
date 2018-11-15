@@ -36,10 +36,11 @@ import java.nio.charset.Charset;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.lmpessoa.services.core.concurrent.ExecutionService;
 import com.lmpessoa.services.core.hosting.ApplicationContext;
 import com.lmpessoa.services.core.hosting.ApplicationResponder;
 import com.lmpessoa.services.core.hosting.ApplicationServer;
-import com.lmpessoa.services.core.hosting.ApplicationServerInfo;
+import com.lmpessoa.services.core.hosting.ApplicationSettings;
 import com.lmpessoa.services.core.hosting.ContentType;
 import com.lmpessoa.services.core.hosting.HttpInputStream;
 import com.lmpessoa.services.core.routing.HttpGet;
@@ -47,17 +48,21 @@ import com.lmpessoa.services.core.routing.IRouteTable;
 import com.lmpessoa.services.core.routing.Route;
 import com.lmpessoa.services.core.routing.RouteTable;
 import com.lmpessoa.services.util.logging.Logger;
-import com.lmpessoa.services.util.logging.NullLogWriter;
+import com.lmpessoa.services.util.logging.NullHandler;
 
 public final class ApplicationResponseTest {
 
-   private Logger log = new Logger(ApplicationResponseTest.class, new NullLogWriter());
+   private Logger log = new Logger(new NullHandler());
    private ApplicationContext context;
 
    @Before
    public void setup() {
-      ApplicationServerInfo info = mock(ApplicationServerInfo.class);
-      ApplicationServer server = new ApplicationServer(ApplicationResponseTest.class, info, "Development", log);
+      ApplicationSettings settings = mock(ApplicationSettings.class);
+      when(settings.getStartupClass()).then(n -> ApplicationResponseTest.class);
+      when(settings.getEnvironment()).thenReturn(() -> "Development");
+      when(settings.getLogger()).thenReturn(log);
+      when(settings.getJobExecutor()).thenReturn(new ExecutionService(0, log));
+      ApplicationServer server = new ApplicationServer(settings);
       RouteTable routes = new RouteTable(server.getServices(), log);
       routes.put("", TestResource.class);
       context = new ApplicationContext(server, 5617, "test", routes);

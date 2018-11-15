@@ -53,7 +53,7 @@ import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.test.services.Singleton;
 import com.lmpessoa.services.test.services.SingletonImpl;
 import com.lmpessoa.services.util.logging.Logger;
-import com.lmpessoa.services.util.logging.NullLogWriter;
+import com.lmpessoa.services.util.logging.NullHandler;
 import com.lmpessoa.services.util.parsing.TypeMismatchException;
 
 public final class RouteTableTest {
@@ -61,7 +61,7 @@ public final class RouteTableTest {
    @Rule
    public ExpectedException thrown = ExpectedException.none();
 
-   private final Logger log = new Logger(RouteTableTest.class, new NullLogWriter());
+   private final Logger log = new Logger(new NullHandler());
    private ServiceMap serviceMap;
    private RouteTable table;
 

@@ -112,9 +112,26 @@ final class Wrapper {
       };
    }
 
-   static IApplicationInfo wrap(IApplicationInfo original) {
+   static IApplicationSettings wrap(IApplicationSettings original) {
       Objects.requireNonNull(original);
-      return original::getStartupClass;
+      return new IApplicationSettings() {
+
+         @Override
+         public Class<?> getStartupClass() {
+            return original.getStartupClass();
+         }
+
+         @Override
+         public String getApplicationName() {
+            return original.getApplicationName();
+         }
+
+         @Override
+         public boolean isXmlEnabled() {
+            return original.isXmlEnabled();
+         }
+
+      };
    }
 
    static IApplicationOptions wrap(IApplicationOptions original) {

@@ -29,6 +29,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import java.util.NoSuchElementException;
+import java.util.function.Supplier;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -239,7 +240,7 @@ public class ServiceMapTest {
 
    @Test
    public void testRegisterWithSupplier() {
-      map.put(Singleton.class, () -> new SingletonImpl());
+      map.put(Singleton.class, (Supplier<Singleton>) () -> new SingletonImpl());
       Singleton o1 = map.get(Singleton.class);
       Singleton o2 = map.get(Singleton.class);
       assertNotNull(o1);

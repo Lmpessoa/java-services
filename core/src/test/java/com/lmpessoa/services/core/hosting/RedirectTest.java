@@ -38,11 +38,11 @@ import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.util.ConnectionInfo;
 import com.lmpessoa.services.util.logging.ILogger;
 import com.lmpessoa.services.util.logging.Logger;
-import com.lmpessoa.services.util.logging.NullLogWriter;
+import com.lmpessoa.services.util.logging.NullHandler;
 
 public final class RedirectTest {
 
-   private ILogger log = new Logger(RedirectTest.class, new NullLogWriter());
+   private ILogger log = new Logger(new NullHandler());
 
    private ConnectionInfo connect;
    private ServiceMap services;

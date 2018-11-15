@@ -22,6 +22,12 @@
  */
 package com.lmpessoa.services.util.logging;
 
+import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+
 import com.lmpessoa.services.core.services.Reuse;
 import com.lmpessoa.services.core.services.Service;
 
@@ -71,7 +77,6 @@ public interface ILogger {
 
    /**
     * Logs an error message.
-    *
     * <p>
     * Error messages indicates an unexpected error or exception occurred but the application managed to
     * handle it and can continue. Part of the processing when this error occurred may be lost.
@@ -195,5 +200,50 @@ public interface ILogger {
     */
    default void debug(String message, Object... args) {
       debug(String.format(message, args));
+   }
+
+   /**
+    * Logs the execution of a method as debug messages.
+    *
+    * <p>
+    * This is a convenience method to log debug messages when entering and leaving a region of code
+    * (usually a method execution), tracing the amount of time required for the method to finish
+    * executing.
+    * </p>
+    *
+    * @param func the code to be executed.
+    * @throws Exception
+    */
+   default void debug(Runnable func) throws Exception {
+      debug(Executors.callable(func));
+   }
+
+   /**
+    * Logs the execution of a method as debug messages.
+    *
+    * <p>
+    * This is a convenience method to log debug messages when entering and leaving a region of code
+    * (usually a method execution), tracing the amount of time required for the method to finish
+    * executing.
+    * </p>
+    *
+    * @param func the code to be executed.
+    * @throws Exception
+    */
+   default <T> T debug(Callable<T> func) throws Exception {
+      StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+      StackTraceElement caller = stack[2];
+      if (caller.getClassName().equals(stack[1].getClassName())) {
+         caller = stack[3];
+      }
+      debug("Entering %s.%s", caller.getClassName(), caller.getMethodName());
+      Instant start = Instant.now();
+      try {
+         return func.call();
+      } finally {
+         BigDecimal duration = BigDecimal.valueOf(Duration.between(start, Instant.now()).toMillis())
+                  .divide(BigDecimal.valueOf(1000), 3, BigDecimal.ROUND_DOWN);
+         debug("Leaving %s.%s after %d seconds", caller.getClassName(), caller.getMethodName(), duration);
+      }
    }
 }

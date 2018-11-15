@@ -50,14 +50,14 @@ import com.lmpessoa.services.core.services.Reuse;
 import com.lmpessoa.services.core.services.Service;
 import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.util.logging.Logger;
-import com.lmpessoa.services.util.logging.NullLogWriter;
+import com.lmpessoa.services.util.logging.NullHandler;
 
 public final class RouteTableMatcherTest {
 
    @Rule
    public ExpectedException thrown = ExpectedException.none();
 
-   private final Logger log = new Logger(RouteTableMatcherTest.class, new NullLogWriter());
+   private final Logger log = new Logger(new NullHandler());
    private ServiceMap serviceMap;
    private RouteTable table;
 

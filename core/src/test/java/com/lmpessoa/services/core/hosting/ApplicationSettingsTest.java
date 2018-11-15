@@ -1,6 +1,7 @@
 /*
+ * Leeow - A lightweight and easy engine for outstanding web APIs
  * Copyright (c) 2017 Leonardo Pessoa
- * https://github.com/lmpessoa/java-services
+ * http://leeow.io
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,20 +31,22 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.function.Predicate;
 
 import org.junit.Test;
 
+import com.lmpessoa.services.core.concurrent.ExecutionService;
 import com.lmpessoa.services.core.services.IServiceMap;
+import com.lmpessoa.services.util.Property;
+import com.lmpessoa.services.util.PropertyBuilder;
+import com.lmpessoa.services.util.logging.Handler;
 import com.lmpessoa.services.util.logging.LogEntry;
-import com.lmpessoa.services.util.logging.LogWriter;
 import com.lmpessoa.services.util.logging.Logger;
-import com.lmpessoa.services.util.logging.NullLogWriter;
+import com.lmpessoa.services.util.logging.NullHandler;
 
 public final class ApplicationSettingsTest {
 
-   private static Logger log = new Logger(ApplicationSettingsTest.class, new NullLogWriter());
+   private static Logger log = new Logger(new NullHandler());
    private static String servicesResult;
    private static String configResult;
    private static String logResult;
@@ -55,14 +58,18 @@ public final class ApplicationSettingsTest {
    }
 
    private void setup(Class<?> startupClass, String envName) {
-      ApplicationServerInfo info = mock(ApplicationServerInfo.class);
-      server = new ApplicationServer(startupClass, info, envName, log);
+      ApplicationSettings settings = mock(ApplicationSettings.class);
+      when(settings.getStartupClass()).then(n -> startupClass);
+      when(settings.getEnvironment()).thenReturn(() -> envName);
+      when(settings.getJobExecutor()).thenReturn(new ExecutionService(0, log));
+      when(settings.getLogger()).thenReturn(log);
+      server = new ApplicationServer(settings);
       server.getServices();
    }
 
    @Test
    public void testScanDefault() {
-      setup(ApplicationInfoTest.class);
+      setup(ApplicationSettingsTest.class);
       Collection<Class<?>> result = server.getResources();
       assertTrue(result.contains(com.lmpessoa.services.test.resources.IndexResource.class));
       assertTrue(result.contains(com.lmpessoa.services.test.resources.TestResource.class));
@@ -93,16 +100,14 @@ public final class ApplicationSettingsTest {
 
    @Test
    public void testLoggerCreation() throws InterruptedException {
-      ApplicationServerInfo info = mock(ApplicationServerInfo.class);
-      Map<String, String> settings = new HashMap<>();
-      settings.put("type", TestLogWriter.class.getName());
-      when(info.getProperties("logging.writer")).thenReturn(settings);
-
-      Map<String, String> packages = new HashMap<>();
-      packages.put("0.name", "com.lmpessoa.services.core.hosting");
-      packages.put("0.level", "ERROR");
-      when(info.getProperties("logging.packages")).thenReturn(packages);
-      Logger log = ApplicationServer.createLogger(info, ApplicationSettingsTest.class);
+      Property prop = new PropertyBuilder()//
+               .set("log.0.type", TestHandler.class.getName())
+               .set("log.0.packages.0.name", "com.lmpessoa.services.core.hosting")
+               .set("log.0.packages.0.above", "error")
+               .build();
+      ApplicationSettings settings = new ApplicationSettings(ApplicationSettingsTest.class, prop,
+               null);
+      Logger log = settings.getLogger();
 
       log.info("Test");
       log.join();
@@ -143,7 +148,11 @@ public final class ApplicationSettingsTest {
       }
    }
 
-   public static class TestLogWriter extends LogWriter {
+   private static class TestHandler extends Handler {
+
+      public TestHandler(Predicate<LogEntry> filter) {
+         super(filter);
+      }
 
       @Override
       protected void append(LogEntry entry) {

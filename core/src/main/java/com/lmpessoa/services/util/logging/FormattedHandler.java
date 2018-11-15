@@ -22,32 +22,44 @@
  */
 package com.lmpessoa.services.util.logging;
 
-import com.lmpessoa.services.util.logging.LogEntry;
-import com.lmpessoa.services.util.logging.LogWriter;
-import com.lmpessoa.services.util.logging.Severity;
+import java.text.ParseException;
+import java.util.function.Predicate;
 
-final class TestLogWriter extends LogWriter {
+public abstract class FormattedHandler extends Handler {
 
-   private LogEntry entry;
+   static final String DEFAULT = "{Time} {Severity:>7} -- [{Remote.Host:<15}] {Class.Name:<36} : {Message}";
+
+   private LogFormatter template;
+   private LogEntry currentEntry;
+
+   public FormattedHandler(Predicate<LogEntry> filter) {
+      super(filter);
+      try {
+         this.template = LogFormatter.parse(DEFAULT);
+      } catch (ParseException e) {
+         // If it falls here, something is wrong with our code
+         e.printStackTrace(); // NOSONAR
+         System.exit(1);
+      }
+   }
+
+   public void setTemplate(String template) throws ParseException {
+      this.template = LogFormatter.parse(template);
+   }
+
+   final LogEntry currentEntry() {
+      return currentEntry;
+   }
 
    @Override
-   public void append(LogEntry entry) {
-      this.entry = entry;
+   protected final void append(LogEntry entry) {
+      currentEntry = entry;
+      String[] lines = entry.getMessage().split("\n");
+      for (String line : lines) {
+         append(template.format(entry, line));
+      }
+      currentEntry = null;
    }
 
-   String[] getLastAdditionalMessages() {
-      return entry != null ? entry.getAdditionalMessages() : new String[0];
-   }
-
-   LogEntry getLastTrace() {
-      return entry != null ? entry.getTraceEntry() : null;
-   }
-
-   String getLastMessage() {
-      return entry != null ? entry.getMessage() : null;
-   }
-
-   Severity getLastSeverity() {
-      return entry != null ? entry.getSeverity() : null;
-   }
+   protected abstract void append(String entry);
 }

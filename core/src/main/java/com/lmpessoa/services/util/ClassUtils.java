@@ -24,7 +24,10 @@ package com.lmpessoa.services.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -86,6 +89,45 @@ public final class ClassUtils {
     */
    public static Class<?>[] box(Class<?>... classes) {
       return Arrays.stream(classes).map(ClassUtils::box).toArray(Class<?>[]::new);
+   }
+
+   /**
+    * Converts the given string value to a value of the given type.
+    * <p>
+    * Values can only be converted to arrays, primitive types and types that contain a static
+    * {@code #valueOf(String)} method. The type of array elements must also obey this rule.
+    * </p>
+    *
+    * @param value the value to be converted.
+    * @param type the type to convert the value to.
+    * @return the value converted to the given type
+    * @throws IllegalArgumentException if the value cannot be converted to the given type.
+    */
+   @SuppressWarnings("unchecked")
+   public static <T> T cast(String value, Class<T> type) {
+      if (value == null) {
+         return null;
+      }
+      if (type == String.class) {
+         return (T) value;
+      }
+      if (type.isArray()) {
+         String[] values = value.split(",");
+         Class<?> atype = type.getComponentType();
+         T result = (T) Array.newInstance(atype, values.length);
+         for (int i = 0; i < values.length; ++i) {
+            Object cvalue = values[i].trim();
+            if (atype != String.class) {
+               cvalue = internalCast(values[i].trim(), atype);
+            }
+            Array.set(result, i, cvalue);
+            if (cvalue != null) {
+               Array.set(result, i, cvalue);
+            }
+         }
+         return result;
+      }
+      return internalCast(value, type);
    }
 
    /**
@@ -253,6 +295,49 @@ public final class ClassUtils {
          }
       }
       return result;
+   }
+
+   @SuppressWarnings("unchecked")
+   private static <T> T internalCast(String value, Class<T> type) {
+      Class<?> atype = ClassUtils.box(type);
+      if (atype == Boolean.class) {
+         Object result = "true".equalsIgnoreCase(value) || "yes".equalsIgnoreCase(value);
+         if (type != atype) {
+            result = ((Boolean) result).booleanValue(); // NOSONAR
+         }
+         return (T) result;
+      }
+      if (atype.isEnum()) {
+         for (Field f : atype.getDeclaredFields()) {
+            if (f.isEnumConstant() && f.getName().equalsIgnoreCase(value)) {
+               try {
+                  return (T) f.get(null);
+               } catch (IllegalArgumentException | IllegalAccessException e) {
+                  // Shall not happend but...
+               }
+            }
+         }
+      }
+      Method valueOf;
+      try {
+         valueOf = atype.getMethod("valueOf", String.class);
+      } catch (NoSuchMethodException e) {
+         throw new IllegalArgumentException(e);
+      }
+      if (!Modifier.isStatic(valueOf.getModifiers())) {
+         throw new IllegalArgumentException(
+                  new NoSuchMethodException("Method 'valueOf' is not static"));
+      }
+      try {
+         Object cvalue = valueOf.invoke(null, value);
+         if (cvalue != null && atype != type) {
+            Method primValue = cvalue.getClass().getMethod(type.getName() + "Value");
+            cvalue = primValue.invoke(cvalue);
+         }
+         return (T) cvalue;
+      } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+         throw new IllegalArgumentException(e);
+      }
    }
 
    private ClassUtils() {

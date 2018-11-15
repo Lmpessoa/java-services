@@ -25,16 +25,48 @@ package com.lmpessoa.services.util.logging;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.function.Predicate;
 
 /**
- * Indicates a file to be used to output log entries.
+ * A Handler that stores log messages in a file.
+ * <p>
+ * </p>
  * <p>
  * Use an instance of this class to indicate a file to which all log will be output to. This file
  * will be open and closed periodically to update when log files are rotated by the file system.
  * </p>
+ * <p>
+ * <b>Configuration:</b><br/>
+ * File handlers must specify the name of the file into which the log messages are to be stored. The
+ * {@code filename} property can point to any file in the underlying operating system, including
+ * special files in *nix systems.
+ * </p>
+ * <p>
+ * Note that the {@code FileHandler} is not capable of rotating log files on its own. You must
+ * configure the underlying operating system to do so.
+ * </p>
+ * <p>
+ * Since a {@code FileHandler} is a {@link FormattedHandler}, a different template can be defined in
+ * the application settings file under the parameter {@code template}. A template will recognise
+ * values in the format <code>${VAR}</code> as variables to be replaced with information from the
+ * log message entry.
+ * </p>
+ * <p>
+ * In the following example, a logger is defined to send to the file {@code /var/log/leeow.log} only
+ * a timestamp, severity and message text of messages with severity {@code WARNING} or above:
+ * </p>
+ *
+ * <pre>
+ * log:
+ * - type: file
+ *   above: warning
+ *   filename: /var/log/leeow.log
+ *   template: ${Time} [${Severity}] ${Message}
+ * </pre>
  */
-public final class FileLogWriter extends FormattedLogWriter {
+public final class FileHandler extends FormattedHandler {
 
+   java.util.logging.FileHandler x;
    private final File file;
 
    private PrintWriter out;
@@ -44,7 +76,8 @@ public final class FileLogWriter extends FormattedLogWriter {
     *
     * @param file the file where log entries should be written to.
     */
-   public FileLogWriter(File file) {
+   public FileHandler(File file, Predicate<LogEntry> filter) {
+      super(filter);
       this.file = file;
    }
 
@@ -53,8 +86,8 @@ public final class FileLogWriter extends FormattedLogWriter {
     *
     * @param filename the name of the file where log entries should be written to.
     */
-   public FileLogWriter(String filename) {
-      this(new File(filename));
+   public FileHandler(String filename, Predicate<LogEntry> filter) {
+      this(new File(filename), filter);
    }
 
    @Override
@@ -68,15 +101,15 @@ public final class FileLogWriter extends FormattedLogWriter {
    }
 
    @Override
-   public void append(Severity severity, String entry) {
+   public void append(String entry) {
       if (out != null) {
          out.println(entry);
+         out.flush();
       }
    }
 
    @Override
    public void finished() {
-      out.flush();
       out.close();
       out = null;
    }

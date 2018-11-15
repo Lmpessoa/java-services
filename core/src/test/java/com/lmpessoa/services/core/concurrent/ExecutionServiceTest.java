@@ -41,11 +41,11 @@ import org.junit.Test;
 import com.lmpessoa.services.core.concurrent.ExecutionService;
 import com.lmpessoa.services.util.logging.ILogger;
 import com.lmpessoa.services.util.logging.Logger;
-import com.lmpessoa.services.util.logging.NullLogWriter;
+import com.lmpessoa.services.util.logging.NullHandler;
 
 public class ExecutionServiceTest {
 
-   private static final ILogger log = new Logger(ExecutionServiceTest.class, new NullLogWriter());
+   private static final ILogger log = new Logger(new NullHandler());
    private ExecutionService service;
 
    @Before

@@ -35,6 +35,7 @@ import com.lmpessoa.services.core.hosting.BadRequestException;
 import com.lmpessoa.services.core.hosting.HeaderMap;
 import com.lmpessoa.services.core.hosting.HttpInputStream;
 import com.lmpessoa.services.core.hosting.InternalServerError;
+import com.lmpessoa.services.util.ClassUtils;
 
 final class MultipartSerializer implements IContentReader {
 
@@ -109,7 +110,7 @@ final class MultipartSerializer implements IContentReader {
                value = new HttpInputStream[] { (HttpInputStream) value };
             }
          } else if (value instanceof String && field.getType() != String.class) {
-            value = FormSerializer.convert((String) value, field.getType());
+            value = ClassUtils.cast((String) value, field.getType());
          }
          field.setAccessible(true);
          field.set(result, value);

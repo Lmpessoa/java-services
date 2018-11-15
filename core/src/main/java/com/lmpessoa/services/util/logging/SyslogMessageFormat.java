@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,29 +20,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.hosting;
-
-import com.lmpessoa.services.core.services.Reuse;
-import com.lmpessoa.services.core.services.Service;
+package com.lmpessoa.services.util.logging;
 
 /**
- * Provides an interface for retrieving information about the current application.
+ * Enumerates the syslog message formats supported by the {@link SyslogHandler}.
  */
-@Service(Reuse.ALWAYS)
-public interface IApplicationInfo {
-
-   /**
-    * Returns the start-up class for this application.
-    *
-    * <p>
-    * The start-up class is the class used to configure the application and the injected services
-    * used during the lifetime of the application. This class must be informed through an
-    * initialisation parameter (<code>service.startup.classname</code>) if the application is run
-    * using an alternate application server, or the same class that called
-    * {@link ApplicationServer#start()}.
-    * </p>
-    *
-    * @return the start-up class for this application.
-    */
-   Class<?> getStartupClass();
+public enum SyslogMessageFormat {
+   BSD, IETF;
 }

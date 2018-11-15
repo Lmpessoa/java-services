@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Leonardo Pessoa
+ * Copyright (c) 2017 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,7 +22,14 @@
  */
 package com.lmpessoa.services.util.logging;
 
-public final class NullLogWriter extends LogWriter {
+import com.lmpessoa.services.util.logging.Handler;
+import com.lmpessoa.services.util.logging.LogEntry;
+
+public final class NullHandler extends Handler {
+
+   public NullHandler() {
+      super(entry -> false);
+   }
 
    @Override
    protected void append(LogEntry entry) {

@@ -37,14 +37,10 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
-import com.lmpessoa.services.core.concurrent.ExecutionService;
 import com.lmpessoa.services.core.concurrent.IExecutionService;
 import com.lmpessoa.services.core.hosting.content.Serializer;
 import com.lmpessoa.services.core.routing.IRouteTable;
@@ -56,12 +52,7 @@ import com.lmpessoa.services.core.services.IServiceMap;
 import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.util.ClassUtils;
 import com.lmpessoa.services.util.ConnectionInfo;
-import com.lmpessoa.services.util.logging.ConsoleLogWriter;
-import com.lmpessoa.services.util.logging.FileLogWriter;
 import com.lmpessoa.services.util.logging.ILogger;
-import com.lmpessoa.services.util.logging.LogWriter;
-import com.lmpessoa.services.util.logging.Logger;
-import com.lmpessoa.services.util.logging.Severity;
 
 /**
  * Represents the Application Server.
@@ -80,7 +71,7 @@ import com.lmpessoa.services.util.logging.Severity;
  * present are ignored.
  * </p>
  */
-public final class ApplicationServer implements IApplicationInfo {
+public final class ApplicationServer {
 
    private static final String CONFIGURE_SERVICES = "configureServices";
    private static final String CONFIGURE = "configure";
@@ -89,15 +80,11 @@ public final class ApplicationServer implements IApplicationInfo {
 
    private final ApplicationOptions options = new ApplicationOptions();
    private final Instant startupTime = Instant.now();
-   private final int port;
+   private final ApplicationSettings settings;
 
    private Collection<Class<?>> resources;
-   private IHostEnvironment environment;
    private ApplicationContext context;
-   private ExecutionService executor;
-   private Class<?> startupClass;
    private ServiceMap services;
-   private Logger log;
 
    /**
     * Starts the Application Server.
@@ -126,7 +113,7 @@ public final class ApplicationServer implements IApplicationInfo {
     */
    public static void shutdown() {
       if (instance != null) {
-         instance.getLogger().info("Requested application server to shut down");
+         instance.settings.getLogger().info("Requested application server to shut down");
          instance.getContext().stop();
       }
    }
@@ -159,101 +146,22 @@ public final class ApplicationServer implements IApplicationInfo {
       return "";
    }
 
-   @Override
-   public Class<?> getStartupClass() {
-      return startupClass;
-   }
-
    ApplicationServer(Class<?> startupClass) {
-      this(startupClass, new ApplicationServerInfo(startupClass));
+      this.settings = new ApplicationSettings(this, startupClass);
+      initServer();
    }
 
-   ApplicationServer(Class<?> startupClass, ApplicationServerInfo info) {
-      this(startupClass, info, getEnvironmentName(info), createLogger(info, startupClass));
-   }
-
-   ApplicationServer(Class<?> startupClass, ApplicationServerInfo info, String envName, Logger log) {
-      this.startupClass = startupClass;
-      this.log = log;
-
-      Collection<String> enable = info.getProperties("enable").values();
-      Serializer.enableXml(enable.contains("xml"));
-      this.log.enableTracing(enable.contains("trace"));
-      final String name = Character.toUpperCase(envName.charAt(0)) + envName.substring(1).toLowerCase();
-      this.environment = () -> name;
-      logStartupMessage(startupClass, info);
-
-      this.port = Integer.parseInt(info.getProperty("server.port").orElse("5617"));
-      this.executor = new ExecutionService(getRequestLimit(info), log);
-      int jobLimit = getJobsLimit(info);
-      if (jobLimit > 0) {
-         AsyncHandler.setExecutor(new ExecutionService(jobLimit, log));
-      } else {
-         AsyncHandler.setExecutor(executor);
-      }
+   ApplicationServer(ApplicationSettings settings) {
+      this.settings = settings;
+      initServer();
    }
 
    static ApplicationServer instance() {
       return instance;
    }
 
-   static Logger createLogger(ApplicationServerInfo info, Class<?> startupClass) {
-      Logger result;
-      try {
-         LogWriter writer;
-         Map<String, String> logParams = info.getProperties("logging.writer");
-         String writerType = logParams.getOrDefault("type", "console");
-         logParams.remove("type");
-         switch (writerType) {
-            case "console":
-               writer = new ConsoleLogWriter();
-               break;
-            case "file":
-               String filename = logParams.getOrDefault("filename", null);
-               logParams.remove("filename");
-               writer = new FileLogWriter(filename);
-               break;
-            default:
-               Class<?> writerClass = Class.forName(writerType);
-               writer = (LogWriter) writerClass.newInstance();
-               break;
-         }
-         Class<?> writerClass = writer.getClass();
-         for (Entry<String, String> param : logParams.entrySet()) {
-            String methodName = String.format("set%s%s", Character.toUpperCase(param.getKey().charAt(0)),
-                     param.getKey().substring(1));
-            Method[] methods = ClassUtils.findMethods(writerClass, m -> m.getName().equals(methodName));
-            if (methods.length == 1 && methods[0].getParameterCount() == 1
-                     && methods[0].getParameterTypes()[0].isAssignableFrom(param.getValue().getClass())) {
-               methods[0].invoke(writer, param.getValue());
-            }
-         }
-         result = new Logger(startupClass, writer);
-         Severity level = Severity.valueOf(info.getProperty("logging.default").orElse("INFO"));
-         result.setDefaultLevel(level);
-         Map<String, String> packages = info.getProperties("logging.packages");
-         for (int i = 0; i < packages.size() / 2; ++i) {
-            String packageName = packages.get(String.format("%d.name", i));
-            level = Severity.valueOf(packages.get(String.format("%d.level", i)));
-            result.setPackageLevel(packageName, level);
-         }
-      } catch (Exception e) {
-         result = new Logger(startupClass);
-         result.error(e);
-      }
-      return result;
-   }
-
-   Logger getLogger() {
-      return log;
-   }
-
-   IHostEnvironment getEnvironment() {
-      return environment;
-   }
-
-   ExecutionService getExecutor() {
-      return executor;
+   ApplicationSettings getSettings() {
+      return settings;
    }
 
    NextHandler getFirstResponder() {
@@ -264,9 +172,9 @@ public final class ApplicationServer implements IApplicationInfo {
       if (resources == null) {
          Collection<String> classes = null;
          try {
-            classes = ClassUtils.scanInProjectOf(startupClass);
+            classes = ClassUtils.scanInProjectOf(settings.getStartupClass());
          } catch (IOException e) {
-            log.error(e);
+            settings.getLogger().error(e);
             System.exit(1);
          }
          Collection<Class<?>> result = new ArrayList<>();
@@ -282,7 +190,7 @@ public final class ApplicationServer implements IApplicationInfo {
                }
             } catch (ClassNotFoundException e) {
                // Should never get here since we fetched existing class names
-               log.debug(e);
+               settings.getLogger().debug(e);
             }
          }
          resources = Collections.unmodifiableCollection(result);
@@ -296,11 +204,11 @@ public final class ApplicationServer implements IApplicationInfo {
 
          // Registers Singleton services
          services.put(IServiceMap.class, Wrapper.wrap(services));
-         services.put(ILogger.class, Wrapper.wrap(log));
-         services.put(IApplicationInfo.class, Wrapper.wrap(this));
+         services.put(ILogger.class, Wrapper.wrap(settings.getLogger()));
+         services.put(IApplicationSettings.class, Wrapper.wrap(settings));
          services.put(IApplicationOptions.class, Wrapper.wrap(options));
-         services.put(IHostEnvironment.class, environment);
-         services.put(IExecutionService.class, Wrapper.wrap(executor));
+         services.put(IHostEnvironment.class, settings.getEnvironment());
+         services.put(IExecutionService.class, Wrapper.wrap(settings.getJobExecutor()));
 
          // Registers PerRequest services
          services.put(IRouteTable.class, (Supplier<IRouteTable>) () -> null);
@@ -320,11 +228,15 @@ public final class ApplicationServer implements IApplicationInfo {
 
    synchronized ApplicationContext getContext() {
       if (context == null) {
-         RouteTable routes = new RouteTable(services, log);
+         RouteTable routes = new RouteTable(services, settings.getLogger());
          routes.putAll(getResources());
-         context = new ApplicationContext(this, port, "http", routes);
+         context = new ApplicationContext(this, settings.getHttpPort(), "http", routes);
       }
       return context;
+   }
+
+   ConnectionInfo getConnectionInfo() {
+      return getServices().get(ConnectionInfo.class);
    }
 
    private static Class<?> findStartupClass() {
@@ -362,37 +274,31 @@ public final class ApplicationServer implements IApplicationInfo {
       }
    }
 
-   private static String getEnvironmentName(ApplicationServerInfo info) {
-      String name = System.getProperty("service.environment");
-      if (name == null) {
-         name = info.getProperty("environment").orElse(null);
-      }
-      if (name == null) {
-         name = System.getenv("SERVICES_ENVIRONMENT_NAME");
-      }
-      if (name == null) {
-         name = "Development";
-      }
-      return Character.toUpperCase(name.charAt(0)) + name.substring(1).toLowerCase();
+   private void initServer() {
+      logStartupMessage(settings.getStartupClass(), settings.getApplicationName());
+      Serializer.enableXml(settings.isXmlEnabled());
+      AsyncHandler.setExecutor(settings.getJobExecutor());
    }
 
    private void configureServices(IServiceMap services) {
-      String envSpecific = CONFIGURE + environment.getName() + "Services";
+      IHostEnvironment env = settings.getEnvironment();
+      Class<?> startupClass = settings.getStartupClass();
+      String envSpecific = CONFIGURE + env.getName() + "Services";
       Method configMethod = ClassUtils.getMethod(startupClass, envSpecific, IServiceMap.class);
       Object[] args = new Object[] { services };
       if (configMethod == null || !Modifier.isStatic(configMethod.getModifiers())) {
          configMethod = ClassUtils.getMethod(startupClass, CONFIGURE_SERVICES, IServiceMap.class,
                   IHostEnvironment.class);
-         args = new Object[] { services, environment };
+         args = new Object[] { services, env };
       }
       if (configMethod == null || !Modifier.isStatic(configMethod.getModifiers())) {
          configMethod = ClassUtils.getMethod(startupClass, CONFIGURE_SERVICES, IServiceMap.class);
          args = new Object[] { services };
       }
       if (configMethod == null) {
-         log.info("Application has no service configuration method");
+         settings.getLogger().info("Application has no service configuration method");
       } else if (!CONFIGURE_SERVICES.equals(configMethod.getName())) {
-         log.info("Using service configuration specific for the environment");
+         settings.getLogger().info("Using service configuration specific for the environment");
       }
       if (configMethod == null || !Modifier.isStatic(configMethod.getModifiers())) {
          return;
@@ -400,7 +306,7 @@ public final class ApplicationServer implements IApplicationInfo {
       try {
          configMethod.invoke(null, args);
       } catch (IllegalAccessException | InvocationTargetException e) {
-         log.debug(e);
+         settings.getLogger().debug(e);
       }
    }
 
@@ -424,7 +330,9 @@ public final class ApplicationServer implements IApplicationInfo {
    }
 
    private void configureApp(ServiceMap configMap) {
-      String envSpecific = CONFIGURE + environment.getName();
+      IHostEnvironment env = settings.getEnvironment();
+      Class<?> startupClass = settings.getStartupClass();
+      String envSpecific = CONFIGURE + env.getName();
       Method[] methods = ClassUtils.findMethods(startupClass,
                m -> envSpecific.equals(m.getName()) && Modifier.isStatic(m.getModifiers()));
       if (methods.length != 1) {
@@ -432,9 +340,9 @@ public final class ApplicationServer implements IApplicationInfo {
                   m -> CONFIGURE.equals(m.getName()) && Modifier.isStatic(m.getModifiers()));
       }
       if (methods.length != 1) {
-         log.info("Application has no configuration method");
+         settings.getLogger().info("Application has no configuration method");
       } else if (!CONFIGURE.equals(methods[0].getName())) {
-         log.info("Using application configuration specific for the environment");
+         settings.getLogger().info("Using application configuration specific for the environment");
       }
       if (methods.length != 1) {
          return;
@@ -442,7 +350,7 @@ public final class ApplicationServer implements IApplicationInfo {
       try {
          configMap.invoke(startupClass, methods[0]);
       } catch (IllegalAccessException | InvocationTargetException | InstantiationException e) {
-         log.debug(e);
+         settings.getLogger().debug(e);
       }
    }
 
@@ -464,39 +372,26 @@ public final class ApplicationServer implements IApplicationInfo {
       try {
          ct.join();
       } catch (InterruptedException e) {
-         log.warning(e);
+         settings.getLogger().warning(e);
          Thread.currentThread().interrupt();
       }
-      executor.shutdown();
-      logShutdownMessage();
+      settings.getMainExecutor().shutdown();
+      settings.getJobExecutor().shutdown();
       try {
-         log.join();
+         settings.getLogger().join();
       } catch (InterruptedException e) {
-         log.warning(e);
+         settings.getLogger().warning(e);
          Thread.currentThread().interrupt();
       }
+      logShutdownMessage();
    }
 
-   private int getRequestLimit(ApplicationServerInfo info) {
-      Optional<Integer> result = info.getIntProperty("concurrent.limit");
-      if (!result.isPresent()) {
-         result = info.getIntProperty("concurrent.limit.requests");
-      }
-      return result.orElse(0);
-   }
-
-   private int getJobsLimit(ApplicationServerInfo info) {
-      Optional<Integer> result = info.getIntProperty("concurrent.limit.jobs");
-      return result.orElse(0);
-   }
-
-   private void logStartupMessage(Class<?> startupClass, ApplicationServerInfo info) {
+   private void logStartupMessage(Class<?> startupClass, String appName) {
       StringBuilder message = new StringBuilder();
       message.append("Starting application");
-      Optional<String> name = info.getProperty("application.name");
-      if (name.isPresent()) {
+      if (appName != null) {
          message.append(' ');
-         message.append(name.get());
+         message.append(appName);
       }
       String packVersion = startupClass.getPackage().getImplementationVersion();
       if (packVersion != null && !packVersion.isEmpty()) {
@@ -504,13 +399,13 @@ public final class ApplicationServer implements IApplicationInfo {
          message.append(packVersion);
       }
       message.append(" on '");
-      message.append(getEnvironment().getName());
+      message.append(settings.getEnvironment().getName());
       message.append("' environment");
-      log.info(message);
+      settings.getLogger().info(message);
    }
 
    private void logCreatedContext(ApplicationContext context) {
-      log.info("Application is now listening on ports: %d [%s]", context.getPort(), context.getName());
+      settings.getLogger().info("Application is now listening on ports: %d [%s]", context.getPort(), context.getName());
    }
 
    private void logStartedMessage() {
@@ -518,7 +413,7 @@ public final class ApplicationServer implements IApplicationInfo {
       Duration duration = Duration.between(this.startupTime, Instant.now());
       BigDecimal uptime = new BigDecimal(duration.toMillis()).divide(thousand);
       BigDecimal vmUptime = new BigDecimal(ManagementFactory.getRuntimeMXBean().getUptime()).divide(thousand);
-      log.info("Started application in %s seconds (VM running for %s seconds)", uptime, vmUptime);
+      settings.getLogger().info("Started application in %s seconds (VM running for %s seconds)", uptime, vmUptime);
    }
 
    private void logShutdownMessage() {
@@ -560,6 +455,6 @@ public final class ApplicationServer implements IApplicationInfo {
       if (durationStr.length() > 0) {
          durationStr.insert(0, " after ");
       }
-      log.info("Application stopped%s", durationStr);
+      settings.getLogger().info("Application stopped%s", durationStr);
    }
 }

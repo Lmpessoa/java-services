@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,28 +22,22 @@
  */
 package com.lmpessoa.services.util.logging;
 
-/**
- * Defines the common interface for log writers.
- *
- * <p>
- * Log writing classes are responsible for ensuring the availability and disposal of every resource
- * they require to fulfill the storage of the log entry.
- * </p>
- */
-public abstract class LogWriter {
+import java.util.function.Predicate;
 
-   protected void prepare() {
-      // Nothing to do here
+final class TestFormattedHandler extends FormattedHandler {
+
+   public TestFormattedHandler(Predicate<LogEntry> filter) {
+      super(filter);
    }
 
-   /**
-    * Appends the given log entry to the underlying log storage.
-    *
-    * @param entry the log entry to be stored.
-    */
-   protected abstract void append(LogEntry entry);
+   private String entry;
 
-   protected void finished() {
-      // Nothing to do here
+   @Override
+   protected void append(String entry) {
+      this.entry = entry;
+   }
+
+   String getLastEntry() {
+      return entry;
    }
 }

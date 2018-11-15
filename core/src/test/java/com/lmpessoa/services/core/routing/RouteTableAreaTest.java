@@ -34,11 +34,11 @@ import org.junit.Test;
 import com.lmpessoa.services.core.routing.RouteTable;
 import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.util.logging.Logger;
-import com.lmpessoa.services.util.logging.NullLogWriter;
+import com.lmpessoa.services.util.logging.NullHandler;
 
 public final class RouteTableAreaTest {
 
-   private final Logger log = new Logger(RouteTableAreaTest.class, new NullLogWriter());
+   private final Logger log = new Logger(new NullHandler());
    private ServiceMap services;
    private RouteTable table;
 

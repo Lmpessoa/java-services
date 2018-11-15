@@ -44,7 +44,7 @@ public final class LogFormatterTest {
 
    private final LogEntry entry = new LogEntry(
             ZonedDateTime.of(LocalDateTime.of(2017, 6, 5, 5, 42, 7), ZoneId.of("America/Sao_Paulo")), Severity.ERROR,
-            "Test", null, LogFormatterTest.class);
+            "Test", null, null);
 
    @Test
    public void testFormatTimeWeb() throws ParseException {
@@ -144,14 +144,13 @@ public final class LogFormatterTest {
 
    @Test
    public void testCompleteFormatter() throws ParseException {
-      String result = formatWith(FormattedLogWriter.DEFAULT);
-      assertEquals(
-               "2017-06-05T05:42:07.000   ERROR -- [localhost      ] c.l.s.util.logging.LogFormatterTest  : Test",
+      String result = formatWith(FormattedHandler.DEFAULT);
+      assertEquals("2017-06-05T05:42:07.000   ERROR -- [localhost      ] c.l.s.util.logging.LogFormatterTest  : Test",
                result);
    }
 
    private String formatWith(String template) throws ParseException {
       LogFormatter formatter = LogFormatter.parse(template);
-      return formatter.format(entry);
+      return formatter.format(entry, entry.getMessage());
    }
 }

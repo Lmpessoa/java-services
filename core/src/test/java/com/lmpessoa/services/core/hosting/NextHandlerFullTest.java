@@ -27,6 +27,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -50,8 +51,8 @@ import com.lmpessoa.services.core.hosting.HttpInputStream;
 import com.lmpessoa.services.core.hosting.HttpRequest;
 import com.lmpessoa.services.core.hosting.HttpRequestImpl;
 import com.lmpessoa.services.core.hosting.HttpResult;
-import com.lmpessoa.services.core.hosting.IApplicationInfo;
 import com.lmpessoa.services.core.hosting.IApplicationOptions;
+import com.lmpessoa.services.core.hosting.IApplicationSettings;
 import com.lmpessoa.services.core.hosting.NotImplementedException;
 import com.lmpessoa.services.core.hosting.Redirect;
 import com.lmpessoa.services.core.routing.HttpGet;
@@ -64,14 +65,14 @@ import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.util.ConnectionInfo;
 import com.lmpessoa.services.util.logging.ILogger;
 import com.lmpessoa.services.util.logging.Logger;
-import com.lmpessoa.services.util.logging.NullLogWriter;
+import com.lmpessoa.services.util.logging.NullHandler;
 
 public final class NextHandlerFullTest {
 
    @Rule
    public ExpectedException thrown = ExpectedException.none();
 
-   private final Logger log = new Logger(NextHandlerFullTest.class, new NullLogWriter());
+   private final Logger log = new Logger(new NullHandler());
    private final ConnectionInfo connect;
    private ApplicationOptions app;
    private ServiceMap services;
@@ -89,8 +90,10 @@ public final class NextHandlerFullTest {
    public void setup() throws NoSuchMethodException {
       services = new ServiceMap();
       services.put(ILogger.class, log);
-      services.put(ConnectionInfo.class, () -> connect);
-      services.put(IApplicationInfo.class, (IApplicationInfo) () -> NextHandlerFullTest.class);
+      services.put(ConnectionInfo.class, (Supplier<ConnectionInfo>) () -> connect);
+      IApplicationSettings settings = mock(IApplicationSettings.class);
+      when(settings.getStartupClass()).then(n -> NextHandlerFullTest.class);
+      services.put(IApplicationSettings.class, settings);
       services.put(HeaderMap.class);
       services.put(RouteMatch.class, (Supplier<RouteMatch>) () -> route);
 
@@ -231,7 +234,7 @@ public final class NextHandlerFullTest {
                .setMethod("GET") //
                .setPath(path) //
                .build();
-      services.put(HttpRequest.class, () -> request);
+      services.put(HttpRequest.class, (Supplier<HttpRequest>) () -> request);
       route = RouteTableBridge.match(routes, request);
       return (HttpResult) app.getFirstResponder(services).invoke();
    }
@@ -239,7 +242,7 @@ public final class NextHandlerFullTest {
    private HttpResult performFile(String resource) throws IOException {
       try (InputStream res = NextHandlerFullTest.class.getResourceAsStream(resource)) {
          request = new HttpRequestImpl(res);
-         services.put(HttpRequest.class, () -> request);
+         services.put(HttpRequest.class, (Supplier<HttpRequest>) () -> request);
          route = RouteTableBridge.match(routes, request);
          return (HttpResult) app.getFirstResponder(services).invoke();
       }

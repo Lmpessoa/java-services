@@ -80,8 +80,8 @@ public final class ExecutionService implements IExecutionService {
     * Creates a new {@code ExecutionService} with the maximum number of concurrent jobs.
     *
     * @param maxConcurrentJobs the maximum number of concurrent tasks this {@code ExecutorService}
-    *           can execute. If this number is zero or negative, the service will not limit the
-    *           amount of tasks to execute concurrently.
+    *        can execute. If this number is zero or negative, the service will not limit the
+    *        amount of tasks to execute concurrently.
     * @param log a logger used to register issues while running tasks.
     */
    public ExecutionService(int maxConcurrentJobs, ILogger log) {
@@ -519,7 +519,5 @@ public final class ExecutionService implements IExecutionService {
                   .findFirst();
          return id.orElse("worker");
       }
-
    }
-
 }

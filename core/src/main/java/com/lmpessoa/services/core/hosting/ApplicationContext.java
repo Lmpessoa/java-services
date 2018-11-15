@@ -53,7 +53,7 @@ class ApplicationContext implements Runnable {
             acceptClientToHandle();
          }
       } catch (IOException e) {
-         server.getLogger().error(e);
+         getLogger().error(e);
       }
    }
 
@@ -74,15 +74,15 @@ class ApplicationContext implements Runnable {
    }
 
    Class<?> getStartupClass() {
-      return server.getStartupClass();
+      return server.getSettings().getStartupClass();
    }
 
    Logger getLogger() {
-      return server.getLogger();
+      return server.getSettings().getLogger();
    }
 
    IHostEnvironment getEnvironment() {
-      return server.getEnvironment();
+      return server.getSettings().getEnvironment();
    }
 
    ServiceMap getServices() {
@@ -90,7 +90,7 @@ class ApplicationContext implements Runnable {
    }
 
    ExecutionService getExecutor() {
-      return server.getExecutor();
+      return server.getSettings().getMainExecutor();
    }
 
    NextHandler getFirstResponder() {
@@ -113,11 +113,11 @@ class ApplicationContext implements Runnable {
       try {
          Socket client = socket.accept();
          ApplicationResponder job = new ApplicationResponder(this, client);
-         server.getExecutor().submit(job, "request");
+         getExecutor().submit(job, "request");
       } catch (SocketTimeoutException e) {
          // just ignore
       } catch (IOException e) {
-         server.getLogger().error(e);
+         getLogger().error(e);
       }
    }
 }

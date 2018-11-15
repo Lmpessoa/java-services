@@ -30,6 +30,22 @@ import java.util.Arrays;
 import com.lmpessoa.services.core.services.Reuse;
 import com.lmpessoa.services.core.services.Service;
 
+/**
+ * A {@code ConnectionInfo} provides information about the parts involved in an HTTP client/server
+ * connection.
+ * <p>
+ * Three parts may be involved in a connection:
+ * </p>
+ * <ul>
+ * <li>the client or originator of the request ({@code Remote});</li>
+ * <li>the server or destination of the request ({@code Server}); and</li>
+ * <li>the machine responding to the request ({@code Local}).</li>
+ * </ul>
+ * <p>
+ * It is possible that {@code Server} and {@code Local} are the same machine but it is recommended
+ * they are treated as separate.
+ * </p>
+ */
 @Service(Reuse.REQUEST)
 public final class ConnectionInfo {
 
@@ -38,45 +54,68 @@ public final class ConnectionInfo {
    private final String host;
    private final int port;
 
+   private InetAddress local = null;
+
    /**
-    * Returns the local port number to which this socket is bound.
-    *
+    * Returns the local address to which this connection is bound.
     * <p>
-    * If the socket was bound prior to being closed, then this method will continue to return the local
-    * port number after the socket is closed.
+    * If the connection was connected prior to being closed, then this method will continue to return
+    * the connected address after the connection is closed.
     * </p>
     *
-    * @return the local port number to which this socket is bound or -1 if the socket is not bound yet.
+    * @return the local address to which this connection is bound.
+    */
+   public InetAddress getLocalAddress() {
+      if (local == null) {
+         InetAddress addr = socket.getLocalAddress();
+         try {
+            final InetAddress localHost = InetAddress.getLocalHost();
+            local = InetAddress.getByAddress(localHost.getHostName(), addr.getAddress());
+         } catch (IOException e) {
+            // Shall not happend since the host name is given
+            local = addr;
+         }
+      }
+      return local;
+   }
+
+   /**
+    * Returns the local port number to which this connection is bound.
+    * <p>
+    * If the connection was bound prior to being closed, then this method will continue to return the
+    * local port number after the connection is closed.
+    * </p>
+    *
+    * @return the local port number to which this connection is bound or -1 if the connection is not
+    * bound yet.
     */
    public int getLocalPort() {
       return socket.getLocalPort();
    }
 
    /**
-    * Returns the address to which the socket is connected.
-    *
+    * Returns the address to which the connection is connected.
     * <p>
-    * If the socket was connected prior to being closed, then this method will continue to return the
-    * connected address after the socket is closed.
+    * If the connection was connected prior to being closed, then this method will continue to return
+    * the connected address after the connection is closed.
     * </p>
     *
-    * @return the remote IP address to which this socket is connected, or null if the socket is not
-    * connected.
+    * @return the remote IP address to which this connection is connected, or null if the connection is
+    * not connected.
     */
    public InetAddress getRemoteAddress() {
       return socket.getInetAddress();
    }
 
    /**
-    * Returns the remote port number to which this socket is connected.
-    *
+    * Returns the remote port number to which this connection is connected.
     * <p>
-    * If the socket was connected prior to being closed, then this method will continue to return the
-    * connected port number after the socket is closed.
+    * If the connection was connected prior to being closed, then this method will continue to return
+    * the connected port number after the connection is closed.
     * </p>
     *
-    * @return the remote port number to which this socket is connected, or 0 if the socket is not
-    * connected yet.
+    * @return the remote port number to which this connection is connected, or 0 if the connection is
+    * not connected yet.
     */
    public int getRemotePort() {
       return socket.getPort();
@@ -117,7 +156,6 @@ public final class ConnectionInfo {
 
    /**
     * Closes this connection.
-    *
     * <p>
     * It is not recommended applications explicitly close connections.
     * </p>
@@ -127,7 +165,7 @@ public final class ConnectionInfo {
     * prevent an unsent response from being sent back to the user agent.
     * </p>
     *
-    * @throws IOException if an I/O error occurs when closing this socket.
+    * @throws IOException if an I/O error occurs when closing this connection.
     */
    public void close() throws IOException {
       socket.close();

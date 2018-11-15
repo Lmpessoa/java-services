@@ -53,11 +53,11 @@ import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.util.ConnectionInfo;
 import com.lmpessoa.services.util.logging.ILogger;
 import com.lmpessoa.services.util.logging.Logger;
-import com.lmpessoa.services.util.logging.NullLogWriter;
+import com.lmpessoa.services.util.logging.NullHandler;
 
 public final class AsyncHandlerTest {
 
-   private static final ILogger log = new Logger(AsyncHandlerTest.class, new NullLogWriter());
+   private static final ILogger log = new Logger(new NullHandler());
    private static final ExecutionService executor = new ExecutionService(1, log);
    private static final ApplicationOptions options = new ApplicationOptions();
    private static final String baseUrl = "https://lmpessoa.com" + options.getAsyncFeedbackPath();
