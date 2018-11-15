@@ -22,6 +22,8 @@
  */
 package com.lmpessoa.services.core.hosting;
 
+import static com.lmpessoa.services.core.routing.HttpMethod.GET;
+import static com.lmpessoa.services.core.routing.HttpMethod.POST;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -37,14 +39,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.lmpessoa.services.core.concurrent.ExecutionService;
-import com.lmpessoa.services.core.hosting.ApplicationContext;
-import com.lmpessoa.services.core.hosting.ApplicationRequestJob;
-import com.lmpessoa.services.core.hosting.ApplicationServer;
-import com.lmpessoa.services.core.hosting.ApplicationSettings;
-import com.lmpessoa.services.core.hosting.ContentType;
-import com.lmpessoa.services.core.hosting.Headers;
-import com.lmpessoa.services.core.hosting.HttpInputStream;
 import com.lmpessoa.services.core.routing.HttpGet;
+import com.lmpessoa.services.core.routing.HttpMethod;
 import com.lmpessoa.services.core.routing.IRouteTable;
 import com.lmpessoa.services.core.routing.Route;
 import com.lmpessoa.services.core.routing.RouteTable;
@@ -89,25 +85,25 @@ public final class ApplicationResponseTest {
 
    @Test
    public void testJobRequestEmpty() throws InterruptedException, IOException {
-      String[] result = runJob("GET", "/test/empty");
+      String[] result = runJob(GET, "/test/empty");
       assertEquals("HTTP/1.1 204 No Content", result[0]);
    }
 
    @Test
    public void testJobRequestNotFound() throws InterruptedException, IOException {
-      String[] result = runJob("GET", "/test/notfound");
+      String[] result = runJob(GET, "/test/notfound");
       assertEquals("HTTP/1.1 404 Not Found", result[0]);
    }
 
    @Test
    public void testJobRequestWrongMethod() throws InterruptedException, IOException {
-      String[] result = runJob("POST", "/test/empty");
+      String[] result = runJob(POST, "/test/empty");
       assertEquals("HTTP/1.1 405 Method Not Allowed", result[0]);
    }
 
    @Test
    public void testJobResquestString() throws InterruptedException, IOException {
-      String[] result = runJob("GET", "/test");
+      String[] result = runJob(GET, "/test");
       assertArrayEquals(new String[] { //
                "HTTP/1.1 200 OK", //
                "Content-Type: text/plain; charset=\"utf-8\"", //
@@ -118,7 +114,7 @@ public final class ApplicationResponseTest {
 
    @Test
    public void testJobRequestDownload() throws InterruptedException, IOException {
-      String[] result = runJob("GET", "/test/download");
+      String[] result = runJob(GET, "/test/download");
       assertArrayEquals(new String[] { //
                "HTTP/1.1 200 OK", //
                "Content-Type: text/plain; charset=\"utf-8\"", //
@@ -130,19 +126,19 @@ public final class ApplicationResponseTest {
 
    @Test
    public void testJobRequestAllowed() throws InterruptedException, IOException {
-      String[] result = runJob("GET", "/test/empty", true);
+      String[] result = runJob(GET, "/test/empty", true);
       assertEquals("HTTP/1.1 204 No Content", result[0]);
    }
 
    @Test
    public void testJobRequestUnauthenticated() throws InterruptedException, IOException {
-      String[] result = runJob("POST", "/test");
+      String[] result = runJob(POST, "/test");
       assertEquals("HTTP/1.1 401 Unauthorized", result[0]);
    }
 
    @Test
    public void testJobRequestAuthenticated() throws InterruptedException, IOException {
-      String[] result = runJob("POST", "/test", true);
+      String[] result = runJob(POST, "/test", true);
       assertArrayEquals(new String[] { "HTTP/1.1 200 OK", //
                "Content-Type: text/plain; charset=\"utf-8\"", //
                "Content-Length: 4", //
@@ -166,7 +162,8 @@ public final class ApplicationResponseTest {
       @Route("download")
       public HttpInputStream download() {
          Charset utf8 = Charset.forName("UTF-8");
-         HttpInputStream result = new HttpInputStream(ContentType.TEXT, "Test".getBytes(utf8), utf8, "test.txt");
+         HttpInputStream result = new HttpInputStream(ContentType.TEXT, "Test".getBytes(utf8), utf8,
+                  "test.txt");
          result.setDownloadable(true);
          return result;
       }
@@ -177,11 +174,13 @@ public final class ApplicationResponseTest {
       }
    }
 
-   private String[] runJob(String method, String path) throws InterruptedException, IOException {
+   private String[] runJob(HttpMethod method, String path)
+      throws InterruptedException, IOException {
       return runJob(method, path, false);
    }
 
-   private String[] runJob(String method, String path, boolean useIdentity) throws InterruptedException, IOException {
+   private String[] runJob(HttpMethod method, String path, boolean useIdentity)
+      throws InterruptedException, IOException {
       HttpRequestBuilder builder = new HttpRequestBuilder().setMethod(method).setPath(path);
       if (useIdentity) {
          builder.addHeader(Headers.AUTHORIZATION, "Token sample");

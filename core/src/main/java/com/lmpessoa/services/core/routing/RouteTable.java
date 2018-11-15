@@ -108,7 +108,8 @@ public final class RouteTable implements IRouteTable {
 
    @Override
    public Collection<RouteEntry> putAll(String area, Collection<Class<?>> classes) {
-      return putClasses(classes.stream().filter(c -> area != null).collect(Collectors.toMap(c -> c, c -> area)));
+      return putClasses(classes.stream().filter(c -> area != null).collect(
+               Collectors.toMap(c -> c, c -> area)));
    }
 
    @Override
@@ -124,8 +125,8 @@ public final class RouteTable implements IRouteTable {
     * Returns a route match for the given request.
     *
     * <p>
-    * In other words, this method is responsible for reading information from a request and return an
-    * object that can be used to invoke the target method with the parameters extracted from such
+    * In other words, this method is responsible for reading information from a request and return
+    * an object that can be used to invoke the target method with the parameters extracted from such
     * request. Note that this method, instead of throwing an exception if there is no match for the
     * request, returns the intended exceptions as route matches. Invoking those route matches raises
     * the respective exception.
@@ -143,7 +144,7 @@ public final class RouteTable implements IRouteTable {
             continue;
          }
          found = true;
-         HttpMethod method = HttpMethod.valueOf(request.getMethod());
+         HttpMethod method = request.getMethod();
          MethodEntry methodEntry = entry.getValue().get(method);
          if (methodEntry == null) {
             continue;
@@ -176,14 +177,15 @@ public final class RouteTable implements IRouteTable {
     * Returns the path to a method in this route table.
     *
     * <p>
-    * This method does the inverse of {@link #matches(IRouteRequest)}. It receives information about a
-    * method (including arguments) and returns a path in this route table that leads to that method.
+    * This method does the inverse of {@link #matches(IRouteRequest)}. It receives information about
+    * a method (including arguments) and returns a path in this route table that leads to that
+    * method.
     * </p>
     *
     * <p>
     * Note however that there is no guarantee the method will be reached through the returned path
-    * since other factors during the call to {@code matches(...)} can lead to a different method (such
-    * as the HTTP method used and body arguments).
+    * since other factors during the call to {@code matches(...)} can lead to a different method
+    * (such as the HTTP method used and body arguments).
     * </p>
     *
     * @param clazz
@@ -197,7 +199,8 @@ public final class RouteTable implements IRouteTable {
       for (Entry<RoutePattern, Map<HttpMethod, MethodEntry>> endpoint : endpoints.entrySet()) {
          for (Entry<HttpMethod, MethodEntry> entry : endpoint.getValue().entrySet()) {
             final MethodEntry methodEntry = entry.getValue();
-            if (clazz == methodEntry.getResourceClass() && isMethodArgsCompatible(methodEntry, methodName, args)) {
+            if (clazz == methodEntry.getResourceClass()
+                     && isMethodArgsCompatible(methodEntry, methodName, args)) {
                return endpoint.getKey().getPathWithArgs(args);
             }
          }
@@ -289,12 +292,13 @@ public final class RouteTable implements IRouteTable {
          for (HttpMethod methodName : methodNames) {
             if (map.containsKey(methodName)) {
                MethodEntry entry = map.get(methodName);
-               result.add(new RouteEntry(method, String.format("%s %s", methodName, methodPat), entry.getMethod()));
+               result.add(new RouteEntry(method, String.format("%s %s", methodName, methodPat),
+                        entry.getMethod()));
                continue;
             }
             Constructor<?> constructor = clazz.getConstructors()[0];
-            map.put(methodName,
-                     new MethodEntry(clazz, method, constructor.getParameterCount(), methodPat.getContentClass()));
+            map.put(methodName, new MethodEntry(clazz, method, constructor.getParameterCount(),
+                     methodPat.getContentClass()));
             result.add(new RouteEntry(method, String.format("%s %s", methodName, methodPat)));
 
          }
@@ -311,7 +315,8 @@ public final class RouteTable implements IRouteTable {
                method.getAnnotation(HttpOptions.class) };
       HttpMethod[] result = Arrays.stream(methods)
                .filter(Objects::nonNull)
-               .map(a -> HttpMethod.valueOf(a.annotationType().getSimpleName().substring(4).toUpperCase()))
+               .map(a -> HttpMethod
+                        .valueOf(a.annotationType().getSimpleName().substring(4).toUpperCase()))
                .toArray(HttpMethod[]::new);
       if (result.length > 0) {
          return result;
@@ -332,7 +337,8 @@ public final class RouteTable implements IRouteTable {
       }
       Constructor<?>[] constructors = clazz.getConstructors();
       if (constructors.length != 1) {
-         throw new NoSingleMethodException("Class " + clazz.getName() + " must have only one constructor",
+         throw new NoSingleMethodException(
+                  "Class " + clazz.getName() + " must have only one constructor",
                   constructors.length);
       }
    }
@@ -342,7 +348,8 @@ public final class RouteTable implements IRouteTable {
       int group = 1;
       for (Class<?> param : params) {
          try {
-            Object obj = services.contains(param) ? services.get(param) : convert(matcher.group(group++), param);
+            Object obj = services.contains(param) ? services.get(param)
+                     : convert(matcher.group(group++), param);
             result.add(obj);
          } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
             throw new InternalServerError(e);
@@ -364,7 +371,8 @@ public final class RouteTable implements IRouteTable {
       return valueOf.invoke(null, value);
    }
 
-   private boolean isMethodArgsCompatible(MethodEntry methodEntry, String methodName, Object[] args) {
+   private boolean isMethodArgsCompatible(MethodEntry methodEntry, String methodName,
+      Object[] args) {
       Method method = methodEntry.getMethod();
       if (!method.getName().equals(methodName)) {
          return false;

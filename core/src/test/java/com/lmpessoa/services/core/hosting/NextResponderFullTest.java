@@ -217,10 +217,7 @@ public final class NextResponderFullTest {
    }
 
    private HttpResult perform(String path) throws IOException {
-      request = new HttpRequestBuilder() //
-               .setMethod("GET") //
-               .setPath(path) //
-               .build();
+      request = new HttpRequestBuilder().setPath(path).build();
       services.put(HttpRequest.class, (Supplier<HttpRequest>) () -> request);
       route = routes.matches(request);
       return (HttpResult) app.getFirstResponder().invoke();

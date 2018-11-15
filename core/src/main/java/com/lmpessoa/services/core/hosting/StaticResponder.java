@@ -30,6 +30,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.lmpessoa.services.core.routing.HttpMethod;
 import com.lmpessoa.services.core.routing.RouteMatch;
 
 final class StaticResponder {
@@ -43,8 +44,9 @@ final class StaticResponder {
    }
 
    public Object invoke(IApplicationSettings app, HttpRequest request, RouteMatch route) {
-      if (staticPath != null && "GET".equals(request.getMethod())
-               && (route instanceof NotFoundException || route instanceof MethodNotAllowedException)) {
+      if (staticPath != null && request.getMethod() == HttpMethod.GET
+               && (route instanceof NotFoundException
+                        || route instanceof MethodNotAllowedException)) {
          Class<?> startupClass = app.getStartupClass();
          URL resource = startupClass.getResource(staticPath + request.getPath());
          if (resource != null) {

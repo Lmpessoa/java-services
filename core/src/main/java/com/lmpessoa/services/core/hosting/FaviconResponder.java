@@ -25,6 +25,7 @@ package com.lmpessoa.services.core.hosting;
 import java.io.IOException;
 import java.net.URL;
 
+import com.lmpessoa.services.core.routing.HttpMethod;
 import com.lmpessoa.services.util.logging.ILogger;
 
 final class FaviconResponder {
@@ -37,7 +38,7 @@ final class FaviconResponder {
    }
 
    public Object invoke(HttpRequest request, IApplicationSettings settings, ILogger log) {
-      if ("GET".equals(request.getMethod()) && request.getPath().endsWith(FAVICON)) {
+      if (request.getMethod() == HttpMethod.GET && request.getPath().endsWith(FAVICON)) {
          Class<?> startupClass = settings.getStartupClass();
          URL iconUrl = null;
          if (startupClass != null) {

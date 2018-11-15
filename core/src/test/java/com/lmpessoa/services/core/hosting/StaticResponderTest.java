@@ -22,6 +22,8 @@
  */
 package com.lmpessoa.services.core.hosting;
 
+import static com.lmpessoa.services.core.routing.HttpMethod.GET;
+import static com.lmpessoa.services.core.routing.HttpMethod.POST;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -32,14 +34,7 @@ import java.io.IOException;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.lmpessoa.services.core.hosting.ContentType;
-import com.lmpessoa.services.core.hosting.HttpInputStream;
-import com.lmpessoa.services.core.hosting.HttpRequest;
-import com.lmpessoa.services.core.hosting.IApplicationSettings;
-import com.lmpessoa.services.core.hosting.MethodNotAllowedException;
-import com.lmpessoa.services.core.hosting.NextResponder;
-import com.lmpessoa.services.core.hosting.NotFoundException;
-import com.lmpessoa.services.core.hosting.StaticResponder;
+import com.lmpessoa.services.core.routing.HttpMethod;
 import com.lmpessoa.services.core.routing.RouteMatch;
 
 public class StaticResponderTest {
@@ -63,7 +58,7 @@ public class StaticResponderTest {
 
    @Test
    public void testGetMissingAll() {
-      HttpRequest request = mockRequest("GET", "/missing.png");
+      HttpRequest request = mockRequest(GET, "/missing.png");
       RouteMatch route = new NotFoundException();
 
       Object result = responder.invoke(app, request, route);
@@ -72,7 +67,7 @@ public class StaticResponderTest {
 
    @Test
    public void testGetMissingRoute() throws IOException {
-      HttpRequest request = mockRequest("GET", "/sample.png");
+      HttpRequest request = mockRequest(GET, "/sample.png");
       RouteMatch route = new NotFoundException();
 
       Object result = responder.invoke(app, request, route);
@@ -84,7 +79,7 @@ public class StaticResponderTest {
 
    @Test
    public void testGetMissingStatic() {
-      HttpRequest request = mockRequest("GET", "/missing.png");
+      HttpRequest request = mockRequest(GET, "/missing.png");
       RouteMatch route = mock(RouteMatch.class);
 
       Object result = responder.invoke(app, request, route);
@@ -93,7 +88,7 @@ public class StaticResponderTest {
 
    @Test
    public void testGetBothPresent() {
-      HttpRequest request = mockRequest("GET", "/sample.png");
+      HttpRequest request = mockRequest(GET, "/sample.png");
       RouteMatch route = mock(RouteMatch.class);
 
       Object result = responder.invoke(app, request, route);
@@ -102,7 +97,7 @@ public class StaticResponderTest {
 
    @Test
    public void testPostMissingRoute() {
-      HttpRequest request = mockRequest("POST", "/missing.png");
+      HttpRequest request = mockRequest(POST, "/missing.png");
       RouteMatch route = new MethodNotAllowedException();
 
       Object result = responder.invoke(app, request, route);
@@ -111,7 +106,7 @@ public class StaticResponderTest {
 
    @Test
    public void testFileWithCustomMimeType() throws IOException {
-      HttpRequest request = mockRequest("GET", "/sample.random");
+      HttpRequest request = mockRequest(GET, "/sample.random");
       RouteMatch route = new MethodNotAllowedException();
 
       Object result = responder.invoke(app, request, route);
@@ -121,7 +116,7 @@ public class StaticResponderTest {
       }
    }
 
-   private HttpRequest mockRequest(String method, String path) {
+   private HttpRequest mockRequest(HttpMethod method, String path) {
       HttpRequest result = mock(HttpRequest.class);
       when(result.getMethod()).thenReturn(method);
       when(result.getPath()).thenReturn(path);

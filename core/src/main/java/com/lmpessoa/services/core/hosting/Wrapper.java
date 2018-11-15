@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import com.lmpessoa.services.core.concurrent.IExecutionService;
+import com.lmpessoa.services.core.routing.HttpMethod;
 import com.lmpessoa.services.core.routing.IRouteOptions;
 import com.lmpessoa.services.core.routing.IRouteTable;
 import com.lmpessoa.services.core.routing.RouteEntry;
@@ -39,8 +40,8 @@ import com.lmpessoa.services.core.security.IIdentityOptions;
 import com.lmpessoa.services.core.security.IIdentityProvider;
 import com.lmpessoa.services.util.logging.ILogger;
 
-// The issue with wrappers is that every method in the wrapped interface has to be overriden,
-// including defaults because we have no idea when a default method will be overriden in the
+// The issue with wrappers is that every method in the wrapped interface has to be overridden,
+// including defaults because we have no idea when a default method will be overridden in the
 // wrapped class.
 final class Wrapper {
 
@@ -182,7 +183,8 @@ final class Wrapper {
          }
 
          @Override
-         public void useIdentity(IIdentityProvider identityProvider, Consumer<IIdentityOptions> options) {
+         public void useIdentity(IIdentityProvider identityProvider,
+            Consumer<IIdentityOptions> options) {
             original.useIdentity(identityProvider, options);
          }
       };
@@ -214,7 +216,7 @@ final class Wrapper {
       return new HttpRequest() {
 
          @Override
-         public String getMethod() {
+         public HttpMethod getMethod() {
             return original.getMethod();
          }
 

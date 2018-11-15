@@ -43,9 +43,9 @@ public interface IRouteRequest {
     * may be returned.
     * </p>
     *
-    * @return the method of this HTTP request.
+    * @return the method of this HTTP request or {@code null} if the method is not recognised.
     */
-   String getMethod();
+   HttpMethod getMethod();
 
    /**
     * Returns the path of this HTTP request.

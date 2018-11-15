@@ -22,6 +22,9 @@
  */
 package com.lmpessoa.services.core.hosting;
 
+import static com.lmpessoa.services.core.routing.HttpMethod.DELETE;
+import static com.lmpessoa.services.core.routing.HttpMethod.GET;
+
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -34,6 +37,7 @@ import java.util.concurrent.Future;
 
 import com.lmpessoa.services.core.concurrent.Async;
 import com.lmpessoa.services.core.concurrent.ExecutionService;
+import com.lmpessoa.services.core.routing.HttpMethod;
 import com.lmpessoa.services.core.routing.RouteMatch;
 
 final class AsyncResponder {
@@ -87,8 +91,13 @@ final class AsyncResponder {
       return Redirect.accepted(asyncPath + id);
    }
 
-   private Object respondToStatusRequest(HttpRequest request, String asyncPath, ConnectionInfo connect) {
+   private Object respondToStatusRequest(HttpRequest request, String asyncPath,
+      ConnectionInfo connect) {
       UUID id;
+      HttpMethod method = request.getMethod();
+      if (method != GET && method != DELETE) {
+         throw new MethodNotAllowedException();
+      }
       try {
          id = UUID.fromString(request.getPath().substring(asyncPath.length()));
       } catch (IllegalArgumentException e) {
@@ -110,6 +119,8 @@ final class AsyncResponder {
          } catch (InterruptedException | ExecutionException | MalformedURLException e) {
             // Ignore and return the very same result
          }
+      } else if (method == DELETE) {
+         result.cancel(true);
       }
       return result;
    }

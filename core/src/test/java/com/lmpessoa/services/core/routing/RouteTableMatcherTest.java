@@ -22,6 +22,10 @@
  */
 package com.lmpessoa.services.core.routing;
 
+import static com.lmpessoa.services.core.routing.HttpMethod.DELETE;
+import static com.lmpessoa.services.core.routing.HttpMethod.PATCH;
+import static com.lmpessoa.services.core.routing.HttpMethod.POST;
+import static com.lmpessoa.services.core.routing.HttpMethod.PUT;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -42,10 +46,6 @@ import com.lmpessoa.services.core.hosting.HttpRequestBuilder;
 import com.lmpessoa.services.core.hosting.MethodNotAllowedException;
 import com.lmpessoa.services.core.hosting.NotFoundException;
 import com.lmpessoa.services.core.hosting.NotImplementedException;
-import com.lmpessoa.services.core.routing.MatchedRoute;
-import com.lmpessoa.services.core.routing.Route;
-import com.lmpessoa.services.core.routing.RouteMatch;
-import com.lmpessoa.services.core.routing.RouteTable;
 import com.lmpessoa.services.core.services.Reuse;
 import com.lmpessoa.services.core.services.Service;
 import com.lmpessoa.services.core.services.ServiceMap;
@@ -88,7 +88,8 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchesConstrainedRoute() throws NoSuchMethodException, HttpException, IOException {
+   public void testMatchesConstrainedRoute()
+      throws NoSuchMethodException, HttpException, IOException {
       RouteMatch result = table.matches(new HttpRequestBuilder().setPath("/test/abcd").build());
       assertTrue(result instanceof MatchedRoute);
       MatchedRoute route = (MatchedRoute) result;
@@ -99,14 +100,16 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchesConstrainedRouteTooShort() throws NoSuchMethodException, HttpException, IOException {
+   public void testMatchesConstrainedRouteTooShort()
+      throws NoSuchMethodException, HttpException, IOException {
       thrown.expect(NotFoundException.class);
       RouteMatch result = table.matches(new HttpRequestBuilder().setPath("/test/ab").build());
       result.invoke();
    }
 
    @Test
-   public void testMatchesConstrainedRouteTooLong() throws NoSuchMethodException, HttpException, IOException {
+   public void testMatchesConstrainedRouteTooLong()
+      throws NoSuchMethodException, HttpException, IOException {
       thrown.expect(NotFoundException.class);
       RouteMatch result = table.matches(new HttpRequestBuilder().setPath("/test/abcdefg").build());
       result.invoke();
@@ -125,7 +128,8 @@ public final class RouteTableMatcherTest {
 
    @Test
    public void testMatchesPostRoot() throws NoSuchMethodException, HttpException, IOException {
-      RouteMatch result = table.matches(new HttpRequestBuilder().setMethod("POST").setPath("/test").build());
+      RouteMatch result = table
+               .matches(new HttpRequestBuilder().setMethod(POST).setPath("/test").build());
       assertTrue(result instanceof MatchedRoute);
       MatchedRoute route = (MatchedRoute) result;
       assertEquals(TestResource.class, route.getResourceClass());
@@ -136,7 +140,8 @@ public final class RouteTableMatcherTest {
 
    @Test
    public void testMatchesPostOneArg() throws NoSuchMethodException, HttpException, IOException {
-      RouteMatch result = table.matches(new HttpRequestBuilder().setMethod("POST").setPath("/test/7").build());
+      RouteMatch result = table
+               .matches(new HttpRequestBuilder().setMethod(POST).setPath("/test/7").build());
       assertTrue(result instanceof MatchedRoute);
       MatchedRoute route = (MatchedRoute) result;
       assertEquals(TestResource.class, route.getResourceClass());
@@ -155,14 +160,16 @@ public final class RouteTableMatcherTest {
    @Test
    public void testMatchesUnregisteredMethod() throws IOException {
       thrown.expect(MethodNotAllowedException.class);
-      RouteMatch result = table.matches(new HttpRequestBuilder().setMethod("DELETE").setPath("/test/7").build());
+      RouteMatch result = table
+               .matches(new HttpRequestBuilder().setMethod(DELETE).setPath("/test/7").build());
       result.invoke();
    }
 
    @Test
    public void testMatchesHttpException() throws NoSuchMethodException, HttpException, IOException {
       thrown.expect(NotImplementedException.class);
-      RouteMatch result = table.matches(new HttpRequestBuilder().setMethod("PATCH").setPath("/test").build());
+      RouteMatch result = table
+               .matches(new HttpRequestBuilder().setMethod(PATCH).setPath("/test").build());
       assertTrue(result instanceof MatchedRoute);
       MatchedRoute route = (MatchedRoute) result;
       assertEquals(TestResource.class, route.getResourceClass());
@@ -186,7 +193,7 @@ public final class RouteTableMatcherTest {
 
    @Test
    public void testMatchesWithContent() throws IOException, NoSuchMethodException {
-      HttpRequest request = new HttpRequestBuilder().setMethod("PUT")
+      HttpRequest request = new HttpRequestBuilder().setMethod(PUT)
                .setPath("/test/12")
                .setBody("id=12&name=Test&email=test%40test.com&checked=true")
                .setContentType(ContentType.FORM)
@@ -195,7 +202,8 @@ public final class RouteTableMatcherTest {
       assertTrue(result instanceof MatchedRoute);
       MatchedRoute route = (MatchedRoute) result;
       assertEquals(TestResource.class, route.getResourceClass());
-      assertEquals(TestResource.class.getMethod("put", int.class, ContentObject.class), route.getMethod());
+      assertEquals(TestResource.class.getMethod("put", int.class, ContentObject.class),
+               route.getMethod());
       assertEquals(2, route.getMethodArgs().length);
       assertEquals(12, route.getMethodArgs()[0]);
       Object obj = route.getMethodArgs()[1];

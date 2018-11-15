@@ -22,6 +22,9 @@
  */
 package com.lmpessoa.services.core.routing;
 
-enum HttpMethod {
+/**
+ * Represents all known (standard) HTTP methods.
+ */
+public enum HttpMethod {
    GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD;
 }

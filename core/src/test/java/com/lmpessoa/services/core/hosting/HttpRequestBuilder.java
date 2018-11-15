@@ -28,23 +28,19 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.lmpessoa.services.core.hosting.Headers;
-import com.lmpessoa.services.core.hosting.HttpRequest;
+import com.lmpessoa.services.core.routing.HttpMethod;
 
 public final class HttpRequestBuilder {
 
    private Map<String, String> headers = new HashMap<>();
    private Map<String, String> cookies = new HashMap<>();
-   private String method = "GET";
+   private HttpMethod method = HttpMethod.GET;
    private String query = null;
    private String path = null;
    private String body = null;
 
-   public HttpRequestBuilder setMethod(String method) {
-      if (method.indexOf(' ') != -1) {
-         throw new IllegalArgumentException("Method cannot contain spaces");
-      }
-      this.method = method.toUpperCase();
+   public HttpRequestBuilder setMethod(HttpMethod method) {
+      this.method = method;
       return this;
    }
 
@@ -111,7 +107,7 @@ public final class HttpRequestBuilder {
       return new HttpRequest() {
 
          @Override
-         public String getMethod() {
+         public HttpMethod getMethod() {
             return method;
          }
 

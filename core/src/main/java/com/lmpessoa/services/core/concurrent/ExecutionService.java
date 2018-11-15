@@ -415,12 +415,12 @@ public final class ExecutionService implements IExecutionService {
 
       @Override
       public boolean isCancelled() {
-         return status.equals(Status.CANCELLED);
+         return status == Status.CANCELLED || status == Status.INTERRUPTED;
       }
 
       @Override
       public boolean isDone() {
-         return !status.equals(Status.QUEUED) && !status.equals(Status.RUNNING);
+         return status != Status.QUEUED && status != Status.RUNNING;
       }
 
       @Override

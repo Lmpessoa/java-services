@@ -22,6 +22,9 @@
  */
 package com.lmpessoa.services.core.hosting;
 
+import static com.lmpessoa.services.core.routing.HttpMethod.DELETE;
+import static com.lmpessoa.services.core.routing.HttpMethod.GET;
+import static com.lmpessoa.services.core.routing.HttpMethod.PATCH;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -35,6 +38,7 @@ import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URL;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -44,12 +48,6 @@ import org.junit.Test;
 
 import com.lmpessoa.services.core.concurrent.Async;
 import com.lmpessoa.services.core.concurrent.ExecutionService;
-import com.lmpessoa.services.core.hosting.AsyncResponder;
-import com.lmpessoa.services.core.hosting.ConnectionInfo;
-import com.lmpessoa.services.core.hosting.HttpRequest;
-import com.lmpessoa.services.core.hosting.NextResponder;
-import com.lmpessoa.services.core.hosting.NotFoundException;
-import com.lmpessoa.services.core.hosting.Redirect;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.util.logging.ILogger;
 import com.lmpessoa.services.util.logging.Logger;
@@ -58,9 +56,9 @@ import com.lmpessoa.services.util.logging.NullHandler;
 public final class AsyncResponderTest {
 
    private static final ILogger log = new Logger(new NullHandler());
-   private static final ExecutionService executor = new ExecutionService(1, log);
    private static final String baseUrl = "https://lmpessoa.com/feedback/";
 
+   private ExecutionService executor;
    private AsyncResponder handler;
    private ConnectionInfo connect;
    private HttpRequest request;
@@ -72,22 +70,24 @@ public final class AsyncResponderTest {
    @BeforeClass
    public static void classSetup() {
       AsyncResponder.setFeedbackPath("/feedback/");
-      AsyncResponder.setExecutor(executor);
    }
 
    @Before
    public void setup() {
       connect = new ConnectionInfo(mock(Socket.class), "https://lmpessoa.com/");
       request = mock(HttpRequest.class);
+      when(request.getMethod()).thenReturn(GET);
       when(request.getPath()).thenReturn("/test");
       runnableResult = null;
       next = () -> match.invoke();
       handler = new AsyncResponder(next);
+      executor = new ExecutionService(1, log);
+      AsyncResponder.setExecutor(executor);
    }
 
    @Test
-   public void testAsyncMethod() throws NoSuchMethodException, MalformedURLException, InterruptedException,
-      ExecutionException, IllegalAccessException, InvocationTargetException {
+   public void testAsyncMethod() throws NoSuchMethodException, MalformedURLException,
+      InterruptedException, ExecutionException, IllegalAccessException, InvocationTargetException {
       match = matchOfMethod("asyncMethod");
 
       Object result = handler.invoke(request, match, connect);
@@ -101,8 +101,8 @@ public final class AsyncResponderTest {
    }
 
    @Test
-   public void testCallableResult() throws NoSuchMethodException, MalformedURLException, InterruptedException,
-      ExecutionException, IllegalAccessException, InvocationTargetException {
+   public void testCallableResult() throws NoSuchMethodException, MalformedURLException,
+      InterruptedException, ExecutionException, IllegalAccessException, InvocationTargetException {
       match = matchOfMethod("callableResult");
 
       Object result = handler.invoke(request, match, connect);
@@ -116,8 +116,8 @@ public final class AsyncResponderTest {
    }
 
    @Test
-   public void testRunnableResult() throws NoSuchMethodException, MalformedURLException, InterruptedException,
-      ExecutionException, IllegalAccessException, InvocationTargetException {
+   public void testRunnableResult() throws NoSuchMethodException, MalformedURLException,
+      InterruptedException, ExecutionException, IllegalAccessException, InvocationTargetException {
       match = matchOfMethod("runnableResult");
 
       Object result = handler.invoke(request, match, connect);
@@ -132,8 +132,8 @@ public final class AsyncResponderTest {
    }
 
    @Test
-   public void testCheckExecutionResult()
-      throws NoSuchMethodException, MalformedURLException, InterruptedException, ExecutionException {
+   public void testCheckExecutionResult() throws NoSuchMethodException, MalformedURLException,
+      InterruptedException, ExecutionException {
       match = matchOfMethod("sleeper");
 
       Object result = handler.invoke(request, match, connect);
@@ -152,7 +152,8 @@ public final class AsyncResponderTest {
    }
 
    @Test
-   public void testCheckRedirectResult() throws NoSuchMethodException, InterruptedException, MalformedURLException {
+   public void testCheckRedirectResult()
+      throws NoSuchMethodException, InterruptedException, MalformedURLException {
       match = matchOfMethod("redirect");
 
       Object result = handler.invoke(request, match, connect);
@@ -171,7 +172,8 @@ public final class AsyncResponderTest {
    }
 
    @Test
-   public void testCheckUrlResult() throws NoSuchMethodException, InterruptedException, MalformedURLException {
+   public void testCheckUrlResult()
+      throws NoSuchMethodException, InterruptedException, MalformedURLException {
       match = matchOfMethod("redirectUrl");
 
       Object result = handler.invoke(request, match, connect);
@@ -192,7 +194,66 @@ public final class AsyncResponderTest {
    @Test(expected = NotFoundException.class)
    public void testNonExistentResult() {
       when(request.getPath()).thenReturn("/feedback/test");
-      handler.invoke(request, match, null);
+      handler.invoke(request, match, connect);
+   }
+
+   @Test(expected = MethodNotAllowedException.class)
+   public void testPatchResult() throws NoSuchMethodException, MalformedURLException {
+      match = matchOfMethod("sleeper");
+
+      handler.invoke(request, match, connect);
+      Object result = handler.invoke(request, match, connect);
+      Redirect redirect = (Redirect) result;
+      String url = redirect.getUrl(connect).getPath();
+
+      match = null;
+      when(request.getPath()).thenReturn(url);
+      when(request.getMethod()).thenReturn(PATCH);
+      handler.invoke(request, match, connect);
+   }
+
+   @Test(expected = CancellationException.class)
+   public void testCancelAsyncTask() throws NoSuchMethodException, MalformedURLException,
+      InterruptedException, ExecutionException {
+      match = matchOfMethod("sleeper");
+
+      handler.invoke(request, match, connect);
+      Object result = handler.invoke(request, match, connect);
+      Redirect redirect = (Redirect) result;
+      String url = redirect.getUrl(connect).getPath();
+
+      match = null;
+      when(request.getPath()).thenReturn(url);
+      when(request.getMethod()).thenReturn(DELETE);
+      result = handler.invoke(request, match, connect);
+
+      assertTrue(result instanceof Future);
+      Future<?> fresult = (Future<?>) result;
+      assertTrue(fresult.isDone());
+      assertTrue(fresult.isCancelled());
+      fresult.get();
+   }
+
+   @Test(expected = InterruptedException.class)
+   public void testCancelAsyncTaskRunning() throws NoSuchMethodException, MalformedURLException,
+      InterruptedException, ExecutionException {
+      match = matchOfMethod("sleeper");
+
+      Object result = handler.invoke(request, match, connect);
+      Redirect redirect = (Redirect) result;
+      String url = redirect.getUrl(connect).getPath();
+      Thread.sleep(10);
+
+      match = null;
+      when(request.getPath()).thenReturn(url);
+      when(request.getMethod()).thenReturn(DELETE);
+      result = handler.invoke(request, match, connect);
+
+      assertTrue(result instanceof Future);
+      Future<?> fresult = (Future<?>) result;
+      assertTrue(fresult.isDone());
+      assertTrue(fresult.isCancelled());
+      fresult.get();
    }
 
    private RouteMatch matchOfMethod(String methodName) throws NoSuchMethodException {
@@ -230,7 +291,7 @@ public final class AsyncResponderTest {
 
    @Async
    public void sleeper() throws InterruptedException {
-      Thread.sleep(10);
+      Thread.sleep(50);
    }
 
    @Async

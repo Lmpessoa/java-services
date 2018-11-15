@@ -38,21 +38,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.lmpessoa.services.core.routing.HttpMethod;
+
 final class HttpRequestImpl implements HttpRequest {
 
    private static final String UTF8 = "UTF-8";
 
    private final Map<String, List<String>> headers;
    private final String queryString;
+   private final HttpMethod method;
    private final String protocol;
    private final byte[] content;
-   private final String method;
    private final String path;
 
    private Map<String, Collection<String>> query;
 
    @Override
-   public String getMethod() {
+   public HttpMethod getMethod() {
       return method;
    }
 
@@ -137,7 +139,8 @@ final class HttpRequestImpl implements HttpRequest {
 
    @Override
    public String toString() {
-      return String.format("%s %s %s", method, path + (queryString != null ? "?" + queryString : ""), protocol);
+      return String.format("%s %s %s", method,
+               path + (queryString != null ? "?" + queryString : ""), protocol);
    }
 
    HttpRequestImpl(InputStream clientStream) throws IOException {
@@ -146,7 +149,7 @@ final class HttpRequestImpl implements HttpRequest {
          throw new SocketTimeoutException();
       }
       String[] parts = requestLine.split(" ");
-      this.method = parts[0];
+      this.method = HttpMethod.valueOf(parts[0].toUpperCase());
       this.protocol = parts[2];
       parts = parts[1].split("\\?", 2);
       String thePath = parts[0];
@@ -175,8 +178,8 @@ final class HttpRequestImpl implements HttpRequest {
          }
          int read = clientStream.read(data);
          if (read != data.length) {
-            throw new AssertionError(
-                     "Error reading from client (expected: " + data.length + " bytes, found: " + read + " bytes)");
+            throw new AssertionError("Error reading from client (expected: " + data.length
+                     + " bytes, found: " + read + " bytes)");
          }
          this.content = data;
       } else {
@@ -184,8 +187,8 @@ final class HttpRequestImpl implements HttpRequest {
       }
    }
 
-   private Map<String, List<String>> extractHeaders(InputStream clientStream, Map<String, List<String>> headerMap)
-      throws IOException {
+   private Map<String, List<String>> extractHeaders(InputStream clientStream,
+      Map<String, List<String>> headerMap) throws IOException {
       String headerLine;
       while ((headerLine = readLine(clientStream)) != null && !headerLine.isEmpty()) {
          String[] head = headerLine.split(":", 2);
@@ -198,8 +201,8 @@ final class HttpRequestImpl implements HttpRequest {
          }
          headerMap.get(headerName).add(head[1].trim());
       }
-      return headerMap.entrySet().stream().collect(
-               Collectors.toMap(Map.Entry::getKey, e -> Collections.unmodifiableList(e.getValue())));
+      return headerMap.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
+               e -> Collections.unmodifiableList(e.getValue())));
    }
 
    private String readLine(InputStream input) throws IOException {
