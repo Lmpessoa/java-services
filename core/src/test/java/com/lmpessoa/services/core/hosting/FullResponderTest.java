@@ -22,6 +22,8 @@
  */
 package com.lmpessoa.services.core.hosting;
 
+import static com.lmpessoa.services.core.routing.HttpMethod.GET;
+import static com.lmpessoa.services.core.routing.HttpMethod.PATCH;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -44,17 +46,22 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import com.lmpessoa.services.core.routing.HttpGet;
+import com.lmpessoa.services.core.routing.HttpMethod;
+import com.lmpessoa.services.core.routing.HttpPatch;
 import com.lmpessoa.services.core.routing.HttpPost;
 import com.lmpessoa.services.core.routing.MatchedRouteBridge;
 import com.lmpessoa.services.core.routing.Route;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.routing.RouteTable;
+import com.lmpessoa.services.core.serializing.ErrorList;
+import com.lmpessoa.services.core.serializing.Serializer;
+import com.lmpessoa.services.core.serializing.Validable;
 import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.util.logging.ILogger;
 import com.lmpessoa.services.util.logging.Logger;
 import com.lmpessoa.services.util.logging.NullHandler;
 
-public final class NextResponderFullTest {
+public final class FullResponderTest {
 
    @Rule
    public ExpectedException thrown = ExpectedException.none();
@@ -68,7 +75,7 @@ public final class NextResponderFullTest {
    private RouteTable routes;
    private RouteMatch route;
 
-   public NextResponderFullTest() {
+   public FullResponderTest() {
       Socket socket = mock(Socket.class);
       connect = new ConnectionInfo(socket, "https://lmpessoa.com/");
    }
@@ -80,7 +87,7 @@ public final class NextResponderFullTest {
       services.put(ILogger.class, log);
       services.put(ConnectionInfo.class, (Supplier<ConnectionInfo>) () -> connect);
       IApplicationSettings settings = mock(IApplicationSettings.class);
-      when(settings.getStartupClass()).then(n -> NextResponderFullTest.class);
+      when(settings.getStartupClass()).then(n -> FullResponderTest.class);
       services.put(IApplicationSettings.class, settings);
       services.put(RouteMatch.class, (Supplier<RouteMatch>) () -> route);
 
@@ -216,15 +223,38 @@ public final class NextResponderFullTest {
       }
    }
 
+   @Test
+   public void testMediatorWithInvalidParam() throws IOException {
+      HttpResult result = performFile("/http/invalid_patch_request.txt");
+      assertEquals(400, result.getStatusCode());
+      assertNotNull(result.getInputStream());
+      assertEquals(ContentType.JSON, result.getInputStream().getType());
+      byte[] data = new byte[result.getInputStream().available()];
+      result.getInputStream().read(data);
+      String content = new String(data, Serializer.UTF_8);
+      assertEquals("{\"errors\":[{\"message\":\"Some error message\"}]}", content);
+   }
+
+   @Test
+   public void testMediatorWithoutInvalidParam() throws IOException {
+      HttpResult result = perform(PATCH, "/test/invalid");
+      assertEquals(204, result.getStatusCode());
+      assertNull(result.getInputStream());
+   }
+
    private HttpResult perform(String path) throws IOException {
-      request = new HttpRequestBuilder().setPath(path).build();
+      return perform(GET, path);
+   }
+
+   private HttpResult perform(HttpMethod method, String path) throws IOException {
+      request = new HttpRequestBuilder().setMethod(method).setPath(path).build();
       services.put(HttpRequest.class, (Supplier<HttpRequest>) () -> request);
       route = routes.matches(request);
       return (HttpResult) app.getFirstResponder().invoke();
    }
 
    private HttpResult performFile(String resource) throws IOException {
-      try (InputStream res = NextResponderFullTest.class.getResourceAsStream(resource)) {
+      try (InputStream res = FullResponderTest.class.getResourceAsStream(resource)) {
          request = new HttpRequestImpl(res);
          services.put(HttpRequest.class, (Supplier<HttpRequest>) () -> request);
          route = routes.matches(request);
@@ -244,6 +274,14 @@ public final class NextResponderFullTest {
       public TestObject(int id, String message) {
          this.message = message;
          this.id = id;
+      }
+   }
+
+   public static class InvalidTestObject extends TestObject implements Validable {
+
+      @Override
+      public void validate(ErrorList errors) {
+         errors.add("Some error message");
       }
    }
 
@@ -283,6 +321,11 @@ public final class NextResponderFullTest {
       @Route("object")
       public int object(TestObject value) {
          return value.id;
+      }
+
+      @HttpPatch
+      @Route("invalid")
+      public void invalid(InvalidTestObject value) {
       }
 
       @HttpGet

@@ -143,6 +143,12 @@ final class SerializerResponder {
                && ((InternalServerError) object).getCause() != null) {
          object = ((InternalServerError) obj).getCause();
       }
+      if (object instanceof BadRequestException) {
+         BadRequestException e = (BadRequestException) object;
+         if (e.getErrors() != null) {
+            object = e.getErrors();
+         }
+      }
       if (object instanceof Throwable) {
          object = ((Throwable) obj).getMessage();
          if (object == null) {
@@ -179,7 +185,7 @@ final class SerializerResponder {
       } else {
          accepts = new String[] { ContentType.JSON };
       }
-      return Serializer.fromObject(obj, accepts);
+      return Serializer.fromObject(object, accepts);
    }
 
    private Charset getCharsetFromMethodOrUTF8(Method method) {

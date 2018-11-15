@@ -23,6 +23,8 @@
 package com.lmpessoa.services.core.serializing;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
 import java.util.HashMap;
@@ -34,6 +36,7 @@ import com.lmpessoa.services.core.hosting.HttpInputStream;
 import com.lmpessoa.services.core.hosting.InternalServerError;
 import com.lmpessoa.services.core.hosting.NotAcceptableException;
 import com.lmpessoa.services.core.hosting.UnsupportedMediaTypeException;
+import com.lmpessoa.services.util.ClassUtils;
 
 /**
  * Represents a serialisation format.
@@ -67,9 +70,11 @@ public abstract class Serializer {
     * @param contentType the content type of the content.
     * @param type the type of the object to be returned.
     * @return an object representation of given content.
+    * @throws ValidationException
     * @throws UnsupportedMediaTypeException if the content type or encoding are not supported.
     */
-   public static <T> T toObject(byte[] content, String contentType, Class<T> type) {
+   public static <T> T toObject(byte[] content, String contentType, Class<T> type)
+      throws ValidationException {
       Map<String, String> contentTypeMap = Headers.split(contentType);
       String realContentType = contentTypeMap.get("");
       if (!handlers.containsKey(realContentType)) {
@@ -80,7 +85,11 @@ public abstract class Serializer {
          throw new UnsupportedMediaTypeException("Cannot read from type: " + realContentType);
       }
       try {
-         return ser.read(content, type, contentTypeMap);
+         T result = ser.read(content, type, contentTypeMap);
+         validate(result);
+         return result;
+      } catch (ValidationException e) {
+         throw e;
       } catch (Exception e) {
          throw new InternalServerError(e);
       }
@@ -119,7 +128,8 @@ public abstract class Serializer {
       }
    }
 
-   protected <T> T read(byte[] content, Class<T> type, Map<String, String> contentType) throws Exception {
+   protected <T> T read(byte[] content, Class<T> type, Map<String, String> contentType)
+      throws Exception {
       Charset charset = Charset.forName("UTF-8");
       if (contentType.containsKey("charset")) {
          String charsetName = contentType.get("charset");
@@ -145,7 +155,8 @@ public abstract class Serializer {
          try {
             return superType.getDeclaredField(fieldName);
          } catch (NoSuchFieldException e) {
-            superType = superType.getSuperclass() == Object.class ? null : superType.getSuperclass();
+            superType = superType.getSuperclass() == Object.class ? null
+                     : superType.getSuperclass();
          } catch (NullPointerException e) {
             break;
          }
@@ -155,7 +166,8 @@ public abstract class Serializer {
 
    protected static final boolean isStaticOrTransientOrVolatile(Field field) {
       int modifiers = field.getModifiers();
-      return Modifier.isStatic(modifiers) || Modifier.isTransient(modifiers) || Modifier.isVolatile(modifiers);
+      return Modifier.isStatic(modifiers) || Modifier.isTransient(modifiers)
+               || Modifier.isVolatile(modifiers);
    }
 
    private static Serializer instanceOf(String contentType) {
@@ -164,6 +176,24 @@ public abstract class Serializer {
          return clazz.newInstance();
       } catch (Exception e) {
          return null;
+      }
+   }
+
+   private static void validate(Object object) throws ValidationException {
+      Method validate = ClassUtils.getMethod(object.getClass(), "validate", ErrorList.class);
+      if (validate != null && !Modifier.isStatic(validate.getModifiers())
+               && Modifier.isPublic(validate.getModifiers())) {
+         ErrorList errors = new ErrorList(object);
+         try {
+            validate.invoke(object, errors);
+         } catch (InvocationTargetException e) {
+            throw new InternalServerError(e.getCause());
+         } catch (IllegalAccessException | IllegalArgumentException e) {
+            throw new InternalServerError(e);
+         }
+         if (!errors.isEmpty()) {
+            throw new ValidationException(errors);
+         }
       }
    }
 }

@@ -46,7 +46,9 @@ import java.util.stream.Collectors;
 import com.lmpessoa.services.core.hosting.InternalServerError;
 import com.lmpessoa.services.core.hosting.MethodNotAllowedException;
 import com.lmpessoa.services.core.hosting.NotFoundException;
+import com.lmpessoa.services.core.serializing.ErrorList;
 import com.lmpessoa.services.core.serializing.Serializer;
+import com.lmpessoa.services.core.serializing.ValidationException;
 import com.lmpessoa.services.core.services.NoSingleMethodException;
 import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.util.ClassUtils;
@@ -155,16 +157,22 @@ public final class RouteTable implements IRouteTable {
          params.addAll(Arrays.asList(constructor.getParameterTypes()));
          Method methodCall = methodEntry.getMethod();
          params.addAll(Arrays.asList(methodCall.getParameterTypes()));
-         Object contentObject = null;
+         ErrorList errors = null;
          if (methodEntry.getContentClass() != null) {
             params.remove(params.size() - 1);
-            contentObject = parseContentBody(request, methodEntry.getContentClass());
          }
          List<Object> result = convertParams(matcher, params);
          if (methodEntry.getContentClass() != null) {
+            Object contentObject;
+            try {
+               contentObject = parseContentBody(request, methodEntry.getContentClass());
+            } catch (ValidationException e) {
+               errors = e.getErrors();
+               contentObject = errors.getSourceObject();
+            }
             result.add(contentObject);
          }
-         return new MatchedRoute(methodEntry, result.toArray());
+         return new MatchedRoute(methodEntry, result.toArray(), errors);
       }
       if (!found) {
          return new NotFoundException();
@@ -228,11 +236,15 @@ public final class RouteTable implements IRouteTable {
       return map.get(method);
    }
 
-   private Object parseContentBody(IRouteRequest request, Class<?> contentClass) {
+   private Object parseContentBody(IRouteRequest request, Class<?> contentClass)
+      throws ValidationException {
       InputStream body = request.getBody();
-      byte[] content = readContentBody(body);
-      if (request.getContentType() != null && content != null && request.getContentLength() > 0) {
-         return Serializer.toObject(content, request.getContentType(), contentClass);
+      if (body != null) {
+         byte[] content = readContentBody(body);
+         if (request.getContentType() != null && content != null
+                  && request.getContentLength() > 0) {
+            return Serializer.toObject(content, request.getContentType(), contentClass);
+         }
       }
       return null;
    }

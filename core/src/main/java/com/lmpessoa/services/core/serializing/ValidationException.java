@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,47 +20,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.hosting;
+package com.lmpessoa.services.core.serializing;
 
-import com.lmpessoa.services.core.serializing.ErrorList;
+import java.util.Objects;
 
 /**
- * Thrown when the received request is not valid.
+ * Thrown when a deserialised object fails validation.
  */
-public final class BadRequestException extends HttpException {
+public final class ValidationException extends Exception {
 
    private static final long serialVersionUID = 1L;
+
    private final ErrorList errors;
 
    /**
-    * Creates a new {@code BadRequestException}.
-    */
-   public BadRequestException() {
-      super(400);
-      this.errors = null;
-   }
-
-   /**
-    * Creates a new {@code BadRequestException} with the given detail message.
+    * Returns the list of errors in this {@code ValidationException}.
     *
-    * @param message the detail message.
+    * @return the list of errors in this exception.
     */
-   public BadRequestException(String message) {
-      super(400, message);
-      this.errors = null;
-   }
-
-   /**
-    * Creates a new {@code BadRequestException} with the given detail messages.
-    *
-    * @param errors the detail messages.
-    */
-   public BadRequestException(ErrorList errors) {
-      super(400);
-      this.errors = errors;
-   }
-
-   ErrorList getErrors() {
+   public ErrorList getErrors() {
       return errors;
+   }
+
+   ValidationException(ErrorList errors) {
+      this.errors = Objects.requireNonNull(errors);
    }
 }

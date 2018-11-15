@@ -1,0 +1,7 @@
+PATCH /test/invalid HTTP/1.1
+Host: my-server
+Content-Type: application/json
+Content-Length: 27
+Accept: application/json 
+                
+{"id": 12,"message":"Test"}

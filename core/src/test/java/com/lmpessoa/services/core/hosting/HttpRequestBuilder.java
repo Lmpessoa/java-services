@@ -142,6 +142,9 @@ public final class HttpRequestBuilder {
 
          @Override
          public InputStream getBody() {
+            if (getContentLength() == 0) {
+               return null;
+            }
             return new ByteArrayInputStream(body.getBytes());
          }
 

@@ -24,6 +24,7 @@ package com.lmpessoa.services.core.serializing;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -39,9 +40,9 @@ import org.junit.rules.ExpectedException;
 
 import com.lmpessoa.services.core.hosting.ContentType;
 import com.lmpessoa.services.core.hosting.HttpInputStream;
+import com.lmpessoa.services.core.hosting.InternalServerError;
 import com.lmpessoa.services.core.hosting.NotAcceptableException;
 import com.lmpessoa.services.core.hosting.UnsupportedMediaTypeException;
-import com.lmpessoa.services.core.serializing.Serializer;
 
 public final class SerializerTest {
 
@@ -49,10 +50,11 @@ public final class SerializerTest {
    public ExpectedException thrown = ExpectedException.none();
 
    @Test
-   public void testParseJson() {
+   public void testParseJson() throws ValidationException {
       String content = "{\"id\": 12, \"name\": \"Test\", \"email\": "
                + "[ \"test@test.com\", \"test@test.org\" ], \"checked\": true}";
-      TestObject result = Serializer.toObject(content.getBytes(), ContentType.JSON, TestObject.class);
+      TestObject result = Serializer.toObject(content.getBytes(), ContentType.JSON,
+               TestObject.class);
       assertNotNull(result);
       assertEquals(12, result.id);
       assertEquals("Test", result.name);
@@ -61,7 +63,7 @@ public final class SerializerTest {
    }
 
    @Test
-   public void testParseXmlFails() {
+   public void testParseXmlFails() throws ValidationException {
       thrown.expect(UnsupportedMediaTypeException.class);
       Serializer.enableXml(false);
       String content = "<?xml version=\"1.0\"?><object><id>12</id><name>Test</name>"
@@ -70,11 +72,12 @@ public final class SerializerTest {
    }
 
    @Test
-   public void testParseXml() {
+   public void testParseXml() throws ValidationException {
       Serializer.enableXml(true);
       String content = "<?xml version=\"1.0\"?><object><id>12</id><name>Test</name>"
                + "<email>test@test.com</email><email>test@test.org</email><checked>true</checked></object>";
-      TestObject result = Serializer.toObject(content.getBytes(), ContentType.XML, TestObject.class);
+      TestObject result = Serializer.toObject(content.getBytes(), ContentType.XML,
+               TestObject.class);
       assertNotNull(result);
       assertEquals(12, result.id);
       assertEquals("Test", result.name);
@@ -83,9 +86,10 @@ public final class SerializerTest {
    }
 
    @Test
-   public void testParseForm() {
+   public void testParseForm() throws ValidationException {
       String content = "id=12&name=Test&email=test%40test.com&email=test%40test.org&checked=true";
-      TestObject result = Serializer.toObject(content.getBytes(), ContentType.FORM, TestObject.class);
+      TestObject result = Serializer.toObject(content.getBytes(), ContentType.FORM,
+               TestObject.class);
       assertNotNull(result);
       assertEquals(12, result.id);
       assertEquals("Test", result.name);
@@ -94,14 +98,16 @@ public final class SerializerTest {
    }
 
    @Test
-   public void testProduceXmlFails() throws IOException, InstantiationException, IllegalAccessException {
+   public void testProduceXmlFails()
+      throws IOException, InstantiationException, IllegalAccessException {
       thrown.expect(NotAcceptableException.class);
       Serializer.enableXml(false);
       assertNull(Serializer.fromObject("Test", new String[] { ContentType.XML }));
    }
 
    @Test
-   public void testProduceXmlString() throws IOException, InstantiationException, IllegalAccessException {
+   public void testProduceXmlString()
+      throws IOException, InstantiationException, IllegalAccessException {
       Serializer.enableXml(true);
       HttpInputStream result = Serializer.fromObject("Test", new String[] { ContentType.XML });
       byte[] data = new byte[result.available()];
@@ -111,7 +117,8 @@ public final class SerializerTest {
    }
 
    @Test
-   public void testProduceXmlInt() throws IOException, InstantiationException, IllegalAccessException {
+   public void testProduceXmlInt()
+      throws IOException, InstantiationException, IllegalAccessException {
       Serializer.enableXml(true);
       HttpInputStream result = Serializer.fromObject(12, new String[] { ContentType.XML });
       byte[] data = new byte[result.available()];
@@ -121,13 +128,74 @@ public final class SerializerTest {
    }
 
    @Test
-   public void testProduceXmlException() throws IOException, InstantiationException, IllegalAccessException {
+   public void testProduceXmlException()
+      throws IOException, InstantiationException, IllegalAccessException {
       Serializer.enableXml(true);
-      HttpInputStream result = Serializer.fromObject(new NullPointerException(), new String[] { ContentType.XML });
+      HttpInputStream result = Serializer.fromObject(new NullPointerException(),
+               new String[] { ContentType.XML });
       byte[] data = new byte[result.available()];
       result.read(data);
       String content = new String(data, Charset.forName("UTF-8"));
       assertEquals("<?xml version=\"1.0\"?><exception type=\"NullPointerException\"/>", content);
+   }
+
+   @Test
+   public void testValidateObject() throws ValidationException {
+      String content = "{\"id\": 7, \"name\": \"Test\", \"email\": "
+               + "[ \"test@test.com\", \"test@test.org\" ], \"checked\": true}";
+      TestObject result = Serializer.toObject(content.getBytes(), ContentType.JSON,
+               ValidTestObject.class);
+      assertNotNull(result);
+      assertEquals(7, result.id);
+      assertEquals("Test", result.name);
+      assertArrayEquals(new String[] { "test@test.com", "test@test.org" }, result.email);
+      assertTrue(result.checked);
+   }
+
+   @Test
+   public void testValidateObjectFail() {
+      String content = "{\"id\": 12}";
+      try {
+         assertNull(
+                  Serializer.toObject(content.getBytes(), ContentType.JSON, ValidTestObject.class));
+      } catch (ValidationException e) {
+         assertNotNull(e.getErrors());
+         assertFalse(e.getErrors().isEmpty());
+         assertTrue(e.getErrors().hasMessages());
+         assertTrue(e.getErrors().hasMessages("id"));
+         assertFalse(e.getErrors().hasMessages("name"));
+         assertArrayEquals(new String[] { "Not a valid object" }, e.getErrors().getMessages());
+         assertArrayEquals(new String[] { "Illegal identifier" }, e.getErrors().getMessages("id"));
+         assertArrayEquals(new String[0], e.getErrors().getMessages("name"));
+         assertArrayEquals(new String[] { "Not a valid object", "Illegal identifier" },
+                  e.getErrors().getAllMessages());
+      }
+   }
+
+   @Test
+   public void testValidatErrorsSerialised() throws IOException {
+      String content = "{\"id\": 12}";
+      try {
+         assertNull(
+                  Serializer.toObject(content.getBytes(), ContentType.JSON, ValidTestObject.class));
+      } catch (ValidationException e) {
+         assertNotNull(e.getErrors());
+         HttpInputStream result = Serializer.fromObject(e.getErrors(),
+                  new String[] { ContentType.JSON });
+         byte[] data = new byte[result.available()];
+         result.read(data);
+         content = new String(data, Charset.forName("UTF-8"));
+         assertEquals(
+                  "{\"errors\":[{\"message\":\"Not a valid object\"},{\"message\":\"Illegal identifier\",\"field\":\"id\"}]}",
+                  content);
+      }
+   }
+
+   @Test
+   public void testIllegalFieldInValidate() throws ValidationException {
+      String content = "{\"id\": 12}";
+      thrown.expect(InternalServerError.class);
+      Serializer.toObject(content.getBytes(), ContentType.JSON, InvalidTestObject.class);
    }
 
    @XmlRootElement(name = "object")
@@ -137,5 +205,22 @@ public final class SerializerTest {
       public String name;
       public String[] email;
       public boolean checked;
+   }
+
+   public static class ValidTestObject extends TestObject {
+
+      public void validate(ErrorList errors) {
+         if (id == 12) {
+            errors.add("Not a valid object");
+            errors.add("id", "Illegal identifier");
+         }
+      }
+   }
+
+   public static class InvalidTestObject extends TestObject {
+
+      public void validate(ErrorList errors) {
+         errors.add("phoneNumber", "Some message");
+      }
    }
 }

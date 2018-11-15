@@ -28,7 +28,9 @@ import static com.lmpessoa.services.core.routing.HttpMethod.POST;
 import static com.lmpessoa.services.core.routing.HttpMethod.PUT;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -46,6 +48,7 @@ import com.lmpessoa.services.core.hosting.HttpRequestBuilder;
 import com.lmpessoa.services.core.hosting.MethodNotAllowedException;
 import com.lmpessoa.services.core.hosting.NotFoundException;
 import com.lmpessoa.services.core.hosting.NotImplementedException;
+import com.lmpessoa.services.core.serializing.ErrorList;
 import com.lmpessoa.services.core.services.Reuse;
 import com.lmpessoa.services.core.services.Service;
 import com.lmpessoa.services.core.services.ServiceMap;
@@ -192,6 +195,21 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
+   public void testMatchesWithoutContent() throws IOException, NoSuchMethodException {
+      HttpRequest request = new HttpRequestBuilder().setMethod(PUT).setPath("/test/12").build();
+      RouteMatch result = table.matches(request);
+      assertTrue(result instanceof MatchedRoute);
+      MatchedRoute route = (MatchedRoute) result;
+      assertEquals(TestResource.class, route.getResourceClass());
+      assertEquals(TestResource.class.getMethod("put", int.class, ContentObject.class),
+               route.getMethod());
+      assertEquals(2, route.getMethodArgs().length);
+      assertEquals(12, route.getMethodArgs()[0]);
+      assertNull(route.getMethodArgs()[1]);
+      assertNull(route.getErrors());
+   }
+
+   @Test
    public void testMatchesWithContent() throws IOException, NoSuchMethodException {
       HttpRequest request = new HttpRequestBuilder().setMethod(PUT)
                .setPath("/test/12")
@@ -214,7 +232,34 @@ public final class RouteTableMatcherTest {
       assertEquals("Test", cobj.name);
       assertEquals("test@test.com", cobj.email);
       assertTrue(cobj.checked);
-      ;
+      assertNull(route.getErrors());
+   }
+
+   @Test
+   public void testMatchesWithInvalidContent() throws IOException, NoSuchMethodException {
+      HttpRequest request = new HttpRequestBuilder().setMethod(PATCH)
+               .setPath("/test/12")
+               .setBody("id=12&name=Test&email=test%40test.com&checked=true")
+               .setContentType(ContentType.FORM)
+               .build();
+      RouteMatch result = table.matches(request);
+      assertTrue(result instanceof MatchedRoute);
+      MatchedRoute route = (MatchedRoute) result;
+      assertEquals(TestResource.class, route.getResourceClass());
+      assertEquals(TestResource.class.getMethod("patch", int.class, InvalidObject.class),
+               route.getMethod());
+      Object obj = route.getMethodArgs()[1];
+      assertNotNull(obj);
+      assertTrue(obj instanceof InvalidObject);
+      InvalidObject cobj = (InvalidObject) route.getMethodArgs()[1];
+      assertEquals(12, cobj.id);
+      assertEquals("Test", cobj.name);
+      assertEquals("test@test.com", cobj.email);
+      assertTrue(cobj.checked);
+      ErrorList errors = route.getErrors();
+      assertNotNull(errors);
+      assertFalse(errors.isEmpty());
+      assertArrayEquals(new String[] { "Some error message" }, errors.getMessages());
    }
 
    public static class ContentObject {
@@ -223,6 +268,13 @@ public final class RouteTableMatcherTest {
       public String name;
       public String email;
       public boolean checked;
+   }
+
+   public static class InvalidObject extends ContentObject {
+
+      public void validate(ErrorList errors) {
+         errors.add("Some error message");
+      }
    }
 
    public static class TestResource {
@@ -257,7 +309,9 @@ public final class RouteTableMatcherTest {
       }
 
       public void put(int i, ContentObject content) {
+      }
 
+      public void patch(int i, InvalidObject content) {
       }
    }
 

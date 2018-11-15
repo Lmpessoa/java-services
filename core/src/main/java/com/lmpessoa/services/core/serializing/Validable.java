@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,47 +20,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.hosting;
-
-import com.lmpessoa.services.core.serializing.ErrorList;
+package com.lmpessoa.services.core.serializing;
 
 /**
- * Thrown when the received request is not valid.
+ * Establishes the common interface for validating deserialised object.
+ *
+ * <p>
+ * The adoption of this interface is not actually mandatory for object to be validated but may help
+ * identify by other means classes whose objects are validated and the signature of the method that
+ * is used in this validation process.
+ * </p>
  */
-public final class BadRequestException extends HttpException {
-
-   private static final long serialVersionUID = 1L;
-   private final ErrorList errors;
+public interface Validable {
 
    /**
-    * Creates a new {@code BadRequestException}.
-    */
-   public BadRequestException() {
-      super(400);
-      this.errors = null;
-   }
-
-   /**
-    * Creates a new {@code BadRequestException} with the given detail message.
+    * Validates this object.
+    * <p>
+    * Classes implementing this method must perform a validation of the object according to any
+    * rules it sees fit and registering any errors in the given error list. Classes are not expected
+    * to raise any exceptions from this method.
+    * </p>
     *
-    * @param message the detail message.
+    * @param errors an object that will hold the list of validation errors.
     */
-   public BadRequestException(String message) {
-      super(400, message);
-      this.errors = null;
-   }
-
-   /**
-    * Creates a new {@code BadRequestException} with the given detail messages.
-    *
-    * @param errors the detail messages.
-    */
-   public BadRequestException(ErrorList errors) {
-      super(400);
-      this.errors = errors;
-   }
-
-   ErrorList getErrors() {
-      return errors;
-   }
+   void validate(ErrorList errors);
 }

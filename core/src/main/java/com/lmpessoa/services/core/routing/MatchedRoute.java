@@ -27,8 +27,10 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
+import com.lmpessoa.services.core.hosting.BadRequestException;
 import com.lmpessoa.services.core.hosting.HttpException;
 import com.lmpessoa.services.core.hosting.InternalServerError;
+import com.lmpessoa.services.core.serializing.ErrorList;
 
 final class MatchedRoute implements RouteMatch {
 
@@ -36,6 +38,7 @@ final class MatchedRoute implements RouteMatch {
    private final Object[] constructorArgs;
    private final Method method;
    private final Object[] methodArgs;
+   private final ErrorList errors;
 
    @Override
    public Class<?> getResourceClass() {
@@ -49,6 +52,9 @@ final class MatchedRoute implements RouteMatch {
 
    @Override
    public Object invoke() {
+      if (errors != null && !errors.isEmpty()) {
+         throw new BadRequestException(errors);
+      }
       try {
          Constructor<?> constructor = resourceClass.getConstructors()[0];
          Object resource = constructor.newInstance(constructorArgs);
@@ -66,11 +72,12 @@ final class MatchedRoute implements RouteMatch {
       }
    }
 
-   MatchedRoute(MethodEntry entry, Object[] args) {
+   MatchedRoute(MethodEntry entry, Object[] args, ErrorList errors) {
       this.resourceClass = entry.getResourceClass();
       this.constructorArgs = Arrays.copyOfRange(args, 0, entry.getResourceArgumentCount());
       this.method = entry.getMethod();
       this.methodArgs = Arrays.copyOfRange(args, entry.getResourceArgumentCount(), args.length);
+      this.errors = errors;
    }
 
    Object[] getConstructorArgs() {
@@ -79,5 +86,9 @@ final class MatchedRoute implements RouteMatch {
 
    Object[] getMethodArgs() {
       return methodArgs;
+   }
+
+   ErrorList getErrors() {
+      return errors;
    }
 }
