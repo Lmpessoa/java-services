@@ -23,7 +23,7 @@
 package com.lmpessoa.services.core.hosting;
 
 /**
- * Provides an interface to configure application options.
+ * Provides an interface to configure the behaviour of applications.
  */
 public interface IApplicationOptions {
 
@@ -58,4 +58,29 @@ public interface IApplicationOptions {
     * method named invoke.
     */
    void useHandler(Class<?> handlerClass);
+
+   /**
+    * Returns the current base path used to poll asynchronous execution results.
+    *
+    * @return the path used to poll asynchronous execution results.
+    */
+   String getAsyncFeedbackPath();
+
+   /**
+    * Sets the base path used to poll asynchronous execution results.
+    *
+    * <p>
+    * This path must be a valid path (starting and ending with {@code '/'}) but not a full URL. This
+    * path will be appended to the current application's server host address to build the correct full
+    * URL to poll an asynchronous result.
+    * </p>
+    *
+    * <p>
+    * Note that if this path matches that of a registered resource it may prevent that resource from
+    * ever being called.
+    * </p>
+    *
+    * @param path the path to be used to poll asynchronous execution results.
+    */
+   void setAsyncFeedbackPath(String path);
 }

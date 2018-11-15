@@ -29,6 +29,7 @@ import com.lmpessoa.services.core.services.IConfigurable;
 
 /**
  * Represents a map of routes of the application.
+ *
  * <p>
  * A route table is only used to register the methods from resource classes to be used by the
  * application. Any method added to the route table can respond to a request received by the

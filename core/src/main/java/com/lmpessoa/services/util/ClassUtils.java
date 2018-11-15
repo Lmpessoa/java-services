@@ -25,7 +25,6 @@ package com.lmpessoa.services.util;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.security.AccessControlException;
@@ -106,7 +105,7 @@ public final class ClassUtils {
 
    /**
     * Returns a list of <code>Constructor</code> objects that match the given predicate.
-    * 
+    *
     * @param clazz the class from which to find the constructors.
     * @param predicate a predicate used to filter constructors.
     * @return a list of <code>Constructor</code> objects that match the given predicate or an empty
@@ -166,34 +165,6 @@ public final class ClassUtils {
    }
 
    /**
-    * Returns a <code>Method</code> object that reflects the specified declared method of the given
-    * class.
-    *
-    * <p>
-    * This method extends the behaviour of {@link Class#getDeclaredMethod(String, Class...)} in that if
-    * no such method exists, this method will return null instead of throwing an exception. Also, since
-    * this method is used to access a method otherwise invisible to the calling class, if a
-    * <code>Method</code> object is returned, it is already accessible through reflection.
-    * </p>
-    *
-    * @param clazz the class from which to find the method.
-    * @param methodName the name of the desired method.
-    * @param parameterTypes the list of parameter types of the desired method.
-    * @return the <code>Method</code> object of the declared method that matches the specified name and
-    * list of parameter types.
-    */
-   public static Method getDeclaredMethod(Class<?> clazz, String methodName, Class<?>... parameterTypes) {
-      Objects.requireNonNull(clazz);
-      Objects.requireNonNull(methodName);
-      return Arrays.stream(clazz.getDeclaredMethods())
-               .filter(m -> methodName.equals(m.getName()))
-               .filter(m -> Arrays.equals(parameterTypes, m.getParameterTypes()))
-               .filter(m -> !m.isSynthetic())
-               .findFirst()
-               .orElse(null);
-   }
-
-   /**
     * Returns whether the given class is a concrete class.
     *
     * <p>
@@ -239,56 +210,6 @@ public final class ClassUtils {
          return findClassesInJar(location.substring(9, location.length() - 1));
       }
       return findClassesInPath(location.substring(5) + "/", "");
-   }
-
-   /**
-    * Creates a new instance of the given class using the given argument list.
-    *
-    * <p>
-    * Objects created with this method must have a constructor that matches exactly the type of the
-    * arguments given. To use a constructor with specific argument types, use
-    * {@link #newInstance(Class, Class[], Object...)}.
-    * </p>
-    *
-    * <p>
-    * If any error occurs while creating the object, this method will simply return null.
-    * </p>
-    *
-    * @param clazz the class to be instantiated.
-    * @param params the list of arguments to be used to create the instance.
-    * @return the newly created object or <code>null</code> if it was not possible to create it.
-    */
-   public static <T> T newInstance(Class<T> clazz, Object... params) {
-      Class<?>[] paramTypes = Arrays.stream(params).map(Object::getClass).toArray(Class<?>[]::new);
-      return newInstance(clazz, paramTypes, params);
-   }
-
-   /**
-    * Creates a new instance of the given class using the given argument list.
-    *
-    * <p>
-    * Objects created with this method must have a constructor that matches the list of argument types
-    * given. The values in the argument list may be subclasses of the effective argument types.
-    * </p>
-    *
-    * <p>
-    * If any error occurs while creating the object, this method will simply return null.
-    * </p>
-    *
-    * @param clazz the class to be instantiated.
-    * @param paramTypes the list of the argument types of the desired constructor.
-    * @param params the list of arguments to be used to create the instance.
-    * @return the newly created object or <code>null</code> if it was not possible to create it.
-    */
-   public static <T> T newInstance(Class<T> clazz, Class<?>[] paramTypes, Object... params) {
-      try {
-         Constructor<T> construct = clazz.getDeclaredConstructor(paramTypes);
-         construct.setAccessible(true);
-         return construct.newInstance(params);
-      } catch (InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException e) {
-         // Ignore for now
-      }
-      return null;
    }
 
    /**

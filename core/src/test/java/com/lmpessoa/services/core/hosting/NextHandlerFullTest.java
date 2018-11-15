@@ -53,6 +53,7 @@ import com.lmpessoa.services.core.hosting.HttpRequest;
 import com.lmpessoa.services.core.hosting.HttpRequestImpl;
 import com.lmpessoa.services.core.hosting.HttpResult;
 import com.lmpessoa.services.core.hosting.IApplicationInfo;
+import com.lmpessoa.services.core.hosting.IApplicationOptions;
 import com.lmpessoa.services.core.hosting.NotImplementedException;
 import com.lmpessoa.services.core.hosting.Redirect;
 import com.lmpessoa.services.core.routing.IRouteTable;
@@ -102,6 +103,7 @@ public final class NextHandlerFullTest {
       routes.put("", TestResource.class);
 
       app = new ApplicationOptions();
+      services.useSingleton(IApplicationOptions.class, app);
    }
 
    public String readAll(InputStream is) throws IOException {

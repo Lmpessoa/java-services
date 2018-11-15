@@ -58,9 +58,9 @@ final class ResultHandler {
       try {
          is = getContentBody(obj, request, route != null ? route.getMethod() : null);
       } catch (Throwable e) { // NOSONAR
-         obj = e;
-         statusCode = getStatusCode(e);
-         is = getContentBody(e.getMessage(), request, null);
+         obj = new InternalServerError(e);
+         statusCode = getStatusCode(obj);
+         is = getContentBody(obj, request, null);
       }
       HeaderMap headers = getExtraHeaders(obj, is, connect);
       if (obj instanceof Throwable && !(obj instanceof Redirect)) {

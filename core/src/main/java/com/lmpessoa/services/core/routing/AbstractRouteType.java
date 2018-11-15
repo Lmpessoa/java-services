@@ -110,13 +110,13 @@ public abstract class AbstractRouteType implements IVariablePart {
     *
     * <p>
     * It is possible many classes are capable of accepting values matched by a route type. Subclasses
-    * implementing this method should test only for the preferred known types. Note that any route type
+    * implementing this method should test only for the prefered known types. Note that any route type
     * will always be assignable to a <code>String</code> variable so there is no need to test for this
     * type.
     * </p>
     *
     * @param clazz the type to check if it is compatible with this route type.
-    * @return <code>true</code> if values matched by this route type can be assigned to variables of
+    * @return <code>true</code> if values matched by thos route type can be assigned to variables of
     * the given type, <code>false</code> otherwise.
     */
    protected abstract boolean isAssignableTo(Class<?> clazz);

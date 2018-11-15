@@ -22,13 +22,6 @@
  */
 package com.lmpessoa.services.core.hosting;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.List;
-
-import com.lmpessoa.services.core.services.NoSingleMethodException;
-import com.lmpessoa.services.core.services.ServiceMap;
-
 /**
  * Wraps the call to the next handler in the application.
  *
@@ -42,12 +35,7 @@ import com.lmpessoa.services.core.services.ServiceMap;
  * The proxy can only be invoked once per request.
  * </p>
  */
-public final class NextHandler {
-
-   private final List<Class<?>> handlers;
-   private final ServiceMap services;
-
-   private boolean invoked = false;
+interface NextHandler {
 
    /**
     * Calls the next handler registered in the application.
@@ -59,48 +47,5 @@ public final class NextHandler {
     *
     * @return the result returned by the next handler.
     */
-   public Object invoke() {
-      if (invoked) {
-         throw new IllegalStateException("Next handler has already been called");
-      }
-      invoked = true;
-      Class<?> handlerClass = handlers.get(0);
-      if (handlerClass == null) {
-         return null;
-      }
-      NextHandler next = new NextHandler(services, handlers.subList(1, handlers.size()));
-      try {
-         Constructor<?> constructor = handlerClass.getConstructor(NextHandler.class);
-         Object handler = constructor.newInstance(next);
-         return invokeService(handler);
-      } catch (InvocationTargetException e) {
-         if (e.getCause() instanceof HttpException) {
-            throw (HttpException) e.getCause();
-         }
-         if (e.getCause() instanceof InternalServerError) {
-            throw (InternalServerError) e.getCause();
-         }
-         throw new InternalServerError(e.getCause());
-      } catch (Exception e) {
-         throw new InternalServerError(e);
-      }
-   }
-
-   NextHandler(ServiceMap services, List<Class<?>> handlers) {
-      this.services = services;
-      this.handlers = handlers;
-   }
-
-   private Object invokeService(Object obj)
-      throws IllegalAccessException, InvocationTargetException, NoSingleMethodException, InstantiationException {
-      try {
-         return services.invoke(obj, "invoke");
-      } catch (InvocationTargetException e) {
-         InvocationTargetException ex = e;
-         while (ex.getCause() instanceof InvocationTargetException) {
-            ex = (InvocationTargetException) ex.getCause();
-         }
-         throw ex;
-      }
-   }
+   Object invoke();
 }

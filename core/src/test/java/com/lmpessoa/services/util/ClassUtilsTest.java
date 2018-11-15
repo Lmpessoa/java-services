@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,20 +20,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.hosting;
+package com.lmpessoa.services.util;
 
-import com.lmpessoa.services.core.routing.RouteMatch;
+import org.junit.Test;
 
-final class InvokeHandler {
+import com.lmpessoa.services.core.Resource;
+import com.lmpessoa.services.core.hosting.ApplicationServer;
 
-   public InvokeHandler(NextHandler next) { // NOSONAR
-      // Last handler, no need for next
+public class ClassUtilsTest {
+
+   @Test
+   public void testInternalAccessSuccess() {
+      ClassUtils.checkInternalAccess(ApplicationServer.class, Resource.class);
    }
 
-   public Object invoke(RouteMatch route) {
-      if (route == null) {
-         throw new NotFoundException();
-      }
-      return route.invoke();
+   @Test(expected = SecurityException.class)
+   public void testInternalAccessFail1() {
+      ClassUtils.checkInternalAccess(ApplicationServer.class, String.class);
+   }
+
+   @Test(expected = SecurityException.class)
+   public void testInternalAccessFail2() {
+      ClassUtils.checkInternalAccess(String.class, ApplicationServer.class);
    }
 }

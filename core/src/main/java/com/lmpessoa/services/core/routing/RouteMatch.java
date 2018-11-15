@@ -37,6 +37,15 @@ import java.lang.reflect.Method;
 public interface RouteMatch {
 
    /**
+    * Returns the resource class that contains the method matched by this route.
+    * 
+    * @return the resource class that contains the method matched by this route.
+    */
+   default Class<?> getResourceClass() {
+      return null;
+   }
+
+   /**
     * Returns the method of the resource class matched by this route.
     *
     * @return the method of the resource class matched by this route.

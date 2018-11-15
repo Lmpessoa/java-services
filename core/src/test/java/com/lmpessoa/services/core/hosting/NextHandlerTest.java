@@ -31,6 +31,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.lmpessoa.services.core.hosting.NextHandler;
+import com.lmpessoa.services.core.hosting.NextHandlerImpl;
 import com.lmpessoa.services.core.services.ServiceMap;
 
 public final class NextHandlerTest {
@@ -54,7 +55,7 @@ public final class NextHandlerTest {
    @Test
    public void testRespondingChain() {
       request.code = 0;
-      NextHandler handler = new NextHandler(services, handlers);
+      NextHandler handler = new NextHandlerImpl(services, handlers);
       Result result = (Result) handler.invoke();
       assertEquals("OK", result.message);
       assertEquals(2, result.code);
@@ -63,7 +64,7 @@ public final class NextHandlerTest {
    @Test
    public void testRejectingChain() {
       request.code = 2;
-      NextHandler handler = new NextHandler(services, handlers);
+      NextHandler handler = new NextHandlerImpl(services, handlers);
       Result result = (Result) handler.invoke();
       assertEquals("Error", result.message);
       assertEquals(4, result.code);
@@ -72,7 +73,7 @@ public final class NextHandlerTest {
    @Test
    public void testTransformingChain() {
       request.code = 1;
-      NextHandler handler = new NextHandler(services, handlers);
+      NextHandler handler = new NextHandlerImpl(services, handlers);
       Result result = (Result) handler.invoke();
       assertEquals("OK Computer", result.message);
       assertEquals(2, result.code);

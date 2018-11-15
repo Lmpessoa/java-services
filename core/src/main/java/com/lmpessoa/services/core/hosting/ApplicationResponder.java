@@ -76,7 +76,6 @@ final class ApplicationResponder implements Runnable {
          result.getHeaders().stream().forEach(
                   e -> response.append(String.format("%s: %s%s", e.getKey(), e.getValue(), CRLF)));
 
-         // TODO: Output cookies
          HttpInputStream contentStream = result.getInputStream();
 
          response.append(CRLF);

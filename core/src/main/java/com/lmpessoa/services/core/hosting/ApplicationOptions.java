@@ -32,13 +32,10 @@ import com.lmpessoa.services.util.ClassUtils;
 
 final class ApplicationOptions implements IApplicationOptions {
 
-   private static final List<Class<?>> LAST_HANDLERS = Arrays.asList(InvokeHandler.class);
+   private static final List<Class<?>> LAST_HANDLERS = Arrays.asList(AsyncHandler.class, InvokeHandler.class);
    private final List<Class<?>> handlers = new ArrayList<>();
 
-   ApplicationOptions() {
-      handlers.add(ResultHandler.class);
-      handlers.add(FaviconHandler.class);
-   }
+   private String asyncPath = "/feedback/"; // NOSONAR
 
    @Override
    public void useHandler(Class<?> handlerClass) {
@@ -58,10 +55,34 @@ final class ApplicationOptions implements IApplicationOptions {
       handlers.add(handlerClass);
    }
 
+   @Override
+   public String getAsyncFeedbackPath() {
+      return asyncPath;
+   }
+
+   @Override
+   public void setAsyncFeedbackPath(String path) {
+      if (!path.startsWith("/")) {
+         path = "/" + path; // NOSONAR
+      }
+      if (!path.endsWith("/")) {
+         path += "/";
+      }
+      if (!path.matches("/([a-zA-Z0-9.-_]+/)+")) {
+         throw new IllegalArgumentException("Given path is not valid");
+      }
+      asyncPath = path;
+   }
+
+   ApplicationOptions() {
+      handlers.add(ResultHandler.class);
+      handlers.add(FaviconHandler.class);
+   }
+
    NextHandler getFirstResponder(ServiceMap services) {
       List<Class<?>> allHandlers = new ArrayList<>();
       allHandlers.addAll(this.handlers);
       allHandlers.addAll(LAST_HANDLERS);
-      return new NextHandler(services, allHandlers);
+      return new NextHandlerImpl(services, allHandlers);
    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,39 +20,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.routing;
+package com.lmpessoa.services.core.hosting;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.Arrays;
+import java.util.List;
 
-import com.lmpessoa.services.core.hosting.HttpException;
-import com.lmpessoa.services.core.hosting.InternalServerError;
+import com.lmpessoa.services.core.services.NoSingleMethodException;
+import com.lmpessoa.services.core.services.ServiceMap;
 
-final class MatchedRoute implements RouteMatch {
+final class NextHandlerImpl implements NextHandler {
 
-   private final Class<?> resourceClass;
-   private final Object[] constructorArgs;
-   private final Method method;
-   private final Object[] methodArgs;
+   private final List<Class<?>> handlers;
+   private final ServiceMap services;
 
-   @Override
-   public Class<?> getResourceClass() {
-      return resourceClass;
-   }
-
-   @Override
-   public Method getMethod() {
-      return method;
-   }
+   private boolean invoked = false;
 
    @Override
    public Object invoke() {
+      if (invoked) {
+         throw new IllegalStateException("Next handler has already been called");
+      }
+      invoked = true;
+      Class<?> handlerClass = handlers.get(0);
+      if (handlerClass == null) {
+         return null;
+      }
+      NextHandler next = new NextHandlerImpl(services, handlers.subList(1, handlers.size()));
       try {
-         Constructor<?> constructor = resourceClass.getConstructors()[0];
-         Object resource = constructor.newInstance(constructorArgs);
-         return method.invoke(resource, methodArgs);
+         Constructor<?> constructor = handlerClass.getConstructor(NextHandler.class);
+         Object handler = constructor.newInstance(next);
+         return invokeService(handler);
       } catch (InvocationTargetException e) {
          if (e.getCause() instanceof HttpException) {
             throw (HttpException) e.getCause();
@@ -66,18 +64,21 @@ final class MatchedRoute implements RouteMatch {
       }
    }
 
-   MatchedRoute(MethodEntry entry, Object[] args) {
-      this.resourceClass = entry.getResourceClass();
-      this.constructorArgs = Arrays.copyOfRange(args, 0, entry.getResourceArgumentCount());
-      this.method = entry.getMethod();
-      this.methodArgs = Arrays.copyOfRange(args, entry.getResourceArgumentCount(), args.length);
+   NextHandlerImpl(ServiceMap services, List<Class<?>> handlers) {
+      this.services = services;
+      this.handlers = handlers;
    }
 
-   Object[] getConstructorArgs() {
-      return constructorArgs;
-   }
-
-   Object[] getMethodArgs() {
-      return methodArgs;
+   private Object invokeService(Object obj) throws IllegalAccessException,
+      InvocationTargetException, NoSingleMethodException, InstantiationException {
+      try {
+         return services.invoke(obj, "invoke");
+      } catch (InvocationTargetException e) {
+         InvocationTargetException ex = e;
+         while (ex.getCause() instanceof InvocationTargetException) {
+            ex = (InvocationTargetException) ex.getCause();
+         }
+         throw ex;
+      }
    }
 }

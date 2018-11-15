@@ -45,6 +45,8 @@ import java.util.regex.Pattern;
 
 import com.lmpessoa.services.core.NonResource;
 import com.lmpessoa.services.core.Resource;
+import com.lmpessoa.services.core.concurrent.ExecutionService;
+import com.lmpessoa.services.core.concurrent.IExecutionService;
 import com.lmpessoa.services.core.hosting.content.Serializer;
 import com.lmpessoa.services.core.routing.IRouteTable;
 import com.lmpessoa.services.core.routing.RouteMatch;
@@ -93,7 +95,7 @@ public final class ApplicationServer implements IApplicationInfo {
    private Collection<Class<?>> resources;
    private IHostEnvironment environment;
    private ApplicationContext context;
-   private AsyncJobQueue jobQueue;
+   private ExecutionService executor;
    private Class<?> startupClass;
    private ServiceMap services;
    private Logger log;
@@ -174,16 +176,26 @@ public final class ApplicationServer implements IApplicationInfo {
    ApplicationServer(Class<?> startupClass, ApplicationServerInfo info, String envName, Logger log) {
       this.startupClass = startupClass;
       this.log = log;
-   
+
       Collection<String> enable = info.getProperties("enable").values();
       Serializer.enableXml(enable.contains("xml"));
       this.log.enableTracing(enable.contains("trace"));
       final String name = Character.toUpperCase(envName.charAt(0)) + envName.substring(1).toLowerCase();
       this.environment = () -> name;
       logStartupMessage(startupClass, info);
-   
+
       this.port = Integer.parseInt(info.getProperty("server.port").orElse("5617"));
-      this.jobQueue = new AsyncJobQueue(info, log);
+      this.executor = new ExecutionService(getRequestLimit(info), log);
+      int jobLimit = getJobsLimit(info);
+      if (jobLimit > 0) {
+         AsyncHandler.setExecutor(new ExecutionService(jobLimit, log));
+      } else {
+         AsyncHandler.setExecutor(executor);
+      }
+   }
+
+   static ApplicationServer instance() {
+      return instance;
    }
 
    static Logger createLogger(ApplicationServerInfo info, Class<?> startupClass) {
@@ -241,8 +253,8 @@ public final class ApplicationServer implements IApplicationInfo {
       return environment;
    }
 
-   AsyncJobQueue getJobQueue() {
-      return jobQueue;
+   ExecutionService getExecutor() {
+      return executor;
    }
 
    NextHandler getFirstResponder() {
@@ -282,21 +294,22 @@ public final class ApplicationServer implements IApplicationInfo {
    synchronized ServiceMap getServices() {
       if (services == null) {
          services = new ServiceMap();
-   
+
          // Registers Singleton services
          services.useSingleton(IServiceMap.class, services);
          services.useSingleton(ILogger.class, log);
          services.useSingleton(IApplicationInfo.class, this);
+         services.useSingleton(IApplicationOptions.class, options);
          services.useSingleton(IHostEnvironment.class, environment);
-         services.useSingleton(AsyncJobQueue.class, jobQueue);
-   
+         services.useSingleton(IExecutionService.class, executor);
+
          // Registers PerRequest services
          services.usePerRequest(IRouteTable.class, () -> null);
          services.usePerRequest(ConnectionInfo.class, () -> null);
          services.usePerRequest(HttpRequest.class, () -> null);
          services.usePerRequest(RouteMatch.class, () -> null);
          services.usePerRequest(HeaderMap.class);
-   
+
          // Runs used defined service registration
          configureServices(services);
          final ServiceMap configMap = getConfigServiceMap(services);
@@ -454,9 +467,22 @@ public final class ApplicationServer implements IApplicationInfo {
          log.warning(e);
          ct.interrupt();
       }
-      jobQueue.shutdown();
+      executor.shutdown();
       logShutdownMessage();
       log.join();
+   }
+
+   private int getRequestLimit(ApplicationServerInfo info) {
+      Optional<Integer> result = info.getIntProperty("concurrent.limit");
+      if (!result.isPresent()) {
+         result = info.getIntProperty("concurrent.limit.requests");
+      }
+      return result.orElse(0);
+   }
+
+   private int getJobsLimit(ApplicationServerInfo info) {
+      Optional<Integer> result = info.getIntProperty("concurrent.limit.jobs");
+      return result.orElse(0);
    }
 
    private void logStartupMessage(Class<?> startupClass, ApplicationServerInfo info) {

@@ -45,8 +45,8 @@ import java.lang.annotation.Target;
  * </p>
  *
  * <p>
- * Optionally, methods may return an <code>HttpResultInputStream</code> if the content type of the
- * return may vary.
+ * Optionally, methods may return an {@link HttpInputStream} if the content type of the return may
+ * vary.
  * </p>
  *
  * @see HttpInputStream

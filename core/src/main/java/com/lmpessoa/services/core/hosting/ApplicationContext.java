@@ -29,6 +29,7 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.Objects;
 
+import com.lmpessoa.services.core.concurrent.ExecutionService;
 import com.lmpessoa.services.core.routing.RouteTable;
 import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.util.logging.Logger;
@@ -88,8 +89,8 @@ class ApplicationContext implements Runnable {
       return server.getServices();
    }
 
-   AsyncJobQueue getJobQueue() {
-      return server.getJobQueue();
+   ExecutionService getExecutor() {
+      return server.getExecutor();
    }
 
    NextHandler getFirstResponder() {
@@ -108,7 +109,7 @@ class ApplicationContext implements Runnable {
       try {
          Socket client = socket.accept();
          ApplicationResponder job = new ApplicationResponder(this, client);
-         server.getJobQueue().execute(job);
+         server.getExecutor().submit(job, "request");
       } catch (SocketTimeoutException e) {
          // just ignore
       } catch (IOException e) {
