@@ -45,7 +45,7 @@ import com.lmpessoa.services.core.hosting.Configurable;
 import com.lmpessoa.services.core.hosting.InternalServerError;
 import com.lmpessoa.services.core.hosting.MethodNotAllowedException;
 import com.lmpessoa.services.core.hosting.NotFoundException;
-import com.lmpessoa.services.core.hosting.content.Serializer;
+import com.lmpessoa.services.core.serializing.Serializer;
 import com.lmpessoa.services.core.services.NoSingleMethodException;
 import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.util.ClassUtils;
@@ -238,7 +238,7 @@ public final class RouteTable implements IRouteTable, Configurable<IRouteOptions
       InputStream body = request.getBody();
       byte[] content = readContentBody(body);
       if (request.getContentType() != null && content != null && request.getContentLength() > 0) {
-         return Serializer.read(request.getContentType(), content, contentClass);
+         return Serializer.toObject(content, request.getContentType(), contentClass);
       }
       return null;
    }

@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.hosting.content;
+package com.lmpessoa.services.core.serializing;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -31,23 +31,32 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.junit.Test;
 
 import com.lmpessoa.services.core.hosting.ContentType;
 import com.lmpessoa.services.core.hosting.HttpInputStream;
-import com.lmpessoa.services.core.hosting.content.MultipartSerializer;
 
 public final class MultipartFormSerializerTest {
 
-   private static final String CONTENT_TYPE = "multipart/form-data; boundary=AaB03x";
+   private static final Map<String, String> CONTENT_TYPE;
 
-   private MultipartSerializer serializer = new MultipartSerializer();
+   static {
+      Map<String, String> content = new HashMap<>();
+      content.put("", ContentType.MULTIPART_FORM);
+      content.put("boundary", "AaB03x");
+      CONTENT_TYPE = Collections.unmodifiableMap(content);
+   }
+
+   private MultipartFormSerializer serializer = new MultipartFormSerializer();
 
    @Test
    public void testSimpleFieldsOnly() throws IOException {
       byte[] content = getContent("no_streams.txt");
-      Test1 result = serializer.read(content, CONTENT_TYPE, Test1.class);
+      Test1 result = serializer.read(content, Test1.class, CONTENT_TYPE);
       assertEquals(12, result.id);
       assertEquals("Test", result.name);
    }
@@ -55,7 +64,7 @@ public final class MultipartFormSerializerTest {
    @Test
    public void testSingleVariableWithNoFile() throws IOException {
       byte[] content = getContent("no_streams.txt");
-      Test2 result = serializer.read(content, CONTENT_TYPE, Test2.class);
+      Test2 result = serializer.read(content, Test2.class, CONTENT_TYPE);
       assertEquals(12, result.id);
       assertEquals("Test", result.name);
       assertNull(result.files);
@@ -64,7 +73,7 @@ public final class MultipartFormSerializerTest {
    @Test
    public void testSingleVariable() throws IOException {
       byte[] content = getContent("single_stream.txt");
-      Test2 result = serializer.read(content, CONTENT_TYPE, Test2.class);
+      Test2 result = serializer.read(content, Test2.class, CONTENT_TYPE);
       assertEquals(12, result.id);
       assertEquals("Test", result.name);
       assertNotNull(result.files);
@@ -74,13 +83,13 @@ public final class MultipartFormSerializerTest {
    @Test(expected = IllegalArgumentException.class)
    public void testMultipleFilesWithSingleVariable() throws IOException {
       byte[] content = getContent("multi_streams.txt");
-      serializer.read(content, CONTENT_TYPE, Test2.class);
+      serializer.read(content, Test2.class, CONTENT_TYPE);
    }
 
    @Test
    public void testArrayWithOneFile() throws IOException {
       byte[] content = getContent("single_stream.txt");
-      Test3 result = serializer.read(content, CONTENT_TYPE, Test3.class);
+      Test3 result = serializer.read(content, Test3.class, CONTENT_TYPE);
       assertEquals(12, result.id);
       assertEquals("Test", result.name);
       assertNotNull(result.files);
@@ -91,7 +100,7 @@ public final class MultipartFormSerializerTest {
    @Test
    public void testArrayWithMultipleFiles() throws IOException {
       byte[] content = getContent("multi_streams.txt");
-      Test3 result = serializer.read(content, CONTENT_TYPE, Test3.class);
+      Test3 result = serializer.read(content, Test3.class, CONTENT_TYPE);
       assertEquals(12, result.id);
       assertEquals("Test", result.name);
       assertNotNull(result.files);

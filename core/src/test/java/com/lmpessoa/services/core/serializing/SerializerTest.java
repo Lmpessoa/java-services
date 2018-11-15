@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.hosting.content;
+package com.lmpessoa.services.core.serializing;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -39,8 +39,9 @@ import org.junit.rules.ExpectedException;
 
 import com.lmpessoa.services.core.hosting.ContentType;
 import com.lmpessoa.services.core.hosting.HttpInputStream;
-import com.lmpessoa.services.core.hosting.content.SerializationException;
-import com.lmpessoa.services.core.hosting.content.Serializer;
+import com.lmpessoa.services.core.hosting.NotAcceptableException;
+import com.lmpessoa.services.core.hosting.UnsupportedMediaTypeException;
+import com.lmpessoa.services.core.serializing.Serializer;
 
 public final class SerializerTest {
 
@@ -51,7 +52,7 @@ public final class SerializerTest {
    public void testParseJson() {
       String content = "{\"id\": 12, \"name\": \"Test\", \"email\": "
                + "[ \"test@test.com\", \"test@test.org\" ], \"checked\": true}";
-      TestObject result = Serializer.read(ContentType.JSON, content.getBytes(), TestObject.class);
+      TestObject result = Serializer.toObject(content.getBytes(), ContentType.JSON, TestObject.class);
       assertNotNull(result);
       assertEquals(12, result.id);
       assertEquals("Test", result.name);
@@ -61,11 +62,11 @@ public final class SerializerTest {
 
    @Test
    public void testParseXmlFails() {
-      thrown.expect(SerializationException.class);
+      thrown.expect(UnsupportedMediaTypeException.class);
       Serializer.enableXml(false);
       String content = "<?xml version=\"1.0\"?><object><id>12</id><name>Test</name>"
                + "<email>test@test.com</email><email>test@test.org</email><checked>true</checked></object>";
-      Serializer.read(ContentType.XML, content.getBytes(), TestObject.class);
+      Serializer.toObject(content.getBytes(), ContentType.XML, TestObject.class);
    }
 
    @Test
@@ -73,7 +74,7 @@ public final class SerializerTest {
       Serializer.enableXml(true);
       String content = "<?xml version=\"1.0\"?><object><id>12</id><name>Test</name>"
                + "<email>test@test.com</email><email>test@test.org</email><checked>true</checked></object>";
-      TestObject result = Serializer.read(ContentType.XML, content.getBytes(), TestObject.class);
+      TestObject result = Serializer.toObject(content.getBytes(), ContentType.XML, TestObject.class);
       assertNotNull(result);
       assertEquals(12, result.id);
       assertEquals("Test", result.name);
@@ -84,7 +85,7 @@ public final class SerializerTest {
    @Test
    public void testParseForm() {
       String content = "id=12&name=Test&email=test%40test.com&email=test%40test.org&checked=true";
-      TestObject result = Serializer.read(ContentType.FORM, content.getBytes(), TestObject.class);
+      TestObject result = Serializer.toObject(content.getBytes(), ContentType.FORM, TestObject.class);
       assertNotNull(result);
       assertEquals(12, result.id);
       assertEquals("Test", result.name);
@@ -94,14 +95,15 @@ public final class SerializerTest {
 
    @Test
    public void testProduceXmlFails() throws IOException, InstantiationException, IllegalAccessException {
+      thrown.expect(NotAcceptableException.class);
       Serializer.enableXml(false);
-      assertNull(Serializer.produce(new String[] { ContentType.XML }, "Test"));
+      assertNull(Serializer.fromObject("Test", new String[] { ContentType.XML }));
    }
 
    @Test
    public void testProduceXmlString() throws IOException, InstantiationException, IllegalAccessException {
       Serializer.enableXml(true);
-      HttpInputStream result = Serializer.produce(new String[] { ContentType.XML }, "Test");
+      HttpInputStream result = Serializer.fromObject("Test", new String[] { ContentType.XML });
       byte[] data = new byte[result.available()];
       result.read(data);
       String content = new String(data, Charset.forName("UTF-8"));
@@ -111,7 +113,7 @@ public final class SerializerTest {
    @Test
    public void testProduceXmlInt() throws IOException, InstantiationException, IllegalAccessException {
       Serializer.enableXml(true);
-      HttpInputStream result = Serializer.produce(new String[] { ContentType.XML }, 12);
+      HttpInputStream result = Serializer.fromObject(12, new String[] { ContentType.XML });
       byte[] data = new byte[result.available()];
       result.read(data);
       String content = new String(data, Charset.forName("UTF-8"));
@@ -121,7 +123,7 @@ public final class SerializerTest {
    @Test
    public void testProduceXmlException() throws IOException, InstantiationException, IllegalAccessException {
       Serializer.enableXml(true);
-      HttpInputStream result = Serializer.produce(new String[] { ContentType.XML }, new NullPointerException());
+      HttpInputStream result = Serializer.fromObject(new NullPointerException(), new String[] { ContentType.XML });
       byte[] data = new byte[result.available()];
       result.read(data);
       String content = new String(data, Charset.forName("UTF-8"));

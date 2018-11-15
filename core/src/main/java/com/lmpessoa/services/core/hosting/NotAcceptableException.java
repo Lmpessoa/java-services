@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,11 +20,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.hosting.content;
+package com.lmpessoa.services.core.hosting;
 
-import java.io.InputStream;
+public final class NotAcceptableException extends HttpException {
 
-interface IContentProducer {
+   private static final long serialVersionUID = 1L;
 
-   InputStream produce(Object obj);
+   public NotAcceptableException() {
+      super(406);
+   }
+
+   public NotAcceptableException(String message) {
+      super(406, message);
+   }
 }

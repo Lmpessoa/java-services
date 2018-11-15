@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.hosting.content;
+package com.lmpessoa.services.core.serializing;
 
 import java.io.InputStream;
 import java.lang.reflect.Field;
@@ -37,21 +37,25 @@ import com.lmpessoa.services.core.hosting.HttpInputStream;
 import com.lmpessoa.services.core.hosting.InternalServerError;
 import com.lmpessoa.services.util.ClassUtils;
 
-final class MultipartSerializer implements IContentReader {
+final class MultipartFormSerializer extends Serializer {
 
    @Override
-   public <T> T read(byte[] content, String contentType, Class<T> resultClass) {
-      Map<String, String> disp = getHeaderValues(contentType);
-      String boundary = disp.get("boundary");
+   protected <T> T read(byte[] content, Class<T> type, Map<String, String> contentType) {
+      String boundary = contentType.get("boundary");
       if (boundary == null) {
          throw new BadRequestException();
       }
       Collection<MultipartEntry> entries = parseMultipart(content, boundary);
       try {
-         return mapToObject(entries, resultClass);
+         return mapToObject(entries, type);
       } catch (InstantiationException | IllegalAccessException e) {
          throw new InternalServerError(e);
       }
+   }
+
+   @Override
+   protected String write(Object content) {
+      return null;
    }
 
    private Collection<MultipartEntry> parseMultipart(byte[] content, String boundaryStr) {
@@ -101,7 +105,10 @@ final class MultipartSerializer implements IContentReader {
             value = new HttpInputStream(contentType, entry.content, filename); // NOSONAR
          }
          String name = disp.get("name");
-         Field field = FormSerializer.findField(name, resultClass);
+         Field field = findField(name, resultClass);
+         if (isStaticOrTransientOrVolatile(field)) {
+            continue;
+         }
          Class<?> fieldType = field.getType();
          if (fieldType.isArray() && fieldType.getComponentType().isAssignableFrom(HttpInputStream.class)) {
             if (value instanceof Collection<?>) {
@@ -131,21 +138,6 @@ final class MultipartSerializer implements IContentReader {
          String mixedFilename = mixedEntryDisp.get("filename");
          String mixedContentType = mixedEntry.headers.get(HeaderMap.CONTENT_TYPE);
          result.add(new HttpInputStream(mixedContentType, mixedEntry.content, mixedFilename));
-      }
-      return result;
-   }
-
-   private Map<String, String> getHeaderValues(String header) {
-      String[] parts = header.split(";");
-      Map<String, String> result = new HashMap<>();
-      result.put("", parts[0].trim());
-      for (int i = 1; i < parts.length; ++i) {
-         String[] subparts = parts[i].split("=", 2);
-         subparts[1] = subparts[1].trim();
-         if (subparts[1].startsWith("\"")) {
-            subparts[1] = subparts[1].substring(1, subparts[1].length() - 1);
-         }
-         result.put(subparts[0].trim(), subparts[1].trim());
       }
       return result;
    }

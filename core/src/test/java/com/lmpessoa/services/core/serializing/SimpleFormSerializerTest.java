@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.hosting.content;
+package com.lmpessoa.services.core.serializing;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -33,27 +33,26 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.lmpessoa.services.core.hosting.ContentType;
-import com.lmpessoa.services.core.hosting.content.FormSerializer;
-import com.lmpessoa.services.core.hosting.content.TypeConvertException;
+import com.lmpessoa.services.core.hosting.InternalServerError;
+import com.lmpessoa.services.core.serializing.SimpleFormSerializer;
 
-public final class FormSerializerTest {
+public final class SimpleFormSerializerTest {
 
    @Rule
    public ExpectedException thrown = ExpectedException.none();
 
-   private FormSerializer serializer = new FormSerializer();
+   private SimpleFormSerializer serializer = new SimpleFormSerializer();
 
    @Test
    public void testParseWithSingleValue() {
-      Test1 test = serializer.read("value=Test".getBytes(), ContentType.FORM, Test1.class);
+      Test1 test = serializer.read("value=Test", Test1.class);
       assertNotNull(test);
       assertEquals("Test", test.value);
    }
 
    @Test
    public void testParseWithMultipleValues() {
-      Test2 test = serializer.read("value=Test&id=12&checked=true".getBytes(), ContentType.FORM, Test2.class);
+      Test2 test = serializer.read("value=Test&id=12&checked=true", Test2.class);
       assertNotNull(test);
       assertEquals("Test", test.value);
       assertEquals(12, test.id);
@@ -62,7 +61,7 @@ public final class FormSerializerTest {
 
    @Test
    public void testParseWithPartialValues() {
-      Test2 test = serializer.read("value=Test&id=12".getBytes(), ContentType.FORM, Test2.class);
+      Test2 test = serializer.read("value=Test&id=12", Test2.class);
       assertNotNull(test);
       assertEquals("Test", test.value);
       assertEquals(12, test.id);
@@ -70,14 +69,8 @@ public final class FormSerializerTest {
    }
 
    @Test
-   public void testParseNotWithMissingValues() {
-      Test2 test = serializer.read("value=Test&id=12&flag=true".getBytes(), ContentType.FORM, Test2.class);
-      assertNull(test);
-   }
-
-   @Test
    public void testProduceSubclass() {
-      Test3 test = serializer.read("value=Test&id=12&checked=true".getBytes(), ContentType.FORM, Test3.class);
+      Test3 test = serializer.read("value=Test&id=12&checked=true", Test3.class);
       assertNotNull(test);
       assertEquals("Test", test.value);
       assertEquals(12, test.id);
@@ -86,28 +79,40 @@ public final class FormSerializerTest {
 
    @Test
    public void testParseWithArray1() {
-      Test4 test = serializer.read("values=1&values=2&values=3".getBytes(), ContentType.FORM, Test4.class);
+      Test4 test = serializer.read("values=1&values=2&values=3", Test4.class);
       assertNotNull(test);
       assertArrayEquals(new int[] { 1, 2, 3 }, test.values);
    }
 
    @Test
    public void testParseWithArray2() {
-      Test4 test = serializer.read("values[]=1&values[]=2&values[]=3".getBytes(), ContentType.FORM, Test4.class);
+      Test4 test = serializer.read("values[]=1&values[]=2&values[]=3", Test4.class);
       assertNotNull(test);
       assertArrayEquals(new int[] { 1, 2, 3 }, test.values);
    }
 
    @Test
-   public void testParseTypeMismatch() {
-      thrown.expect(TypeConvertException.class);
-      serializer.read("value=1&value=2&id=1".getBytes(), ContentType.FORM, Test2.class);
+   public void testParseMultipleValuesToOne() {
+      Test2 test = serializer.read("value=1&value=2&id=1", Test2.class);
+      assertNotNull(test);
+      assertEquals("1,2", test.value);
+      assertEquals(1, test.id);
+      assertFalse(test.checked);
    }
 
    @Test
    public void testParseNonNumber() {
-      thrown.expect(TypeConvertException.class);
-      serializer.read("id=a".getBytes(), ContentType.FORM, Test2.class);
+      thrown.expect(InternalServerError.class);
+      serializer.read("id=a", Test2.class);
+   }
+
+   @Test
+   public void testTransientFields() {
+      Test5 test = serializer.read("value=Test&id=7&checked=true", Test5.class);
+      assertNotNull(test);
+      assertNull(test.value);
+      assertEquals(0, test.id);
+      assertTrue(test.checked);
    }
 
    public static class Test1 {
@@ -119,7 +124,7 @@ public final class FormSerializerTest {
 
       public String value;
       public int id;
-      public transient boolean checked = false;
+      public boolean checked = false;
    }
 
    public static class Test3 extends Test2 {
@@ -129,5 +134,12 @@ public final class FormSerializerTest {
    public static class Test4 {
 
       public int[] values;
+   }
+
+   public static class Test5 {
+
+      public transient String value;
+      public transient int id;
+      public boolean checked;
    }
 }

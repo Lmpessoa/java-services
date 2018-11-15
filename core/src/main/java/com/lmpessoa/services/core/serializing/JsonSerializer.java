@@ -20,46 +20,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.hosting.content;
-
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.nio.charset.Charset;
+package com.lmpessoa.services.core.serializing;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-final class JsonSerializer implements IContentReader, IContentProducer {
+final class JsonSerializer extends Serializer {
 
    @Override
-   public <T> T read(byte[] content, String contentType, Class<T> resultClass) {
-      String charset = Serializer.getContentTypeVariable(contentType, "charset");
-      Charset encoding = Charset.forName(charset == null ? Serializer.UTF_8 : charset);
-      String contentStr = new String(content, encoding);
-      return read(contentStr, resultClass);
+   protected <T> T read(String content, Class<T> type) throws Exception {
+      Gson gson = new GsonBuilder().setPrettyPrinting().create();
+      return gson.fromJson(content, type);
    }
 
    @Override
-   public InputStream produce(Object obj) {
+   protected String write(Object object) {
       try {
          Gson gson = new GsonBuilder().create();
-         byte[] data = gson.toJson(obj).getBytes(Charset.forName(Serializer.UTF_8));
-         return new ByteArrayInputStream(data);
-      } catch (RuntimeException e) {
-         throw e;
+         return gson.toJson(object);
       } catch (Exception e) {
-         throw new RuntimeException(e);
+         return null;
       }
    }
 
-   private <T> T read(String content, Class<T> clazz) {
-      try {
-         Gson gson = new GsonBuilder().setPrettyPrinting().create();
-         return gson.fromJson(content, clazz);
-      } catch (RuntimeException e) {
-         throw e;
-      } catch (Exception e) {
-         throw new RuntimeException(e);
-      }
-   }
 }

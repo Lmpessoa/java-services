@@ -42,12 +42,12 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import com.lmpessoa.services.core.concurrent.IExecutionService;
-import com.lmpessoa.services.core.hosting.content.Serializer;
 import com.lmpessoa.services.core.routing.IRouteTable;
 import com.lmpessoa.services.core.routing.NonResource;
 import com.lmpessoa.services.core.routing.Resource;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.routing.RouteTable;
+import com.lmpessoa.services.core.serializing.Serializer;
 import com.lmpessoa.services.core.services.IServiceMap;
 import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.util.ClassUtils;

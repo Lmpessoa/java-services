@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,9 +20,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.hosting.content;
+package com.lmpessoa.services.core.hosting;
 
-interface IContentReader {
+public final class UnsupportedMediaTypeException extends HttpException {
 
-   <T> T read(byte[] content, String contentType, Class<T> resultClass);
+   private static final long serialVersionUID = 1L;
+
+   public UnsupportedMediaTypeException() {
+      super(415);
+   }
+
+   public UnsupportedMediaTypeException(String message) {
+      super(415, message);
+   }
 }

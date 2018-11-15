@@ -35,8 +35,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import com.lmpessoa.services.core.hosting.content.Serializer;
 import com.lmpessoa.services.core.routing.RouteMatch;
+import com.lmpessoa.services.core.serializing.Serializer;
 import com.lmpessoa.services.util.logging.ILogger;
 
 final class ResultHandler {
@@ -173,11 +173,7 @@ final class ResultHandler {
       } else {
          accepts = new String[] { ContentType.JSON };
       }
-      try {
-         return Serializer.produce(accepts, obj);
-      } catch (InstantiationException | IllegalAccessException e) {
-         throw new InternalServerError(e);
-      }
+      return Serializer.fromObject(obj, accepts);
    }
 
    private Charset getCharsetFromMethodOrUTF8(Method method) {
@@ -188,7 +184,7 @@ final class ResultHandler {
             return Charset.forName(ctypeMap.get("charset"));
          }
       }
-      return Charset.forName("utf-8");
+      return Serializer.UTF_8;
    }
 
    static boolean isTextual(String contentType) {

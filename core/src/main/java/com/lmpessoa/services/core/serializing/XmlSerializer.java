@@ -20,13 +20,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.hosting.content;
+package com.lmpessoa.services.core.serializing;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,13 +32,12 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
-import com.lmpessoa.services.core.hosting.InternalServerError;
+import com.lmpessoa.services.util.ClassUtils;
 
-final class XmlSerializer implements IContentReader, IContentProducer {
+final class XmlSerializer extends Serializer {
 
-   private static final Map<Class<?>, String> types = new HashMap<>();
    private static final String XML_HEAD = "<?xml version=\"1.0\"?>";
-
+   private static final Map<Class<?>, String> types = new HashMap<>();
    static {
       types.put(String.class, "string");
       types.put(Long.class, "long");
@@ -54,36 +50,29 @@ final class XmlSerializer implements IContentReader, IContentProducer {
    }
 
    @Override
-   public <T> T read(byte[] content, String contentType, Class<T> resultClass) {
-      String charset = Serializer.getContentTypeVariable(contentType, "charset");
-      Charset encoding = Charset.forName(charset == null ? Serializer.UTF_8 : charset);
-      String contentStr = new String(content, encoding);
-      return read(contentStr, resultClass);
+   @SuppressWarnings("unchecked")
+   protected <T> T read(String content, Class<T> type) throws Exception {
+      JAXBContext context = JAXBContext.newInstance(type);
+      Unmarshaller unmarshaller = context.createUnmarshaller();
+      return (T) unmarshaller.unmarshal(new StringReader(content));
    }
 
    @Override
-   public InputStream produce(Object obj) {
+   protected String write(Object object) {
       String result;
-      if (types.containsKey(obj.getClass())) {
-         result = producePrimitive(types.get(obj.getClass()), obj.toString());
-      } else if (obj instanceof Throwable) {
-         result = produceException((Throwable) obj);
+      Class<?> type = ClassUtils.box(object.getClass());
+      if (types.containsKey(type)) {
+         result = producePrimitive(types.get(type), object.toString());
+      } else if (object instanceof Throwable) {
+         result = produceException((Throwable) object);
       } else {
-         result = produceObject(obj);
+         try {
+            result = produceObject(object);
+         } catch (JAXBException e) {
+            result = null;
+         }
       }
-      byte[] data = result.getBytes(Charset.forName("UTF-8"));
-      return new ByteArrayInputStream(data);
-   }
-
-   @SuppressWarnings("unchecked")
-   private <T> T read(String content, Class<T> clazz) {
-      try {
-         JAXBContext context = JAXBContext.newInstance(clazz);
-         Unmarshaller unmarshaller = context.createUnmarshaller();
-         return (T) unmarshaller.unmarshal(new StringReader(content));
-      } catch (JAXBException e) {
-         throw new RuntimeException(e);
-      }
+      return result;
    }
 
    private String producePrimitive(String name, String value) {
@@ -103,15 +92,11 @@ final class XmlSerializer implements IContentReader, IContentProducer {
       return result.toString();
    }
 
-   private String produceObject(Object obj) {
-      try {
-         JAXBContext context = JAXBContext.newInstance(obj.getClass());
-         Marshaller marshaller = context.createMarshaller();
-         StringWriter result = new StringWriter();
-         marshaller.marshal(obj, result);
-         return result.toString();
-      } catch (JAXBException e) {
-         throw new InternalServerError(e);
-      }
+   private String produceObject(Object obj) throws JAXBException {
+      JAXBContext context = JAXBContext.newInstance(obj.getClass());
+      Marshaller marshaller = context.createMarshaller();
+      StringWriter result = new StringWriter();
+      marshaller.marshal(obj, result);
+      return result.toString();
    }
 }
