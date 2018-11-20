@@ -45,6 +45,7 @@ import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.Negative;
 import javax.validation.constraints.NegativeOrZero;
+import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Null;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Positive;
@@ -62,6 +63,7 @@ final class VariableRoutePart implements IVariablePart, Comparable<VariableRoute
    private final BigDecimal maxValue;
    private final Class<?> paramType;
    private final String paramName;
+   private final boolean catchall;
    private final String pattern;
    private final int paramIndex;
 
@@ -87,7 +89,8 @@ final class VariableRoutePart implements IVariablePart, Comparable<VariableRoute
             break;
          }
       }
-      return index == paramIndex && param.getName().equals(paramName) && param.getType() == paramType;
+      return index == paramIndex && param.getName().equals(paramName)
+               && param.getType() == paramType;
 
    }
 
@@ -122,12 +125,13 @@ final class VariableRoutePart implements IVariablePart, Comparable<VariableRoute
       this.paramIndex = paramIndex;
       if (paramIndex >= exec.getParameterCount()) {
          throw new ArrayIndexOutOfBoundsException(
-                  String.format("Wrong parameter count in route (found: %d, expected: %d)", paramIndex + 1,
-                           exec.getParameterCount()));
+                  String.format("Wrong parameter count in route (found: %d, expected: %d)",
+                           paramIndex + 1, exec.getParameterCount()));
       }
       Parameter param = exec.getParameters()[paramIndex];
       this.paramName = param.getName();
       this.paramType = param.getType();
+      this.catchall = param.isVarArgs();
       GroupSequence groupSeq = resourceClass.getAnnotation(GroupSequence.class);
       if (groupSeq != null) {
          this.groups = Arrays.asList(groupSeq.value());
@@ -170,6 +174,10 @@ final class VariableRoutePart implements IVariablePart, Comparable<VariableRoute
 
    boolean isAssignableTo(Class<?> otherType) {
       return otherType.isAssignableFrom(paramType);
+   }
+
+   boolean isCatchAll() {
+      return catchall;
    }
 
    private <T extends Comparable<T>> int innerCompare(T o1, T o2) {
@@ -223,7 +231,8 @@ final class VariableRoutePart implements IVariablePart, Comparable<VariableRoute
          result = BigDecimal.ZERO;
       }
       if (result != null && !isNumberType(source.getType())) {
-         throw new UnexpectedTypeException("Expected number type, was " + source.getType().getName());
+         throw new UnexpectedTypeException(
+                  "Expected number type, was " + source.getType().getName());
       }
       return result;
    }
@@ -253,15 +262,16 @@ final class VariableRoutePart implements IVariablePart, Comparable<VariableRoute
          result = BigDecimal.ZERO;
       }
       if (result != null && !isNumberType(source.getType())) {
-         throw new UnexpectedTypeException("Expected number type, was " + source.getType().getName());
+         throw new UnexpectedTypeException(
+                  "Expected number type, was " + source.getType().getName());
       }
       return result;
    }
 
    private boolean isNumberType(Class<?> type) {
-      return type == byte.class || type == short.class || type == int.class || type == long.class || type == Byte.class
-               || type == Short.class || type == Integer.class || type == Long.class || type == BigInteger.class
-               || type == BigDecimal.class;
+      return type == byte.class || type == short.class || type == int.class || type == long.class
+               || type == Byte.class || type == Short.class || type == Integer.class
+               || type == Long.class || type == BigInteger.class || type == BigDecimal.class;
    }
 
    private String getSizePattern(Parameter source) {
@@ -277,7 +287,8 @@ final class VariableRoutePart implements IVariablePart, Comparable<VariableRoute
       if (min == null && max == null) {
          return null;
       } else if (source.getType() != String.class) {
-         throw new UnexpectedTypeException("Expected string type, was " + source.getType().getName());
+         throw new UnexpectedTypeException(
+                  "Expected string type, was " + source.getType().getName());
       }
       StringBuilder result = new StringBuilder("[^\\/]{");
       if (min != null) {
@@ -310,22 +321,29 @@ final class VariableRoutePart implements IVariablePart, Comparable<VariableRoute
          result.add(sizePattern);
       }
       if (!result.isEmpty() && source.getType() != String.class) {
-         throw new UnexpectedTypeException("Expected string type, was " + source.getType().getName());
+         throw new UnexpectedTypeException(
+                  "Expected string type, was " + source.getType().getName());
       }
       if (typePattern != null) {
          result.add(typePattern);
       }
       if (result.isEmpty()) {
-         return "[^\\/]+";
+         result.add("[^\\/]+");
       }
       for (int i = 0; i < result.size() - 1; ++i) {
          result.set(i, "(?=" + result.get(i) + ")");
       }
-      return String.join("", result);
+      String resultStr = String.join("", result);
+      if (catchall) {
+         resultStr = "(?:\\/" + resultStr + ")";
+         resultStr += getConstraints(source, NotEmpty.class).isEmpty() ? "*" : "+";
+      }
+      return "(" + resultStr + ")";
    }
 
    @SuppressWarnings("unchecked")
-   private <T extends Annotation> Collection<T> getConstraints(Parameter source, Class<T> annotationClass) {
+   private <T extends Annotation> Collection<T> getConstraints(Parameter source,
+      Class<T> annotationClass) {
       Method groupsMethod = ClassUtils.getMethod(annotationClass, "groups");
       List<T> result = new ArrayList<>();
       T ann = source.getAnnotation(annotationClass);
@@ -343,7 +361,8 @@ final class VariableRoutePart implements IVariablePart, Comparable<VariableRoute
                      result.add(annt);
                   }
                }
-            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+            } catch (IllegalAccessException | IllegalArgumentException
+                     | InvocationTargetException e) {
                // Should not happen but...
             }
          }

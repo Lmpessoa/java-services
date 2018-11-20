@@ -22,12 +22,16 @@
  */
 package com.lmpessoa.services.core.routing;
 
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,6 +42,7 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import com.lmpessoa.services.core.hosting.HttpInputStream;
 import com.lmpessoa.services.core.services.NoSingleMethodException;
 import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.util.parsing.ITemplatePart;
@@ -83,13 +88,18 @@ final class RoutePattern implements Comparable<RoutePattern> {
 
    @Override
    public int compareTo(RoutePattern other) {
-      for (int i = 0; i < Math.min(parts.size(), other.parts.size()); ++i) {
-         ITemplatePart part = parts.get(i);
-         ITemplatePart otherPart = other.parts.get(i);
+      List<ITemplatePart> copy = new ArrayList<>(parts);
+      VariableRoutePart var = extractCatchAllFrom(copy);
+      List<ITemplatePart> otherCopy = new ArrayList<>(other.parts);
+      VariableRoutePart otherVar = extractCatchAllFrom(otherCopy);
+      int diff;
+      for (int i = 0; i < Math.min(copy.size(), otherCopy.size()); ++i) {
+         ITemplatePart part = copy.get(i);
+         ITemplatePart otherPart = otherCopy.get(i);
          if (part instanceof LiteralPart && otherPart instanceof LiteralPart) {
             String str = ((LiteralPart) part).getValue();
             String otherStr = ((LiteralPart) otherPart).getValue();
-            int diff = otherStr.length() - str.length();
+            diff = otherStr.length() - str.length();
             if (diff == 0) {
                diff = str.compareTo(otherStr);
             }
@@ -97,7 +107,7 @@ final class RoutePattern implements Comparable<RoutePattern> {
                return diff;
             }
          } else if (part instanceof VariableRoutePart && otherPart instanceof VariableRoutePart) {
-            int diff = ((VariableRoutePart) otherPart).compareTo((VariableRoutePart) part);
+            diff = ((VariableRoutePart) otherPart).compareTo((VariableRoutePart) part);
             if (diff != 0) {
                return diff;
             }
@@ -107,7 +117,26 @@ final class RoutePattern implements Comparable<RoutePattern> {
             return 1;
          }
       }
+      if (var != null && otherVar != null) {
+         diff = otherVar.compareTo(var);
+         if (diff != 0) {
+            return diff;
+         }
+      } else if (otherVar == null && var != null) {
+         return 1;
+      } else if (otherVar != null) {
+         return -1;
+      }
       return other.parts.size() - parts.size();
+   }
+
+   private VariableRoutePart extractCatchAllFrom(List<ITemplatePart> parts) {
+      ITemplatePart part = parts.get(parts.size() - 1);
+      if (part instanceof VariableRoutePart && ((VariableRoutePart) part).isCatchAll()) {
+         parts.remove(parts.size() - 1);
+         return (VariableRoutePart) part;
+      }
+      return null;
    }
 
    public static String getResourceName(Class<?> clazz) {
@@ -131,7 +160,11 @@ final class RoutePattern implements Comparable<RoutePattern> {
             literal.append(((LiteralPart) part).getValue());
          } else {
             if (literal.length() != 0) {
-               result.add(new LiteralPart(literal.toString()));
+               String value = literal.toString();
+               if (((VariableRoutePart) part).isCatchAll() && value.endsWith(SEPARATOR)) {
+                  value = value.substring(0, value.length() - 1);
+               }
+               result.add(new LiteralPart(value));
                literal.delete(0, literal.length());
             }
             result.add(part);
@@ -183,10 +216,12 @@ final class RoutePattern implements Comparable<RoutePattern> {
       Class<?> lastArgument = null;
       if (!paramList.isEmpty()) {
          lastArgument = paramList.get(paramList.size() - 1).getType();
-         if (lastArgument != String.class && !lastArgument.isArray() && !lastArgument.isInterface()
-                  && !lastArgument.isPrimitive()
-                  && !Modifier.isAbstract(lastArgument.getModifiers())
-                  && !hasValueOfMethod(lastArgument) && hasParameterlessConstructor(lastArgument)) {
+         if (lastArgument == InputStream.class || lastArgument == HttpInputStream.class
+                  || lastArgument != String.class && !lastArgument.isArray()
+                           && !lastArgument.isInterface() && !lastArgument.isPrimitive()
+                           && !Modifier.isAbstract(lastArgument.getModifiers())
+                           && !hasValueOfMethod(lastArgument)
+                           && hasParameterlessConstructor(lastArgument)) {
             paramList.remove(paramList.size() - 1);
          } else {
             lastArgument = null;
@@ -231,13 +266,16 @@ final class RoutePattern implements Comparable<RoutePattern> {
          result.append('^');
          for (ITemplatePart part : parts) {
             if (part instanceof LiteralPart) {
-               result.append(((LiteralPart) part).getValue()
-                        .replaceAll("([\\\\/$^?\\{\\}\\[\\]\\(\\)-])", "\\\\$1"));
+               String value = ((LiteralPart) part).getValue();
+               try {
+                  result.append(URLEncoder.encode(value, StandardCharsets.UTF_8.name())
+                           .replaceAll("%2F", "/"));
+               } catch (UnsupportedEncodingException e) {
+                  // Shall never happen, but...
+                  result.append(value);
+               }
             } else {
-               result.append('(');
-               result.append(((VariableRoutePart) part).getRegexPattern().replaceAll("([\\(\\)])",
-                        "\\\\$1"));
-               result.append(')');
+               result.append(((VariableRoutePart) part).getRegexPattern());
             }
          }
          result.append('$');
@@ -295,6 +333,9 @@ final class RoutePattern implements Comparable<RoutePattern> {
       for (Parameter param : params) {
          int i = getParameterIndex(param, exec.getParameters());
          Class<?> paramClass = param.getType();
+         if (param.isVarArgs()) {
+            paramClass = paramClass.getComponentType();
+         }
          if (paramClass != String.class && !hasValueOfMethod(paramClass)) {
             String paramClassName = paramClass.getName();
             if (paramClass.isArray()) {
@@ -323,7 +364,7 @@ final class RoutePattern implements Comparable<RoutePattern> {
    }
 
    private static boolean hasValueOfMethod(Class<?> clazz) {
-      if (clazz.isPrimitive()) {
+      if (clazz.isPrimitive() || clazz.isArray()) {
          return true;
       }
       try {

@@ -34,18 +34,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import org.junit.Before;
 import org.junit.Test;
 
 import com.lmpessoa.services.core.concurrent.ExecutionService;
-import com.lmpessoa.services.core.hosting.ApplicationContext;
-import com.lmpessoa.services.core.hosting.ApplicationRequestJob;
-import com.lmpessoa.services.core.hosting.ApplicationServer;
-import com.lmpessoa.services.core.hosting.ApplicationSettings;
-import com.lmpessoa.services.core.hosting.ContentType;
-import com.lmpessoa.services.core.hosting.Headers;
-import com.lmpessoa.services.core.hosting.HttpInputStream;
 import com.lmpessoa.services.core.routing.HttpGet;
 import com.lmpessoa.services.core.routing.HttpMethod;
 import com.lmpessoa.services.core.routing.IRouteTable;
@@ -169,8 +163,9 @@ public final class ApplicationResponseTest {
       @HttpGet
       @Route("download")
       public HttpInputStream download() {
-         Charset utf8 = Charset.forName("UTF-8");
-         HttpInputStream result = new HttpInputStream(ContentType.TEXT, "Test".getBytes(utf8), utf8, "test.txt");
+         Charset utf8 = StandardCharsets.UTF_8;
+         HttpInputStream result = new HttpInputStream(ContentType.TEXT, "Test".getBytes(utf8), utf8,
+                  "test.txt");
          result.setDownloadable(true);
          return result;
       }
@@ -181,7 +176,8 @@ public final class ApplicationResponseTest {
       }
    }
 
-   private String[] runJob(HttpMethod method, String path) throws InterruptedException, IOException {
+   private String[] runJob(HttpMethod method, String path)
+      throws InterruptedException, IOException {
       return runJob(method, path, false);
    }
 

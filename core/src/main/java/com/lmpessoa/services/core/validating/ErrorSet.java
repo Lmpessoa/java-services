@@ -22,7 +22,6 @@
  */
 package com.lmpessoa.services.core.validating;
 
-import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collection;
@@ -53,16 +52,14 @@ import com.lmpessoa.services.util.ClassUtils;
  * <p>
  * In order for objects to be validated, classes must implement a {@code validate(ErrorSet)} method.
  * Developers may also choose to implement the {@link Validable} interface, which will only provide
- * the corretly required method signature for {@code validate()}. The implementation of the
+ * the correctly required method signature for {@code validate()}. The implementation of the
  * interface is not mandatory.
  * </p>
  *
  * @see Validable
  */
 @XmlJavaTypeAdapter(XmlErrorSetAdapter.class)
-public final class ErrorSet implements Iterable<Message>, Serializable {
-
-   private static final long serialVersionUID = 1L;
+public final class ErrorSet implements Iterable<Message> {
 
    static final ErrorSet EMPTY = new ErrorSet(Collections.<Violation>emptySet());
 
@@ -72,7 +69,7 @@ public final class ErrorSet implements Iterable<Message>, Serializable {
     * Returns whether no error messages have been registered in this set.
     *
     * @return {@code true} if no error messages have been registered in this set, {#code false}
-    * otherwise.
+    *         otherwise.
     */
    public boolean isEmpty() {
       return errors.isEmpty();
@@ -121,7 +118,7 @@ public final class ErrorSet implements Iterable<Message>, Serializable {
 
       private final transient String template;
       private final String path;
-      private final String message; // NOSONAR
+      private final String message;
       private final String invalidValue;
 
       Message(Violation violation) {
@@ -162,7 +159,8 @@ public final class ErrorSet implements Iterable<Message>, Serializable {
          }
          if (lastNode != null && lastNode.getKind() == ElementKind.PARAMETER
                   && violation.getExecutableParameters() != null) {
-            value = violation.getExecutableParameters()[((Path.ParameterNode) lastNode).getParameterIndex()];
+            value = violation.getExecutableParameters()[((Path.ParameterNode) lastNode)
+                     .getParameterIndex()];
          }
          this.invalidValue = value == null ? "null" : toArrayOrString(value);
 

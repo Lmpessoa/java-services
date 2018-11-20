@@ -23,10 +23,17 @@
 package com.lmpessoa.services.core.hosting;
 
 import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+import java.util.Arrays;
+
+import javax.validation.Constraint;
+import javax.validation.ConstraintValidator;
+import javax.validation.ConstraintValidatorContext;
+import javax.validation.Payload;
 
 /**
  * Identifies the content type returned by a method.
@@ -39,7 +46,7 @@ import java.lang.annotation.Target;
  * </p>
  *
  * <p>
- * Methods which return input streams and byte arrays may choose to annotate the method with
+ * Methods which return input streams and byte arrays may choose to anotate the method with
  * <code>ContentType</code> to indicate all content returned from this method should be returned
  * with the given content type.
  * </p>
@@ -49,10 +56,19 @@ import java.lang.annotation.Target;
  * vary.
  * </p>
  *
+ * <p>
+ * This annotation also works as a constraint if an annotated parameter or method return value is of
+ * type {@code HttpInputStream} (no matter if declared as {@code InputStream}). Other content that
+ * may make use of this annotation (such as strings or byte arrays) will not be validated. Also note
+ * that it is not possible to receive the content body of a request as a different type than an
+ * {@code HttpInputStream}.
+ * </p>
+ *
  * @see HttpInputStream
  */
-@Target(METHOD)
 @Retention(RUNTIME)
+@Target({ METHOD, PARAMETER })
+@Constraint(validatedBy = ContentType.Validator.class)
 public @interface ContentType {
 
    public static final String ATOM = "application/atom+xml";
@@ -81,5 +97,30 @@ public @interface ContentType {
    public static final String FORM = "application/x-www-form-urlencoded";
    public static final String MULTIPART_FORM = "multipart/form-data";
 
-   String value();
+   String message() default "{com.lmpessoa.services.core.hosting.ContentType.message}";
+
+   Class<?>[] groups() default {};
+
+   Class<? extends Payload>[] payload() default {};
+
+   String[] value();
+
+   static class Validator implements ConstraintValidator<ContentType, Object> {
+
+      private String[] types;
+
+      @Override
+      public void initialize(ContentType constraintAnnotation) {
+         types = constraintAnnotation.value();
+      }
+
+      @Override
+      public boolean isValid(Object value, ConstraintValidatorContext context) {
+         if (value instanceof HttpInputStream) {
+            String type = ((HttpInputStream) value).getType();
+            return Arrays.stream(types).anyMatch(t -> t.equals(type));
+         }
+         return true;
+      }
+   }
 }

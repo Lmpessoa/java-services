@@ -30,6 +30,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -56,8 +57,8 @@ final class SerializerResponder {
       HttpInputStream is;
       try {
          is = getContentBody(obj, request, route != null ? route.getMethod() : null);
-      } catch (Throwable e) { // NOSONAR
-         obj = e instanceof HttpException ? e : new InternalServerError(e); // NOSONAR
+      } catch (Throwable e) {
+         obj = e instanceof HttpException ? e : new InternalServerError(e);
          statusCode = getStatusCode(obj);
          is = getContentBody(obj, request, null);
       }
@@ -79,7 +80,7 @@ final class SerializerResponder {
             return Redirect.to((URL) result);
          }
          return result;
-      } catch (Throwable t) { // NOSONAR
+      } catch (Throwable t) {
          // This is correct; we capture every kind of exception here
          // We also know that Sonar wants us to have each type of exception treated in its own catch
          // block but that would cause too many code duplications we'd rather ignore these warnings
@@ -87,7 +88,7 @@ final class SerializerResponder {
                   || t instanceof InternalServerError && t.getCause() != null) { // NOSONAR
             t = t.getCause();
          }
-         if (t instanceof HttpException) { // NOSONAR
+         if (t instanceof HttpException || t instanceof InternalServerError) {
             return t;
          }
          return new InternalServerError(t);
@@ -155,31 +156,37 @@ final class SerializerResponder {
             return null;
          }
       }
-      return convertToInputStream(object, request, method);
+      return convertToInputStream(obj, object, request, method);
    }
 
-   private HttpInputStream convertToInputStream(Object object, HttpRequest request, Method method) {
+   private HttpInputStream convertToInputStream(Object original, Object serialised,
+      HttpRequest request, Method method) {
       String contentType;
-      if (method != null && method.isAnnotationPresent(ContentType.class)) {
-         contentType = method.getAnnotation(ContentType.class).value();
-      } else if (object instanceof String) {
+      if (!(original instanceof Throwable) && method != null
+               && method.isAnnotationPresent(ContentType.class)) {
+         String[] types = method.getAnnotation(ContentType.class).value();
+         if (types.length != 1) {
+            throw new IllegalStateException("Method can only use one content type");
+         }
+         contentType = types[0];
+      } else if (serialised instanceof String) {
          contentType = ContentType.TEXT + "; charset=\"utf-8\"";
       } else {
          contentType = ContentType.BINARY;
       }
-      if (object instanceof String) {
+      if (serialised instanceof String) {
          Charset charset = getCharsetFromMethodOrUTF8(method);
-         object = ((String) object).getBytes(charset);
-      } else if (object instanceof ByteArrayOutputStream) {
-         object = ((ByteArrayOutputStream) object).toByteArray();
+         serialised = ((String) serialised).getBytes(charset);
+      } else if (serialised instanceof ByteArrayOutputStream) {
+         serialised = ((ByteArrayOutputStream) serialised).toByteArray();
       }
-      if (object instanceof byte[]) {
-         object = new ByteArrayInputStream((byte[]) object);
+      if (serialised instanceof byte[]) {
+         serialised = new ByteArrayInputStream((byte[]) serialised);
       }
-      if (object instanceof InputStream) {
-         return new HttpInputStream(contentType, (InputStream) object);
+      if (serialised instanceof InputStream) {
+         return new HttpInputStream(contentType, (InputStream) serialised);
       }
-      return serialize(object, request);
+      return serialize(serialised, request);
    }
 
    private HttpInputStream serialize(Object object, HttpRequest request) {
@@ -197,13 +204,17 @@ final class SerializerResponder {
 
    private Charset getCharsetFromMethodOrUTF8(Method method) {
       if (method != null && method.isAnnotationPresent(ContentType.class)) {
-         ContentType ctype = method.getAnnotation(ContentType.class);
-         Map<String, String> ctypeMap = Headers.split(ctype.value());
+         String[] types = method.getAnnotation(ContentType.class).value();
+         if (types.length != 1) {
+            throw new IllegalStateException("Method can only use one content type");
+         }
+         String contentType = types[0];
+         Map<String, String> ctypeMap = Headers.split(contentType);
          if (ctypeMap.containsKey("charset")) {
             return Charset.forName(ctypeMap.get("charset"));
          }
       }
-      return Serializer.UTF_8;
+      return StandardCharsets.UTF_8;
    }
 
    static boolean isTextual(String contentType) {

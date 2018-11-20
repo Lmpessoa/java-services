@@ -120,7 +120,7 @@ final class ApplicationOptions implements IApplicationOptions {
          throw new IllegalStateException("Async is already configured");
       }
       if (!feedbackPath.startsWith("/")) {
-         feedbackPath = "/" + feedbackPath; // NOSONAR
+         feedbackPath = "/" + feedbackPath;
       }
       if (!feedbackPath.endsWith("/")) {
          feedbackPath += "/";
@@ -146,7 +146,7 @@ final class ApplicationOptions implements IApplicationOptions {
          throw new IllegalStateException("Static files is already configured");
       }
       if (!staticPath.startsWith("/")) {
-         staticPath = "/" + staticPath;// NOSONAR
+         staticPath = "/" + staticPath;
       }
       while (staticPath.endsWith("/")) {
          staticPath = staticPath.substring(0, staticPath.length() - 1);

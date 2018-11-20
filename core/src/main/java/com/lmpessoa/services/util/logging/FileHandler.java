@@ -25,11 +25,10 @@ package com.lmpessoa.services.util.logging;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.function.Predicate;
-
-import com.lmpessoa.services.core.serializing.Serializer;
 
 /**
  * A Handler that stores log messages in a file.
@@ -97,7 +96,7 @@ public final class FileHandler extends FormattedHandler {
    @Override
    public void prepare() {
       try {
-         out = new PrintWriter(Files.newBufferedWriter(file.toPath(), Serializer.UTF_8, //
+         out = new PrintWriter(Files.newBufferedWriter(file.toPath(), StandardCharsets.UTF_8, //
                   StandardOpenOption.WRITE, StandardOpenOption.APPEND, StandardOpenOption.CREATE),
                   true);
       } catch (IOException e) {

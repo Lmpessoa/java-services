@@ -155,7 +155,7 @@ public final class ApplicationServer {
 
    /**
     * Returns the startup class in use by this application server.
-    * 
+    *
     * @return the startup class in use by this application server, or {@code null} if the
     *         application server is not running.
     */
@@ -296,7 +296,7 @@ public final class ApplicationServer {
          Collection<String> banner = Files.readAllLines(Paths.get(bannerUrl.toURI()));
          banner.stream() //
                   .map(s -> s.replaceAll("\\$\\{project.version\\}", version)) //
-                  .forEach(System.out::println); // NOSONAR
+                  .forEach(System.out::println);
       } catch (IOException | URISyntaxException e) {
          // Should never happen but may just ignore
       }

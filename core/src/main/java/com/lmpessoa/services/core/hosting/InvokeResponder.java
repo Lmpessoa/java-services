@@ -31,7 +31,7 @@ import com.lmpessoa.services.util.logging.ILogger;
 
 final class InvokeResponder {
 
-   public InvokeResponder(NextResponder next) { // NOSONAR
+   public InvokeResponder(NextResponder next) {
       // Last handler, no need for next
    }
 
@@ -44,14 +44,14 @@ final class InvokeResponder {
       } catch (BadResponseException e) {
          e.getErrors().stream().map(err -> new ErrorMessage(err, route.getMethod())).forEach(
                   log::error);
-         throw new InternalServerError("Application produced an invalid result");
+         throw new InternalServerError("Application produced an unexpected result");
       }
    }
 
    private static class ErrorMessage extends Throwable {
 
       private static final long serialVersionUID = 1L;
-      private final Method method; // NOSONAR
+      private final Method method;
       private final Message error;
 
       public ErrorMessage(Message error, Method method) {

@@ -39,10 +39,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.lmpessoa.services.core.routing.QueryParam;
-import com.lmpessoa.services.core.routing.RoutePatternParser;
-import com.lmpessoa.services.core.routing.VariableRoutePart;
-
 public final class RoutePatternParserTest {
 
    @Rule
@@ -51,16 +47,18 @@ public final class RoutePatternParserTest {
    private static VariableRoutePart parseVariable(String variable) throws ParseException {
       Method method;
       try {
-         method = RoutePatternParserTest.class.getMethod("methodToTest", int.class, String.class, UUID.class,
-                  String.class, long.class, String.class, String.class);
+         method = RoutePatternParserTest.class.getMethod("methodToTest", int.class, String.class,
+                  UUID.class, String.class, long.class, String.class, String.class);
       } catch (NoSuchMethodException | SecurityException e) {
          throw new ParseException(e.getMessage(), 0);
       }
-      return new RoutePatternParser(RoutePatternParserTest.class, method, "").parseVariable(0, variable);
+      return new RoutePatternParser(RoutePatternParserTest.class, method, "").parseVariable(0,
+               variable);
    }
 
-   public void methodToTest(@Min(7) int number, @Pattern(regexp = "[0-9a-f]+") @Size(max = 12) String hexNumber,
-      UUID uuid, @Negative String numString, @Size(min = 7) long strNumber, @Null String nullValue,
+   public void methodToTest(@Min(7) int number,
+      @Pattern(regexp = "[0-9a-f]+") @Size(max = 12) String hexNumber, UUID uuid,
+      @Negative String numString, @Size(min = 7) long strNumber, @Null String nullValue,
       @Null @QueryParam String nullQueryParam) {
       // Nothing to do here
    }
@@ -70,7 +68,7 @@ public final class RoutePatternParserTest {
       VariableRoutePart var = parseVariable("number");
       assertEquals(0, var.getParameterIndex());
       assertEquals("number", var.getParameterName());
-      assertEquals("\\d+", var.getRegexPattern());
+      assertEquals("(\\d+)", var.getRegexPattern());
       assertEquals(7, var.getMinValue().intValue());
       assertNull(var.getMaxValue());
    }
@@ -80,7 +78,7 @@ public final class RoutePatternParserTest {
       VariableRoutePart var = parseVariable("1");
       assertEquals(1, var.getParameterIndex());
       assertEquals("hexNumber", var.getParameterName());
-      assertEquals("(?=[0-9a-f]+)[^\\/]{,12}", var.getRegexPattern());
+      assertEquals("((?=[0-9a-f]+)[^\\/]{,12})", var.getRegexPattern());
       assertNull(var.getMinValue());
       assertNull(var.getMaxValue());
    }
@@ -90,7 +88,7 @@ public final class RoutePatternParserTest {
       VariableRoutePart var = parseVariable("uuid");
       assertEquals(2, var.getParameterIndex());
       assertEquals("uuid", var.getParameterName());
-      assertEquals("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}",
+      assertEquals("([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})",
                var.getRegexPattern());
       assertNull(var.getMinValue());
       assertNull(var.getMaxValue());

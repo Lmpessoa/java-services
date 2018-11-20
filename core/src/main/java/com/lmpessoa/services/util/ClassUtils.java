@@ -113,6 +113,9 @@ public final class ClassUtils {
       }
       if (type.isArray()) {
          String[] values = value.split(",");
+         if (value.isEmpty()) {
+            values = new String[0];
+         }
          Class<?> atype = type.getComponentType();
          T result = (T) Array.newInstance(atype, values.length);
          for (int i = 0; i < values.length; ++i) {

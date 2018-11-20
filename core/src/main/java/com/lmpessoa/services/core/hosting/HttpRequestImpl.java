@@ -27,6 +27,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.SocketTimeoutException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -38,8 +39,6 @@ import java.util.stream.Collectors;
 import com.lmpessoa.services.core.routing.HttpMethod;
 
 final class HttpRequestImpl implements HttpRequest {
-
-   private static final String UTF8 = "UTF-8";
 
    private final HeaderMap headers;
    private final String queryString;
@@ -167,6 +166,6 @@ final class HttpRequestImpl implements HttpRequest {
          result.write(new byte[] { (byte) b[1] });
          b[0] = b[1];
       }
-      return result.toString(UTF8).trim();
+      return result.toString(StandardCharsets.UTF_8.name()).trim();
    }
 }

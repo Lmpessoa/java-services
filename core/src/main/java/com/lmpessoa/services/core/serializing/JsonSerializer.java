@@ -27,16 +27,16 @@ import com.google.gson.GsonBuilder;
 
 final class JsonSerializer extends Serializer {
 
+   private final Gson gson = new GsonBuilder().disableHtmlEscaping().create();
+
    @Override
    protected <T> T read(String content, Class<T> type) {
-      Gson gson = new GsonBuilder().setPrettyPrinting().create();
       return gson.fromJson(content, type);
    }
 
    @Override
    protected String write(Object object) {
       try {
-         Gson gson = new GsonBuilder().create();
          return gson.toJson(object);
       } catch (Exception e) {
          return null;

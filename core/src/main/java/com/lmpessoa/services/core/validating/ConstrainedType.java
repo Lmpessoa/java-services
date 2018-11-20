@@ -69,11 +69,12 @@ final class ConstrainedType extends ConstrainedElement<Class<?>> {
       if (sequence == null) {
          return Collections.singleton(Default.class);
       }
-      return Arrays.asList(sequence.value()).stream().collect(Collectors.toCollection(LinkedHashSet::new));
+      return Arrays.asList(sequence.value()).stream().collect(
+               Collectors.toCollection(LinkedHashSet::new));
    }
 
    Optional<ConstrainedType> getSuperclass() {
-      if (superClass == null) { // NOSONAR
+      if (superClass == null) {
          if (getElement().getSuperclass() != Object.class) {
             superClass = Optional.of(ConstrainedElement.of(getElement().getSuperclass()));
          } else {

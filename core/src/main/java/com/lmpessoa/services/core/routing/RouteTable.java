@@ -31,6 +31,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -46,6 +47,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
+import com.lmpessoa.services.core.hosting.HttpInputStream;
 import com.lmpessoa.services.core.hosting.MethodNotAllowedException;
 import com.lmpessoa.services.core.hosting.NotFoundException;
 import com.lmpessoa.services.core.serializing.Serializer;
@@ -140,7 +142,7 @@ public final class RouteTable implements IRouteTable {
     */
    public RouteMatch matches(IRouteRequest request) {
       boolean found = false;
-      for (Entry<RoutePattern, Map<HttpMethod, MethodEntry>> entry : endpoints.entrySet()) { // NOSONAR
+      for (Entry<RoutePattern, Map<HttpMethod, MethodEntry>> entry : endpoints.entrySet()) {
          RoutePattern route = entry.getKey();
          Matcher matcher = route.getPattern().matcher(request.getPath());
          if (!matcher.find()) {
@@ -243,6 +245,9 @@ public final class RouteTable implements IRouteTable {
    private Object parseContentBody(IRouteRequest request, Class<?> contentClass) {
       InputStream body = request.getBody();
       if (body != null) {
+         if (contentClass == InputStream.class || contentClass == HttpInputStream.class) {
+            return new HttpInputStream(request.getContentType(), body);
+         }
          byte[] content = readContentBody(body);
          if (request.getContentType() != null && content != null
                   && request.getContentLength() > 0) {
@@ -377,7 +382,11 @@ public final class RouteTable implements IRouteTable {
          } else {
             for (Entry<VariableRoutePart, String> entry : paramValues.entrySet()) {
                if (entry.getKey().isSimilarTo(param)) {
-                  result.add(ClassUtils.cast(entry.getValue(), type));
+                  String value = entry.getValue();
+                  if (param.isVarArgs() && value.length() > 1) {
+                     value = String.join(",", value.substring(1).split("/"));
+                  }
+                  result.add(ClassUtils.cast(value, type));
                   break;
                }
             }
@@ -392,8 +401,8 @@ public final class RouteTable implements IRouteTable {
          for (String var : queryString.split("&")) {
             String[] parts = var.split("=", 2);
             try {
-               parts[0] = URLDecoder.decode(parts[0], Serializer.UTF_8.name());
-               parts[1] = URLDecoder.decode(parts[1], Serializer.UTF_8.name());
+               parts[0] = URLDecoder.decode(parts[0], StandardCharsets.UTF_8.name());
+               parts[1] = URLDecoder.decode(parts[1], StandardCharsets.UTF_8.name());
             } catch (UnsupportedEncodingException e) {
                // Ignore; never happens
             }

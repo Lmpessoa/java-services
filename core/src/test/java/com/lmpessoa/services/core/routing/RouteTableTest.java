@@ -68,8 +68,8 @@ public final class RouteTableTest {
       HttpMethod[] methods = table.listMethodsOf("/test");
       Arrays.sort(methods);
       assertArrayEquals(new HttpMethod[] { HttpMethod.GET, HttpMethod.POST }, methods);
-      assertTrue(table.hasRoute("/test/\\d+"));
-      methods = table.listMethodsOf("/test/\\d+");
+      assertTrue(table.hasRoute("/test/(\\d+)"));
+      methods = table.listMethodsOf("/test/(\\d+)");
       Arrays.sort(methods);
       assertArrayEquals(new HttpMethod[] { HttpMethod.GET, HttpMethod.PATCH }, methods);
    }
@@ -82,11 +82,12 @@ public final class RouteTableTest {
       result = table.put("", AnotherTestResource.class);
       assertTrue(hasDuplicate(result));
       assertFalse(hasException(result).isPresent());
-      HttpMethod[] methods = table.listMethodsOf("/test/\\d+");
+      HttpMethod[] methods = table.listMethodsOf("/test/(\\d+)");
       Arrays.sort(methods);
-      assertArrayEquals(new HttpMethod[] { HttpMethod.GET, HttpMethod.POST, HttpMethod.PATCH }, methods);
+      assertArrayEquals(new HttpMethod[] { HttpMethod.GET, HttpMethod.POST, HttpMethod.PATCH },
+               methods);
       assertEquals(TestResource.class.getMethod("patch", int.class),
-               table.getRouteMethod(HttpMethod.PATCH, "/test/\\d+").getMethod());
+               table.getRouteMethod(HttpMethod.PATCH, "/test/(\\d+)").getMethod());
    }
 
    @Test
@@ -146,11 +147,11 @@ public final class RouteTableTest {
       HttpMethod[] methods = table.listMethodsOf("/test");
       Arrays.sort(methods);
       assertArrayEquals(new HttpMethod[] { HttpMethod.GET, HttpMethod.POST }, methods);
-      methods = table.listMethodsOf("/test/\\d+");
+      methods = table.listMethodsOf("/test/(\\d+)");
       Arrays.sort(methods);
       assertArrayEquals(new HttpMethod[] { HttpMethod.PUT, HttpMethod.PATCH }, methods);
-      Method methodPut = table.getRouteMethod(HttpMethod.PUT, "/test/\\d+").getMethod();
-      Method methodPatch = table.getRouteMethod(HttpMethod.PATCH, "/test/\\d+").getMethod();
+      Method methodPut = table.getRouteMethod(HttpMethod.PUT, "/test/(\\d+)").getMethod();
+      Method methodPatch = table.getRouteMethod(HttpMethod.PATCH, "/test/(\\d+)").getMethod();
       assertSame(methodPut, methodPatch);
    }
 
@@ -168,7 +169,8 @@ public final class RouteTableTest {
       assertFalse(hasException(result).isPresent());
       assertTrue(table.hasRoute("/test"));
       assertArrayEquals(new HttpMethod[] { HttpMethod.POST }, table.listMethodsOf("/test"));
-      assertEquals(AnotherTestResource.class, table.getRouteMethod(HttpMethod.POST, "/test").getContentClass());
+      assertEquals(AnotherTestResource.class,
+               table.getRouteMethod(HttpMethod.POST, "/test").getContentClass());
    }
 
    @Test

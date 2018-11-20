@@ -63,7 +63,8 @@ final class ApplicationRequestJob implements Runnable {
 
          HttpResult result = resolveRequest(request, connection);
 
-         log.info("\"%s\" %s \"%s\"", request, result, request.getHeaders().get(Headers.USER_AGENT));
+         log.info("\"%s\" %s \"%s\"", request, result,
+                  request.getHeaders().get(Headers.USER_AGENT));
 
          int statusCode = result.getStatusCode();
          StringBuilder response = new StringBuilder();
@@ -74,16 +75,16 @@ final class ApplicationRequestJob implements Runnable {
          response.append(CRLF);
          result.getHeaders().stream().forEach(
                   e -> response.append(String.format("%s: %s%s", e.getKey(), e.getValue(), CRLF)));
-
-         HttpInputStream contentStream = result.getInputStream();
-
          response.append(CRLF);
-         OutputStream output = socket.getOutputStream();
-         output.write(response.toString().getBytes());
-         if (contentStream != null && contentStream.available() > 0) {
-            contentStream.sendTo(output);
+
+         try (HttpInputStream contentStream = result.getInputStream()) {
+            OutputStream output = socket.getOutputStream();
+            output.write(response.toString().getBytes());
+            if (contentStream != null && contentStream.available() > 0) {
+               contentStream.sendTo(output);
+            }
+            output.flush();
          }
-         output.flush();
       } catch (Exception e) {
          log.error(e);
       }
@@ -102,17 +103,13 @@ final class ApplicationRequestJob implements Runnable {
          for (String line : statuses) {
             String[] parts = line.split("=", 2);
             if (parts.length == 2) {
-               try { // NOSONAR
-                  int code = Integer.parseInt(parts[0]);
-                  STATUSES.put(code, parts[1]);
-               } catch (NumberFormatException e) {
-                  // Ignore
-               }
+               int code = Integer.parseInt(parts[0]);
+               STATUSES.put(code, parts[1]);
             }
          }
       } catch (IOException | URISyntaxException e) {
          // Any error here is treated as fatal
-         e.printStackTrace(); // NOSONAR
+         e.printStackTrace();
          System.exit(1);
       }
    }

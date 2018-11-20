@@ -25,6 +25,7 @@ package com.lmpessoa.services.core.serializing;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -48,8 +49,6 @@ import com.lmpessoa.services.core.hosting.UnsupportedMediaTypeException;
  * </p>
  */
 public abstract class Serializer {
-
-   public static final Charset UTF_8 = Charset.forName("UTF-8");
 
    private static final Map<String, Class<? extends Serializer>> handlers = new HashMap<>();
 
@@ -100,7 +99,8 @@ public abstract class Serializer {
          if (ser != null) {
             String result = ser.write(object);
             if (result != null) {
-               return new HttpInputStream(contentType, result.getBytes(UTF_8), UTF_8);
+               return new HttpInputStream(contentType, result.getBytes(StandardCharsets.UTF_8),
+                        StandardCharsets.UTF_8);
             }
          }
       }

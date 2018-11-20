@@ -1,7 +1,6 @@
 /*
- * Leeow - A lightweight and easy engine for outstanding web APIs
  * Copyright (c) 2017 Leonardo Pessoa
- * http://leeow.io
+ * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +26,4 @@ import com.lmpessoa.services.core.services.Reuse;
 import com.lmpessoa.services.core.services.Service;
 
 @Service(Reuse.REQUEST)
-public class RequestedImpl implements Requested {
-
-}
+public class RequestedImpl implements Requested {}

@@ -102,7 +102,7 @@ final class MultipartFormSerializer extends Serializer {
             value = parseMixedMultipart(entry, contentType);
          } else {
             String filename = disp.get("filename");
-            value = new HttpInputStream(contentType, entry.content, filename); // NOSONAR
+            value = new HttpInputStream(contentType, entry.content, filename);
          }
          String name = disp.get("name");
          Field field = findField(name, resultClass);
@@ -110,7 +110,8 @@ final class MultipartFormSerializer extends Serializer {
             continue;
          }
          Class<?> fieldType = field.getType();
-         if (fieldType.isArray() && fieldType.getComponentType().isAssignableFrom(HttpInputStream.class)) {
+         if (fieldType.isArray()
+                  && fieldType.getComponentType().isAssignableFrom(HttpInputStream.class)) {
             if (value instanceof Collection<?>) {
                value = ((Collection<InputStream>) value).toArray(new HttpInputStream[0]);
             } else if (value instanceof HttpInputStream) {
@@ -131,7 +132,8 @@ final class MultipartFormSerializer extends Serializer {
       Collection<MultipartEntry> mixedEntries = parseMultipart(entry.content, mixedBoundary);
       List<InputStream> result = new ArrayList<>();
       for (MultipartEntry mixedEntry : mixedEntries) {
-         Map<String, String> mixedEntryDisp = Headers.split(mixedEntry.headers.get(Headers.CONTENT_DISPOSITION));
+         Map<String, String> mixedEntryDisp = Headers
+                  .split(mixedEntry.headers.get(Headers.CONTENT_DISPOSITION));
          if (!"file".equals(mixedEntryDisp.get(""))) {
             throw new BadRequestException();
          }

@@ -25,6 +25,7 @@ package com.lmpessoa.services.core.serializing;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -58,18 +59,19 @@ final class SimpleFormSerializer extends Serializer {
    }
 
    private Map<String, Object> parseQueryString(String body) {
-      String[][] values = Arrays.stream(body.split("&")).map(s -> s.split("=", 2)).toArray(String[][]::new);
+      String[][] values = Arrays.stream(body.split("&")).map(s -> s.split("=", 2)).toArray(
+               String[][]::new);
       Map<String, List<String>> groups = new HashMap<>();
       for (String[] value : values) {
          try {
-            String key = URLDecoder.decode(value[0], UTF_8.name());
+            String key = URLDecoder.decode(value[0], StandardCharsets.UTF_8.name());
             if (key.endsWith("[]")) {
                key = key.substring(0, key.length() - 2);
             }
             if (!groups.containsKey(key)) {
                groups.put(key, new ArrayList<>());
             }
-            groups.get(key).add(URLDecoder.decode(value[1], UTF_8.name()));
+            groups.get(key).add(URLDecoder.decode(value[1], StandardCharsets.UTF_8.name()));
          } catch (UnsupportedEncodingException e) {
             // Might never reach here but be safe
             throw new InternalServerError(e);
@@ -88,7 +90,8 @@ final class SimpleFormSerializer extends Serializer {
       return result;
    }
 
-   private void setValueToField(Object value, Field field, Object result) throws IllegalAccessException {
+   private void setValueToField(Object value, Field field, Object result)
+      throws IllegalAccessException {
       if (field != null && !isStaticOrTransientOrVolatile(field)) {
          if (value instanceof String[]) {
             value = String.join(",", (String[]) value);

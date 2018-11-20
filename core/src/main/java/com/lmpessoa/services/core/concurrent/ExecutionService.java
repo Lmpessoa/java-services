@@ -378,10 +378,10 @@ public final class ExecutionService implements IExecutionService {
    private final class Task<T> implements Future<T> {
 
       // Fields are marked transient so they do not get serialised
-      private final transient Callable<T> job; // NOSONAR
-      private transient Worker worker = null; // NOSONAR
-      private transient Throwable exception = null; // NOSONAR
-      private transient Instant completed; // NOSONAR
+      private final transient Callable<T> job;
+      private transient Worker worker = null;
+      private transient Throwable exception = null;
+      private transient Instant completed;
 
       // Used only by serialisation to JSON/XML
       @SuppressWarnings("unused")

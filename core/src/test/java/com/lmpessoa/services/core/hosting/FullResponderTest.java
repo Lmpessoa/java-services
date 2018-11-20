@@ -38,6 +38,7 @@ import java.io.InputStream;
 import java.net.Socket;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.function.Supplier;
 
 import javax.validation.Valid;
@@ -48,19 +49,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.lmpessoa.services.core.hosting.ApplicationOptions;
-import com.lmpessoa.services.core.hosting.ApplicationServer;
-import com.lmpessoa.services.core.hosting.ConnectionInfo;
-import com.lmpessoa.services.core.hosting.ContentType;
-import com.lmpessoa.services.core.hosting.HeaderEntry;
-import com.lmpessoa.services.core.hosting.Headers;
-import com.lmpessoa.services.core.hosting.HttpInputStream;
-import com.lmpessoa.services.core.hosting.HttpRequest;
-import com.lmpessoa.services.core.hosting.HttpRequestImpl;
-import com.lmpessoa.services.core.hosting.HttpResult;
-import com.lmpessoa.services.core.hosting.IApplicationSettings;
-import com.lmpessoa.services.core.hosting.NotImplementedException;
-import com.lmpessoa.services.core.hosting.Redirect;
 import com.lmpessoa.services.core.routing.HttpGet;
 import com.lmpessoa.services.core.routing.HttpMethod;
 import com.lmpessoa.services.core.routing.HttpPatch;
@@ -112,7 +100,7 @@ public final class FullResponderTest {
       routes.put("", TestResource.class);
    }
 
-   public String readAll(InputStream is) throws IOException {
+   public static String readAll(InputStream is) throws IOException {
       byte[] data = new byte[is.available()];
       is.read(data);
       return new String(data, Charset.forName("UTF-8"));
@@ -146,7 +134,8 @@ public final class FullResponderTest {
       assertEquals(ContentType.TEXT, is.getType());
       ByteArrayOutputStream out = new ByteArrayOutputStream();
       is.sendTo(out);
-      assertEquals("java.lang.IllegalStateException: Test", new String(out.toByteArray(), is.getEncoding()));
+      assertEquals("java.lang.IllegalStateException: Test",
+               new String(out.toByteArray(), is.getEncoding()));
    }
 
    @Test
@@ -210,11 +199,11 @@ public final class FullResponderTest {
    @Test
    public void testMediatorWithResultStream() throws IOException {
       HttpResult result = perform("/test/result");
-      assertEquals(200, result.getStatusCode());
+      assertEquals(500, result.getStatusCode());
       assertNotNull(result.getInputStream());
-      assertEquals(ContentType.YAML, result.getInputStream().getType());
+      assertEquals(ContentType.TEXT, result.getInputStream().getType());
       String content = readAll(result.getInputStream());
-      assertEquals("Test", content);
+      assertEquals("Application produced an unexpected result", content);
    }
 
    @Test
@@ -245,11 +234,11 @@ public final class FullResponderTest {
       assertEquals(400, result.getStatusCode());
       assertNotNull(result.getInputStream());
       assertEquals(ContentType.JSON, result.getInputStream().getType());
-      byte[] data = new byte[result.getInputStream().available()];
-      result.getInputStream().read(data);
-      String content = new String(data, Serializer.UTF_8);
-      assertEquals("{\"errors\":[{\"path\":\"value.invalid\","
-               + "\"message\":\"Some error message\",\"invalidValue\":\"null\"}]}", content);
+      String content = readAll(result.getInputStream());
+      assertEquals(
+               "{\"errors\":[{\"path\":\"value.invalid\","
+                        + "\"message\":\"Some error message\",\"invalidValue\":\"null\"}]}",
+               content);
    }
 
    @Test
@@ -259,9 +248,7 @@ public final class FullResponderTest {
       assertEquals(400, result.getStatusCode());
       assertNotNull(result.getInputStream());
       assertEquals(ContentType.XML, result.getInputStream().getType());
-      byte[] data = new byte[result.getInputStream().available()];
-      result.getInputStream().read(data);
-      String content = new String(data, Serializer.UTF_8);
+      String content = readAll(result.getInputStream());
       assertEquals("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n" + "<errors>\n"
                + "  <error path=\"value.invalid\" message=\"Some error message\" invalidValue=\"null\"/>\n"
                + "</errors>\n", content);
@@ -280,10 +267,41 @@ public final class FullResponderTest {
       assertEquals(400, result.getStatusCode());
       assertNotNull(result.getInputStream());
       assertEquals(ContentType.TEXT, result.getInputStream().getType());
-      byte[] data = new byte[result.getInputStream().available()];
-      result.getInputStream().read(data);
-      String content = new String(data, Serializer.UTF_8);
+      String content = readAll(result.getInputStream());
       assertEquals("java.lang.IllegalArgumentException", content);
+   }
+
+   @Test
+   public void testMediatorWithCatchAllParam() throws IOException {
+      HttpResult result = perform(GET, "/test/catchall/path/to/real/object");
+      assertEquals(200, result.getStatusCode());
+      assertNotNull(result.getInputStream());
+      assertEquals(ContentType.TEXT, result.getInputStream().getType());
+      String content = readAll(result.getInputStream());
+      assertEquals("'path', 'to', 'real', 'object'", content);
+   }
+
+   @Test
+   public void testMediatorWithValidStream() throws IOException {
+      HttpResult result = performFile("/http/valid_stream_request.txt");
+      assertEquals(200, result.getStatusCode());
+      assertEquals(ContentType.TEXT, result.getInputStream().getType());
+      assertEquals(StandardCharsets.UTF_8, result.getInputStream().getEncoding());
+      String content = readAll(result.getInputStream());
+      assertEquals("Test", content);
+   }
+
+   @Test
+   public void testMediatorWithInvalidStream() throws IOException {
+      HttpResult result = performFile("/http/invalid_stream_request.txt");
+      assertEquals(400, result.getStatusCode());
+      assertEquals(ContentType.JSON, result.getInputStream().getType());
+      assertEquals(StandardCharsets.UTF_8, result.getInputStream().getEncoding());
+      String content = readAll(result.getInputStream());
+      assertEquals("{\"errors\":[{\"path\":\"content\"," //
+               + "\"message\":\"unexpected content of type\","
+               + "\"invalidValue\":\"<com.lmpessoa.services.core.hosting.HttpInputStream>\"}]}",
+               content);
    }
 
    private HttpResult perform(String path) {
@@ -401,6 +419,18 @@ public final class FullResponderTest {
       @Route("query")
       public String query(@QueryParam int id) {
          return String.valueOf(id);
+      }
+
+      @HttpGet
+      @Route("catchall/{0}")
+      public String catchall(String... path) {
+         return "'" + String.join("', '", path) + "'";
+      }
+
+      @HttpPost
+      @Route("stream")
+      public String stream(@ContentType(ContentType.YAML) InputStream content) throws IOException {
+         return readAll(content);
       }
    }
 }

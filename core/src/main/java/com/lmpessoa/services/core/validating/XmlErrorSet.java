@@ -31,7 +31,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement(name = "errors")
 final class XmlErrorSet {
 
-   public List<MessageEntry> error = new ArrayList<>(); // NOSONAR
+   public List<MessageEntry> error = new ArrayList<>();
 
    static final class MessageEntry {
 
