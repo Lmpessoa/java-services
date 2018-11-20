@@ -56,7 +56,7 @@ import com.lmpessoa.services.util.logging.NullHandler;
 public final class AsyncResponderTest {
 
    private static final ILogger log = new Logger(new NullHandler());
-   private static final String baseUrl = "https://lmpessoa.com/feedback/";
+   private static final String BASE_URL = "https://lmpessoa.com/feedback/";
 
    private ExecutionService executor;
    private AsyncResponder handler;
@@ -87,7 +87,7 @@ public final class AsyncResponderTest {
 
    @Test
    public void testAsyncMethod() throws NoSuchMethodException, MalformedURLException,
-      InterruptedException, ExecutionException, IllegalAccessException, InvocationTargetException {
+      InterruptedException, ExecutionException {
       match = matchOfMethod("asyncMethod");
 
       Object result = handler.invoke(request, match, connect);
@@ -95,14 +95,14 @@ public final class AsyncResponderTest {
       Redirect redirect = (Redirect) result;
       assertEquals(202, redirect.getStatusCode());
       String url = redirect.getUrl(connect).toExternalForm();
-      assertTrue(url.startsWith(baseUrl));
-      Future<?> fresult = executor.get(url.substring(baseUrl.length()));
+      assertTrue(url.startsWith(BASE_URL));
+      Future<?> fresult = executor.get(url.substring(BASE_URL.length()));
       assertEquals("test", fresult.get());
    }
 
    @Test
    public void testCallableResult() throws NoSuchMethodException, MalformedURLException,
-      InterruptedException, ExecutionException, IllegalAccessException, InvocationTargetException {
+      InterruptedException, ExecutionException {
       match = matchOfMethod("callableResult");
 
       Object result = handler.invoke(request, match, connect);
@@ -110,14 +110,14 @@ public final class AsyncResponderTest {
       Redirect redirect = (Redirect) result;
       assertEquals(202, redirect.getStatusCode());
       String url = redirect.getUrl(connect).toExternalForm();
-      assertTrue(url.startsWith(baseUrl));
-      Future<?> fresult = executor.get(url.substring(baseUrl.length()));
+      assertTrue(url.startsWith(BASE_URL));
+      Future<?> fresult = executor.get(url.substring(BASE_URL.length()));
       assertEquals("test", fresult.get());
    }
 
    @Test
    public void testRunnableResult() throws NoSuchMethodException, MalformedURLException,
-      InterruptedException, ExecutionException, IllegalAccessException, InvocationTargetException {
+      InterruptedException, ExecutionException {
       match = matchOfMethod("runnableResult");
 
       Object result = handler.invoke(request, match, connect);
@@ -125,8 +125,8 @@ public final class AsyncResponderTest {
       Redirect redirect = (Redirect) result;
       assertEquals(202, redirect.getStatusCode());
       String url = redirect.getUrl(connect).toExternalForm();
-      assertTrue(url.startsWith(baseUrl));
-      Future<?> fresult = executor.get(url.substring(baseUrl.length()));
+      assertTrue(url.startsWith(BASE_URL));
+      Future<?> fresult = executor.get(url.substring(BASE_URL.length()));
       assertNull(fresult.get());
       assertEquals("test", runnableResult);
    }

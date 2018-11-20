@@ -30,15 +30,16 @@ import java.util.Arrays;
 import com.lmpessoa.services.core.hosting.BadRequestException;
 import com.lmpessoa.services.core.hosting.HttpException;
 import com.lmpessoa.services.core.hosting.InternalServerError;
-import com.lmpessoa.services.core.serializing.ErrorList;
+import com.lmpessoa.services.core.validating.ErrorSet;
+import com.lmpessoa.services.core.validating.IValidationService;
 
 final class MatchedRoute implements RouteMatch {
 
+   private final IValidationService validator;
    private final Class<?> resourceClass;
    private final Object[] constructorArgs;
    private final Method method;
    private final Object[] methodArgs;
-   private final ErrorList errors;
 
    @Override
    public Class<?> getResourceClass() {
@@ -52,12 +53,40 @@ final class MatchedRoute implements RouteMatch {
 
    @Override
    public Object invoke() {
-      if (errors != null && !errors.isEmpty()) {
+      Object resource = createResource();
+
+      ErrorSet errors = validator.validateParameters(resource, method, methodArgs);
+      if (!errors.isEmpty()) {
          throw new BadRequestException(errors);
       }
+
+      Object result = invokeMethod(resource);
+      errors = validator.validateReturnValue(resource, method, result);
+      if (!errors.isEmpty()) {
+         throw new BadResponseException(errors);
+      }
+      return result;
+   }
+
+   private Object createResource() {
+      Constructor<?> constructor = resourceClass.getConstructors()[0];
       try {
-         Constructor<?> constructor = resourceClass.getConstructors()[0];
-         Object resource = constructor.newInstance(constructorArgs);
+         return constructor.newInstance(constructorArgs);
+      } catch (InvocationTargetException e) {
+         if (e.getCause() instanceof HttpException) {
+            throw (HttpException) e.getCause();
+         }
+         if (e.getCause() instanceof InternalServerError) {
+            throw (InternalServerError) e.getCause();
+         }
+         throw new InternalServerError(e.getCause());
+      } catch (Exception e) {
+         throw new InternalServerError(e);
+      }
+   }
+
+   private Object invokeMethod(Object resource) {
+      try {
          return method.invoke(resource, methodArgs);
       } catch (InvocationTargetException e) {
          if (e.getCause() instanceof HttpException) {
@@ -74,12 +103,12 @@ final class MatchedRoute implements RouteMatch {
       }
    }
 
-   MatchedRoute(MethodEntry entry, Object[] args, ErrorList errors) {
+   MatchedRoute(IValidationService validator, MethodEntry entry, Object[] args) {
       this.resourceClass = entry.getResourceClass();
       this.constructorArgs = Arrays.copyOfRange(args, 0, entry.getResourceArgumentCount());
       this.method = entry.getMethod();
       this.methodArgs = Arrays.copyOfRange(args, entry.getResourceArgumentCount(), args.length);
-      this.errors = errors;
+      this.validator = validator;
    }
 
    Object[] getConstructorArgs() {
@@ -88,9 +117,5 @@ final class MatchedRoute implements RouteMatch {
 
    Object[] getMethodArgs() {
       return methodArgs;
-   }
-
-   ErrorList getErrors() {
-      return errors;
    }
 }

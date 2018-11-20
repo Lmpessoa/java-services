@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,29 +20,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.routing;
+package com.lmpessoa.services.core.validating;
 
-final class AnyRouteType extends AbstractRouteType {
+import java.lang.reflect.Constructor;
 
-   public AnyRouteType() {
-      super(1, -1);
-   }
+final class ConstrainedConstructor extends ConstrainedExecutable<Constructor<?>> {
 
-   public AnyRouteType(int length) {
-      super(length, length);
-   }
-
-   public AnyRouteType(int minLength, int maxLength) {
-      super(minLength, maxLength);
+   ConstrainedConstructor(Constructor<?> constructor) {
+      super(constructor);
    }
 
    @Override
-   protected boolean isAssignableTo(Class<?> clazz) {
-      return false;
-   }
-
-   @Override
-   protected String getRegex() {
-      return "[^\\/]" + getRegexLength();
+   String getName() {
+      return getElement().getDeclaringClass().getSimpleName();
    }
 }

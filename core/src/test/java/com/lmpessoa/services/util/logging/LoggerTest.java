@@ -42,7 +42,7 @@ public final class LoggerTest {
       setupWith(Severity.WARNING);
    }
 
-   public void setupWith(Severity defaultLevel) throws ParseException {
+   public void setupWith(Severity defaultLevel) {
       output = new TestHandler(Severity.atOrAbove(defaultLevel));
       log = new Logger();
       log.addHandler(output);

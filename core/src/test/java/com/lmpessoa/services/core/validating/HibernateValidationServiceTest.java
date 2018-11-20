@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,30 +20,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.routing;
+package com.lmpessoa.services.core.validating;
 
-final class HexRouteType extends AbstractRouteType {
+import javax.validation.Validation;
+import javax.validation.ValidatorFactory;
 
-   public HexRouteType() {
-      super(1, -1);
+import com.lmpessoa.services.core.validating.IValidationService;
+import com.lmpessoa.services.core.validating.ValidationService;
+
+public class HibernateValidationServiceTest extends AbstractValidationServiceTest {
+
+   public HibernateValidationServiceTest() {
+      super(getHibernateValidator());
    }
 
-   public HexRouteType(int length) {
-      super(length, length);
-   }
-
-   public HexRouteType(int minLength, int maxLength) {
-      super(minLength, maxLength);
-   }
-
-   @Override
-   protected boolean isAssignableTo(Class<?> clazz) {
-      return clazz == long.class || clazz == int.class || clazz == short.class || clazz == byte.class
-               || clazz == Long.class || clazz == Integer.class || clazz == Short.class || clazz == Byte.class;
-   }
-
-   @Override
-   protected String getRegex() {
-      return "[0-9a-fA-F]" + getRegexLength();
+   private static IValidationService getHibernateValidator() {
+      ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+      return new ValidationService.ValidatorWrapper(factory.getValidator());
    }
 }

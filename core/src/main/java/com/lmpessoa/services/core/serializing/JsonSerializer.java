@@ -28,7 +28,7 @@ import com.google.gson.GsonBuilder;
 final class JsonSerializer extends Serializer {
 
    @Override
-   protected <T> T read(String content, Class<T> type) throws Exception {
+   protected <T> T read(String content, Class<T> type) {
       Gson gson = new GsonBuilder().setPrettyPrinting().create();
       return gson.fromJson(content, type);
    }
@@ -42,5 +42,4 @@ final class JsonSerializer extends Serializer {
          return null;
       }
    }
-
 }

@@ -22,68 +22,42 @@
  */
 package com.lmpessoa.services.core.routing;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Executable;
 import java.text.ParseException;
-import java.util.Arrays;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import com.lmpessoa.services.util.parsing.AbstractParser;
 import com.lmpessoa.services.util.parsing.ITemplatePart;
 
-final class RoutePatternParser extends AbstractParser<AbstractRouteType> {
+final class RoutePatternParser extends AbstractParser<VariableRoutePart> {
 
-   private static final Pattern pattern = Pattern.compile("^([a-z]+)(\\(([0-9]+)?(..)?([0-9]+)?\\))?$");
-   private final RouteOptions options;
+   private final Class<?> resourceClass;
+   private final Executable exec;
 
-   RoutePatternParser(String template, RouteOptions options) {
+   RoutePatternParser(Class<?> resourceClass, Executable exec, String template) {
       super(template, true, null);
-      this.options = options;
+      this.resourceClass = resourceClass;
+      this.exec = exec;
    }
 
-   public static List<ITemplatePart> parse(String template, RouteOptions options) throws ParseException {
-      return new RoutePatternParser(template, options).parse();
+   public static List<ITemplatePart> parse(Class<?> resourceClass, Executable exec, String template)
+      throws ParseException {
+      return new RoutePatternParser(resourceClass, exec, template).parse();
    }
 
    @Override
-   protected AbstractRouteType parseVariable(int pos, String variablePart) throws ParseException {
-      Matcher matcher = pattern.matcher(variablePart);
-      if (!matcher.find()) {
-         throw new ParseException("Invalid variable definition", pos);
-      }
-      String varType = matcher.group(1);
-      Class<? extends AbstractRouteType> type = options.getTypes().get(varType);
-      if (type == null) {
-         throw new ParseException("Unknown route type: " + varType, pos);
-      }
-      Object[] args;
-      if (matcher.group(2) != null) {
-         String minlenStr = matcher.group(3);
-         String maxlenStr = matcher.group(5);
-         if (minlenStr == null && maxlenStr == null) {
-            throw new ParseException("Length range expected", pos);
+   protected VariableRoutePart parseVariable(int pos, String variablePart) throws ParseException {
+      if (!variablePart.matches("\\d+")) {
+         for (int i = 0; i < exec.getParameterCount(); ++i) {
+            if (exec.getParameters()[i].getName().equals(variablePart)) {
+               variablePart = String.valueOf(i);
+               break;
+            }
          }
-         int minlen = minlenStr == null ? 1 : Integer.parseInt(minlenStr);
-         int maxlen = maxlenStr == null ? -1 : Integer.parseInt(maxlenStr);
-         if (maxlen == -1 && matcher.group(4) == null) {
-            args = new Object[] { minlen };
-         } else {
-            args = new Object[] { minlen, maxlen };
-         }
-      } else {
-         args = new Object[0];
       }
-      Class<?>[] argTypes = new Class<?>[args.length];
-      Arrays.fill(argTypes, int.class);
       try {
-         Constructor<? extends AbstractRouteType> constructor = type.getConstructor(argTypes);
-         AbstractRouteType result = constructor.newInstance(args);
-         result.setRouteOptions(options);
-         return result;
-      } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | IllegalArgumentException
-               | InvocationTargetException e) {
+         return new VariableRoutePart(resourceClass, exec, Integer.parseInt(variablePart));
+      } catch (Exception e) {
          throw new ParseException(e.getMessage(), pos);
       }
    }

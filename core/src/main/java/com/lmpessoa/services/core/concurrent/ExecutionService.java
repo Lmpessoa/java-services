@@ -125,8 +125,8 @@ public final class ExecutionService implements IExecutionService {
     *
     * <p>
     * After this method is executed, an {@code ExecutionService} will cancel any tasks not yet in
-    * executions and refuse any new tasks but will not attemp to interrupt any already running tasks
-    * pending completion.
+    * executions and refuse any new tasks but will not attempt to interrupt any already running
+    * tasks pending completion.
     * </p>
     *
     * <p>

@@ -50,8 +50,8 @@ public final class Claim {
    private final String type;
 
    /**
-    * Creates a new {@code Claim} with the given type and value. The issuer of this new {@code Claim}
-    * is {@code null}.
+    * Creates a new {@code Claim} with the given type and value. The issuer of this new
+    * {@code Claim} is {@code null}.
     *
     * @param type the type of the claim to be created.
     * @param value the value to be associated with this claim type.
@@ -63,17 +63,17 @@ public final class Claim {
    /**
     * Creates a new {@code Claim} with the given type, value and issuer.
     * <p>
-    * It is recommended that the issuer of a claim be identified by the base URL of the application's
-    * main site. For example, the recommended issuer for a Facebook claim should be
+    * It is recommended that the issuer of a claim be identified by the base URL of the
+    * application's main site. For example, the recommended issuer for a Facebook claim should be
     * {@code "https://www.facebook.com"}, while Twitter should use {@code "https://twitter.com"}.
-    * Either format with or without the {@code "www."} part is acceptable, as long as it is consistent
-    * among all claims by the same issuer.
+    * Either format with or without the {@code "www."} part is acceptable, as long as it is
+    * consistent among all claims by the same issuer.
     * </p>
     *
     * @param type the type of the claim to be created.
     * @param value the value to be associated with this claim type.
     * @param issuer an identifier of the issuer of this claim, or {@code null} if it cannot be
-    * identified.
+    *           identified.
     */
    public Claim(String type, Object value, String issuer) {
       this.value = Objects.requireNonNull(value);
@@ -83,12 +83,13 @@ public final class Claim {
 
    @Override
    public boolean equals(Object o) {
-      if (o == null || !(o instanceof Claim)) {
+      if (!(o instanceof Claim)) {
          return false;
       }
       Claim other = (Claim) o;
       return type.equals(other.type) && value.equals(other.value)
-               && (issuer == null && other.issuer == null || issuer != null && issuer.equals(other.issuer));
+               && (issuer == null && other.issuer == null
+                        || issuer != null && issuer.equals(other.issuer));
    }
 
    @Override
@@ -99,9 +100,9 @@ public final class Claim {
    /**
     * Returns the type of the data of this claim.
     * <p>
-    * The type of a claim identifies what information that claim has associated with it. For a list of
-    * examples claim types, see {@link ClaimType}. For custom claims, it is strongly recommended to
-    * avoid the prefix {@code "identity:"} since these are used to identify common claims by the
+    * The type of a claim identifies what information that claim has associated with it. For a list
+    * of examples claim types, see {@link ClaimType}. For custom claims, it is strongly recommended
+    * to avoid the prefix {@code "identity:"} since these are used to identify common claims by the
     * engine.
     * </p>
     *
@@ -128,11 +129,11 @@ public final class Claim {
    /**
     * Returns the identifier of the issuer of this claim.
     * <p>
-    * It is recommended this identifier be the main URL used by the issuer of this claim, but it is not
-    * mandatory and issuers or identity providers may use other values as long as this value is
+    * It is recommended this identifier be the main URL used by the issuer of this claim, but it is
+    * not mandatory and issuers or identity providers may use other values as long as this value is
     * consistent with all claims from the same issuer.
     * </p>
-    * 
+    *
     * @return the identifier of the issuer of this claim.
     */
    public String getIssuer() {

@@ -20,29 +20,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.serializing;
+package com.lmpessoa.services.test.validating;
 
-import java.util.Objects;
+import javax.validation.constraints.Min;
 
-/**
- * Thrown when a deserialised object fails validation.
- */
-public final class ValidationException extends Exception {
+public class Review {
 
-   private static final long serialVersionUID = 1L;
+   private final int rating;
 
-   private final ErrorList errors;
-
-   /**
-    * Returns the list of errors in this {@code ValidationException}.
-    *
-    * @return the list of errors in this exception.
-    */
-   public ErrorList getErrors() {
-      return errors;
+   public Review(int rating) {
+      this.rating = rating;
    }
 
-   ValidationException(ErrorList errors) {
-      this.errors = Objects.requireNonNull(errors);
+   @Min(0)
+   public int getRating() {
+      return rating;
    }
 }

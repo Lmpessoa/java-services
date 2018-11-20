@@ -23,6 +23,7 @@
 package com.lmpessoa.services.core.hosting;
 
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
@@ -37,6 +38,8 @@ import com.lmpessoa.services.core.routing.IRouteTable;
 import com.lmpessoa.services.core.routing.RouteEntry;
 import com.lmpessoa.services.core.security.IIdentityOptions;
 import com.lmpessoa.services.core.security.IIdentityProvider;
+import com.lmpessoa.services.core.validating.ErrorSet;
+import com.lmpessoa.services.core.validating.IValidationService;
 import com.lmpessoa.services.util.logging.ILogger;
 
 // The issue with wrappers is that every method in the wrapped interface has to be overridden,
@@ -283,6 +286,27 @@ final class Wrapper {
          @Override
          public String findArea(String packageName) {
             return original.findArea(packageName);
+         }
+      };
+   }
+
+   static IValidationService wrap(IValidationService original) {
+      Objects.requireNonNull(original);
+      return new IValidationService() {
+
+         @Override
+         public ErrorSet validate(Object object) {
+            return original.validate(object);
+         }
+
+         @Override
+         public ErrorSet validateParameters(Object object, Method method, Object[] paramValues) {
+            return original.validateParameters(object, method, paramValues);
+         }
+
+         @Override
+         public ErrorSet validateReturnValue(Object object, Method method, Object returnValue) {
+            return original.validateReturnValue(object, method, returnValue);
          }
       };
    }

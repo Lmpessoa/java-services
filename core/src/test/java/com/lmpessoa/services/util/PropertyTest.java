@@ -29,6 +29,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Objects;
+
 import org.junit.Test;
 
 import com.lmpessoa.services.util.Property;
@@ -63,11 +65,11 @@ public class PropertyTest {
       String[] values = result.values()
                .stream()
                .map(p -> p.get("value"))
-               .filter(p -> p != null)
-               .map(p -> p.getValue())
+               .filter(Objects::nonNull)
+               .map(Property::getValue)
                .toArray(String[]::new);
       assertArrayEquals(new String[] { "42", "7", "12" }, values);
-      values = result.values().stream().map(p -> p.get("key")).filter(p -> p != null).map(p -> p.getValue()).toArray(
+      values = result.values().stream().map(p -> p.get("key")).filter(Objects::nonNull).map(Property::getValue).toArray(
                String[]::new);
       assertArrayEquals(new String[] { "1", "2", "3" }, values);
    }
@@ -112,11 +114,11 @@ public class PropertyTest {
       String[] values = result.values()
                .stream()
                .map(p -> p.get("value"))
-               .filter(p -> p != null)
-               .map(p -> p.getValue())
+               .filter(Objects::nonNull)
+               .map(Property::getValue)
                .toArray(String[]::new);
       assertArrayEquals(new String[] { "42", "7", "12" }, values);
-      values = result.values().stream().map(p -> p.get("key")).filter(p -> p != null).map(p -> p.getValue()).toArray(
+      values = result.values().stream().map(p -> p.get("key")).filter(Objects::nonNull).map(Property::getValue).toArray(
                String[]::new);
       assertArrayEquals(new String[] { "1", "2", "3" }, values);
    }

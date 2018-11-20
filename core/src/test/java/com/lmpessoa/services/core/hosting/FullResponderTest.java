@@ -40,11 +40,27 @@ import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.util.function.Supplier;
 
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import com.lmpessoa.services.core.hosting.ApplicationOptions;
+import com.lmpessoa.services.core.hosting.ApplicationServer;
+import com.lmpessoa.services.core.hosting.ConnectionInfo;
+import com.lmpessoa.services.core.hosting.ContentType;
+import com.lmpessoa.services.core.hosting.HeaderEntry;
+import com.lmpessoa.services.core.hosting.Headers;
+import com.lmpessoa.services.core.hosting.HttpInputStream;
+import com.lmpessoa.services.core.hosting.HttpRequest;
+import com.lmpessoa.services.core.hosting.HttpRequestImpl;
+import com.lmpessoa.services.core.hosting.HttpResult;
+import com.lmpessoa.services.core.hosting.IApplicationSettings;
+import com.lmpessoa.services.core.hosting.NotImplementedException;
+import com.lmpessoa.services.core.hosting.Redirect;
 import com.lmpessoa.services.core.routing.HttpGet;
 import com.lmpessoa.services.core.routing.HttpMethod;
 import com.lmpessoa.services.core.routing.HttpPatch;
@@ -54,10 +70,9 @@ import com.lmpessoa.services.core.routing.QueryParam;
 import com.lmpessoa.services.core.routing.Route;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.routing.RouteTable;
-import com.lmpessoa.services.core.serializing.ErrorList;
 import com.lmpessoa.services.core.serializing.Serializer;
-import com.lmpessoa.services.core.serializing.Validable;
 import com.lmpessoa.services.core.services.ServiceMap;
+import com.lmpessoa.services.core.validating.IValidationService;
 import com.lmpessoa.services.util.logging.ILogger;
 import com.lmpessoa.services.util.logging.Logger;
 import com.lmpessoa.services.util.logging.NullHandler;
@@ -82,7 +97,7 @@ public final class FullResponderTest {
    }
 
    @Before
-   public void setup() throws NoSuchMethodException {
+   public void setup() {
       app = new ApplicationOptions(null);
       services = app.getServices();
       services.put(ILogger.class, log);
@@ -91,6 +106,7 @@ public final class FullResponderTest {
       when(settings.getStartupClass()).then(n -> FullResponderTest.class);
       services.put(IApplicationSettings.class, settings);
       services.put(RouteMatch.class, (Supplier<RouteMatch>) () -> route);
+      services.put(IValidationService.class, IValidationService.newInstance());
 
       routes = app.getRoutes();
       routes.put("", TestResource.class);
@@ -224,7 +240,7 @@ public final class FullResponderTest {
    }
 
    @Test
-   public void testMediatorWithInvalidParam() throws IOException {
+   public void testMediatorWithInvalidParamToJson() throws IOException {
       HttpResult result = performFile("/http/invalid_patch_request.txt");
       assertEquals(400, result.getStatusCode());
       assertNotNull(result.getInputStream());
@@ -232,11 +248,27 @@ public final class FullResponderTest {
       byte[] data = new byte[result.getInputStream().available()];
       result.getInputStream().read(data);
       String content = new String(data, Serializer.UTF_8);
-      assertEquals("{\"errors\":[{\"message\":\"Some error message\"}]}", content);
+      assertEquals("{\"errors\":[{\"path\":\"value.invalid\","
+               + "\"message\":\"Some error message\",\"invalidValue\":\"null\"}]}", content);
    }
 
    @Test
-   public void testMediatorWithoutInvalidParam() throws IOException {
+   public void testMediatorWithInvalidParamToXml() throws IOException {
+      Serializer.enableXml(true);
+      HttpResult result = performFile("/http/invalid_patch_request.txt");
+      assertEquals(400, result.getStatusCode());
+      assertNotNull(result.getInputStream());
+      assertEquals(ContentType.XML, result.getInputStream().getType());
+      byte[] data = new byte[result.getInputStream().available()];
+      result.getInputStream().read(data);
+      String content = new String(data, Serializer.UTF_8);
+      assertEquals("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n" + "<errors>\n"
+               + "  <error path=\"value.invalid\" message=\"Some error message\" invalidValue=\"null\"/>\n"
+               + "</errors>\n", content);
+   }
+
+   @Test
+   public void testMediatorWithoutInvalidParam() {
       HttpResult result = perform(PATCH, "/test/invalid");
       assertEquals(204, result.getStatusCode());
       assertNull(result.getInputStream());
@@ -254,11 +286,11 @@ public final class FullResponderTest {
       assertEquals("java.lang.IllegalArgumentException", content);
    }
 
-   private HttpResult perform(String path) throws IOException {
+   private HttpResult perform(String path) {
       return perform(GET, path);
    }
 
-   private HttpResult perform(HttpMethod method, String path) throws IOException {
+   private HttpResult perform(HttpMethod method, String path) {
       request = new HttpRequestBuilder().setMethod(method).setPath(path).build();
       services.put(HttpRequest.class, (Supplier<HttpRequest>) () -> request);
       route = routes.matches(request);
@@ -289,12 +321,10 @@ public final class FullResponderTest {
       }
    }
 
-   public static class InvalidTestObject extends TestObject implements Validable {
+   public static class InvalidTestObject extends TestObject {
 
-      @Override
-      public void validate(ErrorList errors) {
-         errors.add("Some error message");
-      }
+      @NotNull(message = "Some error message")
+      private final String invalid = null;
    }
 
    public static class TestResource {
@@ -337,7 +367,8 @@ public final class FullResponderTest {
 
       @HttpPatch
       @Route("invalid")
-      public void invalid(InvalidTestObject value) {
+      public void invalid(@Valid InvalidTestObject value) {
+         // Nothing to do here
       }
 
       @HttpGet

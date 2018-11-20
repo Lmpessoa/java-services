@@ -59,8 +59,8 @@ public final class ConnectionInfo {
    /**
     * Returns the local address to which this connection is bound.
     * <p>
-    * If the connection was connected prior to being closed, then this method will continue to return
-    * the connected address after the connection is closed.
+    * If the connection was connected prior to being closed, then this method will continue to
+    * return the connected address after the connection is closed.
     * </p>
     *
     * @return the local address to which this connection is bound.
@@ -82,8 +82,8 @@ public final class ConnectionInfo {
    /**
     * Returns the local port number to which this connection is bound.
     * <p>
-    * If the connection was bound prior to being closed, then this method will continue to return the
-    * local port number after the connection is closed.
+    * If the connection was bound prior to being closed, then this method will continue to return
+    * the local port number after the connection is closed.
     * </p>
     *
     * @return the local port number to which this connection is bound or -1 if the connection is not
@@ -96,8 +96,8 @@ public final class ConnectionInfo {
    /**
     * Returns the address to which the connection is connected.
     * <p>
-    * If the connection was connected prior to being closed, then this method will continue to return
-    * the connected address after the connection is closed.
+    * If the connection was connected prior to being closed, then this method will continue to
+    * return the connected address after the connection is closed.
     * </p>
     *
     * @return the remote IP address to which this connection is connected, or null if the connection
@@ -110,8 +110,8 @@ public final class ConnectionInfo {
    /**
     * Returns the remote port number to which this connection is connected.
     * <p>
-    * If the connection was connected prior to being closed, then this method will continue to return
-    * the connected port number after the connection is closed.
+    * If the connection was connected prior to being closed, then this method will continue to
+    * return the connected port number after the connection is closed.
     * </p>
     *
     * @return the remote port number to which this connection is connected, or 0 if the connection
@@ -161,8 +161,8 @@ public final class ConnectionInfo {
     * </p>
     *
     * <p>
-    * Once a connection has been closed, it is not available for further networking use and thus will
-    * prevent an unsent response from being sent back to the user agent.
+    * Once a connection has been closed, it is not available for further networking use and thus
+    * will prevent an unsent response from being sent back to the user agent.
     * </p>
     *
     * @throws IOException if an I/O error occurs when closing this connection.

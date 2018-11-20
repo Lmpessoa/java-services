@@ -20,28 +20,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.serializing;
+package com.lmpessoa.services.core.validating;
 
-/**
- * Establishes the common interface for validating deserialised object.
- *
- * <p>
- * The adoption of this interface is not actually mandatory for object to be validated but may help
- * identify by other means classes whose objects are validated and the signature of the method that
- * is used in this validation process.
- * </p>
- */
-public interface Validable {
+import com.lmpessoa.services.core.validating.ValidationService;
 
-   /**
-    * Validates this object.
-    * <p>
-    * Classes implementing this method must perform a validation of the object according to any
-    * rules it sees fit and registering any errors in the given error list. Classes are not expected
-    * to raise any exceptions from this method.
-    * </p>
-    *
-    * @param errors an object that will hold the list of validation errors.
-    */
-   void validate(ErrorList errors);
+public class ValidationServiceTest extends AbstractValidationServiceTest {
+
+   public ValidationServiceTest() {
+      super(new ValidationService());
+   }
 }

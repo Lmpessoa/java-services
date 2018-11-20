@@ -29,16 +29,11 @@ import java.util.regex.Pattern;
 
 final class RouteOptions implements IRouteOptions {
 
-   private final Map<String, Class<? extends AbstractRouteType>> types = new HashMap<>();
    private final Map<String, Pattern> packages = new HashMap<>();
    private final Map<String, String> indices = new HashMap<>();
 
    RouteOptions() {
       addArea("", ".resources$");
-      addType("hex", HexRouteType.class);
-      addType("int", IntRouteType.class);
-      addType("alpha", AlphaRouteType.class);
-      addType("any", AnyRouteType.class);
    }
 
    @Override
@@ -55,25 +50,6 @@ final class RouteOptions implements IRouteOptions {
       if (!"index".equals(defRes)) {
          indices.put(areaPath, defRes);
       }
-   }
-
-   @Override
-   public void addType(String typeLabel, Class<? extends AbstractRouteType> typeClass) {
-      types.put(typeLabel, typeClass);
-   }
-
-   Map<String, Class<? extends AbstractRouteType>> getTypes() {
-      return types;
-   }
-
-   String getTypeName(AbstractRouteType routeType) {
-      Class<? extends AbstractRouteType> typeClass = routeType.getClass();
-      for (Entry<String, Class<? extends AbstractRouteType>> entry : types.entrySet()) {
-         if (entry.getValue() == typeClass) {
-            return entry.getKey();
-         }
-      }
-      return null;
    }
 
    String findArea(Class<?> clazz) {

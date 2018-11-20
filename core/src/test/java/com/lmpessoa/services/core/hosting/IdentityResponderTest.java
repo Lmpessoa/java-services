@@ -214,22 +214,27 @@ public class IdentityResponderTest {
    public static class NonMarkedType {
 
       public void nonMarked() {
+         // Nothing to do here
       }
 
       @Authorize
       public void marked() {
+         // Nothing to do here
       }
 
       @Authorize(roles = "foo")
       public void markedWithRole() {
+         // Nothing to do here
       }
 
       @Authorize(roles = "baz")
       public void markedWithMissingRole() {
+         // Nothing to do here
       }
 
       @Authorize(policy = "named")
       public void markedWithPolicy() {
+         // Nothing to do here
       }
    }
 
@@ -237,18 +242,22 @@ public class IdentityResponderTest {
    public static class MarkedType {
 
       public void nonMarked() {
+         // Nothing to do here
       }
 
       @Authorize(roles = "bar")
       public void markedWithRole() {
+         // Nothing to do here
       }
 
       @Authorize(roles = "baz")
       public void markedWithMissingRole() {
+         // Nothing to do here
       }
 
       @AllowAnonymous
       public void markedAnonymous() {
+         // Nothing to do here
       }
    }
 
@@ -257,13 +266,14 @@ public class IdentityResponderTest {
 
       @Authorize(roles = "baz")
       public void marked() {
+         // Nothing to do here
       }
    }
 
    public static class TestResponder {
 
       public TestResponder(NextResponder next) {
-         // Ignore
+         // Nothing to do here
       }
 
       public Object invoke(RouteMatch route) {

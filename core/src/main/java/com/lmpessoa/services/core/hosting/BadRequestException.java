@@ -22,7 +22,7 @@
  */
 package com.lmpessoa.services.core.hosting;
 
-import com.lmpessoa.services.core.serializing.ErrorList;
+import com.lmpessoa.services.core.validating.ErrorSet;
 
 /**
  * Thrown when the received request is not valid.
@@ -30,7 +30,7 @@ import com.lmpessoa.services.core.serializing.ErrorList;
 public final class BadRequestException extends HttpException {
 
    private static final long serialVersionUID = 1L;
-   private final ErrorList errors;
+   private final ErrorSet errors;
 
    /**
     * Creates a new {@code BadRequestException}.
@@ -55,7 +55,7 @@ public final class BadRequestException extends HttpException {
     *
     * @param errors the detail messages.
     */
-   public BadRequestException(ErrorList errors) {
+   public BadRequestException(ErrorSet errors) {
       super(400);
       this.errors = errors;
    }
@@ -70,7 +70,13 @@ public final class BadRequestException extends HttpException {
       errors = null;
    }
 
-   ErrorList getErrors() {
+   /**
+    * Returns a set of errors describing the problems with the current request.
+    *
+    * @return a set of errors describing the problems with the current request, or {@code null} if no
+    * such set is present.
+    */
+   public ErrorSet getErrors() {
       return errors;
    }
 }

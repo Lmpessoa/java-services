@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,30 +20,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.routing;
+package com.lmpessoa.services.test.validating;
 
-final class IntRouteType extends AbstractRouteType {
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-   public IntRouteType() {
-      super(1, -1);
-   }
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-   public IntRouteType(int length) {
-      super(length, length);
-   }
+import javax.validation.Constraint;
+import javax.validation.Payload;
 
-   public IntRouteType(int minLength, int maxLength) {
-      super(minLength, maxLength);
-   }
+@Target(TYPE)
+@Retention(RUNTIME)
+@Constraint(validatedBy = {})
+public @interface AvailableInStore {
 
-   @Override
-   protected boolean isAssignableTo(Class<?> clazz) {
-      return clazz == long.class || clazz == int.class || clazz == short.class || clazz == byte.class
-               || clazz == Long.class || clazz == Integer.class || clazz == Short.class || clazz == Byte.class;
-   }
+   String message() default "{com.lmpessoa.services.test.validating.AvailableInStore.message}";
 
-   @Override
-   protected String getRegex() {
-      return "[0-9]" + getRegexLength();
-   }
+   Class<?>[] groups() default {};
+
+   Class<? extends Payload>[] payload() default {};
 }

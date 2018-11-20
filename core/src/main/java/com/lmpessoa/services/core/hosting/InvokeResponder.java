@@ -22,7 +22,12 @@
  */
 package com.lmpessoa.services.core.hosting;
 
+import java.lang.reflect.Method;
+
+import com.lmpessoa.services.core.routing.BadResponseException;
 import com.lmpessoa.services.core.routing.RouteMatch;
+import com.lmpessoa.services.core.validating.ErrorSet.Message;
+import com.lmpessoa.services.util.logging.ILogger;
 
 final class InvokeResponder {
 
@@ -30,10 +35,45 @@ final class InvokeResponder {
       // Last handler, no need for next
    }
 
-   public Object invoke(RouteMatch route) {
+   public Object invoke(RouteMatch route, ILogger log) {
       if (route == null) {
          throw new NotFoundException();
       }
-      return route.invoke();
+      try {
+         return route.invoke();
+      } catch (BadResponseException e) {
+         e.getErrors().stream().map(err -> new ErrorMessage(err, route.getMethod())).forEach(
+                  log::error);
+         throw new InternalServerError("Application produced an invalid result");
+      }
+   }
+
+   private static class ErrorMessage extends Throwable {
+
+      private static final long serialVersionUID = 1L;
+      private final Method method; // NOSONAR
+      private final Message error;
+
+      public ErrorMessage(Message error, Method method) {
+         this.method = method;
+         this.error = error;
+      }
+
+      @Override
+      public synchronized Throwable fillInStackTrace() {
+         return this;
+      }
+
+      @Override
+      public String getMessage() {
+         return String.format("%s: %s (was '%s')", error.getPathEntry(), error.getValue(),
+                  error.getInvalidValue());
+      }
+
+      @Override
+      public StackTraceElement[] getStackTrace() {
+         return new StackTraceElement[] { new StackTraceElement(
+                  method.getDeclaringClass().getName(), method.getName(), null, 0) };
+      }
    }
 }

@@ -59,13 +59,15 @@ public final class LogHandlerTest {
          }
       }
       Socket socket = mock(Socket.class);
-      when(socket.getInetAddress()).thenReturn(InetAddress.getByAddress(new byte[] { 42, 0, 1, 7 }));
+      when(socket.getInetAddress())
+               .thenReturn(InetAddress.getByAddress(new byte[] { 42, 0, 1, 7 }));
       when(socket.getLocalAddress()).thenReturn(InetAddress.getLocalHost());
       Logger log = new Logger();
       log.addSupplier(ConnectionInfo.class,
                () -> new ConnectionInfo(socket, "https://lmpessoa.com"));
       log.addVariable("Remote.Host", ConnectionInfo.class, c -> c.getRemoteAddress().getHostName());
-      log.addVariable("Remote.Addr", ConnectionInfo.class, c -> c.getRemoteAddress().getHostAddress());
+      log.addVariable("Remote.Addr", ConnectionInfo.class,
+               c -> c.getRemoteAddress().getHostAddress());
       log.addHandler(handler);
       return log;
    }
@@ -148,14 +150,16 @@ public final class LogHandlerTest {
    @Test
    public void testSyslogFacilityBelowZero() throws UnknownHostException {
       thrown.expect(IllegalArgumentException.class);
-      SyslogHandler handler = new SyslogHandler("Test", "localhost", 5140, Severity.atOrAbove(Severity.INFO));
+      SyslogHandler handler = new SyslogHandler("Test", "localhost", 5140,
+               Severity.atOrAbove(Severity.INFO));
       handler.setFacility(-1);
    }
 
    @Test
    public void testSyslogFacilityAboveSeven() throws UnknownHostException {
       thrown.expect(IllegalArgumentException.class);
-      SyslogHandler handler = new SyslogHandler("Test", "localhost", 5140, Severity.atOrAbove(Severity.INFO));
+      SyslogHandler handler = new SyslogHandler("Test", "localhost", 5140,
+               Severity.atOrAbove(Severity.INFO));
       handler.setFacility(8);
    }
 
@@ -173,12 +177,14 @@ public final class LogHandlerTest {
          assertEquals(" ", dataStr.substring(31, 32));
          String hostname = InetAddress.getLocalHost().getHostName();
          assertEquals(hostname, dataStr.substring(32, 32 + hostname.length()));
-         assertEquals(" Test - ID1 - \u00EF\u00BB\u00BF" + MESSAGE, dataStr.substring(32 + hostname.length()));
+         assertEquals(" Test - ID1 - \u00EF\u00BB\u00BF" + MESSAGE,
+                  dataStr.substring(32 + hostname.length()));
       }
    }
 
    private static void sendSyslogTestUdp5424() throws UnknownHostException, InterruptedException {
-      SyslogHandler handler = new SyslogHandler("Test", "localhost", 5140, Severity.atOrAbove(Severity.INFO));
+      SyslogHandler handler = new SyslogHandler("Test", "localhost", 5140,
+               Severity.atOrAbove(Severity.INFO));
       handler.setFacility(0);
       handler.setTransport(SyslogTransportFormat.UDP);
       Logger log = useHandler(handler);
@@ -205,7 +211,8 @@ public final class LogHandlerTest {
    }
 
    private static void sendSyslogTestUdp3164() throws UnknownHostException, InterruptedException {
-      SyslogHandler handler = new SyslogHandler("Test", "localhost", 5140, Severity.atOrAbove(Severity.INFO));
+      SyslogHandler handler = new SyslogHandler("Test", "localhost", 5140,
+               Severity.atOrAbove(Severity.INFO));
       handler.setFacility(2);
       handler.setFormat(SyslogMessageFormat.BSD);
       handler.setTransport(SyslogTransportFormat.UDP);
@@ -224,12 +231,14 @@ public final class LogHandlerTest {
          assertEquals(" ", dataStr.substring(31, 32));
          String hostname = InetAddress.getLocalHost().getHostName();
          assertEquals(hostname, dataStr.substring(32, 32 + hostname.length()));
-         assertEquals(" Test - ID1 - \u00EF\u00BB\u00BF" + MESSAGE, dataStr.substring(32 + hostname.length()));
+         assertEquals(" Test - ID1 - \u00EF\u00BB\u00BF" + MESSAGE,
+                  dataStr.substring(32 + hostname.length()));
       }
    }
 
    private static void sendSyslogTestTcp5424() throws UnknownHostException, InterruptedException {
-      SyslogHandler handler = new SyslogHandler("Test", "localhost", 5140, Severity.atOrAbove(Severity.INFO));
+      SyslogHandler handler = new SyslogHandler("Test", "localhost", 5140,
+               Severity.atOrAbove(Severity.INFO));
       handler.setFacility(4);
       Logger log = useHandler(handler);
       log.warning("Test");
@@ -251,7 +260,8 @@ public final class LogHandlerTest {
    }
 
    private static void sendSyslogTestTcp3164() throws UnknownHostException, InterruptedException {
-      SyslogHandler handler = new SyslogHandler("Test", "localhost", 5140, Severity.atOrAbove(Severity.INFO));
+      SyslogHandler handler = new SyslogHandler("Test", "localhost", 5140,
+               Severity.atOrAbove(Severity.INFO));
       handler.setFacility(6);
       handler.setFormat(SyslogMessageFormat.BSD);
       Logger log = useHandler(handler);

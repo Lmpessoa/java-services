@@ -40,27 +40,27 @@ public final class RouteTableAreaTest {
    private RouteTable table;
 
    @Before
-   public void setup() throws NoSuchMethodException {
+   public void setup() {
       services = new ServiceMap();
       table = new RouteTable(services);
    }
 
    @Test
-   public void testDefaultResource() throws ParseException {
+   public void testDefaultResource() {
       table.put(com.lmpessoa.services.test.resources.IndexResource.class);
       assertTrue(table.hasRoute("/"));
       assertTrue(table.hasRoute("/test"));
    }
 
    @Test
-   public void testDefaultArea() throws ParseException {
+   public void testDefaultArea() {
       table.put("", com.lmpessoa.services.test.resources.api.TestResource.class);
       assertTrue(table.hasRoute("/test"));
       assertFalse(table.hasRoute("/api/test"));
    }
 
    @Test
-   public void testApiArea() throws ParseException {
+   public void testApiArea() {
       table.getOptions().addArea("api/v1", ".resources.api$");
       table.put(com.lmpessoa.services.test.resources.api.TestResource.class);
       assertTrue(table.hasRoute("/api/v1/test"));
@@ -80,7 +80,7 @@ public final class RouteTableAreaTest {
    }
 
    @Test
-   public void testApiAreaOverride() throws ParseException {
+   public void testApiAreaOverride() {
       table.getOptions().addArea("api/v1", "\\.resources\\.api$");
       table.put("api/v2", com.lmpessoa.services.test.resources.api.TestResource.class);
       assertFalse(table.hasRoute("/api/v1/test"));

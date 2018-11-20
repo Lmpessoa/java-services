@@ -107,9 +107,9 @@ public final class Property {
    /**
     * Returns the name of this property.
     * <p>
-    * Depending on the format and declaration of properties, they may bear an unique identifier related
-    * to its parent property. This identifier may be a string name or an integer name as a string if
-    * they came from a nameless list.
+    * Depending on the format and declaration of properties, they may bear an unique identifier
+    * related to its parent property. This identifier may be a string name or an integer name as a
+    * string if they came from a nameless list.
     * </p>
     *
     * @return the name of this property.
@@ -148,8 +148,8 @@ public final class Property {
    }
 
    /**
-    * Returns the value of this property or a default value, if the property is empty or not a single
-    * value property.
+    * Returns the value of this property or a default value, if the property is empty or not a
+    * single value property.
     *
     * @param defaultValue a default value to be returned if the property does not bear a value.
     * @return the value of this property or the given default value.
@@ -163,8 +163,8 @@ public final class Property {
     * Returns the integer value of this property.
     * <p>
     * Integer value of properties may be defined as hexadecimal values (prefixed with "0x"), binary
-    * values (prefixed with "0b") or octal values (prefixed with "0"). Otherwise values are treated as
-    * regular decimal values.
+    * values (prefixed with "0b") or octal values (prefixed with "0"). Otherwise values are treated
+    * as regular decimal values.
     * </p>
     *
     * @return the value of this property as an integer.
@@ -185,8 +185,8 @@ public final class Property {
 
    /**
     * Returns the value of this property converted to an integer or a default value, if the value is
-    * not a valid integer value, the property is empty, or if the property is not a single value (and
-    * thus has children).
+    * not a valid integer value, the property is empty, or if the property is not a single value
+    * (and thus has children).
     *
     * @param defaultValue a default value to be returned if the property does not bear a valid
     *           integer value.
@@ -215,9 +215,9 @@ public final class Property {
    }
 
    /**
-    * Returns the value of this property converted to a boolean or a default value, if the value is not
-    * a valid boolean value, the property is empty, or if the property is not a single value (and thus
-    * has children).
+    * Returns the value of this property converted to a boolean or a default value, if the value is
+    * not a valid boolean value, the property is empty, or if the property is not a single value
+    * (and thus has children).
     *
     * @param defaultValue a default value to be returned if the property does not bear a valid
     *           boolean value.
@@ -237,9 +237,9 @@ public final class Property {
    /**
     * Returns a collection of the child properties of this property.
     * <p>
-    * Properties are structured as a tree of properties. If a property has children, this method will
-    * return each children immediate children of this property. For properties which do not have
-    * children (see {@link #hasChildren()}), this method will return an empty list.
+    * Properties are structured as a tree of properties. If a property has children, this method
+    * will return each children immediate children of this property. For properties which do not
+    * have children (see {@link #hasChildren()}), this method will return an empty list.
     * </p>
     *
     * @return a collection of the child properties of this property.

@@ -93,7 +93,8 @@ public final class Logger implements ILogger {
     * Create a new {@code Logger} with the given arguments.
     *
     * @param defaultClass the class to be used as default class.
-    * @param stackFilter a filter to reduce the amount of {@link StackTracElement}s in logged messages.
+    * @param stackFilter a filter to reduce the amount of {@link StackTracElement}s in logged
+    *           messages.
     * @param connectionSupplier a supplier of {@link ConnectionInfo} for the {@code Logger}.
     */
    public Logger(Class<?> defaultClass, Predicate<StackTraceElement> stackFilter) {
@@ -129,8 +130,8 @@ public final class Logger implements ILogger {
    /**
     * Adds the given {@link Handler} to this {@code Logger}.
     * <p>
-    * Since it makes no sense for the same handler to be added multiple times to a logger, if the given
-    * handler is already assigned to this, this method will fail silently.
+    * Since it makes no sense for the same handler to be added multiple times to a logger, if the
+    * given handler is already assigned to this, this method will fail silently.
     * </p>
     *
     * @param handler the handler to be added to this logger.
@@ -153,7 +154,8 @@ public final class Logger implements ILogger {
 
    public <T> void addSupplier(Class<T> type, Supplier<T> supplier) {
       if (suppliers.containsKey(Objects.requireNonNull(type))) {
-         throw new IllegalArgumentException("Supplier for type is already defined: " + type.getName());
+         throw new IllegalArgumentException(
+                  "Supplier for type is already defined: " + type.getName());
       }
       suppliers.put(type, Objects.requireNonNull(supplier));
    }
@@ -171,11 +173,12 @@ public final class Logger implements ILogger {
     * <p>
     * When tracing is enabled, additional details from logged messages will be logged. Specifically,
     * logged exceptions will register all causes for the exception instead of just the original
-    * exception, and any other message types will register the method where the log entry was called.
+    * exception, and any other message types will register the method where the log entry was
+    * called.
     * </p>
     *
     * @param tracing {@code true} if this logger should register additional information for each
-    * entrty, {@code false} otherwise.
+    *           entrty, {@code false} otherwise.
     */
    public void enableTracing(boolean tracing) {
       this.tracing = tracing;
@@ -186,10 +189,12 @@ public final class Logger implements ILogger {
     * <p>
     * When tracing is enabled, additional details from logged messages will be logged. Specifically,
     * logged exceptions will register all causes for the exception instead of just the original
-    * exception, and any other message types will register the method where the log entry was called.
+    * exception, and any other message types will register the method where the log entry was
+    * called.
     * </p>
     *
-    * @return {@code true} if messages sent to this logger are being traced, {@code false} otherwise.
+    * @return {@code true} if messages sent to this logger are being traced, {@code false}
+    *         otherwise.
     */
    public boolean isTracing() {
       return tracing;
@@ -204,8 +209,9 @@ public final class Logger implements ILogger {
     * message queue of the logger to be emptied before returning.
     * </p>
     *
-    * @throws InterruptedException if the thread calling this method was interrupted by another thread.
-    * The interrupted status of the current thread is cleared when this exception is thrown.
+    * @throws InterruptedException if the thread calling this method was interrupted by another
+    *            thread. The interrupted status of the current thread is cleared when this exception
+    *            is thrown.
     */
    public void join() throws InterruptedException {
       while (thread != null) {
@@ -218,8 +224,8 @@ public final class Logger implements ILogger {
                && "getStackTrace".equals(trace.getMethodName())) {
          return false;
       }
-      List<String> classes = Arrays.asList(new String[] { //
-               ILogger.class.getName(), Logger.class.getName(), LogEntry.class.getName() });
+      List<String> classes = Arrays.asList(ILogger.class.getName(), Logger.class.getName(),
+               LogEntry.class.getName());
       return !classes.contains(trace.getClassName());
    }
 

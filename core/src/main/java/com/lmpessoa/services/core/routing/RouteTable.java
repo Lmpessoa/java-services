@@ -1,7 +1,6 @@
 /*
- * Leeow - A lightweight and easy engine for outstanding web APIs
  * Copyright (c) 2017 Leonardo Pessoa
- * http://leeow.io
+ * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,12 +27,10 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.net.URLDecoder;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -49,14 +46,12 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
-import com.lmpessoa.services.core.hosting.InternalServerError;
 import com.lmpessoa.services.core.hosting.MethodNotAllowedException;
 import com.lmpessoa.services.core.hosting.NotFoundException;
-import com.lmpessoa.services.core.serializing.ErrorList;
 import com.lmpessoa.services.core.serializing.Serializer;
-import com.lmpessoa.services.core.serializing.ValidationException;
 import com.lmpessoa.services.core.services.NoSingleMethodException;
 import com.lmpessoa.services.core.services.ServiceMap;
+import com.lmpessoa.services.core.validating.IValidationService;
 import com.lmpessoa.services.util.ClassUtils;
 
 /**
@@ -163,29 +158,18 @@ public final class RouteTable implements IRouteTable {
          params.addAll(Arrays.asList(constructor.getParameters()));
          Method methodCall = methodEntry.getMethod();
          params.addAll(Arrays.asList(methodCall.getParameters()));
-         ErrorList errors = null;
          if (methodEntry.getContentClass() != null) {
             params.remove(params.size() - 1);
          }
          Map<String, List<String>> query = parseQueryString(request.getQueryString());
-         List<Object> result = convertParams(matcher, params, query);
-         for (int i = 0; i < result.size(); ++i) {
-            if (result.get(i) instanceof ErrorList) {
-               errors = (ErrorList) result.get(i);
-               result.set(i, errors.getObject());
-            }
-         }
+         List<Object> result = convertParams(params, route, matcher, query);
          if (methodEntry.getContentClass() != null) {
             Object contentObject;
-            try {
-               contentObject = parseContentBody(request, methodEntry.getContentClass());
-            } catch (ValidationException e) {
-               errors = e.getErrors();
-               contentObject = errors.getObject();
-            }
+            contentObject = parseContentBody(request, methodEntry.getContentClass());
             result.add(contentObject);
          }
-         return new MatchedRoute(methodEntry, result.toArray(), errors);
+         return new MatchedRoute(services.get(IValidationService.class), methodEntry,
+                  result.toArray());
       }
       if (!found) {
          return new NotFoundException();
@@ -229,28 +213,34 @@ public final class RouteTable implements IRouteTable {
       return null;
    }
 
-   boolean hasRoute(String route) throws ParseException {
-      RoutePattern pat = new RoutePattern(RoutePatternParser.parse(route, options), null);
-      return endpoints.containsKey(pat);
-   }
-
-   HttpMethod[] listMethodsOf(String route) throws ParseException {
-      RoutePattern pat = new RoutePattern(RoutePatternParser.parse(route, options), null);
-      Map<HttpMethod, MethodEntry> map = endpoints.get(pat);
-      if (map == null) {
-         return new HttpMethod[0];
+   boolean hasRoute(String route) {
+      for (RoutePattern pat : endpoints.keySet()) {
+         if (route.equals(pat.toString())) {
+            return true;
+         }
       }
-      return map.keySet().toArray(new HttpMethod[0]);
+      return false;
    }
 
-   MethodEntry getRouteMethod(HttpMethod method, String route) throws ParseException {
-      RoutePattern pat = new RoutePattern(RoutePatternParser.parse(route, options), null);
-      Map<HttpMethod, MethodEntry> map = endpoints.get(pat);
-      return map.get(method);
+   HttpMethod[] listMethodsOf(String route) {
+      for (Entry<RoutePattern, Map<HttpMethod, MethodEntry>> entry : endpoints.entrySet()) {
+         if (route.equals(entry.getKey().toString())) {
+            return entry.getValue().keySet().toArray(new HttpMethod[0]);
+         }
+      }
+      return new HttpMethod[0];
    }
 
-   private Object parseContentBody(IRouteRequest request, Class<?> contentClass)
-      throws ValidationException {
+   MethodEntry getRouteMethod(HttpMethod method, String route) {
+      for (Entry<RoutePattern, Map<HttpMethod, MethodEntry>> entry : endpoints.entrySet()) {
+         if (route.equals(entry.getKey().toString())) {
+            return entry.getValue().get(method);
+         }
+      }
+      return null;
+   }
+
+   private Object parseContentBody(IRouteRequest request, Class<?> contentClass) {
       InputStream body = request.getBody();
       if (body != null) {
          byte[] content = readContentBody(body);
@@ -309,7 +299,7 @@ public final class RouteTable implements IRouteTable {
       }
       List<RouteEntry> result = new ArrayList<>();
       try {
-         RoutePattern methodPat = RoutePattern.build(classPat, method, options);
+         RoutePattern methodPat = RoutePattern.build(classPat, method);
          if (!endpoints.containsKey(methodPat)) {
             endpoints.put(methodPat, new ConcurrentHashMap<>());
          }
@@ -368,29 +358,29 @@ public final class RouteTable implements IRouteTable {
       }
    }
 
-   private List<Object> convertParams(Matcher matcher, List<Parameter> params,
+   private List<Object> convertParams(List<Parameter> params, RoutePattern route, Matcher matcher,
       Map<String, List<String>> query) {
-      List<Object> result = new ArrayList<>();
+      Map<VariableRoutePart, String> paramValues = new HashMap<>();
       int group = 1;
+      for (VariableRoutePart part : route.getVariables()) {
+         paramValues.put(part, matcher.group(group++));
+      }
+      List<Object> result = new ArrayList<>(params.size());
       for (Parameter param : params) {
-         try {
-            Class<?> type = param.getType();
-            if (services.contains(type)) {
-               result.add(services.get(type));
-            } else if (param.isAnnotationPresent(QueryParam.class)) {
-               QueryParam ann = param.getAnnotation(QueryParam.class);
-               List<String> values = query
-                        .get(!ann.value().isEmpty() ? ann.value() : param.getName());
-               if (values != null) {
-                  result.add(ClassUtils.cast(String.join(",", values), type));
-               } else {
-                  result.add(null);
+         Class<?> type = param.getType();
+         if (services.contains(type)) {
+            result.add(services.get(type));
+         } else if (param.isAnnotationPresent(QueryParam.class)) {
+            QueryParam qp = param.getAnnotation(QueryParam.class);
+            List<String> values = query.get(qp.value().isEmpty() ? param.getName() : qp.value());
+            result.add(values != null ? ClassUtils.cast(String.join(",", values), type) : null);
+         } else {
+            for (Entry<VariableRoutePart, String> entry : paramValues.entrySet()) {
+               if (entry.getKey().isSimilarTo(param)) {
+                  result.add(ClassUtils.cast(entry.getValue(), type));
+                  break;
                }
-            } else {
-               result.add(convert(matcher.group(group++), type));
             }
-         } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-            throw new InternalServerError(e);
          }
       }
       return result;
@@ -417,19 +407,6 @@ public final class RouteTable implements IRouteTable {
          }
       }
       return Collections.unmodifiableMap(result);
-   }
-
-   private Object convert(String value, Class<?> clazz)
-      throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-      if (clazz == String.class) {
-         return value;
-      }
-      clazz = ClassUtils.box(clazz);
-      if (clazz == Character.class) {
-         return value;
-      }
-      Method valueOf = clazz.getMethod("valueOf", String.class);
-      return valueOf.invoke(null, value);
    }
 
    private boolean isMethodArgsCompatible(MethodEntry methodEntry, String methodName,

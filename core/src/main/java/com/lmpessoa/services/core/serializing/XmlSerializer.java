@@ -31,6 +31,8 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
+import javax.xml.bind.annotation.adapters.XmlAdapter;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 import com.lmpessoa.services.util.ClassUtils;
 
@@ -51,10 +53,14 @@ final class XmlSerializer extends Serializer {
 
    @Override
    @SuppressWarnings("unchecked")
-   protected <T> T read(String content, Class<T> type) throws Exception {
-      JAXBContext context = JAXBContext.newInstance(type);
-      Unmarshaller unmarshaller = context.createUnmarshaller();
-      return (T) unmarshaller.unmarshal(new StringReader(content));
+   protected <T> T read(String content, Class<T> type) {
+      try {
+         JAXBContext context = JAXBContext.newInstance(type);
+         Unmarshaller unmarshaller = context.createUnmarshaller();
+         return (T) unmarshaller.unmarshal(new StringReader(content));
+      } catch (Exception e) {
+         throw new SerializationException(e);
+      }
    }
 
    @Override
@@ -93,8 +99,21 @@ final class XmlSerializer extends Serializer {
    }
 
    private String produceObject(Object obj) throws JAXBException {
+      Class<?> clazz = obj.getClass();
+      if (clazz.isAnnotationPresent(XmlJavaTypeAdapter.class)) {
+         XmlJavaTypeAdapter adapter = clazz.getAnnotation(XmlJavaTypeAdapter.class);
+         try {
+            @SuppressWarnings("unchecked")
+            XmlAdapter<Object, Object> instance = adapter.value().newInstance();
+            obj = instance.marshal(obj);
+         } catch (Exception e) {
+            throw new JAXBException(e);
+         }
+      }
       JAXBContext context = JAXBContext.newInstance(obj.getClass());
       Marshaller marshaller = context.createMarshaller();
+      marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+      marshaller.setProperty("com.sun.xml.internal.bind.indentString", "  ");
       StringWriter result = new StringWriter();
       marshaller.marshal(obj, result);
       return result.toString();

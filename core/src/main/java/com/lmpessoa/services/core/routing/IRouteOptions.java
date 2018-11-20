@@ -76,18 +76,4 @@ public interface IRouteOptions {
     * (default is "index").
     */
    void addArea(String areaPath, String packageExpr, String defaultResource);
-
-   /**
-    * Registers a route type to be used with route definitions.
-    *
-    * <p>
-    * Sometimes the default route types are not enough (or easy) to describe the data being expected
-    * from a route. Introducing a new route type may enable these routes to be more easily matched and
-    * configured.
-    * </p>
-    *
-    * @param typeLabel the label of the route type.
-    * @param typeClass the type that describes the route type.
-    */
-   void addType(String typeLabel, Class<? extends AbstractRouteType> typeClass);
 }

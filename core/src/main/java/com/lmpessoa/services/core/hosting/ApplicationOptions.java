@@ -29,7 +29,6 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import com.lmpessoa.services.core.routing.AbstractRouteType;
 import com.lmpessoa.services.core.routing.IRouteOptions;
 import com.lmpessoa.services.core.routing.RouteTable;
 import com.lmpessoa.services.core.security.IIdentityOptions;
@@ -248,11 +247,6 @@ final class ApplicationOptions implements IApplicationOptions {
       @Override
       public void addArea(String areaPath, String packageExpr, String defaultResource) {
          options.addArea(areaPath, packageExpr, defaultResource);
-      }
-
-      @Override
-      public void addType(String typeLabel, Class<? extends AbstractRouteType> typeClass) {
-         options.addType(typeLabel, typeClass);
       }
    }
 }

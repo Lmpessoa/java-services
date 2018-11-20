@@ -36,6 +36,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import com.lmpessoa.services.core.concurrent.ExecutionService;
+import com.lmpessoa.services.core.validating.IValidationService;
 import com.lmpessoa.services.util.ClassUtils;
 import com.lmpessoa.services.util.Property;
 import com.lmpessoa.services.util.logging.ConsoleHandler;
@@ -56,6 +57,7 @@ class ApplicationSettings implements IApplicationSettings {
    private final Class<?> startupClass;
    private final Property settings;
 
+   private IValidationService validator;
    private ExecutionService mainExec;
    private ExecutionService jobExec;
    private IHostEnvironment env;
@@ -121,6 +123,13 @@ class ApplicationSettings implements IApplicationSettings {
          }
       }
       return jobExec;
+   }
+
+   IValidationService getValidationService() {
+      if (validator == null) {
+         validator = IValidationService.newInstance();
+      }
+      return validator;
    }
 
    Logger getLogger() {
@@ -344,6 +353,5 @@ class ApplicationSettings implements IApplicationSettings {
          }
          return methods.length != 0;
       }
-
    }
 }

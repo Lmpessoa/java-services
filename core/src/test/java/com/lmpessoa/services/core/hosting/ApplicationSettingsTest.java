@@ -59,6 +59,7 @@ public final class ApplicationSettingsTest {
       when(settings.getStartupClass()).then(n -> startupClass);
       when(settings.getEnvironment()).thenReturn(() -> envName);
       when(settings.getJobExecutor()).thenReturn(new ExecutionService(0, log));
+      when(settings.getValidationService()).thenCallRealMethod();
       when(settings.getLogger()).thenReturn(log);
       server = new ApplicationServer(settings);
       server.configureServices();

@@ -23,88 +23,104 @@
 package com.lmpessoa.services.core.routing;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNull;
 
+import java.lang.reflect.Method;
 import java.text.ParseException;
+import java.util.UUID;
+
+import javax.validation.constraints.Min;
+import javax.validation.constraints.Negative;
+import javax.validation.constraints.Null;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.lmpessoa.services.core.routing.AbstractRouteType;
-import com.lmpessoa.services.core.routing.AlphaRouteType;
-import com.lmpessoa.services.core.routing.RouteOptions;
+import com.lmpessoa.services.core.routing.QueryParam;
 import com.lmpessoa.services.core.routing.RoutePatternParser;
+import com.lmpessoa.services.core.routing.VariableRoutePart;
 
 public final class RoutePatternParserTest {
 
    @Rule
    public ExpectedException thrown = ExpectedException.none();
 
-   private static final RouteOptions options = new RouteOptions();
+   private static VariableRoutePart parseVariable(String variable) throws ParseException {
+      Method method;
+      try {
+         method = RoutePatternParserTest.class.getMethod("methodToTest", int.class, String.class, UUID.class,
+                  String.class, long.class, String.class, String.class);
+      } catch (NoSuchMethodException | SecurityException e) {
+         throw new ParseException(e.getMessage(), 0);
+      }
+      return new RoutePatternParser(RoutePatternParserTest.class, method, "").parseVariable(0, variable);
+   }
 
-   private static AbstractRouteType parseVariable(String variable) throws ParseException {
-      return new RoutePatternParser("", options).parseVariable(0, variable);
+   public void methodToTest(@Min(7) int number, @Pattern(regexp = "[0-9a-f]+") @Size(max = 12) String hexNumber,
+      UUID uuid, @Negative String numString, @Size(min = 7) long strNumber, @Null String nullValue,
+      @Null @QueryParam String nullQueryParam) {
+      // Nothing to do here
    }
 
    @Test
-   public void testVariableNoArgs() throws ParseException {
-      AbstractRouteType var = parseVariable("alpha");
-      assertTrue(var instanceof AlphaRouteType);
-      assertEquals(1, var.getMinLength());
-      assertEquals(-1, var.getMaxLength());
+   public void testIntVariableWithMin() throws ParseException {
+      VariableRoutePart var = parseVariable("number");
+      assertEquals(0, var.getParameterIndex());
+      assertEquals("number", var.getParameterName());
+      assertEquals("\\d+", var.getRegexPattern());
+      assertEquals(7, var.getMinValue().intValue());
+      assertNull(var.getMaxValue());
    }
 
    @Test
-   public void testVariableOneArg() throws ParseException {
-      AbstractRouteType var = parseVariable("alpha(7)");
-      assertTrue(var instanceof AlphaRouteType);
-      assertEquals(7, var.getMinLength());
-      assertEquals(7, var.getMaxLength());
+   public void testStringVariableWithPatternSize() throws ParseException {
+      VariableRoutePart var = parseVariable("1");
+      assertEquals(1, var.getParameterIndex());
+      assertEquals("hexNumber", var.getParameterName());
+      assertEquals("(?=[0-9a-f]+)[^\\/]{,12}", var.getRegexPattern());
+      assertNull(var.getMinValue());
+      assertNull(var.getMaxValue());
    }
 
    @Test
-   public void testVariableTwoArgs() throws ParseException {
-      AbstractRouteType var = parseVariable("alpha(4..7)");
-      assertTrue(var instanceof AlphaRouteType);
-      assertEquals(4, var.getMinLength());
-      assertEquals(7, var.getMaxLength());
+   public void testUuidVariable() throws ParseException {
+      VariableRoutePart var = parseVariable("uuid");
+      assertEquals(2, var.getParameterIndex());
+      assertEquals("uuid", var.getParameterName());
+      assertEquals("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}",
+               var.getRegexPattern());
+      assertNull(var.getMinValue());
+      assertNull(var.getMaxValue());
    }
 
    @Test
-   public void testVariableOpenStart() throws ParseException {
-      AbstractRouteType var = parseVariable("alpha(..7)");
-      assertTrue(var instanceof AlphaRouteType);
-      assertEquals(1, var.getMinLength());
-      assertEquals(7, var.getMaxLength());
-   }
-
-   @Test
-   public void testVariableOpenEnd() throws ParseException {
-      AbstractRouteType var = parseVariable("alpha(4..)");
-      assertTrue(var instanceof AlphaRouteType);
-      assertEquals(4, var.getMinLength());
-      assertEquals(-1, var.getMaxLength());
-   }
-
-   @Test
-   public void testVariableEmptyArgs() throws ParseException {
+   public void testStringVariableWithNegative() throws ParseException {
       thrown.expect(ParseException.class);
-      thrown.expectMessage("Length range expected");
-      parseVariable("alpha()");
+      thrown.expectMessage("Expected number type, was java.lang.String");
+      parseVariable("3");
    }
 
    @Test
-   public void testVariableIncompleteEmptyArgs() throws ParseException {
+   public void testLongVariableWithSize() throws ParseException {
       thrown.expect(ParseException.class);
-      thrown.expectMessage("Length range expected");
-      parseVariable("alpha(..)");
+      thrown.expectMessage("Expected string type, was long");
+      parseVariable("4");
    }
 
    @Test
-   public void testVariableUnknownType() throws ParseException {
+   public void testNullVariable() throws ParseException {
       thrown.expect(ParseException.class);
-      thrown.expectMessage("Unknown route type: route");
-      parseVariable("route");
+      thrown.expectMessage("Path argument cannot be null");
+      parseVariable("5");
+   }
+
+   @Test
+   public void testNullVariableWithQueryParam() throws ParseException {
+      thrown.expect(ParseException.class);
+      thrown.expectMessage("Query params cannot be in path");
+      parseVariable("6");
    }
 }

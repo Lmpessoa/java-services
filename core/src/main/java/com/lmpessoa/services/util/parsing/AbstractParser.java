@@ -86,16 +86,17 @@ public abstract class AbstractParser<T extends IVariablePart> {
     * </p>
     *
     * <p>
-    * As a rule of thumb a literal separator is never required for templates that are used to generate
-    * content; on the other hand, when trying to match a string with a template, a literal would help
-    * better identify when one variable ends and the other begins.
+    * As a rule of thumb a literal separator is never required for templates that are used to
+    * generate content; on the other hand, when trying to match a string with a template, a literal
+    * would help better identify when one variable ends and the other begins.
     * </p>
     *
     * @param template the template to be parsed.
     * @param forceLiteralSeparator whether the template must force a literal separator between two
-    * variables.
+    *           variables.
     */
-   protected AbstractParser(String template, boolean forceLiteralSeparator, Character forceVariablePrefix) {
+   protected AbstractParser(String template, boolean forceLiteralSeparator,
+      Character forceVariablePrefix) {
       this.template = template;
       this.forceLiteralSeparator = forceLiteralSeparator;
       this.variablePrefix = forceVariablePrefix != null ? forceVariablePrefix + "{" : "{";
@@ -134,14 +135,14 @@ public abstract class AbstractParser<T extends IVariablePart> {
     *
     * <p>
     * Subclasses must provide an implementation of this method that converts the contents of the
-    * variable (the text part enclosed in curly braces in the template) into another object which can
-    * be queried about the proper contents of the variable.
+    * variable (the text part enclosed in curly braces in the template) into another object which
+    * can be queried about the proper contents of the variable.
     * </p>
     *
     * <p>
     * Subclasses implementing this method are allowed to throw new <code>ParseException</code>s to
-    * indicate errors in the expected format of the variable, e.g. to indicate the variable is not in a
-    * valid format.
+    * indicate errors in the expected format of the variable, e.g. to indicate the variable is not
+    * in a valid format.
     * </p>
     *
     * @param pos the position in the template where the variable occurred.

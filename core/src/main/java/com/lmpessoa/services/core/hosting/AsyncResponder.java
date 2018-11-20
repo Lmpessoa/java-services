@@ -116,8 +116,10 @@ final class AsyncResponder {
             if (obj instanceof URL) {
                return Redirect.seeOther((URL) obj);
             }
-         } catch (InterruptedException | ExecutionException | MalformedURLException e) {
+         } catch (ExecutionException | MalformedURLException e) {
             // Ignore and return the very same result
+         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
          }
       } else if (method == DELETE) {
          result.cancel(true);

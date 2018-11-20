@@ -205,6 +205,33 @@ public final class ClassUtils {
                .orElse(null);
    }
 
+   public static Method getDeclaredMethod(Class<?> clazz, String methodName,
+      Class<?>... parameterTypes) {
+      Objects.requireNonNull(clazz);
+      Objects.requireNonNull(methodName);
+      return Arrays.stream(clazz.getDeclaredMethods())
+               .filter(m -> methodName.equals(m.getName()))
+               .filter(m -> Arrays.equals(parameterTypes, m.getParameterTypes()))
+               .filter(m -> !m.isSynthetic())
+               .findFirst()
+               .orElse(null);
+   }
+
+   public static Field getField(Class<?> clazz, String fieldName) {
+      Objects.requireNonNull(clazz);
+      Objects.requireNonNull(fieldName);
+      Class<?> arg = clazz;
+      while (arg != Object.class) {
+         for (Field f : arg.getDeclaredFields()) {
+            if (fieldName.equals(f.getName())) {
+               return f;
+            }
+         }
+         arg = arg.getSuperclass();
+      }
+      return null;
+   }
+
    /**
     * Returns whether the given class is a concrete class.
     *

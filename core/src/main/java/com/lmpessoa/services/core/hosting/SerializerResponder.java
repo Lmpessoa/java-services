@@ -155,27 +155,34 @@ final class SerializerResponder {
             return null;
          }
       }
-      Object result = object;
-      if (result instanceof String) {
+      return convertToInputStream(object, request, method);
+   }
+
+   private HttpInputStream convertToInputStream(Object object, HttpRequest request, Method method) {
+      String contentType;
+      if (method != null && method.isAnnotationPresent(ContentType.class)) {
+         contentType = method.getAnnotation(ContentType.class).value();
+      } else if (object instanceof String) {
+         contentType = ContentType.TEXT + "; charset=\"utf-8\"";
+      } else {
+         contentType = ContentType.BINARY;
+      }
+      if (object instanceof String) {
          Charset charset = getCharsetFromMethodOrUTF8(method);
-         result = ((String) result).getBytes(charset);
-      } else if (result instanceof ByteArrayOutputStream) {
-         result = ((ByteArrayOutputStream) result).toByteArray();
+         object = ((String) object).getBytes(charset);
+      } else if (object instanceof ByteArrayOutputStream) {
+         object = ((ByteArrayOutputStream) object).toByteArray();
       }
-      if (result instanceof byte[]) {
-         result = new ByteArrayInputStream((byte[]) result);
+      if (object instanceof byte[]) {
+         object = new ByteArrayInputStream((byte[]) object);
       }
-      if (result instanceof InputStream) {
-         String contentType;
-         if (method != null && method.isAnnotationPresent(ContentType.class)) {
-            contentType = method.getAnnotation(ContentType.class).value();
-         } else if (object instanceof String) {
-            contentType = ContentType.TEXT + "; charset=\"utf-8\"";
-         } else {
-            contentType = ContentType.BINARY;
-         }
-         return new HttpInputStream(contentType, (InputStream) result);
+      if (object instanceof InputStream) {
+         return new HttpInputStream(contentType, (InputStream) object);
       }
+      return serialize(object, request);
+   }
+
+   private HttpInputStream serialize(Object object, HttpRequest request) {
       String[] accepts;
       if (request.getHeaders().contains(Headers.ACCEPT)) {
          List<String> acceptList = new ArrayList<>();

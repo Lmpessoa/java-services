@@ -28,8 +28,8 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.NoSuchElementException;
-import java.util.function.Supplier;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -116,8 +116,8 @@ public class ServiceMapTest {
    @Test
    public void testSingletonUsingTransient() {
       thrown.expect(IllegalArgumentException.class);
-      thrown.expectMessage(
-               "Class " + TransientDependent.class.getName() + " has a lower lifetime than one of its dependencies");
+      thrown.expectMessage("Class " + TransientDependent.class.getName()
+               + " has a lower lifetime than one of its dependencies");
       map.put(Transient.class, TransientImpl.class);
       map.put(TransientDependent.class);
    }
@@ -139,31 +139,35 @@ public class ServiceMapTest {
    }
 
    @Test
-   public void testInvokeStaticCorrect() throws Exception {
-      map.put(Singleton.class, new SingletonImpl());
+   public void testInvokeStaticCorrect() throws IllegalAccessException, InvocationTargetException,
+      InstantiationException, NoSingleMethodException {
+      map.put(Singleton.class, SingletonImpl::new);
       Singleton o = map.get(Singleton.class);
       String str = (String) map.invoke(ServiceMapTest.class, "getRegistryToString");
       assertEquals(o.toString(), str);
    }
 
    @Test
-   public void testInvokeInstanceCorrect() throws Exception {
-      map.put(Singleton.class, new SingletonImpl());
+   public void testInvokeInstanceCorrect() throws IllegalAccessException, InvocationTargetException,
+      InstantiationException, NoSingleMethodException {
+      map.put(Singleton.class, SingletonImpl::new);
       Singleton o = map.get(Singleton.class);
       String str = (String) map.invoke(this, "getObserverToString");
       assertEquals(o.toString(), str);
    }
 
    @Test
-   public void testInvokeStaticWithInstance() throws Exception {
-      map.put(Singleton.class, new SingletonImpl());
+   public void testInvokeStaticWithInstance() throws IllegalAccessException,
+      InvocationTargetException, InstantiationException, NoSingleMethodException {
+      map.put(Singleton.class, SingletonImpl::new);
       Singleton o = map.get(Singleton.class);
       String result = (String) map.invoke(this, "getRegistryToString");
       assertEquals(o.toString(), result);
    }
 
    @Test
-   public void testInvokeInstanceWithStatic() throws Exception {
+   public void testInvokeInstanceWithStatic() throws IllegalAccessException,
+      InvocationTargetException, InstantiationException, NoSingleMethodException {
       thrown.expect(IllegalArgumentException.class);
       thrown.expectMessage("Mismatched static/instance method call");
       map.put(Singleton.class, new SingletonImpl());
@@ -181,13 +185,9 @@ public class ServiceMapTest {
    public void testInjectPerRequest() throws InterruptedException {
       final RequestedImpl[] objs = new RequestedImpl[2];
       map.put(RequestedImpl.class);
-      Thread t0 = new Thread(() -> {
-         objs[0] = map.get(RequestedImpl.class);
-      });
+      Thread t0 = new Thread(() -> objs[0] = map.get(RequestedImpl.class));
       t0.start();
-      Thread t1 = new Thread(() -> {
-         objs[1] = map.get(RequestedImpl.class);
-      });
+      Thread t1 = new Thread(() -> objs[1] = map.get(RequestedImpl.class));
       t1.start();
       t0.join();
       t1.join();
@@ -203,9 +203,7 @@ public class ServiceMapTest {
          objs[1] = map.get(Requested.class);
       });
       t0.start();
-      Thread t1 = new Thread(() -> {
-         objs[2] = map.get(Requested.class);
-      });
+      Thread t1 = new Thread(() -> objs[2] = map.get(Requested.class));
       t1.start();
       t0.join();
       t1.join();
@@ -221,7 +219,8 @@ public class ServiceMapTest {
    }
 
    @Test
-   public void testInvokeWithNoMethod() throws Exception {
+   public void testInvokeWithNoMethod() throws IllegalAccessException, InvocationTargetException,
+      InstantiationException, NoSingleMethodException {
       thrown.expect(NoSingleMethodException.class);
       thrown.expectMessage("Class " + ServiceMapTest.class.getName()
                + " must have exactly one method named 'unexistant' (found: 0)");
@@ -229,16 +228,17 @@ public class ServiceMapTest {
    }
 
    @Test
-   public void testInvokeWithDuplicateMethod() throws Exception {
+   public void testInvokeWithDuplicateMethod() throws IllegalAccessException,
+      InvocationTargetException, InstantiationException, NoSingleMethodException {
       thrown.expect(NoSingleMethodException.class);
-      thrown.expectMessage(
-               "Class " + ServiceMapTest.class.getName() + " must have exactly one method named 'existing' (found: 2)");
+      thrown.expectMessage("Class " + ServiceMapTest.class.getName()
+               + " must have exactly one method named 'existing' (found: 2)");
       map.invoke(this, "existing");
    }
 
    @Test
    public void testRegisterWithSupplier() {
-      map.put(Singleton.class, (Supplier<Singleton>) () -> new SingletonImpl());
+      map.put(Singleton.class, SingletonImpl::new);
       Singleton o1 = map.get(Singleton.class);
       Singleton o2 = map.get(Singleton.class);
       assertNotNull(o1);

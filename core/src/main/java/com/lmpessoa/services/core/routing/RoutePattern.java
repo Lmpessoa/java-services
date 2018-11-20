@@ -22,12 +22,16 @@
  */
 package com.lmpessoa.services.core.routing;
 
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Parameter;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -43,11 +47,12 @@ import com.lmpessoa.services.util.parsing.TypeMismatchException;
 
 final class RoutePattern implements Comparable<RoutePattern> {
 
-   private static final Pattern areaPattern = Pattern.compile("^(\\/)?[a-zA-Z0-9%_-]+(\\/[a-zA-Z0-9%_-]+)?$");
-   private static final IntRouteType intType = new IntRouteType();
+   private static final Pattern areaPattern = Pattern
+            .compile("^(\\/)?[a-zA-Z0-9%_-]+(\\/[a-zA-Z0-9%_-]+)?$");
    private static final String SEPARATOR = "/";
 
    private final List<ITemplatePart> parts;
+   private final Class<?> resourceClass;
    private final Class<?> contentClass;
    private Pattern pattern = null;
 
@@ -91,20 +96,8 @@ final class RoutePattern implements Comparable<RoutePattern> {
             if (diff != 0) {
                return diff;
             }
-         } else if (part instanceof AbstractRouteType && otherPart instanceof AbstractRouteType) {
-            int index = routeTypeIndex((AbstractRouteType) part);
-            int otherIndex = routeTypeIndex((AbstractRouteType) otherPart);
-            int diff = otherIndex - index;
-            if (diff == 0 && part instanceof AlphaRouteType) {
-               AlphaRouteType alpha = (AlphaRouteType) part;
-               AlphaRouteType otherAlpha = (AlphaRouteType) otherPart;
-               diff = otherAlpha.getMinLength() - alpha.getMinLength();
-               if (diff == 0) {
-                  int len = alpha.getMaxLength() == -1 ? Short.MAX_VALUE : alpha.getMaxLength();
-                  int otherLen = otherAlpha.getMaxLength() == -1 ? Short.MAX_VALUE : otherAlpha.getMaxLength();
-                  diff = otherLen - len;
-               }
-            }
+         } else if (part instanceof VariableRoutePart && otherPart instanceof VariableRoutePart) {
+            int diff = ((VariableRoutePart) otherPart).compareTo((VariableRoutePart) part);
             if (diff != 0) {
                return diff;
             }
@@ -117,30 +110,20 @@ final class RoutePattern implements Comparable<RoutePattern> {
       return other.parts.size() - parts.size();
    }
 
-   private int routeTypeIndex(AbstractRouteType part) {
-      if (part instanceof AnyRouteType) {
-         return 0;
-      } else if (part instanceof AlphaRouteType) {
-         return 1;
-      } else if (part instanceof IntRouteType) {
-         return 2;
-      } else if (part instanceof HexRouteType) {
-         return 3;
-      }
-      return 4;
-   }
-
    public static String getResourceName(Class<?> clazz) {
       String[] nameParts = clazz.getName().replaceAll("\\$", ".").split("\\.");
-      String name = nameParts[nameParts.length - 1].replaceAll("([A-Z])", "_$1").toLowerCase().replaceAll("^_", "");
+      String name = nameParts[nameParts.length - 1].replaceAll("([A-Z])", "_$1")
+               .toLowerCase()
+               .replaceAll("^_", "");
       if (name.endsWith("_resource")) {
          name = name.substring(0, name.length() - 8).replaceAll("_$", "");
       }
       return name;
    }
 
-   RoutePattern(List<ITemplatePart> parts, Class<?> contentClass) {
+   RoutePattern(List<ITemplatePart> parts, Class<?> resourceClass, Class<?> contentClass) {
       this.contentClass = contentClass;
+      this.resourceClass = resourceClass;
       List<ITemplatePart> result = new ArrayList<>();
       StringBuilder literal = new StringBuilder();
       for (ITemplatePart part : parts) {
@@ -169,28 +152,16 @@ final class RoutePattern implements Comparable<RoutePattern> {
       this.parts = Collections.unmodifiableList(result);
    }
 
-   static RoutePattern build(String area, Class<?> clazz, ServiceMap serviceMap, RouteOptions options)
-      throws NoSingleMethodException, ParseException {
+   static RoutePattern build(String area, Class<?> clazz, ServiceMap serviceMap,
+      RouteOptions options) throws NoSingleMethodException, ParseException {
       final Constructor<?>[] constructors = clazz.getConstructors();
       if (constructors.length != 1) {
-         throw new NoSingleMethodException("Class " + clazz.getName() + " must have only one constructor",
+         throw new NoSingleMethodException(
+                  "Class " + clazz.getName() + " must have only one constructor",
                   constructors.length);
       }
-      Route route = clazz.getAnnotation(Route.class);
-      Class<?>[] paramTypes = Arrays.stream(constructors[0].getParameterTypes())
-               .filter(c -> !serviceMap.contains(c))
-               .toArray(Class<?>[]::new);
-      Optional<Class<?>> invalid = Arrays.stream(paramTypes).filter(c -> !hasValueOfMethod(c)).findFirst();
-      if (invalid.isPresent()) {
-         Class<?> invalidClass = invalid.get();
-         String paramClassName = invalidClass.isArray() ? invalidClass.getComponentType() + "[]"
-                  : invalidClass.getName();
-         throw new TypeMismatchException(paramClassName + " is not an acceptable route part");
-      }
-      String routePath = route != null ? route.value() : buildRouteFromParams(getResourceName(clazz), paramTypes);
-      if (!routePath.startsWith(SEPARATOR)) {
-         routePath = SEPARATOR + routePath;
-      }
+      Parameter[] params = validateParamsToRoute(serviceMap, constructors);
+      String routePath = getRouteFor(getResourceName(clazz), constructors[0], params, clazz);
       if (area != null && !area.isEmpty()) {
          if (!areaPattern.matcher(area).find()) {
             throw new IllegalArgumentException("Invalid area: " + area);
@@ -199,53 +170,59 @@ final class RoutePattern implements Comparable<RoutePattern> {
          routePath = routePath.replaceAll("/$", "");
       }
       routePath = routePath.replaceAll("^/" + options.getAreaIndex(area), "");
-      List<ITemplatePart> result = RoutePatternParser.parse(routePath, options);
-      if (route != null) {
-         validateRoute(result, paramTypes);
-      }
-      return new RoutePattern(result, null);
+      List<ITemplatePart> result = RoutePatternParser.parse(clazz, constructors[0], routePath);
+      validateRouteParams(result, params);
+      return new RoutePattern(result, clazz, null);
    }
 
-   static RoutePattern build(RoutePattern resource, Method method, RouteOptions options) throws ParseException {
-      Route route = method.getAnnotation(Route.class);
-      List<Class<?>> params = Arrays.stream(method.getParameters())
+   static RoutePattern build(RoutePattern resource, Method method) throws ParseException {
+      List<Parameter> paramList = new ArrayList<>();
+      Arrays.stream(method.getParameters()) //
                .filter(p -> !p.isAnnotationPresent(QueryParam.class))
-               .map(p -> p.getType())
-               .collect(Collectors.toList());
+               .forEach(paramList::add);
       Class<?> lastArgument = null;
-      if (!params.isEmpty()) {
-         lastArgument = params.get(params.size() - 1);
+      if (!paramList.isEmpty()) {
+         lastArgument = paramList.get(paramList.size() - 1).getType();
          if (lastArgument != String.class && !lastArgument.isArray() && !lastArgument.isInterface()
-                  && !lastArgument.isPrimitive() && !Modifier.isAbstract(lastArgument.getModifiers())
+                  && !lastArgument.isPrimitive()
+                  && !Modifier.isAbstract(lastArgument.getModifiers())
                   && !hasValueOfMethod(lastArgument) && hasParameterlessConstructor(lastArgument)) {
-            params.remove(params.size() - 1);
+            paramList.remove(paramList.size() - 1);
          } else {
             lastArgument = null;
          }
       }
-      Class<?>[] paramTypes = params.toArray(new Class<?>[0]);
-      String routePath = route != null ? route.value() : buildRouteFromParams(null, paramTypes);
-      if (!routePath.startsWith(SEPARATOR)) {
-         routePath = SEPARATOR + routePath;
-      }
-      List<ITemplatePart> result = RoutePatternParser.parse(routePath, options);
-      if (route != null) {
-         validateRoute(result, paramTypes);
-      }
+      Parameter[] params = paramList.toArray(new Parameter[0]);
+      Class<?> resourceClass = resource != null ? resource.getResourceClass()
+               : method.getDeclaringClass();
+      String routePath = getRouteFor(null, method, params, method);
+      List<ITemplatePart> result = RoutePatternParser.parse(resourceClass, method, routePath);
+      validateRouteParams(result, params);
       List<ITemplatePart> pattern = new ArrayList<>();
       if (resource != null) {
          pattern.addAll(resource.parts);
       }
       result.forEach(pattern::add);
-      return new RoutePattern(pattern, lastArgument);
+      return new RoutePattern(pattern, resourceClass, lastArgument);
+   }
+
+   Collection<VariableRoutePart> getVariables() {
+      return parts.stream() //
+               .filter(p -> p instanceof VariableRoutePart)
+               .map(p -> (VariableRoutePart) p)
+               .collect(Collectors.toList());
    }
 
    int getVariableCount() {
-      return (int) parts.stream().filter(p -> p instanceof AbstractRouteType).count();
+      return (int) parts.stream().filter(p -> p instanceof VariableRoutePart).count();
    }
 
    Class<?> getContentClass() {
       return contentClass;
+   }
+
+   Class<?> getResourceClass() {
+      return resourceClass;
    }
 
    Pattern getPattern() {
@@ -254,10 +231,12 @@ final class RoutePattern implements Comparable<RoutePattern> {
          result.append('^');
          for (ITemplatePart part : parts) {
             if (part instanceof LiteralPart) {
-               result.append(((LiteralPart) part).getValue().replaceAll("([\\\\/$^?\\{\\}\\[\\]\\(\\)-])", "\\\\$1"));
+               result.append(((LiteralPart) part).getValue()
+                        .replaceAll("([\\\\/$^?\\{\\}\\[\\]\\(\\)-])", "\\\\$1"));
             } else {
                result.append('(');
-               result.append(((AbstractRouteType) part).getRegex().replaceAll("([\\(\\)])", "\\\\$1"));
+               result.append(((VariableRoutePart) part).getRegexPattern().replaceAll("([\\(\\)])",
+                        "\\\\$1"));
                result.append(')');
             }
          }
@@ -281,13 +260,41 @@ final class RoutePattern implements Comparable<RoutePattern> {
       return result.toString();
    }
 
-   private static String buildRouteFromParams(String prefix, Class<?>[] parameterTypes) throws TypeMismatchException {
+   private static Parameter[] validateParamsToRoute(ServiceMap serviceMap,
+      final Constructor<?>[] constructors) throws TypeMismatchException {
+      Parameter[] params = Arrays.stream(constructors[0].getParameters())
+               .filter(p -> !serviceMap.contains(p.getType()))
+               .toArray(Parameter[]::new);
+      Optional<Parameter> invalid = Arrays.stream(params)
+               .filter(p -> !hasValueOfMethod(p.getType()))
+               .findFirst();
+      if (invalid.isPresent()) {
+         Class<?> invalidClass = invalid.get().getType();
+         String paramClassName = invalidClass.isArray() ? invalidClass.getComponentType() + "[]"
+                  : invalidClass.getName();
+         throw new TypeMismatchException(paramClassName + " is not an acceptable route part");
+      }
+      return params;
+   }
+
+   private static String getRouteFor(String prefix, Executable exec, Parameter[] params,
+      AnnotatedElement source) throws TypeMismatchException {
+      Route route = source.getAnnotation(Route.class);
+      if (route != null) {
+         String result = route.value();
+         if (!result.startsWith(SEPARATOR)) {
+            result = SEPARATOR + result;
+         }
+         return result.replaceAll("\\.", "\\\\.");
+      }
       StringBuilder result = new StringBuilder();
       if (prefix != null) {
-         result.append('/');
+         result.append(SEPARATOR);
          result.append(prefix);
       }
-      for (Class<?> paramClass : parameterTypes) {
+      for (Parameter param : params) {
+         int i = getParameterIndex(param, exec.getParameters());
+         Class<?> paramClass = param.getType();
          if (paramClass != String.class && !hasValueOfMethod(paramClass)) {
             String paramClassName = paramClass.getName();
             if (paramClass.isArray()) {
@@ -295,18 +302,28 @@ final class RoutePattern implements Comparable<RoutePattern> {
             }
             throw new TypeMismatchException(paramClassName + " is not an acceptable route part");
          }
-         result.append("/{");
-         result.append(getRouteTypeOf(paramClass));
+         result.append(SEPARATOR);
+         result.append('{');
+         result.append(i);
          result.append('}');
       }
       if (result.length() == 0) {
-         result.append('/');
+         return SEPARATOR;
       }
       return result.toString();
    }
 
+   private static int getParameterIndex(Parameter param, Parameter[] params) {
+      for (int i = 0; i < params.length; ++i) {
+         if (param == params[i]) {
+            return i;
+         }
+      }
+      throw new IllegalStateException("Parameter does not belong to executable");
+   }
+
    private static boolean hasValueOfMethod(Class<?> clazz) {
-      if (intType.isAssignableTo(clazz)) {
+      if (clazz.isPrimitive()) {
          return true;
       }
       try {
@@ -317,24 +334,22 @@ final class RoutePattern implements Comparable<RoutePattern> {
       }
    }
 
-   private static String getRouteTypeOf(Class<?> clazz) {
-      return intType.isAssignableTo(clazz) ? "int" : "any";
-   }
-
-   private static void validateRoute(List<ITemplatePart> route, Class<?>[] parameterTypes) throws ParseException {
-      long count = route.stream().filter(p -> p instanceof AbstractRouteType).count();
-      if (count != parameterTypes.length) {
-         throw new ParseException(
-                  "Wrong parameter count in route (found: " + count + ", expected: " + parameterTypes.length + ")", 0);
+   private static void validateRouteParams(List<ITemplatePart> route, Parameter[] params)
+      throws ParseException {
+      long count = route.stream() //
+               .filter(p -> p instanceof VariableRoutePart)
+               .count();
+      if (count != params.length) {
+         throw new ParseException("Wrong parameter count in route (found: " + count + ", expected: "
+                  + params.length + ")", 0);
       }
-      List<Class<?>> parameters = new ArrayList<>();
-      parameters.addAll(Arrays.asList(parameterTypes));
       for (ITemplatePart part : route) {
-         if (part instanceof AbstractRouteType) {
-            AbstractRouteType var = (AbstractRouteType) part;
-            Class<?> param = parameters.remove(0);
+         if (part instanceof VariableRoutePart) {
+            VariableRoutePart var = (VariableRoutePart) part;
+            Class<?> param = params[var.getParameterIndex()].getType();
             if (param != String.class && !var.isAssignableTo(param)) {
-               throw new TypeMismatchException("Cannot cast '" + var.getName() + "' to " + param.getName());
+               throw new TypeMismatchException("Cannot cast parameter " + var.getParameterIndex()
+                        + " to " + param.getName());
             }
          }
       }
@@ -349,22 +364,3 @@ final class RoutePattern implements Comparable<RoutePattern> {
       return false;
    }
 }
-
-// There will be only four types for route constraint on content:
-// HEX = [0-9a-zA-Z]
-// NUM(BER) = [0-9]
-// ALPHA = [a-zA-Z]
-// ANY = [^/]
-
-// Also there will only be designators for length:
-// (n,) = minimum length of n
-// (,n) = maximum length of n (minimum is at most zero)
-// (n,m) = minumum length of n and maximum of m
-// (n) = exact length of n
-// [nothing] = any length
-
-// This makes sorting simple:
-// HEX > NUM > ALPHA > ANY
-// bigger min length first
-// smaller max length first
-// else they are equals

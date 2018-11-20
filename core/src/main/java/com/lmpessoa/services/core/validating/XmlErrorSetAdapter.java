@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,29 +20,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.routing;
+package com.lmpessoa.services.core.validating;
 
-final class AlphaRouteType extends AbstractRouteType {
+import javax.xml.bind.annotation.adapters.XmlAdapter;
 
-   public AlphaRouteType() {
-      super(1, -1);
-   }
+public final class XmlErrorSetAdapter extends XmlAdapter<XmlErrorSet, ErrorSet> {
 
-   public AlphaRouteType(int length) {
-      super(length, length);
-   }
-
-   public AlphaRouteType(int minLength, int maxLength) {
-      super(minLength, maxLength);
+   @Override
+   public ErrorSet unmarshal(XmlErrorSet v) throws Exception {
+      return null;
    }
 
    @Override
-   protected boolean isAssignableTo(Class<?> clazz) {
-      return false;
+   public XmlErrorSet marshal(ErrorSet v) throws Exception {
+      XmlErrorSet result = new XmlErrorSet();
+      v.forEach(m -> {
+         XmlErrorSet.MessageEntry entry = new XmlErrorSet.MessageEntry();
+         entry.invalidValue = m.getInvalidValue();
+         entry.message = m.getValue();
+         entry.path = m.getPathEntry();
+         result.error.add(entry);
+      });
+      return result;
    }
 
-   @Override
-   protected String getRegex() {
-      return "[a-zA-Z]" + getRegexLength();
-   }
 }

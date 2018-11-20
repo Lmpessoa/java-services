@@ -39,6 +39,13 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.lmpessoa.services.core.concurrent.ExecutionService;
+import com.lmpessoa.services.core.hosting.ApplicationContext;
+import com.lmpessoa.services.core.hosting.ApplicationRequestJob;
+import com.lmpessoa.services.core.hosting.ApplicationServer;
+import com.lmpessoa.services.core.hosting.ApplicationSettings;
+import com.lmpessoa.services.core.hosting.ContentType;
+import com.lmpessoa.services.core.hosting.Headers;
+import com.lmpessoa.services.core.hosting.HttpInputStream;
 import com.lmpessoa.services.core.routing.HttpGet;
 import com.lmpessoa.services.core.routing.HttpMethod;
 import com.lmpessoa.services.core.routing.IRouteTable;
@@ -64,6 +71,7 @@ public final class ApplicationResponseTest {
       when(settings.getEnvironment()).thenReturn(() -> "Development");
       when(settings.getLogger()).thenReturn(log);
       when(settings.getJobExecutor()).thenReturn(new ExecutionService(0, log));
+      when(settings.getValidationService()).thenCallRealMethod();
       ApplicationServer server = new ApplicationServer(settings);
       server.getOptions().useIdentity(new IIdentityProvider() {
 
@@ -162,8 +170,7 @@ public final class ApplicationResponseTest {
       @Route("download")
       public HttpInputStream download() {
          Charset utf8 = Charset.forName("UTF-8");
-         HttpInputStream result = new HttpInputStream(ContentType.TEXT, "Test".getBytes(utf8), utf8,
-                  "test.txt");
+         HttpInputStream result = new HttpInputStream(ContentType.TEXT, "Test".getBytes(utf8), utf8, "test.txt");
          result.setDownloadable(true);
          return result;
       }
@@ -174,13 +181,11 @@ public final class ApplicationResponseTest {
       }
    }
 
-   private String[] runJob(HttpMethod method, String path)
-      throws InterruptedException, IOException {
+   private String[] runJob(HttpMethod method, String path) throws InterruptedException, IOException {
       return runJob(method, path, false);
    }
 
-   private String[] runJob(HttpMethod method, String path, boolean useIdentity)
-      throws InterruptedException, IOException {
+   private String[] runJob(HttpMethod method, String path, boolean useIdentity) throws IOException {
       HttpRequestBuilder builder = new HttpRequestBuilder().setMethod(method).setPath(path);
       if (useIdentity) {
          builder.addHeader(Headers.AUTHORIZATION, "Token sample");

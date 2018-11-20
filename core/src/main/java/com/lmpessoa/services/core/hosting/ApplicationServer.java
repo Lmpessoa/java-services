@@ -50,6 +50,7 @@ import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.routing.RouteTable;
 import com.lmpessoa.services.core.security.IIdentity;
 import com.lmpessoa.services.core.serializing.Serializer;
+import com.lmpessoa.services.core.validating.IValidationService;
 import com.lmpessoa.services.util.ClassUtils;
 import com.lmpessoa.services.util.logging.ILogger;
 
@@ -85,10 +86,10 @@ public final class ApplicationServer {
 
    /**
     * Starts the Application Server.
-    *
     * <p>
-    * This method should be called only once from a <code>main</code> method under the desired startup
-    * class.
+    * This method should be called only once from a <code>main</code> method under the desired
+    * startup class.
+    * </p>
     */
    public static void start() {
       if (instance == null) {
@@ -143,6 +144,25 @@ public final class ApplicationServer {
       return "";
    }
 
+   /**
+    * Returns whether the server is running or not.
+    *
+    * @return {@code true} if the server is running, {@code false} otherwise.
+    */
+   public static boolean isRunning() {
+      return instance != null;
+   }
+
+   /**
+    * Returns the startup class in use by this application server.
+    * 
+    * @return the startup class in use by this application server, or {@code null} if the
+    *         application server is not running.
+    */
+   public static Class<?> getStartupClass() {
+      return instance != null ? instance.settings.getStartupClass() : null;
+   }
+
    ApplicationServer(Class<?> startupClass) {
       this.settings = new ApplicationSettings(this, startupClass);
       initServer();
@@ -173,9 +193,12 @@ public final class ApplicationServer {
             if (entry.getError() != null) {
                settings.getLogger().warning(entry.getError());
             } else if (entry.getDuplicateOf() != null) {
-               settings.getLogger().info("Route '%s' is already assigned to another method; ignored", entry.getRoute());
+               settings.getLogger().info(
+                        "Route '%s' is already assigned to another method; ignored",
+                        entry.getRoute());
             } else {
-               settings.getLogger().info("Mapped route '%s' to method %s", entry.getRoute(), entry.getMethod());
+               settings.getLogger().info("Mapped route '%s' to method %s", entry.getRoute(),
+                        entry.getMethod());
             }
          }
          context = new ApplicationContext(this, settings.getHttpPort(), "http", routes);
@@ -218,15 +241,17 @@ public final class ApplicationServer {
       IHostEnvironment env = settings.getEnvironment();
       Class<?> startupClass = settings.getStartupClass();
       String envSpecific = CONFIGURE + env.getName() + "Services";
-      Method configMethod = ClassUtils.getMethod(startupClass, envSpecific, IApplicationOptions.class);
+      Method configMethod = ClassUtils.getMethod(startupClass, envSpecific,
+               IApplicationOptions.class);
       Object[] args = new Object[] { options };
       if (configMethod == null || !Modifier.isStatic(configMethod.getModifiers())) {
-         configMethod = ClassUtils.getMethod(startupClass, CONFIGURE_SERVICES, IApplicationOptions.class,
-                  IHostEnvironment.class);
+         configMethod = ClassUtils.getMethod(startupClass, CONFIGURE_SERVICES,
+                  IApplicationOptions.class, IHostEnvironment.class);
          args = new Object[] { options, env };
       }
       if (configMethod == null || !Modifier.isStatic(configMethod.getModifiers())) {
-         configMethod = ClassUtils.getMethod(startupClass, CONFIGURE_SERVICES, IApplicationOptions.class);
+         configMethod = ClassUtils.getMethod(startupClass, CONFIGURE_SERVICES,
+                  IApplicationOptions.class);
          args = new Object[] { options };
       }
       if (configMethod == null || !Modifier.isStatic(configMethod.getModifiers())) {
@@ -287,6 +312,7 @@ public final class ApplicationServer {
          services.put(IApplicationSettings.class, Wrapper.wrap(settings));
          services.put(IHostEnvironment.class, settings.getEnvironment());
          services.put(IExecutionService.class, Wrapper.wrap(settings.getJobExecutor()));
+         services.put(IValidationService.class, Wrapper.wrap(settings.getValidationService()));
 
          // Registers PerRequest services
          services.put(IRouteTable.class, (Supplier<IRouteTable>) () -> null);
@@ -339,15 +365,18 @@ public final class ApplicationServer {
    }
 
    private void logCreatedContext(ApplicationContext context) {
-      settings.getLogger().info("Application is now listening on ports: %d [%s]", context.getPort(), context.getName());
+      settings.getLogger().info("Application is now listening on ports: %d [%s]", context.getPort(),
+               context.getName());
    }
 
    private void logStartedMessage() {
       BigDecimal thousand = new BigDecimal(1000);
       Duration duration = Duration.between(this.startupTime, Instant.now());
       BigDecimal uptime = new BigDecimal(duration.toMillis()).divide(thousand);
-      BigDecimal vmUptime = new BigDecimal(ManagementFactory.getRuntimeMXBean().getUptime()).divide(thousand);
-      settings.getLogger().info("Started application in %s seconds (VM running for %s seconds)", uptime, vmUptime);
+      BigDecimal vmUptime = new BigDecimal(ManagementFactory.getRuntimeMXBean().getUptime())
+               .divide(thousand);
+      settings.getLogger().info("Started application in %s seconds (VM running for %s seconds)",
+               uptime, vmUptime);
    }
 
    private void logShutdownMessage() {

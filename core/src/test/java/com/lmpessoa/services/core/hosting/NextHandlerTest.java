@@ -43,7 +43,7 @@ public final class NextHandlerTest {
    private Request request;
 
    @Before
-   public void setup() throws NoSuchMethodException {
+   public void setup() {
       handlers = new ArrayList<>();
       handlers.add(TransformingHandler.class);
       handlers.add(RejectingHandler.class);

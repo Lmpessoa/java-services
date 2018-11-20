@@ -212,6 +212,6 @@ public final class LogEntry {
    }
 
    private boolean isTracing() {
-      return log != null ? log.isTracing() : false;
+      return log != null && log.isTracing();
    }
 }

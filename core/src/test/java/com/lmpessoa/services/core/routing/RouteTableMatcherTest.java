@@ -33,11 +33,15 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Iterator;
 import java.util.function.Supplier;
 
+import javax.validation.Valid;
+import javax.validation.constraints.AssertTrue;
+import javax.validation.constraints.Email;
+import javax.validation.constraints.Size;
+
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -45,16 +49,16 @@ import org.junit.rules.ExpectedException;
 
 import com.lmpessoa.services.core.hosting.BadRequestException;
 import com.lmpessoa.services.core.hosting.ContentType;
-import com.lmpessoa.services.core.hosting.HttpException;
 import com.lmpessoa.services.core.hosting.HttpRequest;
 import com.lmpessoa.services.core.hosting.HttpRequestBuilder;
 import com.lmpessoa.services.core.hosting.MethodNotAllowedException;
 import com.lmpessoa.services.core.hosting.NotFoundException;
 import com.lmpessoa.services.core.hosting.NotImplementedException;
-import com.lmpessoa.services.core.serializing.ErrorList;
 import com.lmpessoa.services.core.services.Reuse;
 import com.lmpessoa.services.core.services.Service;
 import com.lmpessoa.services.core.services.ServiceMap;
+import com.lmpessoa.services.core.validating.ErrorSet;
+import com.lmpessoa.services.core.validating.IValidationService;
 
 public final class RouteTableMatcherTest {
 
@@ -65,14 +69,15 @@ public final class RouteTableMatcherTest {
    private RouteTable table;
 
    @Before
-   public void setup() throws NoSuchMethodException {
+   public void setup() {
       serviceMap = new ServiceMap();
+      serviceMap.put(IValidationService.class, IValidationService.newInstance());
       table = new RouteTable(serviceMap);
       table.put("", TestResource.class);
    }
 
    @Test
-   public void testMatchesGetRoot() throws NoSuchMethodException, HttpException, IOException {
+   public void testMatchesGetRoot() throws NoSuchMethodException {
       RouteMatch result = table.matches(new HttpRequestBuilder().setPath("/test").build());
       assertTrue(result instanceof MatchedRoute);
       MatchedRoute route = (MatchedRoute) result;
@@ -83,7 +88,7 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchesGetOneArg() throws NoSuchMethodException, HttpException, IOException {
+   public void testMatchesGetOneArg() throws NoSuchMethodException {
       RouteMatch result = table.matches(new HttpRequestBuilder().setPath("/test/7").build());
       assertTrue(result instanceof MatchedRoute);
       MatchedRoute route = (MatchedRoute) result;
@@ -94,7 +99,7 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchesConstrainedRoute() throws NoSuchMethodException, HttpException, IOException {
+   public void testMatchesConstrainedRoute() throws NoSuchMethodException {
       RouteMatch result = table.matches(new HttpRequestBuilder().setPath("/test/abcd").build());
       assertTrue(result instanceof MatchedRoute);
       MatchedRoute route = (MatchedRoute) result;
@@ -105,21 +110,21 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchesConstrainedRouteTooShort() throws NoSuchMethodException, HttpException, IOException {
+   public void testMatchesConstrainedRouteTooShort() {
       thrown.expect(NotFoundException.class);
       RouteMatch result = table.matches(new HttpRequestBuilder().setPath("/test/ab").build());
       result.invoke();
    }
 
    @Test
-   public void testMatchesConstrainedRouteTooLong() throws NoSuchMethodException, HttpException, IOException {
+   public void testMatchesConstrainedRouteTooLong() {
       thrown.expect(NotFoundException.class);
       RouteMatch result = table.matches(new HttpRequestBuilder().setPath("/test/abcdefg").build());
       result.invoke();
    }
 
    @Test
-   public void testMatchesGetTwoArgs() throws NoSuchMethodException, HttpException, IOException {
+   public void testMatchesGetTwoArgs() throws NoSuchMethodException {
       RouteMatch result = table.matches(new HttpRequestBuilder().setPath("/test/6/9").build());
       assertTrue(result instanceof MatchedRoute);
       MatchedRoute route = (MatchedRoute) result;
@@ -130,7 +135,7 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchesPostRoot() throws NoSuchMethodException, HttpException, IOException {
+   public void testMatchesPostRoot() throws NoSuchMethodException {
       RouteMatch result = table.matches(new HttpRequestBuilder().setMethod(POST).setPath("/test").build());
       assertTrue(result instanceof MatchedRoute);
       MatchedRoute route = (MatchedRoute) result;
@@ -141,7 +146,7 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchesPostOneArg() throws NoSuchMethodException, HttpException, IOException {
+   public void testMatchesPostOneArg() throws NoSuchMethodException {
       RouteMatch result = table.matches(new HttpRequestBuilder().setMethod(POST).setPath("/test/7").build());
       assertTrue(result instanceof MatchedRoute);
       MatchedRoute route = (MatchedRoute) result;
@@ -152,21 +157,21 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchesUnregisteredPath() throws IOException {
+   public void testMatchesUnregisteredPath() {
       thrown.expect(NotFoundException.class);
       RouteMatch result = table.matches(new HttpRequestBuilder().setPath("/none").build());
       result.invoke();
    }
 
    @Test
-   public void testMatchesUnregisteredMethod() throws IOException {
+   public void testMatchesUnregisteredMethod() {
       thrown.expect(MethodNotAllowedException.class);
       RouteMatch result = table.matches(new HttpRequestBuilder().setMethod(DELETE).setPath("/test/7").build());
       result.invoke();
    }
 
    @Test
-   public void testMatchesHttpException() throws NoSuchMethodException, HttpException, IOException {
+   public void testMatchesHttpException() throws NoSuchMethodException {
       thrown.expect(NotImplementedException.class);
       RouteMatch result = table.matches(new HttpRequestBuilder().setMethod(PATCH).setPath("/test").build());
       assertTrue(result instanceof MatchedRoute);
@@ -177,7 +182,7 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchesWithService() throws NoSuchMethodException, HttpException, IOException {
+   public void testMatchesWithService() throws NoSuchMethodException {
       Message message = new Message();
       serviceMap.put(Message.class, message);
       table.put("", ServiceTestResource.class);
@@ -191,7 +196,7 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchesWithoutContent() throws IOException, NoSuchMethodException {
+   public void testMatchesWithoutContent() throws NoSuchMethodException {
       HttpRequest request = new HttpRequestBuilder().setMethod(PUT).setPath("/test/12").build();
       RouteMatch result = table.matches(request);
       assertTrue(result instanceof MatchedRoute);
@@ -201,14 +206,13 @@ public final class RouteTableMatcherTest {
       assertEquals(2, route.getMethodArgs().length);
       assertEquals(12, route.getMethodArgs()[0]);
       assertNull(route.getMethodArgs()[1]);
-      assertNull(route.getErrors());
    }
 
    @Test
-   public void testMatchesWithContent() throws IOException, NoSuchMethodException {
+   public void testMatchesWithContent() throws NoSuchMethodException {
       HttpRequest request = new HttpRequestBuilder().setMethod(PUT)
                .setPath("/test/12")
-               .setBody("id=12&name=Test&email=test%40test.com&checked=true")
+               .setBody("id=12&name=Test&email=test.com&checked=false")
                .setContentType(ContentType.FORM)
                .build();
       RouteMatch result = table.matches(request);
@@ -224,37 +228,76 @@ public final class RouteTableMatcherTest {
       ContentObject cobj = (ContentObject) obj;
       assertEquals(12, cobj.id);
       assertEquals("Test", cobj.name);
-      assertEquals("test@test.com", cobj.email);
-      assertTrue(cobj.checked);
-      assertNull(route.getErrors());
+      assertEquals("test.com", cobj.email);
+      assertFalse(cobj.checked);
    }
 
    @Test
-   public void testMatchesWithInvalidContent() throws IOException, NoSuchMethodException {
-      HttpRequest request = new HttpRequestBuilder().setMethod(PATCH)
-               .setPath("/test/12")
-               .setBody("id=12&name=Test&email=test%40test.com&checked=true")
+   public void testMatchesWithInvalidContent() throws NoSuchMethodException {
+      HttpRequest request = new HttpRequestBuilder().setMethod(PUT)
+               .setPath("/test/valid/12")
+               .setBody("id=12&name=Test&email=test@test.com")
                .setContentType(ContentType.FORM)
                .build();
       RouteMatch result = table.matches(request);
       assertTrue(result instanceof MatchedRoute);
       MatchedRoute route = (MatchedRoute) result;
       assertEquals(TestResource.class, route.getResourceClass());
-      assertEquals(TestResource.class.getMethod("patch", int.class, InvalidObject.class), route.getMethod());
+      assertEquals(TestResource.class.getMethod("valid", int.class, ContentObject.class), route.getMethod());
+      assertEquals(2, route.getMethodArgs().length);
+      assertEquals(12, route.getMethodArgs()[0]);
       Object obj = route.getMethodArgs()[1];
       assertNotNull(obj);
-      assertTrue(obj instanceof InvalidObject);
-      InvalidObject cobj = (InvalidObject) obj;
+      assertTrue(obj instanceof ContentObject);
+      ContentObject cobj = (ContentObject) obj;
+      assertEquals(12, cobj.id);
+      assertEquals("Test", cobj.name);
+      assertEquals("test@test.com", cobj.email);
+      assertFalse(cobj.checked);
+
+      try {
+         result.invoke();
+         throw new IllegalStateException();
+      } catch (BadRequestException e) {
+         assertNotNull(e.getErrors());
+         assertFalse(e.getErrors().isEmpty());
+         Iterator<ErrorSet.Message> messages = e.getErrors().iterator();
+
+         ErrorSet.Message message = messages.next();
+         assertEquals("content.checked", message.getPathEntry());
+         assertEquals("false", message.getInvalidValue());
+         assertEquals("{javax.validation.constraints.AssertTrue.message}", message.getTemplate());
+
+         assertFalse(messages.hasNext());
+      } catch (Exception e) {
+         Assert.fail();
+      }
+   }
+
+   @Test
+   public void testMatchesWithValidContent() throws NoSuchMethodException {
+      HttpRequest request = new HttpRequestBuilder().setMethod(PUT)
+               .setPath("/test/valid/12")
+               .setBody("id=12&name=Test&email=test@test.com&checked=true")
+               .setContentType(ContentType.FORM)
+               .build();
+      RouteMatch result = table.matches(request);
+      assertTrue(result instanceof MatchedRoute);
+      MatchedRoute route = (MatchedRoute) result;
+      assertEquals(TestResource.class, route.getResourceClass());
+      assertEquals(TestResource.class.getMethod("valid", int.class, ContentObject.class), route.getMethod());
+      assertEquals(2, route.getMethodArgs().length);
+      assertEquals(12, route.getMethodArgs()[0]);
+      Object obj = route.getMethodArgs()[1];
+      assertNotNull(obj);
+      assertTrue(obj instanceof ContentObject);
+      ContentObject cobj = (ContentObject) obj;
       assertEquals(12, cobj.id);
       assertEquals("Test", cobj.name);
       assertEquals("test@test.com", cobj.email);
       assertTrue(cobj.checked);
-      ErrorList errors = route.getErrors();
-      assertNotNull(errors);
-      assertFalse(errors.isEmpty());
-      List<String> messages = new ArrayList<>();
-      errors.forEach(msg -> messages.add(msg.getValue()));
-      assertArrayEquals(new String[] { "Some error message" }, messages.toArray());
+
+      result.invoke();
    }
 
    @Test
@@ -301,16 +344,14 @@ public final class RouteTableMatcherTest {
    public static class ContentObject {
 
       public int id;
+
       public String name;
+
+      @Email
       public String email;
+
+      @AssertTrue
       public boolean checked;
-   }
-
-   public static class InvalidObject extends ContentObject {
-
-      public void validate(ErrorList errors) {
-         errors.add("Some error message");
-      }
    }
 
    public static class TestResource {
@@ -323,8 +364,7 @@ public final class RouteTableMatcherTest {
          return "GET/" + i;
       }
 
-      @Route("{alpha(3..6)}")
-      public String get(String s) {
+      public String get(@Size(min = 3, max = 6) String s) {
          return "GET/" + s;
       }
 
@@ -339,7 +379,7 @@ public final class RouteTableMatcherTest {
       }
 
       @HttpGet
-      @Route("query/{int}")
+      @Route("query/{0}")
       public String getNew(int cid, @QueryParam int id) {
          return String.valueOf(cid + id);
       }
@@ -352,14 +392,18 @@ public final class RouteTableMatcherTest {
          return "POST/" + i;
       }
 
-      public void patch() throws NotImplementedException {
+      public void patch() {
          throw new NotImplementedException();
       }
 
       public void put(int i, ContentObject content) {
+         // Nothing to do here
       }
 
-      public void patch(int i, InvalidObject content) {
+      @HttpPut
+      @Route("valid/{0}")
+      public void valid(int i, @Valid ContentObject content) {
+         // Nothing to do here
       }
    }
 

@@ -47,7 +47,7 @@ public final class ScannerServer implements AutoCloseable {
       this.thread.start();
    }
 
-   public String next() throws IOException {
+   public String next() {
       ByteArrayOutputStream out = new ByteArrayOutputStream();
       String result = "";
       while (active && !result.endsWith(delimiter)) {

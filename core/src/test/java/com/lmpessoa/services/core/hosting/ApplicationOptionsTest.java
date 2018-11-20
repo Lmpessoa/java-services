@@ -63,7 +63,7 @@ public final class ApplicationOptionsTest {
       app.useResponder(MultipleInvokeResponder.class);
    }
 
-   public static abstract class AbstractTestResponder {
+   public abstract static class AbstractTestResponder {
 
       public void invoke() {
          // Test method, does nothing

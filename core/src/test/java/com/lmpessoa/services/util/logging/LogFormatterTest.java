@@ -58,13 +58,13 @@ public final class LogFormatterTest {
       Thread.currentThread().setName("test");
       Socket socket = mock(Socket.class);
       when(socket.getInetAddress()).thenReturn(InetAddress.getLoopbackAddress());
-      // log.addSupplier(ConnectionInfo.class, () -> );
       log.addVariable("Remote.Host", ConnectionInfo.class, c -> c.getRemoteAddress().getHostName());
-      log.addVariable("Remote.Addr", ConnectionInfo.class, c -> c.getRemoteAddress().getHostAddress());
+      log.addVariable("Remote.Addr", ConnectionInfo.class,
+               c -> c.getRemoteAddress().getHostAddress());
       Map<Class<?>, Object> extra = new HashMap<>();
       extra.put(ConnectionInfo.class, new ConnectionInfo(socket, "https://lmpessoa.com/"));
-      entry = new LogEntry(ZonedDateTime.of(LocalDateTime.of(2017, 6, 5, 5, 42, 7), ZoneId.of("America/Sao_Paulo")),
-               Severity.ERROR, "Test", extra, log);
+      entry = new LogEntry(ZonedDateTime.of(LocalDateTime.of(2017, 6, 5, 5, 42, 7),
+               ZoneId.of("America/Sao_Paulo")), Severity.ERROR, "Test", extra, log);
    }
 
    @Test
@@ -167,7 +167,8 @@ public final class LogFormatterTest {
    @Test
    public void testCompleteFormatter() throws ParseException {
       String result = formatWith(FormattedHandler.DEFAULT);
-      assertEquals("2017-06-05T05:42:07.000   ERROR -- [localhost      ] c.l.s.util.logging.LogFormatterTest  : Test",
+      assertEquals(
+               "2017-06-05T05:42:07.000   ERROR -- [localhost      ] c.l.s.util.logging.LogFormatterTest  : Test",
                result);
    }
 
