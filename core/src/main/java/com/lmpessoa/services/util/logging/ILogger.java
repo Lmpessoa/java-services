@@ -22,13 +22,14 @@
  */
 package com.lmpessoa.services.util.logging;
 
+import static com.lmpessoa.services.core.services.Reuse.ALWAYS;
+
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 
-import com.lmpessoa.services.core.services.Reuse;
 import com.lmpessoa.services.core.services.Service;
 
 /**
@@ -40,7 +41,7 @@ import com.lmpessoa.services.core.services.Service;
  * the console).
  * </p>
  */
-@Service(Reuse.ALWAYS)
+@Service(reuse = ALWAYS)
 public interface ILogger {
 
    /**
@@ -61,8 +62,8 @@ public interface ILogger {
     * prematurely.
     * </p>
     * <p>
-    * This method is a shortcut to log a formatted text message. Its behaviour is the same as logging
-    * <code>String.format(message, args)</code>.
+    * This method is a shortcut to log a formatted text message. Its behaviour is the same as
+    * logging <code>String.format(message, args)</code>.
     * </p>
     *
     * @param message the message template to build the message.
@@ -75,8 +76,8 @@ public interface ILogger {
    /**
     * Logs an error message.
     * <p>
-    * Error messages indicates an unexpected error or exception occurred but the application managed to
-    * handle it and can continue. Part of the processing when this error occurred may be lost.
+    * Error messages indicates an unexpected error or exception occurred but the application managed
+    * to handle it and can continue. Part of the processing when this error occurred may be lost.
     * </p>
     *
     * @param message the message to be logged.
@@ -86,12 +87,12 @@ public interface ILogger {
    /**
     * Logs an error message.
     * <p>
-    * Error messages indicates an unexpected error or exception occurred but the application managed to
-    * handle it and can continue. Part of the processing when this error occurred may be lost.
+    * Error messages indicates an unexpected error or exception occurred but the application managed
+    * to handle it and can continue. Part of the processing when this error occurred may be lost.
     * </p>
     * <p>
-    * This method is a shortcut to log a formatted text message. Its behaviour is the same as logging
-    * <code>String.format(message, args)</code>.
+    * This method is a shortcut to log a formatted text message. Its behaviour is the same as
+    * logging <code>String.format(message, args)</code>.
     * </p>
     *
     * @param message the message template to build the message.
@@ -104,8 +105,8 @@ public interface ILogger {
    /**
     * Logs a warning message.
     * <p>
-    * Warning messages indicate an unexpected situation (not mandatorily an exception) occurred and the
-    * application handled it but the situation was worth registering.
+    * Warning messages indicate an unexpected situation (not mandatorily an exception) occurred and
+    * the application handled it but the situation was worth registering.
     * </p>
     *
     * @param message the message to be logged.
@@ -115,12 +116,12 @@ public interface ILogger {
    /**
     * Logs a warning message.
     * <p>
-    * Warning messages indicate an unexpected situation (not mandatorily an exception) occurred and the
-    * application handled it but the situation was worth registering.
+    * Warning messages indicate an unexpected situation (not mandatorily an exception) occurred and
+    * the application handled it but the situation was worth registering.
     * </p>
     * <p>
-    * This method is a shortcut to log a formatted text message. Its behaviour is the same as logging
-    * <code>String.format(message, args)</code>.
+    * This method is a shortcut to log a formatted text message. Its behaviour is the same as
+    * logging <code>String.format(message, args)</code>.
     * </p>
     *
     * @param message the message template to build the message.
@@ -148,8 +149,8 @@ public interface ILogger {
     * Usually information messages do not have their source in exceptions.
     * </p>
     * <p>
-    * This method is a shortcut to log a formatted text message. Its behaviour is the same as logging
-    * <code>String.format(message, args)</code>.
+    * This method is a shortcut to log a formatted text message. Its behaviour is the same as
+    * logging <code>String.format(message, args)</code>.
     * </p>
     *
     * @param message the message template to build the message.
@@ -162,8 +163,8 @@ public interface ILogger {
    /**
     * Logs a debug message.
     * <p>
-    * Debug messages are used to register information about the application execution that can be used
-    * to understand if the application behaviour is correct.
+    * Debug messages are used to register information about the application execution that can be
+    * used to understand if the application behaviour is correct.
     * </p>
     *
     * @param message the message to be logged.
@@ -173,12 +174,12 @@ public interface ILogger {
    /**
     * Logs a debug message.
     * <p>
-    * Debug messages are used to register information about the application execution that can be used
-    * to understand if the application behaviour is correct.
+    * Debug messages are used to register information about the application execution that can be
+    * used to understand if the application behaviour is correct.
     * </p>
     * <p>
-    * This method is a shortcut to log a formatted text message. Its behaviour is the same as logging
-    * <code>String.format(message, args)</code>.
+    * This method is a shortcut to log a formatted text message. Its behaviour is the same as
+    * logging <code>String.format(message, args)</code>.
     * </p>
     *
     * @param message the message template to build the message.
@@ -227,7 +228,8 @@ public interface ILogger {
       } finally {
          BigDecimal duration = BigDecimal.valueOf(Duration.between(start, Instant.now()).toMillis())
                   .divide(BigDecimal.valueOf(1000), 3, BigDecimal.ROUND_DOWN);
-         debug("Leaving %s.%s after %d seconds", caller.getClassName(), caller.getMethodName(), duration);
+         debug("Leaving %s.%s after %d seconds", caller.getClassName(), caller.getMethodName(),
+                  duration);
       }
    }
 }

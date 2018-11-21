@@ -22,10 +22,11 @@
  */
 package com.lmpessoa.services.core.routing;
 
+import static com.lmpessoa.services.core.services.Reuse.REQUEST;
+
 import java.util.Arrays;
 import java.util.Collection;
 
-import com.lmpessoa.services.core.services.Reuse;
 import com.lmpessoa.services.core.services.Service;
 
 /**
@@ -37,12 +38,12 @@ import com.lmpessoa.services.core.services.Service;
  * application.
  * </p>
  */
-@Service(Reuse.REQUEST)
+@Service(reuse = REQUEST)
 public interface IRouteTable {
 
    /**
-    * Adds the methods of the given resource class to this route table. If any method provides a route
-    * and HTTP method that is already registered, the new value is discarded.
+    * Adds the methods of the given resource class to this route table. If any method provides a
+    * route and HTTP method that is already registered, the new value is discarded.
     *
     * @param clazz the class to add to the route table.
     * @return a list of exceptions raised during this call.
@@ -51,7 +52,8 @@ public interface IRouteTable {
 
    /**
     * Adds the methods of the given resource class to this route table under the given area. If any
-    * method provides a route and HTTP method that is already registered, the new value is discarded.
+    * method provides a route and HTTP method that is already registered, the new value is
+    * discarded.
     *
     * @param area the path of the area under which the resource will be located.
     * @param clazz the class to add to the route table.
@@ -62,8 +64,8 @@ public interface IRouteTable {
    }
 
    /**
-    * Adds the methods of all the given resource classes to this route table. If any method provides a
-    * route and HTTP method that is already registered, the new value is discarded.
+    * Adds the methods of all the given resource classes to this route table. If any method provides
+    * a route and HTTP method that is already registered, the new value is discarded.
     *
     * @param classes the collection of classes to add to the route table.
     * @return a list of exceptions raised during this call.
@@ -71,8 +73,9 @@ public interface IRouteTable {
    Collection<RouteEntry> putAll(Collection<Class<?>> classes);
 
    /**
-    * Adds the methods of all the given resource class to this route table under the given area. If any
-    * method provides a route and HTTP method that is already registered, the new value is discarded.
+    * Adds the methods of all the given resource class to this route table under the given area. If
+    * any method provides a route and HTTP method that is already registered, the new value is
+    * discarded.
     *
     * @param area the path of the area under which the resource will be located.
     * @param classes the collection of classes to add to the route table.
@@ -85,7 +88,7 @@ public interface IRouteTable {
     *
     * @param packageName the name of the package to check.
     * @return the name of the area classes in the given package name should belong to, or
-    * <code>null</code> if no area captures classes in the given package name.
+    *         <code>null</code> if no area captures classes in the given package name.
     */
    String findArea(String packageName);
 }

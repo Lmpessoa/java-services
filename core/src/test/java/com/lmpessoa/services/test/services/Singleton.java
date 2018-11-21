@@ -22,10 +22,11 @@
  */
 package com.lmpessoa.services.test.services;
 
-import com.lmpessoa.services.core.services.Reuse;
+import static com.lmpessoa.services.core.services.Reuse.ALWAYS;
+
 import com.lmpessoa.services.core.services.Service;
 
-@Service(Reuse.ALWAYS)
+@Service(reuse = ALWAYS)
 public interface Singleton {
 
 }

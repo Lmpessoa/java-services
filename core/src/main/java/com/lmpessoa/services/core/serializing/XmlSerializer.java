@@ -26,20 +26,26 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.function.Function;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
-import javax.xml.bind.annotation.adapters.XmlAdapter;
-import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
+import com.lmpessoa.services.core.hosting.IApplicationInfo;
+import com.lmpessoa.services.core.serializing.JsonSerializer.AppInfoSerialiser;
+import com.lmpessoa.services.core.services.HealthStatus;
+import com.lmpessoa.services.core.validating.ErrorSet;
 import com.lmpessoa.services.util.ClassUtils;
 
 final class XmlSerializer extends Serializer {
 
-   private static final String XML_HEAD = "<?xml version=\"1.0\"?>";
+   private static final Map<Class<?>, Function<Object, Object>> adapters = new HashMap<>();
    private static final Map<Class<?>, String> types = new HashMap<>();
+   private static final String XML_HEAD = "<?xml version=\"1.0\"?>";
+
    static {
       types.put(String.class, "string");
       types.put(Long.class, "long");
@@ -49,6 +55,9 @@ final class XmlSerializer extends Serializer {
       types.put(Double.class, "double");
       types.put(Float.class, "float");
       types.put(Boolean.class, "boolean");
+
+      adapters.put(ErrorSet.class, XmlSerializer::adaptErrorSet);
+      adapters.put(IApplicationInfo.class, XmlSerializer::adaptAppInfo);
    }
 
    @Override
@@ -75,9 +84,48 @@ final class XmlSerializer extends Serializer {
          try {
             result = produceObject(object);
          } catch (JAXBException e) {
+            e.printStackTrace();
             result = null;
          }
       }
+      return result;
+   }
+
+   private static XmlErrorSet adaptErrorSet(Object obj) {
+      if (!(obj instanceof ErrorSet)) {
+         return null;
+      }
+      ErrorSet errors = (ErrorSet) obj;
+      XmlErrorSet result = new XmlErrorSet();
+      errors.forEach(m -> {
+         XmlErrorSet.MessageEntry entry = new XmlErrorSet.MessageEntry();
+         entry.invalidValue = m.getInvalidValue();
+         entry.message = m.getValue();
+         entry.path = m.getPathEntry();
+         result.error.add(entry);
+      });
+      return result;
+   }
+
+   private static XmlAppInfo adaptAppInfo(Object obj) {
+      if (!(obj instanceof IApplicationInfo)) {
+         return null;
+      }
+      IApplicationInfo info = (IApplicationInfo) obj;
+      XmlAppInfo result = new XmlAppInfo();
+      result.name = info.getName();
+      result.status = HealthStatus.OK;
+      for (Entry<Class<?>, HealthStatus> entry : info.getServiceHealth().entrySet()) {
+         XmlAppInfo.ServiceStatus ss = new XmlAppInfo.ServiceStatus();
+         ss.name = AppInfoSerialiser.getServiceName(entry.getKey());
+         ss.status = entry.getValue();
+         result.service.add(ss);
+         if (ss.status != HealthStatus.OK) {
+            result.status = HealthStatus.PARTIAL;
+         }
+      }
+      result.uptime = info.getUptime();
+      result.memory = info.getUsedMemory();
       return result;
    }
 
@@ -99,15 +147,9 @@ final class XmlSerializer extends Serializer {
    }
 
    private String produceObject(Object obj) throws JAXBException {
-      Class<?> clazz = obj.getClass();
-      if (clazz.isAnnotationPresent(XmlJavaTypeAdapter.class)) {
-         XmlJavaTypeAdapter adapter = clazz.getAnnotation(XmlJavaTypeAdapter.class);
-         try {
-            @SuppressWarnings("unchecked")
-            XmlAdapter<Object, Object> instance = adapter.value().newInstance();
-            obj = instance.marshal(obj);
-         } catch (Exception e) {
-            throw new JAXBException(e);
+      for (Entry<Class<?>, Function<Object, Object>> entry : adapters.entrySet()) {
+         if (entry.getKey().isInstance(obj)) {
+            obj = entry.getValue().apply(obj);
          }
       }
       JAXBContext context = JAXBContext.newInstance(obj.getClass());

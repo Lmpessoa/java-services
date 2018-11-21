@@ -22,10 +22,11 @@
  */
 package com.lmpessoa.services.test.services;
 
-import com.lmpessoa.services.core.services.Reuse;
+import static com.lmpessoa.services.core.services.Reuse.NEVER;
+
 import com.lmpessoa.services.core.services.Service;
 
-@Service(Reuse.NEVER)
+@Service(reuse = NEVER)
 public class SingletonDependent {
 
    public SingletonDependent(Singleton observable) {

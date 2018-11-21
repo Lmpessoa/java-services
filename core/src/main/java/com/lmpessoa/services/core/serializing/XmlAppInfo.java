@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,16 +20,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.test.services;
+package com.lmpessoa.services.core.serializing;
 
-import static com.lmpessoa.services.core.services.Reuse.ALWAYS;
+import java.util.ArrayList;
+import java.util.List;
 
-import com.lmpessoa.services.core.services.Service;
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElementWrapper;
+import javax.xml.bind.annotation.XmlRootElement;
 
-@Service(reuse = ALWAYS)
-public class TransientDependent {
+import com.lmpessoa.services.core.services.HealthStatus;
 
-   public TransientDependent(Transient observable) {
-      // Test method, does nothing
+@XmlRootElement(name = "appInfo")
+final class XmlAppInfo {
+
+   public String name;
+   public HealthStatus status;
+   @XmlElementWrapper(name = "services")
+   public List<ServiceStatus> service = new ArrayList<>();
+   public long uptime;
+   public long memory;
+
+   static final class ServiceStatus {
+
+      @XmlAttribute
+      public String name;
+      @XmlAttribute
+      public HealthStatus status;
    }
 }

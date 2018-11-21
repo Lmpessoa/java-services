@@ -20,28 +20,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.validating;
+package com.lmpessoa.services.core.serializing;
 
-import javax.xml.bind.annotation.adapters.XmlAdapter;
+import java.util.ArrayList;
+import java.util.List;
 
-public final class XmlErrorSetAdapter extends XmlAdapter<XmlErrorSet, ErrorSet> {
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlRootElement;
 
-   @Override
-   public ErrorSet unmarshal(XmlErrorSet v) throws Exception {
-      return null;
+@XmlRootElement(name = "errors")
+final class XmlErrorSet {
+
+   public List<MessageEntry> error = new ArrayList<>();
+
+   static final class MessageEntry {
+
+      @XmlAttribute
+      public String path;
+      @XmlAttribute
+      public String message;
+      @XmlAttribute
+      public String invalidValue;
    }
-
-   @Override
-   public XmlErrorSet marshal(ErrorSet v) throws Exception {
-      XmlErrorSet result = new XmlErrorSet();
-      v.forEach(m -> {
-         XmlErrorSet.MessageEntry entry = new XmlErrorSet.MessageEntry();
-         entry.invalidValue = m.getInvalidValue();
-         entry.message = m.getValue();
-         entry.path = m.getPathEntry();
-         result.error.add(entry);
-      });
-      return result;
-   }
-
 }

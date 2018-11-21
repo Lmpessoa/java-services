@@ -22,14 +22,15 @@
  */
 package com.lmpessoa.services.core.hosting;
 
+import static com.lmpessoa.services.core.services.Reuse.REQUEST;
+
 import com.lmpessoa.services.core.routing.IRouteRequest;
-import com.lmpessoa.services.core.services.Reuse;
 import com.lmpessoa.services.core.services.Service;
 
 /**
  * Represents the raw HTTP request data.
  */
-@Service(Reuse.REQUEST)
+@Service(reuse = REQUEST)
 public interface HttpRequest extends IRouteRequest {
 
    /**

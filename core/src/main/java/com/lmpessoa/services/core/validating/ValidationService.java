@@ -68,7 +68,7 @@ final class ValidationService implements IValidationService {
 
    @Override
    public ErrorSet validateParameters(Object object, Method method, Object[] paramValues) {
-      if (!method.getDeclaringClass().isAssignableFrom(object.getClass())) {
+      if (!method.getDeclaringClass().isInstance(object)) {
          throw new ValidationException("Object does not have a " + method.toString());
       }
       ConstrainedMethod cmethod = ConstrainedElement.of(method);
@@ -85,11 +85,12 @@ final class ValidationService implements IValidationService {
 
    @Override
    public ErrorSet validateReturnValue(Object object, Method method, Object returnValue) {
-      if (!method.getDeclaringClass().isAssignableFrom(object.getClass())) {
+      if (!method.getDeclaringClass().isInstance(object)) {
          throw new ValidationException("Object does not have a " + method.toString());
       }
       ConstrainedMethod cmethod = ConstrainedElement.of(method);
-      ReturnValuePathNode path = PathNode.ofMethod(method.getName(), method.getParameters()).addReturnValue();
+      ReturnValuePathNode path = PathNode.ofMethod(method.getName(), method.getParameters())
+               .addReturnValue();
       path.setValue(returnValue);
       ConstrainedReturnValue crv = cmethod.getReturnValue();
       for (Class<?> group : getGroups(object.getClass())) {
@@ -101,7 +102,8 @@ final class ValidationService implements IValidationService {
       return ErrorSet.EMPTY;
    }
 
-   Set<Violation> validateParameters(ExecutablePathNode path, ConstrainedExecutable<?> exec, Class<?> group) {
+   Set<Violation> validateParameters(ExecutablePathNode path, ConstrainedExecutable<?> exec,
+      Class<?> group) {
       Set<Violation> result = new HashSet<>();
       ConstrainedParameter[] params = exec.getParameters().toArray(new ConstrainedParameter[0]);
       ConstrainedCrossParameter crossParams = exec.getCrossParameters();
@@ -126,7 +128,8 @@ final class ValidationService implements IValidationService {
       return Collections.unmodifiableSet(result);
    }
 
-   Set<Violation> validate(ContainerElementProviderPathNode path, ConstrainedContainer<?> container, Class<?> group) {
+   Set<Violation> validate(ContainerElementProviderPathNode path, ConstrainedContainer<?> container,
+      Class<?> group) {
       Set<Violation> result = new HashSet<>();
       validate(path, (ConstrainedElement<?>) container, group).forEach(result::add);
       Object value = path.getValue();
@@ -178,19 +181,21 @@ final class ValidationService implements IValidationService {
       return Collections.unmodifiableSet(result);
    }
 
-   Set<Violation> validate(ContainerElementProviderPathNode path, ConstrainedTypeArgument typearg, Iterable<?> iterable,
-      Class<?> group) {
+   Set<Violation> validate(ContainerElementProviderPathNode path, ConstrainedTypeArgument typearg,
+      Iterable<?> iterable, Class<?> group) {
       Set<Violation> result = new HashSet<>();
       for (Object value : iterable) {
-         ContainerElementPathNode child = path.addContainerElement("<iterable element>", Iterable.class, 0).iterable();
+         ContainerElementPathNode child = path
+                  .addContainerElement("<iterable element>", Iterable.class, 0)
+                  .iterable();
          child.setValue(value);
          validate(child, typearg, group).forEach(result::add);
       }
       return Collections.unmodifiableSet(result);
    }
 
-   Set<Violation> validate(ContainerElementProviderPathNode path, ConstrainedTypeArgument typearg, List<?> list,
-      Class<?> group) {
+   Set<Violation> validate(ContainerElementProviderPathNode path, ConstrainedTypeArgument typearg,
+      List<?> list, Class<?> group) {
       Set<Violation> result = new HashSet<>();
       int i = 0;
       for (Object value : list) {
@@ -203,13 +208,14 @@ final class ValidationService implements IValidationService {
       return Collections.unmodifiableSet(result);
    }
 
-   Set<Violation> validate(ContainerElementProviderPathNode path, ConstrainedTypeArgument typearg, Map<?, ?> map,
-      Class<?> group) {
+   Set<Violation> validate(ContainerElementProviderPathNode path, ConstrainedTypeArgument typearg,
+      Map<?, ?> map, Class<?> group) {
       Set<Violation> result = new HashSet<>();
       for (Entry<?, ?> mapentry : map.entrySet()) {
          int typeArgIndex = typearg.getIndex();
          ContainerElementPathNode child = path
-                  .addContainerElement(typeArgIndex == 0 ? "<map key>" : "<map value>", Map.class, typeArgIndex)
+                  .addContainerElement(typeArgIndex == 0 ? "<map key>" : "<map value>", Map.class,
+                           typeArgIndex)
                   .iterableWithKey(mapentry.getKey());
          child.setValue(typeArgIndex == 0 ? mapentry.getKey() : mapentry.getValue());
          validate(child, typearg, group).forEach(result::add);
@@ -244,13 +250,14 @@ final class ValidationService implements IValidationService {
 
       @Override
       public ErrorSet validateParameters(Object object, Method method, Object[] paramValues) {
-         return new ErrorSet(validator.forExecutables().validateParameters(object, method, paramValues, Default.class));
+         return new ErrorSet(validator.forExecutables().validateParameters(object, method,
+                  paramValues, Default.class));
       }
 
       @Override
       public ErrorSet validateReturnValue(Object object, Method method, Object returnValue) {
-         return new ErrorSet(
-                  validator.forExecutables().validateReturnValue(object, method, returnValue, Default.class));
+         return new ErrorSet(validator.forExecutables().validateReturnValue(object, method,
+                  returnValue, Default.class));
       }
 
       ValidatorWrapper(Validator validator) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,16 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.test.services;
+package com.lmpessoa.services.core.services;
 
-import static com.lmpessoa.services.core.services.Reuse.ALWAYS;
+public interface IHealthProvider {
 
-import com.lmpessoa.services.core.services.Service;
-
-@Service(reuse = ALWAYS)
-public class TransientDependent {
-
-   public TransientDependent(Transient observable) {
-      // Test method, does nothing
-   }
+   HealthStatus getHealth();
 }

@@ -38,12 +38,18 @@ import com.lmpessoa.services.util.ClassUtils;
 
 final class ApplicationOptions implements IApplicationOptions {
 
+   private static final String INVALID_PATH = "Given path is not valid";
+   private static final String SEPARATOR = "/";
+
    private final List<Class<?>> responders = new ArrayList<>();
    private final ServiceMap services = new ServiceMap();
    private final RouteTable routes = new RouteTable(services);
 
    private IIdentityProvider identityProvider = null;
    private boolean configured = false;
+   private String feedbackPath;
+   private String staticPath;
+   private String healthPath;
 
    // Responder
 
@@ -62,7 +68,8 @@ final class ApplicationOptions implements IApplicationOptions {
       }
       Method[] invokes = ClassUtils.findMethods(responderClass, m -> "invoke".equals(m.getName()));
       if (invokes.length != 1) {
-         throw new IllegalArgumentException("Responder must have exaclty one method named 'invoke'");
+         throw new IllegalArgumentException(
+                  "Responder must have exaclty one method named 'invoke'");
       }
       responders.add(responderClass);
    }
@@ -116,19 +123,19 @@ final class ApplicationOptions implements IApplicationOptions {
    public void useAsyncWithFeedbackPath(String feedbackPath) {
       lockConfiguration();
       Objects.requireNonNull(feedbackPath);
-      if (AsyncResponder.getFeedbackPath() != null) {
+      if (this.feedbackPath != null) {
          throw new IllegalStateException("Async is already configured");
       }
-      if (!feedbackPath.startsWith("/")) {
-         feedbackPath = "/" + feedbackPath;
+      if (!feedbackPath.startsWith(SEPARATOR)) {
+         feedbackPath = SEPARATOR + feedbackPath;
       }
-      if (!feedbackPath.endsWith("/")) {
-         feedbackPath += "/";
+      if (!feedbackPath.endsWith(SEPARATOR)) {
+         feedbackPath += SEPARATOR;
       }
       if (!feedbackPath.matches("/([a-zA-Z0-9.-_]+/)+")) {
-         throw new IllegalArgumentException("Given path is not valid");
+         throw new IllegalArgumentException(INVALID_PATH);
       }
-      AsyncResponder.setFeedbackPath(feedbackPath);
+      this.feedbackPath = feedbackPath;
    }
 
    // Static files
@@ -142,19 +149,19 @@ final class ApplicationOptions implements IApplicationOptions {
    public void useStaticFilesAtPath(String staticPath) {
       lockConfiguration();
       Objects.requireNonNull(staticPath);
-      if (StaticResponder.getStaticPath() != null) {
+      if (this.staticPath != null) {
          throw new IllegalStateException("Static files is already configured");
       }
-      if (!staticPath.startsWith("/")) {
-         staticPath = "/" + staticPath;
+      if (!staticPath.startsWith(SEPARATOR)) {
+         staticPath = SEPARATOR + staticPath;
       }
-      while (staticPath.endsWith("/")) {
+      while (staticPath.endsWith(SEPARATOR)) {
          staticPath = staticPath.substring(0, staticPath.length() - 1);
       }
       if (!staticPath.matches("(/[a-zA-Z0-9.-_]+)+")) {
-         throw new IllegalArgumentException("Given path is not valid");
+         throw new IllegalArgumentException(INVALID_PATH);
       }
-      StaticResponder.setStaticPath(staticPath);
+      this.staticPath = staticPath;
    }
 
    // Identity
@@ -176,11 +183,38 @@ final class ApplicationOptions implements IApplicationOptions {
          options.accept((policyName, policyMethod) -> {
             lockConfiguration();
             if (IdentityResponder.hasPolicy(policyName)) {
-               throw new IllegalArgumentException("A policy with that name is already defined: " + policyName);
+               throw new IllegalArgumentException(
+                        "A policy with that name is already defined: " + policyName);
             }
             IdentityResponder.addPolicy(policyName, policyMethod);
          });
       }
+   }
+
+   // Health
+
+   @Override
+   public void useHeath() {
+      useHealthAtPath("health");
+   }
+
+   @Override
+   public void useHealthAtPath(String healthPath) {
+      lockConfiguration();
+      Objects.requireNonNull(healthPath);
+      if (this.healthPath != null) {
+         throw new IllegalStateException("Health is already configured");
+      }
+      if (!healthPath.startsWith(SEPARATOR)) {
+         healthPath = SEPARATOR + healthPath;
+      }
+      if (healthPath.endsWith(SEPARATOR)) {
+         healthPath = healthPath.substring(0, healthPath.length() - 1);
+      }
+      if (!healthPath.matches("(/[a-zA-Z0-9.-_]+)+")) {
+         throw new IllegalArgumentException(INVALID_PATH);
+      }
+      this.healthPath = healthPath;
    }
 
    ApplicationOptions(Consumer<ServiceMap> configuration) {
@@ -197,8 +231,11 @@ final class ApplicationOptions implements IApplicationOptions {
       List<Class<?>> result = new ArrayList<>();
       result.add(SerializerResponder.class);
       result.add(FaviconResponder.class);
-      if (StaticResponder.getStaticPath() != null) {
+      if (staticPath != null) {
          result.add(StaticResponder.class);
+      }
+      if (healthPath != null) {
+         result.add(HealthResponder.class);
       }
 
       result.addAll(this.responders);
@@ -206,11 +243,11 @@ final class ApplicationOptions implements IApplicationOptions {
       if (identityProvider != null) {
          result.add(IdentityResponder.class);
       }
-      if (AsyncResponder.getFeedbackPath() != null) {
+      if (feedbackPath != null) {
          result.add(AsyncResponder.class);
       }
       result.add(InvokeResponder.class);
-      return new NextResponderImpl(services, result);
+      return new NextResponderImpl(services, result, this);
    }
 
    ServiceMap getServices() {
@@ -223,6 +260,18 @@ final class ApplicationOptions implements IApplicationOptions {
 
    IIdentityProvider getIdentityProvider() {
       return identityProvider;
+   }
+
+   String getFeedbakcPath() {
+      return feedbackPath;
+   }
+
+   String getStaticPath() {
+      return staticPath;
+   }
+
+   String getHealthPath() {
+      return healthPath;
    }
 
    private void lockConfiguration() {

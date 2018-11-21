@@ -60,7 +60,8 @@ import java.util.function.Supplier;
 public final class ServiceMap {
 
    private static final String SPECIFY_REUSE_LEVEL = "Service does not specify reuse level: ";
-   private final ThreadLocal<Map<Class<?>, Object>> threadPool = ThreadLocal.withInitial(HashMap::new);
+   private final ThreadLocal<Map<Class<?>, Object>> threadPool = ThreadLocal
+            .withInitial(HashMap::new);
    private final Map<Class<?>, ServiceEntry> entries = new HashMap<>();
    private final Map<Class<?>, Object> globalPool = new HashMap<>();
 
@@ -68,8 +69,8 @@ public final class ServiceMap {
     * Registers a service for the given class on the service map.
     *
     * <p>
-    * The given class must be a concrete class and is used both for service discovery and instantiation
-    * of the service responder.
+    * The given class must be a concrete class and is used both for service discovery and
+    * instantiation of the service responder.
     * </p>
     *
     * @param service the class of the service to be registered.
@@ -79,7 +80,7 @@ public final class ServiceMap {
       if (ann == null) {
          throw new IllegalArgumentException(SPECIFY_REUSE_LEVEL + service.getName());
       }
-      put(service, new LazyInitializer<>(service, ann.value(), this));
+      put(service, new LazyInitializer<>(service, ann.reuse(), this));
    }
 
    /**
@@ -87,8 +88,8 @@ public final class ServiceMap {
     *
     * <p>
     * The given {@code service} class is used for service discovery while the {@code provided} class
-    * must be a concrete class and is used to create the instance object that will respond to service
-    * requests.
+    * must be a concrete class and is used to create the instance object that will respond to
+    * service requests.
     * </p>
     *
     * @param service the class of the service to be registered.
@@ -99,15 +100,15 @@ public final class ServiceMap {
       if (ann == null) {
          throw new IllegalArgumentException(SPECIFY_REUSE_LEVEL + service.getName());
       }
-      put(service, new LazyInitializer<>(provided, ann.value(), this));
+      put(service, new LazyInitializer<>(provided, ann.reuse(), this));
    }
 
    /**
     * Registers a service for the given class on the service map.
     *
     * <p>
-    * The given {@code service} class is used for service discovery and the {@code supplier} function
-    * is used to create the instance object that will respond to service requests.
+    * The given {@code service} class is used for service discovery and the {@code supplier}
+    * function is used to create the instance object that will respond to service requests.
     * </p>
     *
     * @param service the class of the service to be registered.
@@ -118,7 +119,7 @@ public final class ServiceMap {
       if (ann == null) {
          throw new IllegalArgumentException(SPECIFY_REUSE_LEVEL + service.getName());
       }
-      put(ann.value(), service, Objects.requireNonNull(supplier));
+      put(ann.reuse(), service, Objects.requireNonNull(supplier));
 
    }
 
@@ -126,9 +127,9 @@ public final class ServiceMap {
     * Registers a service for the given class on the service map.
     *
     * <p>
-    * The given instance will be used to respond to any requests for this service. No other instances
-    * of the responder will be created through this call. Only services with reuse level {@link ALWAYS}
-    * can be registered with a single instance through this method.
+    * The given instance will be used to respond to any requests for this service. No other
+    * instances of the responder will be created through this call. Only services with reuse level
+    * {@link ALWAYS} can be registered with a single instance through this method.
     * </p>
     *
     * @param service the class of the service to be registered.
@@ -139,8 +140,9 @@ public final class ServiceMap {
       if (ann == null) {
          throw new IllegalArgumentException(SPECIFY_REUSE_LEVEL + service.getName());
       }
-      if (ann.value() != Reuse.ALWAYS) {
-         throw new IllegalArgumentException("Service instances can only be used if reuse is ALWAYS");
+      if (ann.reuse() != Reuse.ALWAYS) {
+         throw new IllegalArgumentException(
+                  "Service instances can only be used if reuse is ALWAYS");
       }
       put(ALWAYS, service, null);
       globalPool.put(service, instance);
@@ -151,8 +153,8 @@ public final class ServiceMap {
     * Returns whether this {@code ServiceMap} can handle the given service type.
     *
     * @param service the class to test if a service is registered for.
-    * @return {@code true} if the {@code ServiceMap} can handle the given service type, {@code false}
-    * otherwise.
+    * @return {@code true} if the {@code ServiceMap} can handle the given service type,
+    *         {@code false} otherwise.
     */
    public boolean contains(Class<?> service) {
       return entries.containsKey(service);
@@ -183,7 +185,8 @@ public final class ServiceMap {
    public <T> T get(Class<T> clazz) {
       ServiceEntry entry = entries.get(clazz);
       if (entry == null) {
-         String className = clazz.isArray() ? clazz.getComponentType().getName() + "[]" : clazz.getName();
+         String className = clazz.isArray() ? clazz.getComponentType().getName() + "[]"
+                  : clazz.getName();
          throw new NoSuchElementException("Service not found: " + className);
       }
       T value;
@@ -217,20 +220,20 @@ public final class ServiceMap {
     * @param methodName the name of the method to be invoked.
     * @return
     * @throws NoSingleMethodException if the class of the object do not have exactly one method with
-    * the given name.
+    *            the given name.
     * @throws IllegalAccessException if this Method object is enforcing Java language access control
-    * and the underlying method is inaccessible.
+    *            and the underlying method is inaccessible.
     * @throws InvocationTargetException if the underlying method throws an exception.
     */
-   public Object invoke(Object obj, String methodName)
-      throws NoSingleMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+   public Object invoke(Object obj, String methodName) throws NoSingleMethodException,
+      IllegalAccessException, InvocationTargetException, InstantiationException {
       Class<?> clazz = obj instanceof Class<?> ? (Class<?>) obj : obj.getClass();
-      Method[] methods = Arrays.stream(clazz.getMethods()).filter(m -> methodName.equals(m.getName())).toArray(
-               Method[]::new);
+      Method[] methods = Arrays.stream(clazz.getMethods())
+               .filter(m -> methodName.equals(m.getName()))
+               .toArray(Method[]::new);
       if (methods.length != 1) {
-         throw new NoSingleMethodException(
-                  "Class " + clazz.getName() + " must have exactly one method named '" + methodName + "'",
-                  methods.length);
+         throw new NoSingleMethodException("Class " + clazz.getName()
+                  + " must have exactly one method named '" + methodName + "'", methods.length);
       }
       return invoke(obj, methods[0]);
    }
@@ -243,21 +246,23 @@ public final class ServiceMap {
     * long as they are registered services in this same {@code ServiceMap}.
     * </p>
     *
-    * @param obj the object to invoke the method with. Can be null if the executable is a constructor.
+    * @param obj the object to invoke the method with. Can be null if the executable is a
+    *           constructor.
     * @param exec the method or constructor to be invoked.
     * @return
     * @throws IllegalAccessException if this Method object is enforcing Java language access control
-    * and the underlying method or constructor is inaccessible.
+    *            and the underlying method or constructor is inaccessible.
     * @throws InvocationTargetException if the underlying executable throws an exception.
-    * @throws InstantiationException if the executable represents a constructor from an abstract class.
-    * @throws NullPointerException if the a method or constructor to be executed was not provided or if
-    * specified object is null and the method is an instance method.
+    * @throws InstantiationException if the executable represents a constructor from an abstract
+    *            class.
+    * @throws NullPointerException if the a method or constructor to be executed was not provided or
+    *            if specified object is null and the method is an instance method.
     */
    public Object invoke(Object obj, Executable exec)
       throws IllegalAccessException, InvocationTargetException, InstantiationException {
       Objects.requireNonNull(exec);
       if (!Modifier.isStatic(exec.getModifiers()) && obj != null
-               && !exec.getDeclaringClass().isAssignableFrom(obj.getClass())) {
+               && !exec.getDeclaringClass().isInstance(obj)) {
          throw new IllegalArgumentException("Mismatched static/instance method call");
       }
       List<Object> args = new ArrayList<>();
@@ -285,8 +290,8 @@ public final class ServiceMap {
     *
     * @param service the service to set the value to.
     * @param value the value to be used with the service for the current request.
-    * @throws IllegalArgumentException if the service is not registered in this {@code ServiceMap} or
-    * if it is not defined with {@link Reuse#REQUEST}.
+    * @throws IllegalArgumentException if the service is not registered in this {@code ServiceMap}
+    *            or if it is not defined with {@link Reuse#REQUEST}.
     * @throws IllegalStateException if a value has already been produced for the given service.
     */
    public <T> void putRequestValue(Class<T> service, T value) {
@@ -317,7 +322,8 @@ public final class ServiceMap {
 
    private void put(Reuse level, Class<?> service, Supplier<?> supplier) {
       if (entries.containsKey(Objects.requireNonNull(service))) {
-         throw new IllegalArgumentException("Service " + service.getName() + " is already registered");
+         throw new IllegalArgumentException(
+                  "Service " + service.getName() + " is already registered");
       }
       entries.put(service, new ServiceEntry(level, supplier));
    }

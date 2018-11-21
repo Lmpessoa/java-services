@@ -26,6 +26,7 @@ import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -47,13 +48,14 @@ import com.lmpessoa.services.util.logging.Logger;
 import com.lmpessoa.services.util.logging.Severity;
 import com.lmpessoa.services.util.logging.SyslogHandler;
 
-class ApplicationSettings implements IApplicationSettings {
+class ApplicationSettings {
 
    private static final String LOCATION = ClassUtils.findLocation(ApplicationSettings.class);
    private static final String ABOVE = "above";
    private static final String BELOW = "below";
 
    private final Supplier<ConnectionInfo> connectionInfoSupplier;
+   private final Instant startupTime = Instant.now();
    private final Class<?> startupClass;
    private final Property settings;
 
@@ -63,33 +65,43 @@ class ApplicationSettings implements IApplicationSettings {
    private IHostEnvironment env;
    private Logger log;
 
-   @Override
-   public String getApplicationName() {
-      return settings.get("application.name").getValue();
-   }
-
-   @Override
-   public Class<?> getStartupClass() {
-      return startupClass;
-   }
-
-   @Override
-   public boolean isXmlEnabled() {
-      Property xml = settings.get("enable.xml");
-      if (!xml.isEmpty() && !xml.hasChildren()) {
-         return xml.getBoolValueOrDefault(false);
-      }
-      return false;
-   }
-
    ApplicationSettings(ApplicationServer server, Class<?> startupClass) {
       this(startupClass, getPropertiesNear(startupClass), server::getConnectionInfo);
    }
 
-   ApplicationSettings(Class<?> startupClass, Property settings, Supplier<ConnectionInfo> connectionInfoSupplier) {
+   ApplicationSettings(Class<?> startupClass, Property settings,
+      Supplier<ConnectionInfo> connectionInfoSupplier) {
       this.connectionInfoSupplier = connectionInfoSupplier;
       this.startupClass = startupClass;
       this.settings = settings;
+   }
+
+   String getApplicationName() {
+      String result = getProperty("application.name").getValue();
+      if (result == null) {
+         result = startupClass.getSimpleName();
+         if (result.endsWith("Application")) {
+            result = result.substring(0, result.length() - 11);
+         }
+         result = Character.toLowerCase(result.charAt(0)) + result.substring(1);
+      }
+      return result;
+   }
+
+   Class<?> getStartupClass() {
+      return startupClass;
+   }
+
+   Instant getStartupTime() {
+      return startupTime;
+   }
+
+   boolean isXmlEnabled() {
+      Property xml = getProperty("enable.xml");
+      if (!xml.isEmpty() && !xml.hasChildren()) {
+         return xml.getBoolValueOrDefault(false);
+      }
+      return false;
    }
 
    IHostEnvironment getEnvironment() {
@@ -98,7 +110,8 @@ class ApplicationSettings implements IApplicationSettings {
          if (envName == null) {
             envName = "Development";
          }
-         final String name = Character.toUpperCase(envName.charAt(0)) + envName.substring(1).toLowerCase();
+         final String name = Character.toUpperCase(envName.charAt(0))
+                  + envName.substring(1).toLowerCase();
          env = () -> name;
 
       }
@@ -107,7 +120,7 @@ class ApplicationSettings implements IApplicationSettings {
 
    ExecutionService getMainExecutor() {
       if (mainExec == null) {
-         int limit = settings.get("limits.requests").getIntValueOrDefault(0);
+         int limit = getProperty("limits.requests").getIntValueOrDefault(0);
          mainExec = new ExecutionService(limit, getLogger());
       }
       return mainExec;
@@ -115,7 +128,7 @@ class ApplicationSettings implements IApplicationSettings {
 
    ExecutionService getJobExecutor() {
       if (jobExec == null) {
-         Property prop = settings.get("limits.jobs");
+         Property prop = getProperty("limits.jobs");
          if (!prop.isEmpty() && prop.getIntValueOrDefault(0) > 0) {
             jobExec = new ExecutionService(prop.getIntValue(), getLogger());
          } else {
@@ -137,10 +150,13 @@ class ApplicationSettings implements IApplicationSettings {
          Collection<Handler> handlers = getHandlers();
          log = new Logger(startupClass, new StackFilter());
          log.addSupplier(ConnectionInfo.class, connectionInfoSupplier);
-         log.addVariable("Remote.Host", ConnectionInfo.class, c -> c.getRemoteAddress().getHostName());
-         log.addVariable("Remote.Addr", ConnectionInfo.class, c -> c.getRemoteAddress().getHostAddress());
-         log.addVariable("Local.Host", ConnectionInfo.class, c -> c.getLocalAddress().getHostName());
-         Property tracing = settings.get("enable.tracing");
+         log.addVariable("Remote.Host", ConnectionInfo.class,
+                  c -> c.getRemoteAddress().getHostName());
+         log.addVariable("Remote.Addr", ConnectionInfo.class,
+                  c -> c.getRemoteAddress().getHostAddress());
+         log.addVariable("Local.Host", ConnectionInfo.class,
+                  c -> c.getLocalAddress().getHostName());
+         Property tracing = getProperty("enable.tracing");
          if (!tracing.isEmpty() && !tracing.hasChildren()) {
             log.enableTracing(tracing.getBoolValueOrDefault(false));
          }
@@ -150,7 +166,11 @@ class ApplicationSettings implements IApplicationSettings {
    }
 
    int getHttpPort() {
-      return settings.get("server.port").getIntValueOrDefault(5617);
+      return getProperty("server.port").getIntValueOrDefault(5617);
+   }
+
+   private Property getProperty(String propertyName) {
+      return settings != null ? settings.get(propertyName) : Property.EMPTY;
    }
 
    private static Property getPropertiesNear(Class<?> startupClass) {
@@ -170,8 +190,10 @@ class ApplicationSettings implements IApplicationSettings {
    }
 
    private static File findLocation(Class<?> startupClass) {
-      String pathOfClass = File.separator + startupClass.getName().replaceAll("\\.", File.separator) + ".class";
-      String fullPathOfClass = startupClass.getResource(startupClass.getSimpleName() + ".class").toString();
+      String pathOfClass = File.separator + startupClass.getName().replaceAll("\\.", File.separator)
+               + ".class";
+      String fullPathOfClass = startupClass.getResource(startupClass.getSimpleName() + ".class")
+               .toString();
       String result = fullPathOfClass.substring(0, fullPathOfClass.length() - pathOfClass.length());
       if (result.startsWith("jar:")) {
          int lastSep = result.lastIndexOf(File.separator);
@@ -197,7 +219,7 @@ class ApplicationSettings implements IApplicationSettings {
    }
 
    private Collection<Handler> getHandlers() {
-      Property logSettings = settings.get("log");
+      Property logSettings = getProperty("log");
       if (logSettings.isEmpty() || !logSettings.hasChildren()) {
          return Arrays.asList(new ConsoleHandler(Severity.atOrAbove(Severity.INFO)));
       }
@@ -243,12 +265,15 @@ class ApplicationSettings implements IApplicationSettings {
       for (Property sub : handlerSettings.values()) {
          String subName = sub.getName();
          if (!consumed.contains(subName)) {
-            final String methodName = "set" + Character.toUpperCase(subName.charAt(0)) + subName.substring(1);
-            Method[] methods = ClassUtils.findMethods(handler.getClass(), m -> methodName.equals(m.getName())
-                     && m.getParameterTypes().length == 1 && m.getReturnType() == void.class);
+            final String methodName = "set" + Character.toUpperCase(subName.charAt(0))
+                     + subName.substring(1);
+            Method[] methods = ClassUtils.findMethods(handler.getClass(),
+                     m -> methodName.equals(m.getName()) && m.getParameterTypes().length == 1
+                              && m.getReturnType() == void.class);
             if (methods.length == 1) {
                try {
-                  methods[0].invoke(handler, ClassUtils.cast(sub.getValue(), methods[0].getParameterTypes()[0]));
+                  methods[0].invoke(handler,
+                           ClassUtils.cast(sub.getValue(), methods[0].getParameterTypes()[0]));
                } catch (Exception e) {
                   // Ignore since we still do not have the handler fully set
                }
@@ -326,7 +351,8 @@ class ApplicationSettings implements IApplicationSettings {
             return false;
          }
          String className = element.getClassName();
-         if (className.startsWith("java.") || className.startsWith("javax.") || className.startsWith("sun.")) {
+         if (className.startsWith("java.") || className.startsWith("javax.")
+                  || className.startsWith("sun.")) {
             return false;
          }
          Class<?> clazz;
@@ -349,7 +375,8 @@ class ApplicationSettings implements IApplicationSettings {
          if ("<init>".equals(methodName)) {
             methods = ClassUtils.findConstructor(clazz, m -> !m.isSynthetic());
          } else {
-            methods = ClassUtils.findMethods(clazz, m -> m.getName().equals(methodName) && !m.isSynthetic());
+            methods = ClassUtils.findMethods(clazz,
+                     m -> m.getName().equals(methodName) && !m.isSynthetic());
          }
          return methods.length != 0;
       }

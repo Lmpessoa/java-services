@@ -43,7 +43,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.lmpessoa.services.core.concurrent.Async;
@@ -58,6 +57,7 @@ public final class AsyncResponderTest {
    private static final ILogger log = new Logger(new NullHandler());
    private static final String BASE_URL = "https://lmpessoa.com/feedback/";
 
+   private ApplicationOptions app;
    private ExecutionService executor;
    private AsyncResponder handler;
    private ConnectionInfo connect;
@@ -67,20 +67,17 @@ public final class AsyncResponderTest {
 
    private String runnableResult;
 
-   @BeforeClass
-   public static void classSetup() {
-      AsyncResponder.setFeedbackPath("/feedback/");
-   }
-
    @Before
    public void setup() {
+      app = new ApplicationOptions(null);
+      app.useAsync();
       connect = new ConnectionInfo(mock(Socket.class), "https://lmpessoa.com/");
       request = mock(HttpRequest.class);
       when(request.getMethod()).thenReturn(GET);
       when(request.getPath()).thenReturn("/test");
       runnableResult = null;
       next = () -> match.invoke();
-      handler = new AsyncResponder(next);
+      handler = new AsyncResponder(next, app);
       executor = new ExecutionService(1, log);
       AsyncResponder.setExecutor(executor);
    }

@@ -22,9 +22,10 @@
  */
 package com.lmpessoa.services.core.routing;
 
+import static com.lmpessoa.services.core.services.Reuse.REQUEST;
+
 import java.lang.reflect.Method;
 
-import com.lmpessoa.services.core.services.Reuse;
 import com.lmpessoa.services.core.services.Service;
 
 /**
@@ -37,7 +38,7 @@ import com.lmpessoa.services.core.services.Service;
  * HTTP protocol.
  * </p>
  */
-@Service(Reuse.REQUEST)
+@Service(reuse = REQUEST)
 public interface RouteMatch {
 
    /**
@@ -62,12 +63,12 @@ public interface RouteMatch {
     * Calls the resolved method.
     *
     * <p>
-    * This method does not expect arguments provided by the developer since all the expected arguments
-    * gathered from the HTTP request are internally known to this class.
+    * This method does not expect arguments provided by the developer since all the expected
+    * arguments gathered from the HTTP request are internally known to this class.
     * </p>
     *
     * @return a object result returned by the called method or <code>null</code> if nothing was
-    * returned.
+    *         returned.
     */
    Object invoke();
 }

@@ -20,26 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.validating;
+package com.lmpessoa.services.core.services;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlRootElement;
-
-@XmlRootElement(name = "errors")
-final class XmlErrorSet {
-
-   public List<MessageEntry> error = new ArrayList<>();
-
-   static final class MessageEntry {
-
-      @XmlAttribute
-      public String path;
-      @XmlAttribute
-      public String message;
-      @XmlAttribute
-      public String invalidValue;
-   }
+public enum HealthStatus {
+   OK, PARTIAL, FAILED;
 }

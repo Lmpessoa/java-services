@@ -22,9 +22,10 @@
  */
 package com.lmpessoa.services.core.security;
 
+import static com.lmpessoa.services.core.services.Reuse.REQUEST;
+
 import java.util.Collection;
 
-import com.lmpessoa.services.core.services.Reuse;
 import com.lmpessoa.services.core.services.Service;
 
 /**
@@ -44,7 +45,7 @@ import com.lmpessoa.services.core.services.Service;
  * information.
  * </p>
  */
-@Service(Reuse.REQUEST)
+@Service(reuse = REQUEST)
 public interface IIdentity {
 
    /**

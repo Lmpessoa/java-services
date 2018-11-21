@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,16 +20,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.test.services;
+package com.lmpessoa.services.core.hosting;
 
-import static com.lmpessoa.services.core.services.Reuse.ALWAYS;
+final class HealthResponder {
 
-import com.lmpessoa.services.core.services.Service;
+   private final ApplicationOptions options;
+   private final NextResponder next;
 
-@Service(reuse = ALWAYS)
-public class TransientDependent {
+   public HealthResponder(NextResponder next, ApplicationOptions options) {
+      this.options = options;
+      this.next = next;
+   }
 
-   public TransientDependent(Transient observable) {
-      // Test method, does nothing
+   public Object invoke(HttpRequest request, IApplicationInfo info) {
+      if (request.getPath().equals(options.getHealthPath())) {
+         return info;
+      }
+      return next.invoke();
    }
 }

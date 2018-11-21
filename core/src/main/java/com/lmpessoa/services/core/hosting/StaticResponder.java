@@ -35,19 +35,20 @@ import com.lmpessoa.services.core.routing.RouteMatch;
 
 final class StaticResponder {
 
-   private static String staticPath = null;
-
+   private final ApplicationOptions options;
    private final NextResponder next;
 
-   public StaticResponder(NextResponder next) {
+   public StaticResponder(NextResponder next, ApplicationOptions options) {
+      this.options = options;
       this.next = next;
    }
 
-   public Object invoke(IApplicationSettings app, HttpRequest request, RouteMatch route) {
+   public Object invoke(IApplicationInfo info, HttpRequest request, RouteMatch route) {
+      final String staticPath = options.getStaticPath();
       if (staticPath != null && request.getMethod() == HttpMethod.GET
                && (route instanceof NotFoundException
                         || route instanceof MethodNotAllowedException)) {
-         Class<?> startupClass = app.getStartupClass();
+         Class<?> startupClass = info.getStartupClass();
          URL resource = startupClass.getResource(staticPath + request.getPath());
          if (resource != null) {
             String path = resource.getPath();
@@ -61,14 +62,6 @@ final class StaticResponder {
          }
       }
       return next.invoke();
-   }
-
-   static String getStaticPath() {
-      return staticPath;
-   }
-
-   static void setStaticPath(String staticPath) {
-      StaticResponder.staticPath = staticPath;
    }
 
    private String getMimeTypeFromExtension(String extension, Class<?> startupClass) {

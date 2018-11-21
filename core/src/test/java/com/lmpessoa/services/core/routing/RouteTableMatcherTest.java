@@ -26,6 +26,7 @@ import static com.lmpessoa.services.core.routing.HttpMethod.DELETE;
 import static com.lmpessoa.services.core.routing.HttpMethod.PATCH;
 import static com.lmpessoa.services.core.routing.HttpMethod.POST;
 import static com.lmpessoa.services.core.routing.HttpMethod.PUT;
+import static com.lmpessoa.services.core.services.Reuse.ALWAYS;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -54,7 +55,6 @@ import com.lmpessoa.services.core.hosting.HttpRequestBuilder;
 import com.lmpessoa.services.core.hosting.MethodNotAllowedException;
 import com.lmpessoa.services.core.hosting.NotFoundException;
 import com.lmpessoa.services.core.hosting.NotImplementedException;
-import com.lmpessoa.services.core.services.Reuse;
 import com.lmpessoa.services.core.services.Service;
 import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.core.validating.ErrorSet;
@@ -488,7 +488,7 @@ public final class RouteTableMatcherTest {
       }
    }
 
-   @Service(Reuse.ALWAYS)
+   @Service(reuse = ALWAYS)
    static class Message implements Supplier<String> {
 
       @Override

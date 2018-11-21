@@ -432,7 +432,7 @@ public final class RouteTable implements IRouteTable {
          return false;
       }
       for (int i = 0; i < methodArgs.length; ++i) {
-         if (!methodArgs[i].isAssignableFrom(args[i].getClass())) {
+         if (!methodArgs[i].isInstance(args[i])) {
             return false;
          }
       }

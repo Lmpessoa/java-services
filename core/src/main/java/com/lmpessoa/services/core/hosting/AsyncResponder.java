@@ -43,11 +43,12 @@ import com.lmpessoa.services.core.routing.RouteMatch;
 final class AsyncResponder {
 
    private static ExecutionService executor;
-   private static String feedbackPath;
 
+   private final ApplicationOptions options;
    private final NextResponder next;
 
-   public AsyncResponder(NextResponder next) {
+   public AsyncResponder(NextResponder next, ApplicationOptions options) {
+      this.options = options;
       this.next = next;
    }
 
@@ -57,6 +58,7 @@ final class AsyncResponder {
 
    public Object invoke(HttpRequest request, RouteMatch route, ConnectionInfo connect) {
       if (executor != null) {
+         final String feedbackPath = options.getFeedbakcPath();
          if (request.getPath().startsWith(feedbackPath)) {
             return respondToStatusRequest(request, feedbackPath, connect);
          }
@@ -65,14 +67,6 @@ final class AsyncResponder {
          }
       }
       return next.invoke();
-   }
-
-   static String getFeedbackPath() {
-      return feedbackPath;
-   }
-
-   static void setFeedbackPath(String feedbackPath) {
-      AsyncResponder.feedbackPath = feedbackPath;
    }
 
    private Object respondToAsyncCall(RouteMatch route, String asyncPath) {

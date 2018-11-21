@@ -22,6 +22,8 @@
  */
 package com.lmpessoa.services.core.validating;
 
+import static com.lmpessoa.services.core.services.Reuse.ALWAYS;
+
 import java.lang.reflect.Method;
 
 import javax.validation.Validation;
@@ -29,7 +31,6 @@ import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
 
 import com.lmpessoa.services.core.hosting.ApplicationServer;
-import com.lmpessoa.services.core.services.Reuse;
 import com.lmpessoa.services.core.services.Service;
 import com.lmpessoa.services.core.validating.ValidationService.ValidatorWrapper;
 
@@ -41,16 +42,16 @@ import com.lmpessoa.services.core.validating.ValidationService.ValidatorWrapper;
  * evaluated during the execution of calls to the paths of the application.
  * </p>
  */
-@Service(Reuse.ALWAYS)
+@Service(reuse = ALWAYS)
 public interface IValidationService {
 
    /**
     * Returns a new validation service instance.
     * <p>
-    * Applications should never call this method directly and instead should use the proper validation
-    * annotations in published methods and objects to be validated in order to follow the proper
-    * execution workflow. If for any reason an application requires the direct usage of a validation
-    * service, instead request the default instance using the resource constructor.
+    * Applications should never call this method directly and instead should use the proper
+    * validation annotations in published methods and objects to be validated in order to follow the
+    * proper execution workflow. If for any reason an application requires the direct usage of a
+    * validation service, instead request the default instance using the resource constructor.
     * </p>
     *
     * @return a new validation service instance.
@@ -72,8 +73,8 @@ public interface IValidationService {
     * Validates the constraints on the given object.
     *
     * @param object the object to be validated.
-    * @return a set of errors found while performing the validation, or {@code null} if no errors were
-    * found.
+    * @return a set of errors found while performing the validation, or {@code null} if no errors
+    *         were found.
     */
    ErrorSet validate(Object object);
 
@@ -82,9 +83,9 @@ public interface IValidationService {
     *
     * @param object the object instance used to invoke the method.
     * @param method the method to be validated.
-    * @param paramValues the argumens to be used to invoke the method.
-    * @return a set of errors found while performing the validation, or {@code null} if no errors were
-    * found.
+    * @param paramValues the arguments to be used to invoke the method.
+    * @return a set of errors found while performing the validation, or {@code null} if no errors
+    *         were found.
     */
    ErrorSet validateParameters(Object object, Method method, Object[] paramValues);
 
@@ -94,8 +95,8 @@ public interface IValidationService {
     * @param object the object instance used to invoke the method.
     * @param method the method to be validated.
     * @param returnValue the value returned by the method invocation.
-    * @return a set of errors found while performing the validation, or {@code null} if no errors were
-    * found.
+    * @return a set of errors found while performing the validation, or {@code null} if no errors
+    *         were found.
     */
    ErrorSet validateReturnValue(Object object, Method method, Object returnValue);
 }

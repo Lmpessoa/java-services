@@ -22,12 +22,24 @@
  */
 package com.lmpessoa.services.core.serializing;
 
+import java.lang.reflect.Type;
+import java.util.Map.Entry;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSerializationContext;
+import com.lmpessoa.services.core.hosting.IApplicationInfo;
+import com.lmpessoa.services.core.services.HealthStatus;
+import com.lmpessoa.services.core.services.Service;
 
 final class JsonSerializer extends Serializer {
 
-   private final Gson gson = new GsonBuilder().disableHtmlEscaping().create();
+   private final Gson gson = new GsonBuilder() //
+            .registerTypeHierarchyAdapter(IApplicationInfo.class, new AppInfoSerialiser())
+            .disableHtmlEscaping()
+            .create();
 
    @Override
    protected <T> T read(String content, Class<T> type) {
@@ -40,6 +52,50 @@ final class JsonSerializer extends Serializer {
          return gson.toJson(object);
       } catch (Exception e) {
          return null;
+      }
+   }
+
+   static class AppInfoSerialiser implements com.google.gson.JsonSerializer<IApplicationInfo> {
+
+      @Override
+      public JsonElement serialize(IApplicationInfo src, Type typeOfSrc,
+         JsonSerializationContext context) {
+         JsonObject result = new JsonObject();
+         result.addProperty("app", src.getName());
+         HealthStatus status = HealthStatus.OK;
+
+         JsonObject services = new JsonObject();
+         for (Entry<Class<?>, HealthStatus> entry : src.getServiceHealth().entrySet()) {
+            final String serviceName = getServiceName(entry.getKey());
+            services.addProperty(serviceName, entry.getValue().name());
+            if (entry.getValue() != HealthStatus.OK) {
+               status = HealthStatus.PARTIAL;
+            }
+         }
+
+         result.addProperty("status", status.name());
+         if (services.size() > 0) {
+            result.add("services", services);
+         }
+
+         result.addProperty("uptime", src.getUptime());
+         result.addProperty("memory", src.getUsedMemory());
+         return result;
+      }
+
+      static String getServiceName(Class<?> serviceClass) {
+         Service ann = serviceClass.getAnnotation(Service.class);
+         if (!ann.name().isEmpty()) {
+            return ann.name();
+         }
+         String result = serviceClass.getSimpleName();
+         if (result.matches("I[A-Z][a-z].+")) {
+            result = result.substring(1);
+         }
+         if (result.endsWith("Service")) {
+            result = result.substring(0, result.length() - 7);
+         }
+         return Character.toLowerCase(result.charAt(0)) + result.substring(1);
       }
    }
 }

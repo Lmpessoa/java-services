@@ -22,10 +22,11 @@
  */
 package com.lmpessoa.services.core.concurrent;
 
+import static com.lmpessoa.services.core.services.Reuse.ALWAYS;
+
 import java.util.Set;
 import java.util.concurrent.Future;
 
-import com.lmpessoa.services.core.services.Reuse;
 import com.lmpessoa.services.core.services.Service;
 
 /**
@@ -37,7 +38,7 @@ import com.lmpessoa.services.core.services.Service;
  * tasks, however, cannot be submitted through this interface.
  * </p>
  */
-@Service(Reuse.ALWAYS)
+@Service(reuse = ALWAYS)
 public interface IExecutionService {
 
    /**
@@ -45,14 +46,15 @@ public interface IExecutionService {
     *
     * <p>
     * The returned result of calling this method represents a task submitted for execution which is
-    * associated with the given ID. This object implements the {@see Future} interface and this can be
-    * used to retrieve the status and the result of the asynchronous task as well as cancelling it.
+    * associated with the given ID. This object implements the {@see Future} interface and this can
+    * be used to retrieve the status and the result of the asynchronous task as well as cancelling
+    * it.
     * </p>
     *
     * <p>
-    * Note that tasks may be purged from the execution service prior to this call if its retention time
-    * expired, thus this method may return {#code null} even if a task with the given ID previously
-    * existed.
+    * Note that tasks may be purged from the execution service prior to this call if its retention
+    * time expired, thus this method may return {#code null} even if a task with the given ID
+    * previously existed.
     * </p>
     *
     * @param jobId the ID of the task to be returned.
@@ -76,10 +78,10 @@ public interface IExecutionService {
     * Returns whether this execution service was requested to shut down.
     *
     * <p>
-    * Note that this method will only return true if the shut down process of the execution service has
-    * been requested but there is no guarantee with this result that it has effectively terminated
-    * processing any pending tasks. Executor service instances may provide additional methods to verify
-    * if the shut down has completed.
+    * Note that this method will only return true if the shut down process of the execution service
+    * has been requested but there is no guarantee with this result that it has effectively
+    * terminated processing any pending tasks. Executor service instances may provide additional
+    * methods to verify if the shut down has completed.
     * </p>
     *
     * @return {@code true} if the execution service was shut down, {#code false} otherwise.

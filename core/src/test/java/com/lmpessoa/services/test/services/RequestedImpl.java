@@ -22,8 +22,9 @@
  */
 package com.lmpessoa.services.test.services;
 
-import com.lmpessoa.services.core.services.Reuse;
+import static com.lmpessoa.services.core.services.Reuse.REQUEST;
+
 import com.lmpessoa.services.core.services.Service;
 
-@Service(Reuse.REQUEST)
+@Service(reuse = REQUEST)
 public class RequestedImpl implements Requested {}

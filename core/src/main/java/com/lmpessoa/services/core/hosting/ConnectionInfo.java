@@ -22,12 +22,13 @@
  */
 package com.lmpessoa.services.core.hosting;
 
+import static com.lmpessoa.services.core.services.Reuse.REQUEST;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Arrays;
 
-import com.lmpessoa.services.core.services.Reuse;
 import com.lmpessoa.services.core.services.Service;
 
 /**
@@ -46,7 +47,7 @@ import com.lmpessoa.services.core.services.Service;
  * they are treated as separate.
  * </p>
  */
-@Service(Reuse.REQUEST)
+@Service(reuse = REQUEST)
 public final class ConnectionInfo {
 
    private final boolean secure;
@@ -72,7 +73,7 @@ public final class ConnectionInfo {
             final InetAddress localHost = InetAddress.getLocalHost();
             local = InetAddress.getByAddress(localHost.getHostName(), addr.getAddress());
          } catch (IOException e) {
-            // Shall not happened since the host name is given
+            // Shall not happen since the host name is given
             local = addr;
          }
       }

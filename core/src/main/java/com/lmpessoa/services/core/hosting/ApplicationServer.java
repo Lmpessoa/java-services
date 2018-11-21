@@ -78,7 +78,6 @@ public final class ApplicationServer {
 
    private static ApplicationServer instance;
 
-   private final Instant startupTime = Instant.now();
    private final ApplicationSettings settings;
 
    private ApplicationOptions options;
@@ -309,10 +308,10 @@ public final class ApplicationServer {
       options = new ApplicationOptions(services -> {
          // Registers Singleton services
          services.put(ILogger.class, Wrapper.wrap(settings.getLogger()));
-         services.put(IApplicationSettings.class, Wrapper.wrap(settings));
          services.put(IHostEnvironment.class, settings.getEnvironment());
          services.put(IExecutionService.class, Wrapper.wrap(settings.getJobExecutor()));
          services.put(IValidationService.class, Wrapper.wrap(settings.getValidationService()));
+         services.put(IApplicationInfo.class, Wrapper.wrap(new ApplicationInfo(settings, options)));
 
          // Registers PerRequest services
          services.put(IRouteTable.class, (Supplier<IRouteTable>) () -> null);
@@ -371,7 +370,7 @@ public final class ApplicationServer {
 
    private void logStartedMessage() {
       BigDecimal thousand = new BigDecimal(1000);
-      Duration duration = Duration.between(this.startupTime, Instant.now());
+      Duration duration = Duration.between(settings.getStartupTime(), Instant.now());
       BigDecimal uptime = new BigDecimal(duration.toMillis()).divide(thousand);
       BigDecimal vmUptime = new BigDecimal(ManagementFactory.getRuntimeMXBean().getUptime())
                .divide(thousand);
@@ -380,7 +379,7 @@ public final class ApplicationServer {
    }
 
    private void logShutdownMessage() {
-      Duration duration = Duration.between(this.startupTime, Instant.now());
+      Duration duration = Duration.between(settings.getStartupTime(), Instant.now());
       long millis = duration.toMillis();
       long seconds = millis / 1000;
       long minutes = seconds / 60;

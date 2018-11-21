@@ -25,6 +25,7 @@ package com.lmpessoa.services.core.hosting;
 import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Future;
@@ -38,6 +39,7 @@ import com.lmpessoa.services.core.routing.IRouteTable;
 import com.lmpessoa.services.core.routing.RouteEntry;
 import com.lmpessoa.services.core.security.IIdentityOptions;
 import com.lmpessoa.services.core.security.IIdentityProvider;
+import com.lmpessoa.services.core.services.HealthStatus;
 import com.lmpessoa.services.core.validating.ErrorSet;
 import com.lmpessoa.services.core.validating.IValidationService;
 import com.lmpessoa.services.util.logging.ILogger;
@@ -100,28 +102,6 @@ final class Wrapper {
          public void debug(String message, Object... args) {
             original.debug(message, args);
          }
-      };
-   }
-
-   static IApplicationSettings wrap(IApplicationSettings original) {
-      Objects.requireNonNull(original);
-      return new IApplicationSettings() {
-
-         @Override
-         public Class<?> getStartupClass() {
-            return original.getStartupClass();
-         }
-
-         @Override
-         public String getApplicationName() {
-            return original.getApplicationName();
-         }
-
-         @Override
-         public boolean isXmlEnabled() {
-            return original.isXmlEnabled();
-         }
-
       };
    }
 
@@ -188,6 +168,16 @@ final class Wrapper {
          public void useIdentity(IIdentityProvider identityProvider,
             Consumer<IIdentityOptions> options) {
             original.useIdentity(identityProvider, options);
+         }
+
+         @Override
+         public void useHeath() {
+            original.useHeath();
+         }
+
+         @Override
+         public void useHealthAtPath(String healthPath) {
+            original.useHealthAtPath(healthPath);
          }
       };
    }
@@ -307,6 +297,42 @@ final class Wrapper {
          @Override
          public ErrorSet validateReturnValue(Object object, Method method, Object returnValue) {
             return original.validateReturnValue(object, method, returnValue);
+         }
+      };
+   }
+
+   static IApplicationInfo wrap(IApplicationInfo original) {
+      Objects.requireNonNull(original);
+      return new IApplicationInfo() {
+
+         @Override
+         public Class<?> getStartupClass() {
+            return original.getStartupClass();
+         }
+
+         @Override
+         public String getName() {
+            return original.getName();
+         }
+
+         @Override
+         public HealthStatus getHealth() {
+            return original.getHealth();
+         }
+
+         @Override
+         public Map<Class<?>, HealthStatus> getServiceHealth() {
+            return original.getServiceHealth();
+         }
+
+         @Override
+         public long getUptime() {
+            return original.getUptime();
+         }
+
+         @Override
+         public long getUsedMemory() {
+            return original.getUsedMemory();
          }
       };
    }

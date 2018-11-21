@@ -42,5 +42,17 @@ import java.lang.annotation.Target;
 @Retention(RUNTIME)
 public @interface Service {
 
-   Reuse value();
+   /**
+    * The name the service should be identified by.
+    *
+    * @return the name the service should be identified by.
+    */
+   String name() default "";
+
+   /**
+    * The level of reuse of the service.
+    *
+    * @return the level of reuse of the service.
+    */
+   Reuse reuse();
 }

@@ -22,6 +22,7 @@
  */
 package com.lmpessoa.services.core.hosting;
 
+import static com.lmpessoa.services.core.services.Reuse.ALWAYS;
 import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
@@ -30,34 +31,34 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.lmpessoa.services.core.hosting.NextResponder;
-import com.lmpessoa.services.core.hosting.NextResponderImpl;
-import com.lmpessoa.services.core.services.Reuse;
 import com.lmpessoa.services.core.services.Service;
 import com.lmpessoa.services.core.services.ServiceMap;
 
 public final class NextHandlerTest {
 
+   private ApplicationOptions app;
    private List<Class<?>> handlers;
    private ServiceMap services;
    private Request request;
 
    @Before
    public void setup() {
+      app = new ApplicationOptions(null);
+
       handlers = new ArrayList<>();
       handlers.add(TransformingHandler.class);
       handlers.add(RejectingHandler.class);
       handlers.add(RespondingHandler.class);
 
       request = new Request();
-      services = new ServiceMap();
+      services = app.getServices();
       services.put(Request.class, request);
    }
 
    @Test
    public void testRespondingChain() {
       request.code = 0;
-      NextResponder handler = new NextResponderImpl(services, handlers);
+      NextResponder handler = new NextResponderImpl(services, handlers, app);
       Result result = (Result) handler.invoke();
       assertEquals("OK", result.message);
       assertEquals(2, result.code);
@@ -66,7 +67,7 @@ public final class NextHandlerTest {
    @Test
    public void testRejectingChain() {
       request.code = 2;
-      NextResponder handler = new NextResponderImpl(services, handlers);
+      NextResponder handler = new NextResponderImpl(services, handlers, app);
       Result result = (Result) handler.invoke();
       assertEquals("Error", result.message);
       assertEquals(4, result.code);
@@ -75,13 +76,13 @@ public final class NextHandlerTest {
    @Test
    public void testTransformingChain() {
       request.code = 1;
-      NextResponder handler = new NextResponderImpl(services, handlers);
+      NextResponder handler = new NextResponderImpl(services, handlers, app);
       Result result = (Result) handler.invoke();
       assertEquals("OK Computer", result.message);
       assertEquals(2, result.code);
    }
 
-   @Service(Reuse.ALWAYS)
+   @Service(reuse = ALWAYS)
    public static class Request {
 
       public int code;

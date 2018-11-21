@@ -24,12 +24,12 @@ package com.lmpessoa.services.core.hosting;
 
 import static com.lmpessoa.services.core.routing.HttpMethod.GET;
 import static com.lmpessoa.services.core.routing.HttpMethod.PATCH;
+import static com.lmpessoa.services.core.services.Reuse.ALWAYS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -59,6 +59,9 @@ import com.lmpessoa.services.core.routing.Route;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.routing.RouteTable;
 import com.lmpessoa.services.core.serializing.Serializer;
+import com.lmpessoa.services.core.services.HealthStatus;
+import com.lmpessoa.services.core.services.IHealthProvider;
+import com.lmpessoa.services.core.services.Service;
 import com.lmpessoa.services.core.services.ServiceMap;
 import com.lmpessoa.services.core.validating.IValidationService;
 import com.lmpessoa.services.util.logging.ILogger;
@@ -86,15 +89,14 @@ public final class FullResponderTest {
 
    @Before
    public void setup() {
+      ApplicationSettings settings = new ApplicationSettings(FullResponderTest.class, null, null);
       app = new ApplicationOptions(null);
       services = app.getServices();
       services.put(ILogger.class, log);
       services.put(ConnectionInfo.class, (Supplier<ConnectionInfo>) () -> connect);
-      IApplicationSettings settings = mock(IApplicationSettings.class);
-      when(settings.getStartupClass()).then(n -> FullResponderTest.class);
-      services.put(IApplicationSettings.class, settings);
       services.put(RouteMatch.class, (Supplier<RouteMatch>) () -> route);
       services.put(IValidationService.class, IValidationService.newInstance());
+      services.put(IApplicationInfo.class, new ApplicationInfo(settings, app));
 
       routes = app.getRoutes();
       routes.put("", TestResource.class);
@@ -295,6 +297,7 @@ public final class FullResponderTest {
    public void testMediatorWithInvalidStream() throws IOException {
       HttpResult result = performFile("/http/invalid_stream_request.txt");
       assertEquals(400, result.getStatusCode());
+      assertNotNull(result.getInputStream());
       assertEquals(ContentType.JSON, result.getInputStream().getType());
       assertEquals(StandardCharsets.UTF_8, result.getInputStream().getEncoding());
       String content = readAll(result.getInputStream());
@@ -304,12 +307,83 @@ public final class FullResponderTest {
                content);
    }
 
+   @Test
+   public void testMediatorWithHealthRequest() throws IOException {
+      app.useHeath();
+      HttpResult result = perform("/health");
+      assertEquals(200, result.getStatusCode());
+      assertNotNull(result.getInputStream());
+      assertEquals(ContentType.JSON, result.getInputStream().getType());
+      assertEquals(StandardCharsets.UTF_8, result.getInputStream().getEncoding());
+      String content = readAll(result.getInputStream());
+      assertTrue(content.matches(
+               "\\{\"app\":\"fullResponderTest\",\"status\":\"OK\",\"uptime\":\\d+,\"memory\":\\d+}"));
+   }
+
+   @Test
+   public void testMediatorWithHealthRequestXml() throws IOException {
+      Serializer.enableXml(true);
+      try {
+         services.put(IDbService.class, (IDbService) () -> HealthStatus.OK);
+         app.useHeath();
+         HttpResult result = perform(GET, "/health", ContentType.XML);
+         assertEquals(200, result.getStatusCode());
+         assertNotNull(result.getInputStream());
+         assertEquals(ContentType.XML, result.getInputStream().getType());
+         assertEquals(StandardCharsets.UTF_8, result.getInputStream().getEncoding());
+         String content = readAll(result.getInputStream());
+         assertTrue(content.matches(
+                  "<\\?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"\\?>\\n<appInfo>\\n"
+                           + "  <name>fullResponderTest</name>\\n  <status>OK</status>\\n  <services>\\n"
+                           + "    <service name=\"db\" status=\"OK\"/>\\n  </services>\\n  <uptime>\\d+</uptime>\\n"
+                           + "  <memory>\\d+</memory>\\n</appInfo>\\n"));
+      } finally {
+         Serializer.enableXml(false);
+      }
+   }
+
+   @Test
+   public void testMediatorHealthWithServiceStatusOk() throws IOException {
+      services.put(IDbService.class, (IDbService) () -> HealthStatus.OK);
+      app.useHeath();
+      HttpResult result = perform("/health");
+      assertEquals(200, result.getStatusCode());
+      assertNotNull(result.getInputStream());
+      assertEquals(ContentType.JSON, result.getInputStream().getType());
+      assertEquals(StandardCharsets.UTF_8, result.getInputStream().getEncoding());
+      String content = readAll(result.getInputStream());
+      assertTrue(content.matches(
+               "\\{\"app\":\"fullResponderTest\",\"status\":\"OK\",\"services\":\\{\"db\":\"OK\"},\"uptime\":\\d+,\"memory\":\\d+}"));
+   }
+
+   @Test
+   public void testMediatorHealthWithServiceStatusFail() throws IOException {
+      services.put(IDbService.class, (IDbService) () -> HealthStatus.FAILED);
+      app.useHeath();
+      HttpResult result = perform("/health");
+      assertEquals(200, result.getStatusCode());
+      assertNotNull(result.getInputStream());
+      assertEquals(ContentType.JSON, result.getInputStream().getType());
+      assertEquals(StandardCharsets.UTF_8, result.getInputStream().getEncoding());
+      String content = readAll(result.getInputStream());
+      assertTrue(content.matches(
+               "\\{\"app\":\"fullResponderTest\",\"status\":\"PARTIAL\",\"services\":\\{\"db\":\"FAILED\"},\"uptime\":\\d+,\"memory\":\\d+}"));
+   }
+
    private HttpResult perform(String path) {
       return perform(GET, path);
    }
 
    private HttpResult perform(HttpMethod method, String path) {
-      request = new HttpRequestBuilder().setMethod(method).setPath(path).build();
+      return perform(method, path, null);
+   }
+
+   private HttpResult perform(HttpMethod method, String path, String accepts) {
+      HttpRequestBuilder builder = new HttpRequestBuilder().setMethod(method).setPath(path);
+      if (accepts != null) {
+         builder.addHeader(Headers.ACCEPT, accepts);
+      }
+      request = builder.build();
       services.put(HttpRequest.class, (Supplier<HttpRequest>) () -> request);
       route = routes.matches(request);
       return (HttpResult) app.getFirstResponder().invoke();
@@ -433,4 +507,7 @@ public final class FullResponderTest {
          return readAll(content);
       }
    }
+
+   @Service(reuse = ALWAYS)
+   static interface IDbService extends IHealthProvider {}
 }

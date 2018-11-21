@@ -39,21 +39,20 @@ import com.lmpessoa.services.core.routing.RouteMatch;
 
 public class StaticResponderTest {
 
-   private IApplicationSettings app;
+   private ApplicationOptions options;
+   private IApplicationInfo info;
    private StaticResponder responder;
-
-   static {
-      StaticResponder.setStaticPath("/static");
-   }
 
    @Before
    public void setup() {
-      app = mock(IApplicationSettings.class);
-      when(app.getStartupClass()).thenAnswer(inv -> StaticResponderTest.class);
+      options = new ApplicationOptions(null);
+      options.useStaticFiles();
+      info = mock(IApplicationInfo.class);
+      when(info.getStartupClass()).thenAnswer(inv -> StaticResponderTest.class);
 
       NextResponder next = mock(NextResponder.class);
       when(next.invoke()).thenReturn("Tested");
-      responder = new StaticResponder(next);
+      responder = new StaticResponder(next, options);
    }
 
    @Test
@@ -61,7 +60,7 @@ public class StaticResponderTest {
       HttpRequest request = mockRequest(GET, "/missing.png");
       RouteMatch route = new NotFoundException();
 
-      Object result = responder.invoke(app, request, route);
+      Object result = responder.invoke(info, request, route);
       assertEquals("Tested", result);
    }
 
@@ -70,7 +69,7 @@ public class StaticResponderTest {
       HttpRequest request = mockRequest(GET, "/sample.png");
       RouteMatch route = new NotFoundException();
 
-      Object result = responder.invoke(app, request, route);
+      Object result = responder.invoke(info, request, route);
       assertTrue(result instanceof HttpInputStream);
       try (HttpInputStream stream = (HttpInputStream) result) {
          assertEquals(ContentType.PNG, stream.getType());
@@ -82,7 +81,7 @@ public class StaticResponderTest {
       HttpRequest request = mockRequest(GET, "/missing.png");
       RouteMatch route = mock(RouteMatch.class);
 
-      Object result = responder.invoke(app, request, route);
+      Object result = responder.invoke(info, request, route);
       assertEquals("Tested", result);
    }
 
@@ -91,7 +90,7 @@ public class StaticResponderTest {
       HttpRequest request = mockRequest(GET, "/sample.png");
       RouteMatch route = mock(RouteMatch.class);
 
-      Object result = responder.invoke(app, request, route);
+      Object result = responder.invoke(info, request, route);
       assertEquals("Tested", result);
    }
 
@@ -100,7 +99,7 @@ public class StaticResponderTest {
       HttpRequest request = mockRequest(POST, "/missing.png");
       RouteMatch route = new MethodNotAllowedException();
 
-      Object result = responder.invoke(app, request, route);
+      Object result = responder.invoke(info, request, route);
       assertEquals("Tested", result);
    }
 
@@ -109,7 +108,7 @@ public class StaticResponderTest {
       HttpRequest request = mockRequest(GET, "/sample.random");
       RouteMatch route = new MethodNotAllowedException();
 
-      Object result = responder.invoke(app, request, route);
+      Object result = responder.invoke(info, request, route);
       assertTrue(result instanceof HttpInputStream);
       try (HttpInputStream stream = (HttpInputStream) result) {
          assertEquals("random/test", stream.getType());

@@ -22,7 +22,8 @@
  */
 package com.lmpessoa.services.core.hosting;
 
-import com.lmpessoa.services.core.services.Reuse;
+import static com.lmpessoa.services.core.services.Reuse.ALWAYS;
+
 import com.lmpessoa.services.core.services.Service;
 
 /**
@@ -49,7 +50,7 @@ import com.lmpessoa.services.core.services.Service;
  * is not used since the Application Server is not started.
  * </p>
  */
-@Service(Reuse.ALWAYS)
+@Service(reuse = ALWAYS)
 public interface IHostEnvironment {
 
    /**
@@ -63,7 +64,7 @@ public interface IHostEnvironment {
     * Returns whether this application is running in a development environment.
     *
     * @return <code>true</code> if this application is running in a development environment,
-    * <code>false</code> otherwise.
+    *         <code>false</code> otherwise.
     */
    default boolean isDevelopment() {
       return "Development".equalsIgnoreCase(getName());
@@ -73,7 +74,7 @@ public interface IHostEnvironment {
     * Returns whether this application is running in a staging/testing environment.
     *
     * @return <code>true</code> if this application is running in a stating/testing environment,
-    * <code>false</code> otherwise.
+    *         <code>false</code> otherwise.
     */
    default boolean isStaging() {
       return "Staging".equalsIgnoreCase(getName());
@@ -83,7 +84,7 @@ public interface IHostEnvironment {
     * Returns whether this application is running in a production environment.
     *
     * @return <code>true</code> if this application is running in a production environment,
-    * <code>false</code> otherwise.
+    *         <code>false</code> otherwise.
     */
    default boolean isProduction() {
       return "Production".equalsIgnoreCase(getName());

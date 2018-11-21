@@ -35,11 +35,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.lmpessoa.services.core.hosting.ForbiddenException;
-import com.lmpessoa.services.core.hosting.IdentityResponder;
-import com.lmpessoa.services.core.hosting.NextResponder;
-import com.lmpessoa.services.core.hosting.NextResponderImpl;
-import com.lmpessoa.services.core.hosting.UnauthorizedException;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.security.AllowAnonymous;
 import com.lmpessoa.services.core.security.Authorize;
@@ -58,6 +53,7 @@ public class IdentityResponderTest {
    private static IIdentity identity;
 
    private IdentityResponder responder;
+   private ApplicationOptions app;
    private ServiceMap services;
    private NextResponder next;
    private RouteMatch match;
@@ -71,9 +67,10 @@ public class IdentityResponderTest {
 
    @Before
    public void setup() {
-      services = new ServiceMap();
+      app = new ApplicationOptions(null);
+      services = app.getServices();
       services.put(IIdentity.class, (Supplier<IIdentity>) () -> identity);
-      next = new NextResponderImpl(services, Arrays.asList(TestResponder.class));
+      next = new NextResponderImpl(services, Arrays.asList(TestResponder.class), app);
       responder = new IdentityResponder(next);
    }
 

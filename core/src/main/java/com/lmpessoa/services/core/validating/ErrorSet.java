@@ -36,7 +36,6 @@ import javax.validation.ConstraintViolation;
 import javax.validation.ElementKind;
 import javax.validation.Path;
 import javax.validation.Path.Node;
-import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 import com.lmpessoa.services.core.validating.ErrorSet.Message;
 import com.lmpessoa.services.core.validating.PathNode.ExecutablePathNode;
@@ -44,21 +43,20 @@ import com.lmpessoa.services.util.ClassUtils;
 
 /**
  * Represents errors in an object validation.
+ *
  * <p>
  * Objects received through the body of an HTTP request may contain a validation method which will
  * ensure the object received is valid. Instances of {@code ErrorSet} are passed to his validation
  * method to hold error messages that arise from such validation.
  * </p>
+ *
  * <p>
  * In order for objects to be validated, classes must implement a {@code validate(ErrorSet)} method.
  * Developers may also choose to implement the {@link Validable} interface, which will only provide
  * the correctly required method signature for {@code validate()}. The implementation of the
  * interface is not mandatory.
  * </p>
- *
- * @see Validable
  */
-@XmlJavaTypeAdapter(XmlErrorSetAdapter.class)
 public final class ErrorSet implements Iterable<Message> {
 
    static final ErrorSet EMPTY = new ErrorSet(Collections.<Violation>emptySet());

@@ -94,6 +94,9 @@ public abstract class Serializer {
     * @return a representation of the given object with the used format.
     */
    public static HttpInputStream fromObject(Object object, String[] accepts) {
+      if (accepts.length == 0) {
+         accepts = new String[] { ContentType.JSON };
+      }
       for (String contentType : accepts) {
          Serializer ser = instanceOf(contentType);
          if (ser != null) {

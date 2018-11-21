@@ -24,13 +24,16 @@ package com.lmpessoa.services.core.hosting;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
 import java.util.List;
 
 import com.lmpessoa.services.core.services.NoSingleMethodException;
 import com.lmpessoa.services.core.services.ServiceMap;
+import com.lmpessoa.services.util.ClassUtils;
 
 final class NextResponderImpl implements NextResponder {
 
+   private final ApplicationOptions options;
    private final List<Class<?>> handlers;
    private final ServiceMap services;
 
@@ -46,10 +49,16 @@ final class NextResponderImpl implements NextResponder {
       if (handlerClass == null) {
          return null;
       }
-      NextResponder next = new NextResponderImpl(services, handlers.subList(1, handlers.size()));
+      NextResponder next = new NextResponderImpl(services, handlers.subList(1, handlers.size()),
+               options);
       try {
-         Constructor<?> constructor = handlerClass.getConstructor(NextResponder.class);
-         Object handler = constructor.newInstance(next);
+         Constructor<?> constructor = findConstructor(handlerClass);
+         Object[] params = new Object[] { next };
+         if (constructor.getParameterCount() == 2) {
+            params = Arrays.copyOf(params, 2);
+            params[1] = options;
+         }
+         Object handler = constructor.newInstance(params);
          return invokeService(handler);
       } catch (InvocationTargetException e) {
          if (e.getCause() instanceof HttpException) {
@@ -64,13 +73,23 @@ final class NextResponderImpl implements NextResponder {
       }
    }
 
-   NextResponderImpl(ServiceMap services, List<Class<?>> handlers) {
+   NextResponderImpl(ServiceMap services, List<Class<?>> handlers, ApplicationOptions options) {
       this.services = services;
       this.handlers = handlers;
+      this.options = options;
    }
 
-   private Object invokeService(Object obj)
-      throws IllegalAccessException, InvocationTargetException, NoSingleMethodException, InstantiationException {
+   private Constructor<?> findConstructor(Class<?> handlerClass) {
+      Constructor<?> result = ClassUtils.getConstructor(handlerClass, NextResponder.class,
+               ApplicationOptions.class);
+      if (result == null) {
+         result = ClassUtils.getConstructor(handlerClass, NextResponder.class);
+      }
+      return result;
+   }
+
+   private Object invokeService(Object obj) throws IllegalAccessException,
+      InvocationTargetException, NoSingleMethodException, InstantiationException {
       try {
          return services.invoke(obj, "invoke");
       } catch (InvocationTargetException e) {
