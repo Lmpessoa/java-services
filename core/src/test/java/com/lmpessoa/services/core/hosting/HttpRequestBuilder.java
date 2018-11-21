@@ -23,6 +23,7 @@
 package com.lmpessoa.services.core.hosting;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -36,6 +37,7 @@ public final class HttpRequestBuilder {
    private Map<String, List<String>> headers = new HashMap<>();
    private Map<String, String> cookies = new HashMap<>();
    private HttpMethod method = HttpMethod.GET;
+   private String version = "1.1";
    private String query = null;
    private String path = null;
    private String body = null;
@@ -52,6 +54,11 @@ public final class HttpRequestBuilder {
 
    public HttpRequestBuilder setQueryString(String query) {
       this.query = query;
+      return this;
+   }
+
+   public HttpRequestBuilder setVersion(String version) {
+      this.version = version;
       return this;
    }
 
@@ -90,12 +97,16 @@ public final class HttpRequestBuilder {
          result.append('?');
          result.append(query);
       }
-      result.append(" HTTP/1.1\r\n");
+      result.append(" HTTP/");
+      result.append(version);
+      result.append("\r\n");
       headers.entrySet().stream().forEach(e -> {
-         result.append(e.getKey());
-         result.append(": ");
-         result.append(e.getValue());
-         result.append("\r\n");
+         e.getValue().stream().forEach(v -> {
+            result.append(e.getKey());
+            result.append(": ");
+            result.append(v);
+            result.append("\r\n");
+         });
       });
       if (body != null) {
          result.append("\r\n");
@@ -104,55 +115,7 @@ public final class HttpRequestBuilder {
       return new ByteArrayInputStream(result.toString().getBytes());
    }
 
-   public HttpRequest build() {
-      return new HttpRequest() {
-
-         @Override
-         public HttpMethod getMethod() {
-            return method;
-         }
-
-         @Override
-         public String getPath() {
-            return path;
-         }
-
-         @Override
-         public String getProtocol() {
-            return "HTTP/1.1";
-         }
-
-         @Override
-         public String getQueryString() {
-            return query;
-         }
-
-         @Override
-         public long getContentLength() {
-            try {
-               return Long.parseLong(headers.get(Headers.CONTENT_LENGTH).get(0));
-            } catch (Exception e) {
-               return 0;
-            }
-         }
-
-         @Override
-         public String getContentType() {
-            return headers.get(Headers.CONTENT_TYPE).get(0);
-         }
-
-         @Override
-         public InputStream getBody() {
-            if (getContentLength() == 0) {
-               return null;
-            }
-            return new ByteArrayInputStream(body.getBytes());
-         }
-
-         @Override
-         public HeaderMap getHeaders() {
-            return new HeaderMap(headers);
-         }
-      };
+   public HttpRequest build() throws IOException {
+      return new HttpRequestImpl(buildAsStream());
    }
 }

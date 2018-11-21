@@ -25,6 +25,7 @@ package com.lmpessoa.services.core.serializing;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Function;
@@ -35,16 +36,17 @@ import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
 import com.lmpessoa.services.core.hosting.IApplicationInfo;
-import com.lmpessoa.services.core.serializing.JsonSerializer.AppInfoSerialiser;
 import com.lmpessoa.services.core.services.HealthStatus;
 import com.lmpessoa.services.core.validating.ErrorSet;
 import com.lmpessoa.services.util.ClassUtils;
 
 final class XmlSerializer extends Serializer {
 
-   private static final Map<Class<?>, Function<Object, Object>> adapters = new HashMap<>();
    private static final Map<Class<?>, String> types = new HashMap<>();
    private static final String XML_HEAD = "<?xml version=\"1.0\"?>";
+
+   private final Map<Class<?>, Function<Object, Object>> adapters = new HashMap<>();
+   private final Locale[] locales;
 
    static {
       types.put(String.class, "string");
@@ -55,9 +57,12 @@ final class XmlSerializer extends Serializer {
       types.put(Double.class, "double");
       types.put(Float.class, "float");
       types.put(Boolean.class, "boolean");
+   }
 
-      adapters.put(ErrorSet.class, XmlSerializer::adaptErrorSet);
-      adapters.put(IApplicationInfo.class, XmlSerializer::adaptAppInfo);
+   public XmlSerializer(Locale[] locales) {
+      this.locales = locales;
+      adapters.put(ErrorSet.class, this::adaptErrorSet);
+      adapters.put(IApplicationInfo.class, this::adaptAppInfo);
    }
 
    @Override
@@ -84,14 +89,13 @@ final class XmlSerializer extends Serializer {
          try {
             result = produceObject(object);
          } catch (JAXBException e) {
-            e.printStackTrace();
             result = null;
          }
       }
       return result;
    }
 
-   private static XmlErrorSet adaptErrorSet(Object obj) {
+   private XmlErrorSet adaptErrorSet(Object obj) {
       if (!(obj instanceof ErrorSet)) {
          return null;
       }
@@ -100,14 +104,14 @@ final class XmlSerializer extends Serializer {
       errors.forEach(m -> {
          XmlErrorSet.MessageEntry entry = new XmlErrorSet.MessageEntry();
          entry.invalidValue = m.getInvalidValue();
-         entry.message = m.getValue();
+         entry.message = m.getMessage(locales);
          entry.path = m.getPathEntry();
          result.error.add(entry);
       });
       return result;
    }
 
-   private static XmlAppInfo adaptAppInfo(Object obj) {
+   private XmlAppInfo adaptAppInfo(Object obj) {
       if (!(obj instanceof IApplicationInfo)) {
          return null;
       }
@@ -117,7 +121,7 @@ final class XmlSerializer extends Serializer {
       result.status = HealthStatus.OK;
       for (Entry<Class<?>, HealthStatus> entry : info.getServiceHealth().entrySet()) {
          XmlAppInfo.ServiceStatus ss = new XmlAppInfo.ServiceStatus();
-         ss.name = AppInfoSerialiser.getServiceName(entry.getKey());
+         ss.name = JsonSerializer.getServiceName(entry.getKey());
          ss.status = entry.getValue();
          result.service.add(ss);
          if (ss.status != HealthStatus.OK) {

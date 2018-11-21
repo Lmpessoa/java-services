@@ -41,6 +41,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalDouble;
@@ -74,11 +75,15 @@ import javax.validation.constraints.Size;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.lmpessoa.services.core.validating.ErrorSet.Message;
+import com.lmpessoa.services.core.validating.ErrorSet.Entry;
 
-public class ContraintValidationTest {
+public class ConstraintValidationTest {
 
    private IValidationService validator = new ValidationService();
+
+   static {
+      Locale.setDefault(Locale.forLanguageTag("en-GB"));
+   }
 
    @Before
    public void setup() {
@@ -108,10 +113,10 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.Null.message}", error.getTemplate());
-      assertEquals("must be null", error.getValue());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.Null.message}", error.getMessageTemplate());
+      assertEquals("must be null", error.getMessage());
       assertEquals("<java.lang.Object>", error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -136,10 +141,10 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.Null.message}", error.getTemplate());
-      assertEquals("must be null", error.getValue());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.Null.message}", error.getMessageTemplate());
+      assertEquals("must be null", error.getMessage());
       assertEquals("1.0", error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -164,10 +169,10 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.NotNull.message}", error.getTemplate());
-      assertEquals("must not be null", error.getValue());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.NotNull.message}", error.getMessageTemplate());
+      assertEquals("must not be null", error.getMessage());
       assertSame("null", error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -192,10 +197,10 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.NotNull.message}", error.getTemplate());
-      assertEquals("must not be null", error.getValue());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.NotNull.message}", error.getMessageTemplate());
+      assertEquals("must not be null", error.getMessage());
       assertSame("null", error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -220,10 +225,10 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.AssertTrue.message}", error.getTemplate());
-      assertEquals("must be true", error.getValue());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.AssertTrue.message}", error.getMessageTemplate());
+      assertEquals("must be true", error.getMessage());
       assertEquals("false", error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -258,10 +263,11 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.AssertFalse.message}", error.getTemplate());
-      assertEquals("must be false", error.getValue());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.AssertFalse.message}",
+               error.getMessageTemplate());
+      assertEquals("must be false", error.getMessage());
       assertEquals("true", error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -296,10 +302,10 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.Min.message}", error.getTemplate());
-      assertEquals("must be greater than or equal to 7", error.getValue());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.Min.message}", error.getMessageTemplate());
+      assertEquals("must be greater than or equal to 7", error.getMessage());
       assertEquals("6", error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -377,10 +383,10 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.Max.message}", error.getTemplate());
-      assertEquals("must be less than or equal to 7", error.getValue());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.Max.message}", error.getMessageTemplate());
+      assertEquals("must be less than or equal to 7", error.getMessage());
       assertEquals("8", error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -458,10 +464,10 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.DecimalMin.message}", error.getTemplate());
-      assertEquals("must be greater than or equal to 7", error.getValue());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.DecimalMin.message}", error.getMessageTemplate());
+      assertEquals("must be greater than or equal to 7", error.getMessage());
       assertEquals("6", error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -475,10 +481,10 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.DecimalMin.message}", error.getTemplate());
-      assertEquals("must be greater than or equal to 7", error.getValue());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.DecimalMin.message}", error.getMessageTemplate());
+      assertEquals("must be greater than or equal to 7", error.getMessage());
       assertEquals("7", error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -535,10 +541,10 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.DecimalMax.message}", error.getTemplate());
-      assertEquals("must be less than or equal to 7", error.getValue());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.DecimalMax.message}", error.getMessageTemplate());
+      assertEquals("must be less than or equal to 7", error.getMessage());
       assertEquals("8", error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -552,10 +558,10 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.DecimalMax.message}", error.getTemplate());
-      assertEquals("must be less than or equal to 7", error.getValue());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.DecimalMax.message}", error.getMessageTemplate());
+      assertEquals("must be less than or equal to 7", error.getMessage());
       assertEquals("7", error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -612,10 +618,10 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.Negative.message}", error.getTemplate());
-      assertEquals("must be less than 0", error.getValue());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.Negative.message}", error.getMessageTemplate());
+      assertEquals("must be less than 0", error.getMessage());
       assertEquals("1", error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -629,10 +635,10 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.Negative.message}", error.getTemplate());
-      assertEquals("must be less than 0", error.getValue());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.Negative.message}", error.getMessageTemplate());
+      assertEquals("must be less than 0", error.getMessage());
       assertEquals("0", error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -689,10 +695,11 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.NegativeOrZero.message}", error.getTemplate());
-      assertEquals("must be less than or equal to 0", error.getValue());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.NegativeOrZero.message}",
+               error.getMessageTemplate());
+      assertEquals("must be less than or equal to 0", error.getMessage());
       assertEquals("1", error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -760,10 +767,10 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.Positive.message}", error.getTemplate());
-      assertEquals("must be greater than 0", error.getValue());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.Positive.message}", error.getMessageTemplate());
+      assertEquals("must be greater than 0", error.getMessage());
       assertEquals("-1", error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -777,10 +784,10 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.Positive.message}", error.getTemplate());
-      assertEquals("must be greater than 0", error.getValue());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.Positive.message}", error.getMessageTemplate());
+      assertEquals("must be greater than 0", error.getMessage());
       assertEquals("0", error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -837,10 +844,11 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.PositiveOrZero.message}", error.getTemplate());
-      assertEquals("must be greater than or equal to 0", error.getValue());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.PositiveOrZero.message}",
+               error.getMessageTemplate());
+      assertEquals("must be greater than or equal to 0", error.getMessage());
       assertEquals("-1", error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -908,10 +916,10 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.Size.message}", error.getTemplate());
-      assertEquals("size must be between 7 and " + Integer.MAX_VALUE, error.getValue());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.Size.message}", error.getMessageTemplate());
+      assertEquals("size must be between 7 and " + Integer.MAX_VALUE, error.getMessage());
       assertEquals("123456", error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -936,10 +944,10 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.Size.message}", error.getTemplate());
-      assertEquals("size must be between 0 and 7", error.getValue());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.Size.message}", error.getMessageTemplate());
+      assertEquals("size must be between 0 and 7", error.getMessage());
       assertEquals("12345678", error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -1010,11 +1018,11 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.Digits.message}", error.getTemplate());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.Digits.message}", error.getMessageTemplate());
       assertEquals("numeric value out of bounds (<3 digits>.<0 digits> expected)",
-               error.getValue());
+               error.getMessage());
       assertEquals("1000", error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -1039,11 +1047,11 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.Digits.message}", error.getTemplate());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.Digits.message}", error.getMessageTemplate());
       assertEquals("numeric value out of bounds (<3 digits>.<3 digits> expected)",
-               error.getValue());
+               error.getMessage());
       assertEquals("123.4567", error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -1090,10 +1098,10 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.Past.message}", error.getTemplate());
-      assertEquals("must be a past date", error.getValue());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.Past.message}", error.getMessageTemplate());
+      assertEquals("must be a past date", error.getMessage());
       assertEquals(innerValue.toString(), error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -1108,10 +1116,10 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.Past.message}", error.getTemplate());
-      assertEquals("must be a past date", error.getValue());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.Past.message}", error.getMessageTemplate());
+      assertEquals("must be a past date", error.getMessage());
       assertEquals(innerValue.toString(), error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -1181,10 +1189,11 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.PastOrPresent.message}", error.getTemplate());
-      assertEquals("must be a date in the past or in the present", error.getValue());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.PastOrPresent.message}",
+               error.getMessageTemplate());
+      assertEquals("must be a date in the past or in the present", error.getMessage());
       assertEquals(innerValue.toString(), error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -1265,10 +1274,10 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.Future.message}", error.getTemplate());
-      assertEquals("must be a future date", error.getValue());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.Future.message}", error.getMessageTemplate());
+      assertEquals("must be a future date", error.getMessage());
       assertEquals(innerValue.toString(), error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -1283,10 +1292,10 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.Future.message}", error.getTemplate());
-      assertEquals("must be a future date", error.getValue());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.Future.message}", error.getMessageTemplate());
+      assertEquals("must be a future date", error.getMessage());
       assertEquals(innerValue.toString(), error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -1356,10 +1365,11 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.FutureOrPresent.message}", error.getTemplate());
-      assertEquals("must be a date in the present or in the future", error.getValue());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.FutureOrPresent.message}",
+               error.getMessageTemplate());
+      assertEquals("must be a date in the present or in the future", error.getMessage());
       assertEquals(innerValue.toString(), error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -1439,10 +1449,10 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.Pattern.message}", error.getTemplate());
-      assertEquals("must match \"[A-Z]{2}[0-9]{9}[A-Z]{2}\"", error.getValue());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.Pattern.message}", error.getMessageTemplate());
+      assertEquals("must match \"[A-Z]{2}[0-9]{9}[A-Z]{2}\"", error.getMessage());
       assertEquals("Al1376CA", error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -1477,10 +1487,10 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.NotEmpty.message}", error.getTemplate());
-      assertEquals("must not be empty", error.getValue());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.NotEmpty.message}", error.getMessageTemplate());
+      assertEquals("must not be empty", error.getMessage());
       assertEquals("", error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -1550,10 +1560,10 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.NotBlank.message}", error.getTemplate());
-      assertEquals("must not be blank", error.getValue());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.NotBlank.message}", error.getMessageTemplate());
+      assertEquals("must not be blank", error.getMessage());
       assertEquals("    ", error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }
@@ -1599,10 +1609,10 @@ public class ContraintValidationTest {
       };
       ErrorSet result = validator.validate(object);
       assertFalse(result.isEmpty());
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.Email.message}", error.getTemplate());
-      assertEquals("must be a well-formed email address", error.getValue());
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.Email.message}", error.getMessageTemplate());
+      assertEquals("must be a well-formed email address", error.getMessage());
       assertEquals("@Lmpessoa", error.getInvalidValue());
       assertFalse(iterator.hasNext());
    }

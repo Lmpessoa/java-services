@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -69,13 +70,13 @@ final class HttpRequestImpl implements HttpRequest {
 
    @Override
    public long getContentLength() {
-      String length = getHeaders().get("Content-Length");
+      String length = getHeaders().get(Headers.CONTENT_LENGTH);
       return length != null ? Long.parseLong(length) : 0;
    }
 
    @Override
    public String getContentType() {
-      return getHeaders().get("Content-Type");
+      return getHeaders().get(Headers.CONTENT_TYPE);
    }
 
    @Override
@@ -89,6 +90,18 @@ final class HttpRequestImpl implements HttpRequest {
    @Override
    public HeaderMap getHeaders() {
       return headers;
+   }
+
+   @Override
+   public Locale[] getAcceptedLanguages() {
+      String langs = getHeaders().get(Headers.ACCEPT_LANGUAGE);
+      if (langs == null) {
+         return new Locale[0];
+      }
+      return Arrays.stream(langs.split(",")) //
+               .map(s -> s.split(";")[0].trim())
+               .map(Locale::forLanguageTag)
+               .toArray(Locale[]::new);
    }
 
    @Override

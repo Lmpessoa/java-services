@@ -22,11 +22,13 @@
  */
 package com.lmpessoa.services.core.serializing;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import com.lmpessoa.services.core.hosting.ContentType;
@@ -35,6 +37,7 @@ import com.lmpessoa.services.core.hosting.HttpInputStream;
 import com.lmpessoa.services.core.hosting.InternalServerError;
 import com.lmpessoa.services.core.hosting.NotAcceptableException;
 import com.lmpessoa.services.core.hosting.UnsupportedMediaTypeException;
+import com.lmpessoa.services.util.ClassUtils;
 
 /**
  * Represents a serialisation format.
@@ -93,16 +96,16 @@ public abstract class Serializer {
     * @param accepts a list of content types into which the object is accepted to be converted.
     * @return a representation of the given object with the used format.
     */
-   public static HttpInputStream fromObject(Object object, String[] accepts) {
+   public static HttpInputStream fromObject(Object object, String[] accepts, Locale[] locales) {
       if (accepts.length == 0) {
          accepts = new String[] { ContentType.JSON };
       }
       for (String contentType : accepts) {
-         Serializer ser = instanceOf(contentType);
+         Serializer ser = instanceOf(contentType, locales);
          if (ser != null) {
             String result = ser.write(object);
             if (result != null) {
-               return new HttpInputStream(contentType, result.getBytes(StandardCharsets.UTF_8),
+               return new HttpInputStream(result.getBytes(StandardCharsets.UTF_8), contentType,
                         StandardCharsets.UTF_8);
             }
          }
@@ -164,9 +167,14 @@ public abstract class Serializer {
                || Modifier.isVolatile(modifiers);
    }
 
-   private static Serializer instanceOf(String contentType) {
+   private static Serializer instanceOf(String contentType, Locale... locales) {
       Class<? extends Serializer> clazz = handlers.get(contentType);
       try {
+         Constructor<? extends Serializer> constructor = ClassUtils.getConstructor(clazz,
+                  Locale[].class);
+         if (constructor != null) {
+            return constructor.newInstance(new Object[] { locales });
+         }
          return clazz.newInstance();
       } catch (Exception e) {
          return null;

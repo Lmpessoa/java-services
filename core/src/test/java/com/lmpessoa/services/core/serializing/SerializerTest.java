@@ -30,6 +30,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.Locale;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
@@ -47,11 +48,16 @@ public final class SerializerTest {
    @Rule
    public ExpectedException thrown = ExpectedException.none();
 
+   static {
+      Locale.setDefault(Locale.forLanguageTag("en-GB"));
+   }
+
    @Test
    public void testParseJson() {
       String content = "{\"id\": 12, \"name\": \"Test\", \"email\": "
                + "[ \"test@test.com\", \"test@test.org\" ], \"checked\": true}";
-      TestObject result = Serializer.toObject(content.getBytes(), ContentType.JSON, TestObject.class);
+      TestObject result = Serializer.toObject(content.getBytes(), ContentType.JSON,
+               TestObject.class);
       assertNotNull(result);
       assertEquals(12, result.id);
       assertEquals("Test", result.name);
@@ -73,7 +79,8 @@ public final class SerializerTest {
       Serializer.enableXml(true);
       String content = "<?xml version=\"1.0\"?><object><id>12</id><name>Test</name>"
                + "<email>test@test.com</email><email>test@test.org</email><checked>true</checked></object>";
-      TestObject result = Serializer.toObject(content.getBytes(), ContentType.XML, TestObject.class);
+      TestObject result = Serializer.toObject(content.getBytes(), ContentType.XML,
+               TestObject.class);
       assertNotNull(result);
       assertEquals(12, result.id);
       assertEquals("Test", result.name);
@@ -84,7 +91,8 @@ public final class SerializerTest {
    @Test
    public void testParseForm() {
       String content = "id=12&name=Test&email=test%40test.com&email=test%40test.org&checked=true";
-      TestObject result = Serializer.toObject(content.getBytes(), ContentType.FORM, TestObject.class);
+      TestObject result = Serializer.toObject(content.getBytes(), ContentType.FORM,
+               TestObject.class);
       assertNotNull(result);
       assertEquals(12, result.id);
       assertEquals("Test", result.name);
@@ -96,13 +104,14 @@ public final class SerializerTest {
    public void testProduceXmlFails() {
       thrown.expect(NotAcceptableException.class);
       Serializer.enableXml(false);
-      assertNull(Serializer.fromObject("Test", new String[] { ContentType.XML }));
+      assertNull(Serializer.fromObject("Test", new String[] { ContentType.XML }, null));
    }
 
    @Test
    public void testProduceXmlString() throws IOException {
       Serializer.enableXml(true);
-      HttpInputStream result = Serializer.fromObject("Test", new String[] { ContentType.XML });
+      HttpInputStream result = Serializer.fromObject("Test", new String[] { ContentType.XML },
+               null);
       byte[] data = new byte[result.available()];
       result.read(data);
       String content = new String(data, Charset.forName("UTF-8"));
@@ -112,7 +121,7 @@ public final class SerializerTest {
    @Test
    public void testProduceXmlInt() throws IOException {
       Serializer.enableXml(true);
-      HttpInputStream result = Serializer.fromObject(12, new String[] { ContentType.XML });
+      HttpInputStream result = Serializer.fromObject(12, new String[] { ContentType.XML }, null);
       byte[] data = new byte[result.available()];
       result.read(data);
       String content = new String(data, Charset.forName("UTF-8"));
@@ -122,7 +131,8 @@ public final class SerializerTest {
    @Test
    public void testProduceXmlException() throws IOException {
       Serializer.enableXml(true);
-      HttpInputStream result = Serializer.fromObject(new NullPointerException(), new String[] { ContentType.XML });
+      HttpInputStream result = Serializer.fromObject(new NullPointerException(),
+               new String[] { ContentType.XML }, null);
       byte[] data = new byte[result.available()];
       result.read(data);
       String content = new String(data, Charset.forName("UTF-8"));

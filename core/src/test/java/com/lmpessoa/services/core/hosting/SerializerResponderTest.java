@@ -48,7 +48,8 @@ import com.lmpessoa.services.util.logging.NullHandler;
 public class SerializerResponderTest {
 
    private static final String TEST_URL = "https://lmpessoa.com/test";
-   private static final ConnectionInfo connect = new ConnectionInfo(mock(Socket.class), "https://lmpessoa.com/");
+   private static final ConnectionInfo connect = new ConnectionInfo(mock(Socket.class),
+            "https://lmpessoa.com/");
    private static final ILogger log = new Logger(new NullHandler());
 
    private HttpRequest request;
@@ -69,7 +70,8 @@ public class SerializerResponderTest {
       assertEquals(200, result.getStatusCode());
       assertEquals(ContentType.TEXT, result.getInputStream().getType());
       assertEquals("UTF-8", result.getInputStream().getEncoding().name());
-      String str = new String(readStreamContent(result.getInputStream()), result.getInputStream().getEncoding());
+      String str = new String(readStreamContent(result.getInputStream()),
+               result.getInputStream().getEncoding());
       assertEquals("success", str);
    }
 
@@ -99,17 +101,22 @@ public class SerializerResponderTest {
    }
 
    @Test
-   @ContentType(ContentType.TEXT)
    public void testBinaryResultWithContentType() throws IOException, NoSuchMethodException {
-      next = () -> new byte[] { 115, 117, 99, 99, 101, 115, 115 };
+      next = this::getResultWithContentType;
       handler = new SerializerResponder(next);
       RouteMatch route = mock(RouteMatch.class);
-      when(route.getMethod()).thenReturn(SerializerResponderTest.class.getMethod("testBinaryResultWithContentType"));
+      when(route.getMethod())
+               .thenReturn(SerializerResponderTest.class.getMethod("getResultWithContentType"));
       HttpResult result = handler.invoke(request, route, connect, log);
       assertEquals(200, result.getStatusCode());
       assertEquals(ContentType.TEXT, result.getInputStream().getType());
       String str = new String(readStreamContent(result.getInputStream()));
       assertEquals("success", str);
+   }
+
+   @ContentType(ContentType.TEXT)
+   public byte[] getResultWithContentType() {
+      return new byte[] { 115, 117, 99, 99, 101, 115, 115 };
    }
 
    @Test

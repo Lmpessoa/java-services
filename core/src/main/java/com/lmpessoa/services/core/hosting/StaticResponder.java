@@ -55,7 +55,7 @@ final class StaticResponder {
             String extension = path.substring(path.lastIndexOf('.') + 1);
             String mimetype = getMimeTypeFromExtension(extension, startupClass);
             try {
-               return new HttpInputStream(mimetype, resource.openStream());
+               return new HttpInputStream(resource.openStream(), mimetype);
             } catch (IOException e) {
                throw new InternalServerError(e);
             }

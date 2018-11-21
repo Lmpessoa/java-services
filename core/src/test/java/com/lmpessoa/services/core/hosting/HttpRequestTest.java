@@ -27,6 +27,7 @@ import static com.lmpessoa.services.core.routing.HttpMethod.PUT;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
+import java.util.Locale;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -47,6 +48,7 @@ public final class HttpRequestTest {
       assertEquals(GET, request.getMethod());
       assertEquals("/path/file.html", request.getPath());
       assertEquals("someuser@jmarshall.com", request.getHeaders().get("From"));
+      assertEquals("HTTPTool/1.0", request.getHeaders().get(Headers.USER_AGENT));
    }
 
    @Test
@@ -55,6 +57,7 @@ public final class HttpRequestTest {
       assertEquals(GET, request.getMethod());
       assertEquals("/path/file.html", request.getPath());
       assertEquals("https://lmpessoa.com", request.getHeaders().get(Headers.HOST));
+      assertEquals("HTTPTool/1.0", request.getHeaders().get(Headers.USER_AGENT));
    }
 
    @Test
@@ -62,7 +65,8 @@ public final class HttpRequestTest {
       HttpRequest request = getRequest("json_put_request.txt");
       assertEquals(PUT, request.getMethod());
       assertEquals("/api/2.2/auth/signin", request.getPath());
-      assertEquals("application/json", request.getContentType());
+      assertEquals(ContentType.JSON, request.getContentType());
+      assertEquals("my-server", request.getHeaders().get(Headers.HOST));
       assertEquals(129, request.getBody().available());
    }
 
@@ -76,5 +80,28 @@ public final class HttpRequestTest {
    public void testPayloadTooLargeRequest() throws IOException {
       thrown.expect(PayloadTooLargeException.class);
       getRequest("large_payload_request.txt");
+   }
+
+   @Test
+   public void testAcceptLanguageRequest() throws IOException {
+      HttpRequest request = getRequest("accept_lang_request.txt");
+      assertEquals(GET, request.getMethod());
+      assertEquals("/path/file.html", request.getPath());
+      assertEquals("da, de-at; q=0.9, en-gb; q=0.8, en; g=0.7",
+               request.getHeaders().get(Headers.ACCEPT_LANGUAGE));
+      Locale[] langs = request.getAcceptedLanguages();
+      assertEquals(4, langs.length);
+
+      assertEquals("da", langs[0].getLanguage());
+      assertEquals("", langs[0].getCountry());
+
+      assertEquals("de", langs[1].getLanguage());
+      assertEquals("AT", langs[1].getCountry());
+
+      assertEquals("en", langs[2].getLanguage());
+      assertEquals("GB", langs[2].getCountry());
+
+      assertEquals("en", langs[3].getLanguage());
+      assertEquals("", langs[3].getCountry());
    }
 }

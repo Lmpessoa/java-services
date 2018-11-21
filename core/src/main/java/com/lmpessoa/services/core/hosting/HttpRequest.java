@@ -24,6 +24,8 @@ package com.lmpessoa.services.core.hosting;
 
 import static com.lmpessoa.services.core.services.Reuse.REQUEST;
 
+import java.util.Locale;
+
 import com.lmpessoa.services.core.routing.IRouteRequest;
 import com.lmpessoa.services.core.services.Service;
 
@@ -42,6 +44,17 @@ public interface HttpRequest extends IRouteRequest {
     * @return the protocol used with this HTTP request.
     */
    String getProtocol();
+
+   /**
+    * Returns the list of languages accepted by the issuer of this HTTP request.
+    * <p>
+    * This method returns the list of languages set using the {@code Accept-Language} header and
+    * converted to an ordered list of locale representations for normalisation.
+    * </p>
+    *
+    * @return the list of languages accepted by the issuer of this HTTP request.
+    */
+   Locale[] getAcceptedLanguages();
 
    /**
     * Returns the headers associates with this HTTP request.

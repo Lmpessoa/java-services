@@ -102,7 +102,7 @@ final class MultipartFormSerializer extends Serializer {
             value = parseMixedMultipart(entry, contentType);
          } else {
             String filename = disp.get("filename");
-            value = new HttpInputStream(contentType, entry.content, filename);
+            value = new HttpInputStream(entry.content, contentType, filename);
          }
          String name = disp.get("name");
          Field field = findField(name, resultClass);
@@ -139,7 +139,7 @@ final class MultipartFormSerializer extends Serializer {
          }
          String mixedFilename = mixedEntryDisp.get("filename");
          String mixedContentType = mixedEntry.headers.get(Headers.CONTENT_TYPE);
-         result.add(new HttpInputStream(mixedContentType, mixedEntry.content, mixedFilename));
+         result.add(new HttpInputStream(mixedEntry.content, mixedContentType, mixedFilename));
       }
       return result;
    }

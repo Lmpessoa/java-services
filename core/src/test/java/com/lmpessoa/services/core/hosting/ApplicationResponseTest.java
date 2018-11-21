@@ -164,7 +164,7 @@ public final class ApplicationResponseTest {
       @Route("download")
       public HttpInputStream download() {
          Charset utf8 = StandardCharsets.UTF_8;
-         HttpInputStream result = new HttpInputStream(ContentType.TEXT, "Test".getBytes(utf8), utf8,
+         HttpInputStream result = new HttpInputStream("Test".getBytes(utf8), ContentType.TEXT, utf8,
                   "test.txt");
          result.setDownloadable(true);
          return result;

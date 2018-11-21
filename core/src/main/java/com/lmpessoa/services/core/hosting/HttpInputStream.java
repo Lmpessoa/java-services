@@ -71,8 +71,8 @@ public final class HttpInputStream extends InputStream implements AutoCloseable 
     * @param contentType the type of content of this stream.
     * @param content the actual contents of this stream.
     */
-   public HttpInputStream(String contentType, byte[] content) {
-      this(contentType, content, null, null);
+   public HttpInputStream(byte[] content, String contentType) {
+      this(content, contentType, null, null);
    }
 
    /**
@@ -82,8 +82,8 @@ public final class HttpInputStream extends InputStream implements AutoCloseable 
     * @param content the actual contents of this stream.
     * @param filename a suggested file name for when saving this stream to a file.
     */
-   public HttpInputStream(String contentType, byte[] content, String filename) {
-      this(contentType, content, null, filename);
+   public HttpInputStream(byte[] content, String contentType, String filename) {
+      this(content, contentType, null, filename);
    }
 
    /**
@@ -93,8 +93,8 @@ public final class HttpInputStream extends InputStream implements AutoCloseable 
     * @param content the actual contents of this stream.
     * @param charset the charset used to encode the contents of this stream.
     */
-   public HttpInputStream(String contentType, byte[] content, Charset charset) {
-      this(contentType, content, charset, null);
+   public HttpInputStream(byte[] content, String contentType, Charset charset) {
+      this(content, contentType, charset, null);
    }
 
    /**
@@ -105,8 +105,8 @@ public final class HttpInputStream extends InputStream implements AutoCloseable 
     * @param charset the charset used to encode the contents of this stream.
     * @param filename a suggested file name for when saving this stream to a file.
     */
-   public HttpInputStream(String contentType, byte[] content, Charset charset, String filename) {
-      this(contentType, new ByteArrayInputStream(content), charset, filename);
+   public HttpInputStream(byte[] content, String contentType, Charset charset, String filename) {
+      this(new ByteArrayInputStream(content), contentType, charset, filename);
    }
 
    /**
@@ -115,8 +115,8 @@ public final class HttpInputStream extends InputStream implements AutoCloseable 
     * @param contentType the type of content of this stream.
     * @param stream an input stream with the actual contents of this stream.
     */
-   public HttpInputStream(String contentType, InputStream stream) {
-      this(contentType, stream, null, null);
+   public HttpInputStream(InputStream stream, String contentType) {
+      this(stream, contentType, null, null);
    }
 
    /**
@@ -126,8 +126,8 @@ public final class HttpInputStream extends InputStream implements AutoCloseable 
     * @param stream an input stream with the actual contents of this stream.
     * @param filename a suggested file name for when saving this stream to a file.
     */
-   public HttpInputStream(String contentType, InputStream stream, String filename) {
-      this(contentType, stream, null, filename);
+   public HttpInputStream(InputStream stream, String contentType, String filename) {
+      this(stream, contentType, null, filename);
    }
 
    /**
@@ -137,8 +137,8 @@ public final class HttpInputStream extends InputStream implements AutoCloseable 
     * @param stream an input stream with the actual contents of this stream.
     * @param charset the charset used to encode the contents of this stream.
     */
-   public HttpInputStream(String contentType, InputStream stream, Charset charset) {
-      this(contentType, stream, charset, null);
+   public HttpInputStream(InputStream stream, String contentType, Charset charset) {
+      this(stream, contentType, charset, null);
    }
 
    /**
@@ -149,7 +149,8 @@ public final class HttpInputStream extends InputStream implements AutoCloseable 
     * @param charset the charset used to encode the contents of this stream.
     * @param filename a suggested file name for when saving this stream to a file.
     */
-   public HttpInputStream(String contentType, InputStream stream, Charset charset, String filename) {
+   public HttpInputStream(InputStream stream, String contentType, Charset charset,
+      String filename) {
       Map<String, String> values = Headers.split(contentType);
       contentType = values.get("");
       if (values.containsKey("charset")) {
@@ -222,8 +223,8 @@ public final class HttpInputStream extends InputStream implements AutoCloseable 
     *
     * <p>
     * For streams created in method calls, this method will return a suggested file name to be used
-    * when the user agent saves its contents to disk. For streams received from requests, this method
-    * returns the given file name of the uploaded file.
+    * when the user agent saves its contents to disk. For streams received from requests, this
+    * method returns the given file name of the uploaded file.
     * </p>
     *
     * @return the file name associated with this stream.
@@ -236,7 +237,7 @@ public final class HttpInputStream extends InputStream implements AutoCloseable 
     * Returns whether the contents of this stream should be forced to be saved by the user agent.
     *
     * @return <code>true</code> if the user agent should be forced to save this content to a file,
-    * <code>false</code> otherwise.
+    *         <code>false</code> otherwise.
     */
    public boolean isDownloadable() {
       return downloadable;
@@ -245,8 +246,8 @@ public final class HttpInputStream extends InputStream implements AutoCloseable 
    /**
     * Sets whether the contents of this stream should be forced to be saved by the used agent.
     *
-    * @param downloadable <code>true</code> if the user agent should be forced to save this content to
-    * a file, <code>false</code> otherwise.
+    * @param downloadable <code>true</code> if the user agent should be forced to save this content
+    *           to a file, <code>false</code> otherwise.
     */
    public void setDownloadable(boolean downloadable) {
       this.downloadable = downloadable;
@@ -256,14 +257,15 @@ public final class HttpInputStream extends InputStream implements AutoCloseable 
     * Copies the contents of this stream into the given output stream.
     *
     * <p>
-    * Note that this method will copy contents from the current position of the input stream up until
-    * there are no more contents available. If the stream does not support {@link #reset()} this
-    * operation may be executed only once.
+    * Note that this method will copy contents from the current position of the input stream up
+    * until there are no more contents available. If the stream does not support {@link #reset()}
+    * this operation may be executed only once.
     * </p>
     *
     * @param output the output stream to copy the contents to.
-    * @throws IOException if an I/O error occurs. In particular, an <code>IOException</code> is thrown
-    * if either the input or output streams are closed or if the source input stream cannot be read.
+    * @throws IOException if an I/O error occurs. In particular, an <code>IOException</code> is
+    *            thrown if either the input or output streams are closed or if the source input
+    *            stream cannot be read.
     */
    public void sendTo(OutputStream output) throws IOException {
       Objects.requireNonNull(output);

@@ -29,11 +29,13 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 import javax.validation.Constraint;
+import javax.validation.ConstraintValidator;
+import javax.validation.ConstraintValidatorContext;
 import javax.validation.Payload;
 
 @Target(TYPE)
 @Retention(RUNTIME)
-@Constraint(validatedBy = {})
+@Constraint(validatedBy = { AvailableInStore.Validator.class })
 public @interface AvailableInStore {
 
    String message() default "{com.lmpessoa.services.test.validating.AvailableInStore.message}";
@@ -41,4 +43,12 @@ public @interface AvailableInStore {
    Class<?>[] groups() default {};
 
    Class<? extends Payload>[] payload() default {};
+
+   public static class Validator implements ConstraintValidator<AvailableInStore, Book> {
+
+      @Override
+      public boolean isValid(Book value, ConstraintValidatorContext context) {
+         return false;
+      }
+   }
 }

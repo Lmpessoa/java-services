@@ -25,6 +25,7 @@ package com.lmpessoa.services.core.hosting;
 import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.Collection;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -245,6 +246,11 @@ final class Wrapper {
          @Override
          public HeaderMap getHeaders() {
             return original.getHeaders();
+         }
+
+         @Override
+         public Locale[] getAcceptedLanguages() {
+            return original.getAcceptedLanguages();
          }
       };
    }

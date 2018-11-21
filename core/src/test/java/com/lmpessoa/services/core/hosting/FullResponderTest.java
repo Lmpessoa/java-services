@@ -39,6 +39,7 @@ import java.net.Socket;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.function.Supplier;
 
 import javax.validation.Valid;
@@ -89,6 +90,9 @@ public final class FullResponderTest {
 
    @Before
    public void setup() {
+      Serializer.enableXml(false);
+      Locale.setDefault(Locale.forLanguageTag("en-GB"));
+
       ApplicationSettings settings = new ApplicationSettings(FullResponderTest.class, null, null);
       app = new ApplicationOptions(null);
       services = app.getServices();
@@ -237,9 +241,46 @@ public final class FullResponderTest {
       assertNotNull(result.getInputStream());
       assertEquals(ContentType.JSON, result.getInputStream().getType());
       String content = readAll(result.getInputStream());
+      assertEquals("{\"errors\":[{\"path\":\"value.invalid\","
+               + "\"message\":\"must not be null\",\"invalidValue\":\"null\"}]}", content);
+   }
+
+   @Test
+   public void testMediatorWithInvalidParamToJsonLocalised() throws IOException {
+      Locale.setDefault(Locale.forLanguageTag("nl"));
+      HttpResult result = performFile("/http/invalid_patch_request.txt");
+      assertEquals(400, result.getStatusCode());
+      assertNotNull(result.getInputStream());
+      assertEquals(ContentType.JSON, result.getInputStream().getType());
+      String content = readAll(result.getInputStream());
       assertEquals(
                "{\"errors\":[{\"path\":\"value.invalid\","
-                        + "\"message\":\"Some error message\",\"invalidValue\":\"null\"}]}",
+                        + "\"message\":\"mag niet null zijn\",\"invalidValue\":\"null\"}]}",
+               content);
+   }
+
+   @Test
+   public void testMediatorWithInvalidParamToJsonRemoteLocalised() throws IOException {
+      Locale.setDefault(Locale.GERMAN);
+      HttpRequest request = new HttpRequestBuilder() //
+               .setMethod(PATCH)
+               .setPath("/test/invalid")
+               .setHost("my-server")
+               .setContentType(ContentType.JSON)
+               .addHeader(Headers.ACCEPT, "application/xml, application/json")
+               .addHeader(Headers.ACCEPT_LANGUAGE, "nl, de; q=0.9, en; q=0.8")
+               .setBody("{\"id\": 12,\"message\":\"Test\"}")
+               .build();
+      services.put(HttpRequest.class, (Supplier<HttpRequest>) () -> request);
+      route = routes.matches(request);
+      HttpResult result = (HttpResult) app.getFirstResponder().invoke();
+      assertEquals(400, result.getStatusCode());
+      assertNotNull(result.getInputStream());
+      assertEquals(ContentType.JSON, result.getInputStream().getType());
+      String content = readAll(result.getInputStream());
+      assertEquals(
+               "{\"errors\":[{\"path\":\"value.invalid\","
+                        + "\"message\":\"mag niet null zijn\",\"invalidValue\":\"null\"}]}",
                content);
    }
 
@@ -252,12 +293,12 @@ public final class FullResponderTest {
       assertEquals(ContentType.XML, result.getInputStream().getType());
       String content = readAll(result.getInputStream());
       assertEquals("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n" + "<errors>\n"
-               + "  <error path=\"value.invalid\" message=\"Some error message\" invalidValue=\"null\"/>\n"
+               + "  <error path=\"value.invalid\" message=\"must not be null\" invalidValue=\"null\"/>\n"
                + "</errors>\n", content);
    }
 
    @Test
-   public void testMediatorWithoutInvalidParam() {
+   public void testMediatorWithoutInvalidParam() throws IOException {
       HttpResult result = perform(PATCH, "/test/invalid");
       assertEquals(204, result.getStatusCode());
       assertNull(result.getInputStream());
@@ -302,7 +343,7 @@ public final class FullResponderTest {
       assertEquals(StandardCharsets.UTF_8, result.getInputStream().getEncoding());
       String content = readAll(result.getInputStream());
       assertEquals("{\"errors\":[{\"path\":\"content\"," //
-               + "\"message\":\"unexpected content of type\","
+               + "\"message\":\"unexpected content type\","
                + "\"invalidValue\":\"<com.lmpessoa.services.core.hosting.HttpInputStream>\"}]}",
                content);
    }
@@ -370,15 +411,15 @@ public final class FullResponderTest {
                "\\{\"app\":\"fullResponderTest\",\"status\":\"PARTIAL\",\"services\":\\{\"db\":\"FAILED\"},\"uptime\":\\d+,\"memory\":\\d+}"));
    }
 
-   private HttpResult perform(String path) {
+   private HttpResult perform(String path) throws IOException {
       return perform(GET, path);
    }
 
-   private HttpResult perform(HttpMethod method, String path) {
+   private HttpResult perform(HttpMethod method, String path) throws IOException {
       return perform(method, path, null);
    }
 
-   private HttpResult perform(HttpMethod method, String path, String accepts) {
+   private HttpResult perform(HttpMethod method, String path, String accepts) throws IOException {
       HttpRequestBuilder builder = new HttpRequestBuilder().setMethod(method).setPath(path);
       if (accepts != null) {
          builder.addHeader(Headers.ACCEPT, accepts);
@@ -415,7 +456,7 @@ public final class FullResponderTest {
 
    public static class InvalidTestObject extends TestObject {
 
-      @NotNull(message = "Some error message")
+      @NotNull
       private final String invalid = null;
    }
 
@@ -480,7 +521,7 @@ public final class FullResponderTest {
       @Route("result")
       @ContentType(ContentType.ATOM)
       public InputStream result() {
-         return new HttpInputStream(ContentType.YAML, "Test".getBytes());
+         return new HttpInputStream("Test".getBytes(), ContentType.YAML);
       }
 
       @HttpGet

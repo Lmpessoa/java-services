@@ -26,7 +26,7 @@ import java.lang.reflect.Method;
 
 import com.lmpessoa.services.core.routing.BadResponseException;
 import com.lmpessoa.services.core.routing.RouteMatch;
-import com.lmpessoa.services.core.validating.ErrorSet.Message;
+import com.lmpessoa.services.core.validating.ErrorSet;
 import com.lmpessoa.services.util.logging.ILogger;
 
 final class InvokeResponder {
@@ -51,10 +51,10 @@ final class InvokeResponder {
    private static class ErrorMessage extends Throwable {
 
       private static final long serialVersionUID = 1L;
+      private final ErrorSet.Entry error;
       private final Method method;
-      private final Message error;
 
-      public ErrorMessage(Message error, Method method) {
+      public ErrorMessage(ErrorSet.Entry error, Method method) {
          this.method = method;
          this.error = error;
       }
@@ -66,7 +66,7 @@ final class InvokeResponder {
 
       @Override
       public String getMessage() {
-         return String.format("%s: %s (was '%s')", error.getPathEntry(), error.getValue(),
+         return String.format("%s: %s (was '%s')", error.getPathEntry(), error.getMessage(),
                   error.getInvalidValue());
       }
 

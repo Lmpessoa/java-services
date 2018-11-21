@@ -49,7 +49,7 @@ final class FaviconResponder {
          }
          if (iconUrl != null) {
             try {
-               return new HttpInputStream(ContentType.ICO, iconUrl.openStream());
+               return new HttpInputStream(iconUrl.openStream(), ContentType.ICO);
             } catch (IOException e) {
                log.error(e);
             }

@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -37,7 +38,7 @@ import javax.validation.ElementKind;
 import javax.validation.Path;
 import javax.validation.Path.Node;
 
-import com.lmpessoa.services.core.validating.ErrorSet.Message;
+import com.lmpessoa.services.core.validating.ErrorSet.Entry;
 import com.lmpessoa.services.core.validating.PathNode.ExecutablePathNode;
 import com.lmpessoa.services.util.ClassUtils;
 
@@ -57,11 +58,11 @@ import com.lmpessoa.services.util.ClassUtils;
  * interface is not mandatory.
  * </p>
  */
-public final class ErrorSet implements Iterable<Message> {
+public final class ErrorSet implements Iterable<Entry> {
 
    static final ErrorSet EMPTY = new ErrorSet(Collections.<Violation>emptySet());
 
-   private final List<Message> errors;
+   private final List<Entry> errors;
 
    /**
     * Returns whether no error messages have been registered in this set.
@@ -88,7 +89,7 @@ public final class ErrorSet implements Iterable<Message> {
     * @return an iterator over the error messages in this set.
     */
    @Override
-   public Iterator<Message> iterator() {
+   public Iterator<Entry> iterator() {
       return errors.iterator();
    }
 
@@ -97,58 +98,133 @@ public final class ErrorSet implements Iterable<Message> {
     *
     * @return a sequential {@code Stream} over the errors in this set.
     */
-   public Stream<Message> stream() {
+   public Stream<Entry> stream() {
       return errors.stream();
    }
 
    ErrorSet(Collection<Violation> violations) {
-      errors = violations.stream().map(Message::new).collect(Collectors.toList());
+      errors = violations.stream().map(ViolationEntry::new).collect(Collectors.toList());
    }
 
    ErrorSet(Set<ConstraintViolation<Object>> violations) {
-      errors = violations.stream().map(Message::new).collect(Collectors.toList());
+      errors = violations.stream().map(ConstraintViolationEntry::new).collect(Collectors.toList());
+   }
+
+   private static String toArrayOrString(Object value) {
+      if (value.getClass().isArray()) {
+         return "{" + Arrays.stream((Object[]) value) //
+                  .map(ErrorSet::toArrayOrString)
+                  .collect(Collectors.joining(",")) + "}";
+      }
+      Method toString = ClassUtils.getMethod(value.getClass(), "toString");
+      if (toString.getDeclaringClass() == Object.class) {
+         return "<" + value.getClass().getName() + ">";
+      }
+      return value.toString();
    }
 
    /**
     * Represents a validation error message.
     */
-   public static class Message {
+   public static interface Entry {
 
-      private final transient String template;
-      private final String path;
-      private final String message;
-      private final String invalidValue;
+      /**
+       * Returns the path representation to the element where this message originated.
+       *
+       * @return the path representation to the element where this message originated.
+       */
+      String getPathEntry();
 
-      Message(Violation violation) {
-         // entry
+      /**
+       * Returns the text message of this message.
+       *
+       * @return the text message of this message
+       */
+      String getMessage(Locale... locales);
+
+      /**
+       * Returns the raw (non-interpolated) text message of this message.
+       *
+       * @return the raw (non-interpolated) text message of this message.
+       */
+      String getMessageTemplate();
+
+      /**
+       * Returns a representation of the value that originated this error message.
+       *
+       * @return a representation of the value that originated this error message.
+       */
+      String getInvalidValue();
+   }
+
+   private final class ViolationEntry implements Entry {
+
+      private final Violation violation;
+
+      @Override
+      public String getPathEntry() {
          String pathStr = violation.getEntry().toString();
          if (isExecutableRoot(violation.getEntry())) {
             String[] entryParts = pathStr.split("\\.", 2);
-            this.path = entryParts.length == 2 ? entryParts[1] : entryParts[0];
-         } else {
-            this.path = pathStr;
+            return entryParts.length == 2 ? entryParts[1] : entryParts[0];
          }
-
-         // invalidValue
-         Object value = ConstraintAnnotation.unwrapOptional(violation.getInvalidValue());
-         this.invalidValue = value == null ? "null" : toArrayOrString(value);
-
-         // message
-         this.template = violation.getMessageTemplate();
-         this.message = violation.getMessage();
+         return pathStr;
       }
 
-      Message(ConstraintViolation<?> violation) {
-         // entry
-         Path violationPath = violation.getPropertyPath();
-         if (isExecutableRoot(violation.getPropertyPath())) {
-            String[] entryParts = violationPath.toString().split("\\.", 2);
-            this.path = entryParts.length == 2 ? entryParts[1] : entryParts[0];
-         } else {
-            this.path = violationPath.toString();
-         }
+      @Override
+      public String getMessage(Locale... locales) {
+         return violation.getMessage(locales);
+      }
 
-         // invalidValue
+      @Override
+      public String getMessageTemplate() {
+         return violation.getMessageTemplate();
+      }
+
+      @Override
+      public String getInvalidValue() {
+         Object value = ConstraintAnnotation.unwrapOptional(violation.getInvalidValue());
+         return value == null ? "null" : toArrayOrString(value);
+      }
+
+      ViolationEntry(Violation violation) {
+         this.violation = violation;
+      }
+
+      private boolean isExecutableRoot(PathNode entry) {
+         if (entry.getParent() != null) {
+            return isExecutableRoot(entry.getParent());
+         }
+         return entry instanceof ExecutablePathNode;
+      }
+   }
+
+   private final class ConstraintViolationEntry implements Entry {
+
+      private final ConstraintViolation<?> violation;
+
+      @Override
+      public String getPathEntry() {
+         Path violationPath = violation.getPropertyPath();
+         if (isExecutableRoot(violationPath)) {
+            String[] entryParts = violationPath.toString().split("\\.", 2);
+            return entryParts.length == 2 ? entryParts[1] : entryParts[0];
+         }
+         return violationPath.toString();
+      }
+
+      @Override
+      public String getMessage(Locale... locales) {
+         return violation.getMessage();
+      }
+
+      @Override
+      public String getMessageTemplate() {
+         return violation.getMessageTemplate();
+      }
+
+      @Override
+      public String getInvalidValue() {
          Object value = ConstraintAnnotation.unwrapOptional(violation.getInvalidValue());
          Path.Node lastNode = null;
          Iterator<Path.Node> nodes = violation.getPropertyPath().iterator();
@@ -160,67 +236,11 @@ public final class ErrorSet implements Iterable<Message> {
             value = violation.getExecutableParameters()[((Path.ParameterNode) lastNode)
                      .getParameterIndex()];
          }
-         this.invalidValue = value == null ? "null" : toArrayOrString(value);
-
-         // message
-         this.template = violation.getMessageTemplate();
-         this.message = violation.getMessage();
+         return value == null ? "null" : toArrayOrString(value);
       }
 
-      /**
-       * Returns the path representation to the element where this message originated.
-       *
-       * @return the path representation to the element where this message originated.
-       */
-      public String getPathEntry() {
-         return path;
-      }
-
-      /**
-       * Returns the text message of this message.
-       *
-       * @return the text message of this message
-       */
-      public String getValue() {
-         return message;
-      }
-
-      /**
-       * Returns the raw (non-interpolated) text message of this message.
-       *
-       * @return the raw (non-interpolated) text message of this message.
-       */
-      public String getTemplate() {
-         return template;
-      }
-
-      /**
-       * Returns a representation of the value that originated this error message.
-       *
-       * @return a representation of the value that originated this error message.
-       */
-      public String getInvalidValue() {
-         return invalidValue;
-      }
-
-      private static String toArrayOrString(Object value) {
-         if (value.getClass().isArray()) {
-            return "{" + Arrays.stream((Object[]) value) //
-                     .map(Message::toArrayOrString)
-                     .collect(Collectors.joining(",")) + "}";
-         }
-         Method toString = ClassUtils.getMethod(value.getClass(), "toString");
-         if (toString.getDeclaringClass() == Object.class) {
-            return "<" + value.getClass().getName() + ">";
-         }
-         return value.toString();
-      }
-
-      private boolean isExecutableRoot(PathNode entry) {
-         if (entry.getParent() != null) {
-            return isExecutableRoot(entry.getParent());
-         }
-         return entry instanceof ExecutablePathNode;
+      ConstraintViolationEntry(ConstraintViolation<?> violation) {
+         this.violation = violation;
       }
 
       private boolean isExecutableRoot(Path propertyPath) {

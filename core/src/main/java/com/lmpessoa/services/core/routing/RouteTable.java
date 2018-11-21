@@ -246,7 +246,7 @@ public final class RouteTable implements IRouteTable {
       InputStream body = request.getBody();
       if (body != null) {
          if (contentClass == InputStream.class || contentClass == HttpInputStream.class) {
-            return new HttpInputStream(request.getContentType(), body);
+            return new HttpInputStream(body, request.getContentType());
          }
          byte[] content = readContentBody(body);
          if (request.getContentType() != null && content != null

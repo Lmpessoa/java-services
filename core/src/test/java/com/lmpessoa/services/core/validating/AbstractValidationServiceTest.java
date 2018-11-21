@@ -33,7 +33,7 @@ import java.util.Map;
 
 import org.junit.Test;
 
-import com.lmpessoa.services.core.validating.ErrorSet.Message;
+import com.lmpessoa.services.core.validating.ErrorSet.Entry;
 import com.lmpessoa.services.test.validating.Author;
 import com.lmpessoa.services.test.validating.Book;
 import com.lmpessoa.services.test.validating.Library;
@@ -61,10 +61,10 @@ public abstract class AbstractValidationServiceTest {
       ErrorSet result = validator.validate(author);
       assertEquals(1, result.size());
 
-      Iterator<Message> iterator = result.iterator();
-      Message error = iterator.next();
+      Iterator<Entry> iterator = result.iterator();
+      Entry error = iterator.next();
       assertEquals("{com.lmpessoa.services.test.validating.SecurityChecking.message}",
-               error.getTemplate());
+               error.getMessageTemplate());
       assertEquals("firstName", error.getPathEntry());
       assertEquals("false", error.getInvalidValue());
       assertFalse(iterator.hasNext());
@@ -88,9 +88,9 @@ public abstract class AbstractValidationServiceTest {
       ErrorSet violations = validator.validateParameters(library, method, new Object[] { null });
       assertEquals(1, violations.size());
 
-      Iterator<Message> iterator = violations.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.NotNull.message}", error.getTemplate());
+      Iterator<Entry> iterator = violations.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.NotNull.message}", error.getMessageTemplate());
       assertEquals("book", error.getPathEntry());
       assertEquals("null", error.getInvalidValue());
       assertFalse(iterator.hasNext());
@@ -105,9 +105,9 @@ public abstract class AbstractValidationServiceTest {
       ErrorSet violations = validator.validateParameters(library, method, new Object[] { book });
       assertEquals(1, violations.size());
 
-      Iterator<Message> iterator = violations.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.NotEmpty.message}", error.getTemplate());
+      Iterator<Entry> iterator = violations.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.NotEmpty.message}", error.getMessageTemplate());
       assertEquals("book.title", error.getPathEntry());
       assertEquals("null", error.getInvalidValue());
       assertFalse(iterator.hasNext());
@@ -127,9 +127,9 @@ public abstract class AbstractValidationServiceTest {
       ErrorSet violations = validator.validateParameters(library, method, new Object[] { book });
       assertEquals(1, violations.size());
 
-      Iterator<Message> iterator = violations.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.Size.message}", error.getTemplate());
+      Iterator<Entry> iterator = violations.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.Size.message}", error.getMessageTemplate());
       assertEquals("book.authorsByChapter[3].<map value>[].company", error.getPathEntry());
       assertEquals(picard.getCompany(), error.getInvalidValue());
       assertFalse(iterator.hasNext());
@@ -154,10 +154,10 @@ public abstract class AbstractValidationServiceTest {
       ErrorSet violations = validator.validateParameters(author, method, paramValues);
       assertEquals(1, violations.size());
 
-      Iterator<Message> iterator = violations.iterator();
-      Message error = iterator.next();
+      Iterator<Entry> iterator = violations.iterator();
+      Entry error = iterator.next();
       assertEquals("{com.lmpessoa.services.test.validating.OldAndNewPasswordsDifferent.message}",
-               error.getTemplate());
+               error.getMessageTemplate());
       assertEquals("<cross-parameter>", error.getPathEntry());
       assertEquals("{old-password,old-password,old-password}", error.getInvalidValue());
       assertFalse(iterator.hasNext());
@@ -172,10 +172,10 @@ public abstract class AbstractValidationServiceTest {
       ErrorSet violations = validator.validateParameters(author, method, paramValues);
       assertEquals(1, violations.size());
 
-      Iterator<Message> iterator = violations.iterator();
-      Message error = iterator.next();
+      Iterator<Entry> iterator = violations.iterator();
+      Entry error = iterator.next();
       assertEquals("{com.lmpessoa.services.test.validating.ForceStrongPassword.different}",
-               error.getTemplate());
+               error.getMessageTemplate());
       assertEquals("retypedNewPassword", error.getPathEntry());
       assertEquals("password-123", error.getInvalidValue());
       assertFalse(iterator.hasNext());
@@ -190,10 +190,10 @@ public abstract class AbstractValidationServiceTest {
       ErrorSet violations = validator.validateParameters(author, method, paramValues);
       assertEquals(1, violations.size());
 
-      Iterator<Message> iterator = violations.iterator();
-      Message error = iterator.next();
+      Iterator<Entry> iterator = violations.iterator();
+      Entry error = iterator.next();
       assertEquals("{com.lmpessoa.services.test.validating.ForceStrongPassword.too_short}",
-               error.getTemplate());
+               error.getMessageTemplate());
       assertEquals("newPassword", error.getPathEntry());
       assertEquals("new1234", error.getInvalidValue());
       assertFalse(iterator.hasNext());
@@ -234,9 +234,9 @@ public abstract class AbstractValidationServiceTest {
       ErrorSet violations = validator.validateReturnValue(library, method, returnValue);
       assertEquals(1, violations.size());
 
-      Iterator<Message> iterator = violations.iterator();
-      Message error = iterator.next();
-      assertEquals("lastname must not be null", error.getTemplate());
+      Iterator<Entry> iterator = violations.iterator();
+      Entry error = iterator.next();
+      assertEquals("lastname must not be null", error.getMessageTemplate());
       assertEquals("<return value>[\", Hugh\"].authors[0].lastName", error.getPathEntry());
       assertEquals("", error.getInvalidValue());
       assertFalse(iterator.hasNext());
@@ -259,9 +259,9 @@ public abstract class AbstractValidationServiceTest {
       ErrorSet violations = validator.validateReturnValue(library, method, returnValue);
       assertEquals(1, violations.size());
 
-      Iterator<Message> iterator = violations.iterator();
-      Message error = iterator.next();
-      assertEquals("lastname must not be null", error.getTemplate());
+      Iterator<Entry> iterator = violations.iterator();
+      Entry error = iterator.next();
+      assertEquals("lastname must not be null", error.getMessageTemplate());
       assertEquals("<return value><K>[\", Hugh\"].lastName", error.getPathEntry());
       assertEquals("", error.getInvalidValue());
       assertFalse(iterator.hasNext());
@@ -284,9 +284,9 @@ public abstract class AbstractValidationServiceTest {
       ErrorSet violations = validator.validateReturnValue(library, method, returnValue);
       assertEquals(1, violations.size());
 
-      Iterator<Message> iterator = violations.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.NotEmpty.message}", error.getTemplate());
+      Iterator<Entry> iterator = violations.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.NotEmpty.message}", error.getMessageTemplate());
       assertEquals("<return value>[\"Laurie, Hugh\"].title", error.getPathEntry());
       assertEquals("", error.getInvalidValue());
       assertFalse(iterator.hasNext());
@@ -306,9 +306,9 @@ public abstract class AbstractValidationServiceTest {
       ErrorSet violations = validator.validate(library);
       assertEquals(1, violations.size());
 
-      Iterator<Message> iterator = violations.iterator();
-      Message error = iterator.next();
-      assertEquals("{javax.validation.constraints.NotEmpty.message}", error.getTemplate());
+      Iterator<Entry> iterator = violations.iterator();
+      Entry error = iterator.next();
+      assertEquals("{javax.validation.constraints.NotEmpty.message}", error.getMessageTemplate());
       assertEquals("books[].title", error.getPathEntry());
       assertEquals("", error.getInvalidValue());
       assertFalse(iterator.hasNext());

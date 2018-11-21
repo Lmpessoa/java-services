@@ -81,7 +81,7 @@ final class ApplicationOptions implements IApplicationOptions {
       lockConfiguration();
       if (options != null) {
          RouteOptionsImpl impl = new RouteOptionsImpl(routes.getOptions());
-         options.accept(impl);
+         options.accept(routes.getOptions());
          impl.options = null;
       }
    }
@@ -280,7 +280,7 @@ final class ApplicationOptions implements IApplicationOptions {
       }
    }
 
-   private static class RouteOptionsImpl implements IRouteOptions {
+   private class RouteOptionsImpl implements IRouteOptions {
 
       private IRouteOptions options;
 
@@ -290,11 +290,13 @@ final class ApplicationOptions implements IApplicationOptions {
 
       @Override
       public void addArea(String areaPath, String packageExpr) {
+         lockConfiguration();
          options.addArea(areaPath, packageExpr);
       }
 
       @Override
       public void addArea(String areaPath, String packageExpr, String defaultResource) {
+         lockConfiguration();
          options.addArea(areaPath, packageExpr, defaultResource);
       }
    }

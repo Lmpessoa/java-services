@@ -34,6 +34,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.function.Supplier;
 
@@ -77,7 +78,7 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchesGetRoot() throws NoSuchMethodException {
+   public void testMatchesGetRoot() throws NoSuchMethodException, IOException {
       RouteMatch result = table.matches(new HttpRequestBuilder().setPath("/test").build());
       assertTrue(result instanceof MatchedRoute);
       MatchedRoute route = (MatchedRoute) result;
@@ -88,7 +89,7 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchesGetOneArg() throws NoSuchMethodException {
+   public void testMatchesGetOneArg() throws NoSuchMethodException, IOException {
       RouteMatch result = table.matches(new HttpRequestBuilder().setPath("/test/7").build());
       assertTrue(result instanceof MatchedRoute);
       MatchedRoute route = (MatchedRoute) result;
@@ -99,7 +100,7 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchesConstrainedRoute() throws NoSuchMethodException {
+   public void testMatchesConstrainedRoute() throws NoSuchMethodException, IOException {
       RouteMatch result = table.matches(new HttpRequestBuilder().setPath("/test/abcd").build());
       assertTrue(result instanceof MatchedRoute);
       MatchedRoute route = (MatchedRoute) result;
@@ -110,7 +111,7 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchesConstrainedRouteTooShort() throws NoSuchMethodException {
+   public void testMatchesConstrainedRouteTooShort() throws NoSuchMethodException, IOException {
       // With the advent of catchall route tests, this test no longer throws a 404 error
       RouteMatch result = table.matches(new HttpRequestBuilder().setPath("/test/ab").build());
       assertTrue(result instanceof MatchedRoute);
@@ -122,7 +123,7 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchesConstrainedRouteTooLong() throws NoSuchMethodException {
+   public void testMatchesConstrainedRouteTooLong() throws NoSuchMethodException, IOException {
       // With the advent of catchall route tests, this test no longer throws a 404 error
       RouteMatch result = table.matches(new HttpRequestBuilder().setPath("/test/abcdefg").build());
       assertTrue(result instanceof MatchedRoute);
@@ -134,7 +135,7 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchesGetTwoArgs() throws NoSuchMethodException {
+   public void testMatchesGetTwoArgs() throws NoSuchMethodException, IOException {
       RouteMatch result = table.matches(new HttpRequestBuilder().setPath("/test/6/9").build());
       assertTrue(result instanceof MatchedRoute);
       MatchedRoute route = (MatchedRoute) result;
@@ -145,7 +146,7 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchesPostRoot() throws NoSuchMethodException {
+   public void testMatchesPostRoot() throws NoSuchMethodException, IOException {
       RouteMatch result = table
                .matches(new HttpRequestBuilder().setMethod(POST).setPath("/test").build());
       assertTrue(result instanceof MatchedRoute);
@@ -157,7 +158,7 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchesPostOneArg() throws NoSuchMethodException {
+   public void testMatchesPostOneArg() throws NoSuchMethodException, IOException {
       RouteMatch result = table
                .matches(new HttpRequestBuilder().setMethod(POST).setPath("/test/7").build());
       assertTrue(result instanceof MatchedRoute);
@@ -169,14 +170,14 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchesUnregisteredPath() {
+   public void testMatchesUnregisteredPath() throws IOException {
       thrown.expect(NotFoundException.class);
       RouteMatch result = table.matches(new HttpRequestBuilder().setPath("/none").build());
       result.invoke();
    }
 
    @Test
-   public void testMatchesUnregisteredMethod() {
+   public void testMatchesUnregisteredMethod() throws IOException {
       thrown.expect(MethodNotAllowedException.class);
       RouteMatch result = table
                .matches(new HttpRequestBuilder().setMethod(DELETE).setPath("/test/7").build());
@@ -184,7 +185,7 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchesHttpException() throws NoSuchMethodException {
+   public void testMatchesHttpException() throws NoSuchMethodException, IOException {
       thrown.expect(NotImplementedException.class);
       RouteMatch result = table
                .matches(new HttpRequestBuilder().setMethod(PATCH).setPath("/test").build());
@@ -196,7 +197,7 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchesWithService() throws NoSuchMethodException {
+   public void testMatchesWithService() throws NoSuchMethodException, IOException {
       Message message = new Message();
       serviceMap.put(Message.class, message);
       table.put("", ServiceTestResource.class);
@@ -210,7 +211,7 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchesWithoutContent() throws NoSuchMethodException {
+   public void testMatchesWithoutContent() throws NoSuchMethodException, IOException {
       HttpRequest request = new HttpRequestBuilder().setMethod(PUT).setPath("/test/12").build();
       RouteMatch result = table.matches(request);
       assertTrue(result instanceof MatchedRoute);
@@ -224,7 +225,7 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchesWithContent() throws NoSuchMethodException {
+   public void testMatchesWithContent() throws NoSuchMethodException, IOException {
       HttpRequest request = new HttpRequestBuilder().setMethod(PUT)
                .setPath("/test/12")
                .setBody("id=12&name=Test&email=test.com&checked=false")
@@ -249,7 +250,7 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchesWithInvalidContent() throws NoSuchMethodException {
+   public void testMatchesWithInvalidContent() throws NoSuchMethodException, IOException {
       HttpRequest request = new HttpRequestBuilder().setMethod(PUT)
                .setPath("/test/valid/12")
                .setBody("id=12&name=Test&email=test@test.com")
@@ -278,12 +279,13 @@ public final class RouteTableMatcherTest {
       } catch (BadRequestException e) {
          assertNotNull(e.getErrors());
          assertFalse(e.getErrors().isEmpty());
-         Iterator<ErrorSet.Message> messages = e.getErrors().iterator();
+         Iterator<ErrorSet.Entry> messages = e.getErrors().iterator();
 
-         ErrorSet.Message message = messages.next();
+         ErrorSet.Entry message = messages.next();
          assertEquals("content.checked", message.getPathEntry());
          assertEquals("false", message.getInvalidValue());
-         assertEquals("{javax.validation.constraints.AssertTrue.message}", message.getTemplate());
+         assertEquals("{javax.validation.constraints.AssertTrue.message}",
+                  message.getMessageTemplate());
 
          assertFalse(messages.hasNext());
       } catch (Exception e) {
@@ -292,7 +294,7 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchesWithValidContent() throws NoSuchMethodException {
+   public void testMatchesWithValidContent() throws NoSuchMethodException, IOException {
       HttpRequest request = new HttpRequestBuilder().setMethod(PUT)
                .setPath("/test/valid/12")
                .setBody("id=12&name=Test&email=test@test.com&checked=true")
@@ -319,7 +321,7 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchesWithQueryParam() throws NoSuchMethodException {
+   public void testMatchesWithQueryParam() throws NoSuchMethodException, IOException {
       HttpRequest request = new HttpRequestBuilder().setPath("/test/query")
                .setQueryString("type=class&id=7")
                .build();
@@ -335,7 +337,7 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchesWithMissingQueryParam() throws NoSuchMethodException {
+   public void testMatchesWithMissingQueryParam() throws NoSuchMethodException, IOException {
       HttpRequest request = new HttpRequestBuilder().setPath("/test/query")
                .setQueryString("type=class&ids=7")
                .build();
@@ -351,7 +353,7 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchesWithWrongQueryParam() throws NoSuchMethodException {
+   public void testMatchesWithWrongQueryParam() throws NoSuchMethodException, IOException {
       thrown.expect(BadRequestException.class);
       HttpRequest request = new HttpRequestBuilder().setPath("/test/query/12")
                .setQueryString("type=class")
@@ -366,7 +368,7 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchCatchAllWithNoPath() throws NoSuchMethodException {
+   public void testMatchCatchAllWithNoPath() throws NoSuchMethodException, IOException {
       HttpRequest request = new HttpRequestBuilder().setPath("/test/catchall").build();
       RouteMatch result = table.matches(request);
       assertTrue(result instanceof MatchedRoute);
@@ -377,7 +379,7 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchCatchAllWithSinglePath() throws NoSuchMethodException {
+   public void testMatchCatchAllWithSinglePath() throws NoSuchMethodException, IOException {
       HttpRequest request = new HttpRequestBuilder().setPath("/test/catchall/7").build();
       RouteMatch result = table.matches(request);
       assertTrue(result instanceof MatchedRoute);
@@ -388,7 +390,7 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchCatchAllWithMultiplePath() throws NoSuchMethodException {
+   public void testMatchCatchAllWithMultiplePath() throws NoSuchMethodException, IOException {
       HttpRequest request = new HttpRequestBuilder().setPath("/test/catchall/path/to/real/object")
                .build();
       RouteMatch result = table.matches(request);
@@ -401,7 +403,7 @@ public final class RouteTableMatcherTest {
    }
 
    @Test
-   public void testMatchCatchAllWithOtherMethods() throws NoSuchMethodException {
+   public void testMatchCatchAllWithOtherMethods() throws NoSuchMethodException, IOException {
       HttpRequest request = new HttpRequestBuilder().setPath("/test/path/to/real/object").build();
       RouteMatch result = table.matches(request);
       assertTrue(result instanceof MatchedRoute);

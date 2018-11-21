@@ -22,24 +22,19 @@
  */
 package com.lmpessoa.services.core.validating;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.text.ParseException;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
-import java.util.Properties;
 
-import com.lmpessoa.services.core.hosting.ApplicationServer;
 import com.lmpessoa.services.core.hosting.InternalServerError;
+import com.lmpessoa.services.util.Localization;
 import com.lmpessoa.services.util.parsing.ITemplatePart;
 import com.lmpessoa.services.util.parsing.LiteralPart;
 import com.lmpessoa.services.util.parsing.SimpleParser;
 import com.lmpessoa.services.util.parsing.SimpleVariablePart;
 
 final class Violation {
-
-   private static final String VALIDATION_MESSAGES = "%s/ValidationMessages.properties";
-   private static Properties properties;
 
    private final ConstraintAnnotation constraint;
    private final String messageTemplate;
@@ -68,46 +63,30 @@ final class Violation {
       this(constraint, entry, messageTemplate, entry.getValue());
    }
 
-   Violation(ConstraintAnnotation constraint, PathNode entry, String messageTemplate, Object invalidValue) {
+   Violation(ConstraintAnnotation constraint, PathNode entry, String messageTemplate,
+      Object invalidValue) {
       this.constraint = Objects.requireNonNull(constraint);
       this.entry = Objects.requireNonNull(entry);
       this.messageTemplate = messageTemplate;
       this.value = invalidValue;
    }
 
-   static String getProperty(String name) {
+   static String getProperty(String name, Locale[] locales) {
       if (name.indexOf('.') == -1) {
          return null;
       }
-      if (properties == null) {
-         Properties base = new Properties();
-         try (InputStream is = ApplicationServer.class
-                  .getResourceAsStream(String.format(VALIDATION_MESSAGES, "/messages/validation"))) {
-            base.load(is);
-         } catch (IOException e) {
-            // Just ignore, should not happen
-         }
-         Properties custom = new Properties(base);
-         if (ApplicationServer.isRunning()) {
-            try (InputStream is = ApplicationServer.getStartupClass()
-                     .getResourceAsStream(String.format(VALIDATION_MESSAGES, ""))) {
-               custom.load(is);
-            } catch (IOException e) {
-               // Ignore too, no overrides on application
-            }
-         }
-         properties = custom;
-      }
-      return properties.getProperty(name);
+      Localization.Messages messages = Localization.messagesOf("/validation/ValidationMessages",
+               locales);
+      return messages.get(name);
    }
 
    PathNode getEntry() {
       return entry;
    }
 
-   String getMessage() {
+   String getMessage(Locale[] locales) {
       try {
-         return interpolate(getMessageTemplate());
+         return interpolate(getMessageTemplate(), locales);
       } catch (ParseException e) {
          throw new InternalServerError(e);
       }
@@ -121,29 +100,30 @@ final class Violation {
       return value;
    }
 
-   private String interpolate(String variable) throws ParseException {
+   private String interpolate(String variable, Locale[] locales) throws ParseException {
       Objects.requireNonNull(variable);
       StringBuilder result = new StringBuilder();
-      List<ITemplatePart> parts = SimpleParser.parse(variable, "[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)*");
+      List<ITemplatePart> parts = SimpleParser.parse(variable,
+               "[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)*");
       for (ITemplatePart part : parts) {
          if (part instanceof LiteralPart) {
             result.append(((LiteralPart) part).getValue());
          } else {
             String name = ((SimpleVariablePart) part).getName();
-            String varValue = getValueOfVariable(name);
+            String varValue = getValueOfVariable(name, locales);
             result.append(varValue);
          }
       }
       return result.toString();
    }
 
-   private String getValueOfVariable(String name) throws ParseException {
+   private String getValueOfVariable(String name, Locale[] locales) throws ParseException {
       String result;
       if (isConstraintDefinitionVariable(name)) {
          result = null;
       } else if (name.indexOf('.') >= 0) {
-         result = getProperty(name);
-         result = result == null ? null : interpolate(result);
+         result = getProperty(name, locales);
+         result = result == null ? null : interpolate(result, locales);
       } else {
          Object objValue = constraint.get(name);
          result = objValue == null ? null : objValue.toString();

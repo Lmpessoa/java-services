@@ -83,9 +83,10 @@ final class SerializerResponder {
       } catch (Throwable t) {
          // This is correct; we capture every kind of exception here
          // We also know that Sonar wants us to have each type of exception treated in its own catch
-         // block but that would cause too many code duplications we'd rather ignore these warnings
-         while (t instanceof InvocationTargetException
-                  || t instanceof InternalServerError && t.getCause() != null) { // NOSONAR
+         // block
+         // but that would cause too many code duplications we'd rather ignore these warnings
+         while ((t instanceof InvocationTargetException || t instanceof InternalServerError)
+                  && t.getCause() != null) {
             t = t.getCause();
          }
          if (t instanceof HttpException || t instanceof InternalServerError) {
@@ -184,7 +185,7 @@ final class SerializerResponder {
          serialised = new ByteArrayInputStream((byte[]) serialised);
       }
       if (serialised instanceof InputStream) {
-         return new HttpInputStream(contentType, (InputStream) serialised);
+         return new HttpInputStream((InputStream) serialised, contentType);
       }
       return serialize(serialised, request);
    }
@@ -199,7 +200,7 @@ final class SerializerResponder {
       } else {
          accepts = new String[] { ContentType.JSON };
       }
-      return Serializer.fromObject(object, accepts);
+      return Serializer.fromObject(object, accepts, request.getAcceptedLanguages());
    }
 
    private Charset getCharsetFromMethodOrUTF8(Method method) {

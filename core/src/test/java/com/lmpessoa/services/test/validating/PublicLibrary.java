@@ -23,6 +23,7 @@
 package com.lmpessoa.services.test.validating;
 
 import static java.lang.annotation.ElementType.CONSTRUCTOR;
+import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Retention;
@@ -31,8 +32,8 @@ import java.lang.annotation.Target;
 import javax.validation.Constraint;
 import javax.validation.Payload;
 
-@Target(CONSTRUCTOR)
 @Retention(RUNTIME)
+@Target({ CONSTRUCTOR, METHOD })
 @Constraint(validatedBy = {})
 public @interface PublicLibrary {
 
