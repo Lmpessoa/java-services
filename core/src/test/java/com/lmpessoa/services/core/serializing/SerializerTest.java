@@ -34,6 +34,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Locale;
 
+import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import org.junit.Rule;
@@ -102,19 +103,6 @@ public final class SerializerTest {
    }
 
    @Test
-   public void testParseXmlWithDate() {
-      Serializer.enableXml(true);
-      String content = "<?xml version=\"1.0\"?><object><created>2017-06-05T05:42:00-03:00</created>"
-               + "<message>Hello, World!</message></object>";
-      DatedTestObject result = Serializer.toObject(content.getBytes(), ContentType.XML,
-               DatedTestObject.class);
-      assertNotNull(result);
-      assertEquals("Hello, World!", result.message);
-      assertEquals(ZonedDateTime.of(2017, 6, 5, 5, 42, 0, 0, ZoneOffset.ofHours(-3)),
-               result.created);
-   }
-
-   @Test
    public void testParseForm() {
       String content = "id=12&name=Test&email=test%40test.com&email=test%40test.org&checked=true";
       TestObject result = Serializer.toObject(content.getBytes(), ContentType.FORM,
@@ -178,13 +166,16 @@ public final class SerializerTest {
    @XmlRootElement(name = "object")
    public static class TestObject {
 
+      @XmlElement
       private int id;
+      @XmlElement
       private String name;
+      @XmlElement
       private String[] email;
+      @XmlElement
       private boolean checked;
    }
 
-   @XmlRootElement(name = "object")
    public static class DatedTestObject {
 
       private ZonedDateTime created;

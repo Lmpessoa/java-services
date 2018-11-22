@@ -96,14 +96,6 @@ class ApplicationSettings {
       return startupTime;
    }
 
-   boolean isXmlEnabled() {
-      Property xml = getProperty("enable.xml");
-      if (!xml.isEmpty() && !xml.hasChildren()) {
-         return xml.getBoolValueOrDefault(false);
-      }
-      return false;
-   }
-
    IHostEnvironment getEnvironment() {
       if (env == null) {
          String envName = System.getenv("SERVICES_ENVIRONMENT_NAME");

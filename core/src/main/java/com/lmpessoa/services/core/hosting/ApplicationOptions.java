@@ -47,6 +47,7 @@ final class ApplicationOptions implements IApplicationOptions {
 
    private IIdentityProvider identityProvider = null;
    private boolean configured = false;
+   private boolean enableXml = false;
    private String feedbackPath;
    private String staticPath;
    private String healthPath;
@@ -198,6 +199,12 @@ final class ApplicationOptions implements IApplicationOptions {
       this.healthPath = healthPath;
    }
 
+   @Override
+   public void useXml() {
+      lockConfiguration();
+      enableXml = true;
+   }
+
    ApplicationOptions(Consumer<ServiceMap> configuration) {
       if (configuration != null) {
          configuration.accept(services);
@@ -253,6 +260,10 @@ final class ApplicationOptions implements IApplicationOptions {
       }
       result.add(InvokeResponder.class);
       return new NextResponderImpl(services, result, this);
+   }
+
+   boolean isXmlEnabled() {
+      return enableXml;
    }
 
    private void lockConfiguration() {

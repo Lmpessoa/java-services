@@ -60,9 +60,9 @@ import com.lmpessoa.services.util.logging.ILogger;
  * Represents the Application Server.
  *
  * <p>
- * The static methods in this class are used to start and stop the embedded application server for
- * applications. Applications must call {@link #start()} from their <code>main</code> method to
+ * The static methods in this class are used to start and stop the embedded application serve * applications. Applications must call {@link #start()} from their <code>main</code> method to
  * start the application server.
+rver.
  * </p>
  *
  * <p>
@@ -102,7 +102,6 @@ public final class ApplicationServer {
 
    /**
     * Requests that the Application Server be shutdown.
-    *
     * <p>
     * Calling this method does not immediately shuts down the server. Any requests in course will be
     * allowed to be completed and any log entries will be written out before the server effectively
@@ -268,6 +267,7 @@ public final class ApplicationServer {
       } catch (IllegalAccessException | InvocationTargetException e) {
          settings.getLogger().debug(e);
       }
+      Serializer.enableXml(options.isXmlEnabled());
    }
 
    private static Class<?> findStartupClass() {
@@ -307,7 +307,6 @@ public final class ApplicationServer {
 
    private void initServer() {
       AsyncResponder.setExecutor(settings.getJobExecutor());
-      Serializer.enableXml(settings.isXmlEnabled());
       options = new ApplicationOptions(services -> {
          // Registers Singleton services
          services.put(ILogger.class, Wrapper.wrap(settings.getLogger()));

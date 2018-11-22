@@ -293,4 +293,6 @@ public interface IApplicationOptions {
     * @see IApplicationInfo
     */
    void useHealthAtPath(String healthPath);
+
+   void useXml();
 }

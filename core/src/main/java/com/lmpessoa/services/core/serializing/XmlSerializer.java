@@ -24,7 +24,9 @@ package com.lmpessoa.services.core.serializing;
 
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -34,6 +36,9 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElementWrapper;
+import javax.xml.bind.annotation.XmlRootElement;
 
 import com.lmpessoa.services.core.hosting.IApplicationInfo;
 import com.lmpessoa.services.core.services.HealthStatus;
@@ -102,7 +107,7 @@ final class XmlSerializer extends Serializer {
       ErrorSet errors = (ErrorSet) obj;
       XmlErrorSet result = new XmlErrorSet();
       errors.forEach(m -> {
-         XmlErrorSet.MessageEntry entry = new XmlErrorSet.MessageEntry();
+         XmlErrorSet.Entry entry = new XmlErrorSet.Entry();
          entry.invalidValue = m.getInvalidValue();
          entry.message = m.getMessage(locales);
          entry.path = m.getPathEntry();
@@ -163,5 +168,40 @@ final class XmlSerializer extends Serializer {
       StringWriter result = new StringWriter();
       marshaller.marshal(obj, result);
       return result.toString();
+   }
+
+   @XmlRootElement(name = "appInfo")
+   static final class XmlAppInfo {
+
+      public String name;
+      public HealthStatus status;
+      @XmlElementWrapper(name = "services")
+      public List<ServiceStatus> service = new ArrayList<>();
+      public long uptime;
+      public long memory;
+
+      static final class ServiceStatus {
+
+         @XmlAttribute
+         public String name;
+         @XmlAttribute
+         public HealthStatus status;
+      }
+   }
+
+   @XmlRootElement(name = "errors")
+   static final class XmlErrorSet {
+
+      public List<Entry> error = new ArrayList<>();
+
+      static final class Entry {
+
+         @XmlAttribute
+         public String path;
+         @XmlAttribute
+         public String message;
+         @XmlAttribute
+         public String invalidValue;
+      }
    }
 }

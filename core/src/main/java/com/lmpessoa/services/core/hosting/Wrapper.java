@@ -160,6 +160,11 @@ final class Wrapper {
          public void useHealthAtPath(String healthPath) {
             original.useHealthAtPath(healthPath);
          }
+
+         @Override
+         public void useXml() {
+            original.useXml();
+         }
       };
    }
 

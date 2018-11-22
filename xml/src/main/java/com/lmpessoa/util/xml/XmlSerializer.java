@@ -20,26 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.serializing;
+package com.lmpessoa.util.xml;
 
-import java.util.ArrayList;
-import java.util.List;
+public interface XmlSerializer<T> {
 
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlRootElement;
-
-@XmlRootElement(name = "errors")
-final class XmlErrorSet {
-
-   public List<MessageEntry> error = new ArrayList<>();
-
-   static final class MessageEntry {
-
-      @XmlAttribute
-      public String path;
-      @XmlAttribute
-      public String message;
-      @XmlAttribute
-      public String invalidValue;
-   }
+   public XmlElement serialize(T src, Class<? extends T> classOfSrc, XmlSerializationContext context);
 }

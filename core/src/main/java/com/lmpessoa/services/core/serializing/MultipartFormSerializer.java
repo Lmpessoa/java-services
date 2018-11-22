@@ -54,6 +54,11 @@ final class MultipartFormSerializer extends Serializer {
    }
 
    @Override
+   protected <T> T read(String content, Class<T> type) {
+      throw new UnsupportedOperationException();
+   }
+
+   @Override
    protected String write(Object content) {
       return null;
    }

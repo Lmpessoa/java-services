@@ -20,32 +20,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.serializing;
+package com.lmpessoa.util.xml;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.BufferedReader;
+import java.io.StringReader;
+import java.util.Objects;
 
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElementWrapper;
-import javax.xml.bind.annotation.XmlRootElement;
+public final class XmlComment extends XmlElement {
 
-import com.lmpessoa.services.core.services.HealthStatus;
+   private final String value;
 
-@XmlRootElement(name = "appInfo")
-final class XmlAppInfo {
-
-   public String name;
-   public HealthStatus status;
-   @XmlElementWrapper(name = "services")
-   public List<ServiceStatus> service = new ArrayList<>();
-   public long uptime;
-   public long memory;
-
-   static final class ServiceStatus {
-
-      @XmlAttribute
-      public String name;
-      @XmlAttribute
-      public HealthStatus status;
+   public XmlComment(String value) {
+      this.value = Objects.requireNonNull(value);
    }
+
+   public String getValue() {
+      return value;
+   }
+
+   @Override
+   protected String buildXmlAtLevel(int indentLevel) {
+      StringBuilder result = new StringBuilder();
+      String[] lines = new BufferedReader(new StringReader(value)).lines().toArray(String[]::new);
+      result.append(indentForLevel(indentLevel));
+      result.append("<!--");
+      if (lines.length <= 1) {
+         result.append(' ');
+         result.append(String.join("", lines));
+         result.append(' ');
+      } else {
+         result.append("\n");
+         for (String line : lines) {
+            result.append(indentForLevel(indentLevel + 1));
+            result.append(line);
+            result.append("\n");
+         }
+         result.append(indentForLevel(indentLevel));
+      }
+      result.append("-->");
+      return result.toString();
+   }
+
 }

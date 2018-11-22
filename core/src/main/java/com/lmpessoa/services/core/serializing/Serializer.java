@@ -140,9 +140,7 @@ public abstract class Serializer {
       return read(contentStr, type);
    }
 
-   protected <T> T read(String content, Class<T> type) {
-      throw new UnsupportedOperationException();
-   }
+   protected abstract <T> T read(String content, Class<T> type);
 
    protected abstract String write(Object object);
 
