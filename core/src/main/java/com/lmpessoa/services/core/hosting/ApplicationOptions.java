@@ -208,29 +208,6 @@ final class ApplicationOptions implements IApplicationOptions {
       configured = true;
    }
 
-   NextResponder getFirstResponder() {
-      List<Class<?>> result = new ArrayList<>();
-      result.add(SerializerResponder.class);
-      result.add(FaviconResponder.class);
-      if (staticPath != null) {
-         result.add(StaticResponder.class);
-      }
-      if (healthPath != null) {
-         result.add(HealthResponder.class);
-      }
-
-      result.addAll(this.responders);
-
-      if (identityProvider != null) {
-         result.add(IdentityResponder.class);
-      }
-      if (feedbackPath != null) {
-         result.add(AsyncResponder.class);
-      }
-      result.add(InvokeResponder.class);
-      return new NextResponderImpl(services, result, this);
-   }
-
    ServiceMap getServices() {
       return services;
    }
@@ -253,6 +230,29 @@ final class ApplicationOptions implements IApplicationOptions {
 
    String getHealthPath() {
       return healthPath;
+   }
+
+   NextResponder getFirstResponder() {
+      List<Class<?>> result = new ArrayList<>();
+      result.add(SerializerResponder.class);
+      if (healthPath != null) {
+         result.add(HealthResponder.class);
+      }
+      if (staticPath != null) {
+         result.add(StaticResponder.class);
+      }
+      result.add(FaviconResponder.class);
+
+      result.addAll(this.responders);
+
+      if (identityProvider != null) {
+         result.add(IdentityResponder.class);
+      }
+      if (feedbackPath != null) {
+         result.add(AsyncResponder.class);
+      }
+      result.add(InvokeResponder.class);
+      return new NextResponderImpl(services, result, this);
    }
 
    private void lockConfiguration() {

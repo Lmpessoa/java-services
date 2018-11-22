@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.net.URL;
 
 import com.lmpessoa.services.core.routing.HttpMethod;
+import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.util.logging.ILogger;
 
 final class FaviconResponder {
@@ -37,24 +38,29 @@ final class FaviconResponder {
       this.next = next;
    }
 
-   public Object invoke(HttpRequest request, IApplicationInfo info, ILogger log) {
-      if (request.getMethod() == HttpMethod.GET && request.getPath().endsWith(FAVICON)) {
-         Class<?> startupClass = info.getStartupClass();
-         URL iconUrl = null;
-         if (startupClass != null) {
-            iconUrl = startupClass.getResource(FAVICON);
+   public Object invoke(HttpRequest request, RouteMatch route, IApplicationInfo info, ILogger log) {
+      try {
+         return next.invoke();
+      } catch (NotFoundException | MethodNotAllowedException e) {
+         if (request.getMethod() == HttpMethod.GET && request.getPath().endsWith(FAVICON)) {
+            return getDefaultFavicon(info.getStartupClass());
          }
-         if (iconUrl == null) {
-            iconUrl = FaviconResponder.class.getResource(FAVICON);
-         }
-         if (iconUrl != null) {
-            try {
-               return new HttpInputStream(iconUrl.openStream(), ContentType.ICO);
-            } catch (IOException e) {
-               log.error(e);
-            }
-         }
+         throw e;
       }
-      return next.invoke();
+   }
+
+   private HttpInputStream getDefaultFavicon(Class<?> startupClass) {
+      URL iconUrl = null;
+      if (startupClass != null) {
+         iconUrl = startupClass.getResource(FAVICON);
+      }
+      if (iconUrl == null) {
+         iconUrl = FaviconResponder.class.getResource(FAVICON);
+      }
+      try {
+         return new HttpInputStream(iconUrl.openStream(), ContentType.ICO);
+      } catch (IOException e) {
+         throw new InternalServerError(e);
+      }
    }
 }
