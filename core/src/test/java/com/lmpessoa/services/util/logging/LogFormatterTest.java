@@ -40,11 +40,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import com.lmpessoa.services.core.hosting.ConnectionInfo;
-import com.lmpessoa.services.util.logging.FormattedHandler;
-import com.lmpessoa.services.util.logging.LogEntry;
-import com.lmpessoa.services.util.logging.LogFormatter;
-import com.lmpessoa.services.util.logging.Logger;
-import com.lmpessoa.services.util.logging.Severity;
 
 public final class LogFormatterTest {
 
@@ -61,6 +56,7 @@ public final class LogFormatterTest {
       log.addVariable("Remote.Host", ConnectionInfo.class, c -> c.getRemoteAddress().getHostName());
       log.addVariable("Remote.Addr", ConnectionInfo.class,
                c -> c.getRemoteAddress().getHostAddress());
+      log.addVariable("Null", String.class, s -> null);
       Map<Class<?>, Object> extra = new HashMap<>();
       extra.put(ConnectionInfo.class, new ConnectionInfo(socket, "https://lmpessoa.com/"));
       entry = new LogEntry(ZonedDateTime.of(LocalDateTime.of(2017, 6, 5, 5, 42, 7),
@@ -162,6 +158,12 @@ public final class LogFormatterTest {
    public void testThreadReference() throws ParseException {
       String result = formatWith("{Thread.Name}/{Thread.Id}");
       assertEquals("test/1", result);
+   }
+
+   @Test
+   public void testNullVariable() throws ParseException {
+      String result = formatWith("{Null:<7}");
+      assertEquals("       ", result);
    }
 
    @Test

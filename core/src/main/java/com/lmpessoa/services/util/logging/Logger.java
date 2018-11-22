@@ -304,7 +304,7 @@ public final class Logger implements ILogger {
       @Override
       public String apply(LogEntry entry) {
          Object obj = entry.getExtra(type);
-         return func.apply(obj);
+         return obj != null ? func.apply(obj) : null;
       }
    }
 }

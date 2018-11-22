@@ -116,7 +116,7 @@ public final class ApplicationSettingsTest {
 
    public static class CommonEnv {
 
-      public static void configureServices(IApplicationOptions app, IHostEnvironment env) {
+      public static void configure(IApplicationOptions app, IHostEnvironment env) {
          servicesResult = "common";
       }
    }
@@ -125,7 +125,7 @@ public final class ApplicationSettingsTest {
 
    public static class SpecificEnv extends CommonEnv {
 
-      public static void configureStagingServices(IApplicationOptions app) {
+      public static void configureStaging(IApplicationOptions app) {
          servicesResult = "staging";
       }
    }

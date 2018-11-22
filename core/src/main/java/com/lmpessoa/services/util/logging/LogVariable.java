@@ -56,7 +56,7 @@ class LogVariable implements IVariablePart {
    }
 
    String format(Object value) {
-      String result = value.toString();
+      String result = value != null ? value.toString() : "";
       if (length > 0) {
          if (result.length() > length) {
             if (rightAlign) {

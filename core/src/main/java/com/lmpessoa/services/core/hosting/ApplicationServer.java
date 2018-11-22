@@ -73,7 +73,6 @@ import com.lmpessoa.services.util.logging.ILogger;
  */
 public final class ApplicationServer {
 
-   private static final String CONFIGURE_SERVICES = "configureServices";
    private static final String CONFIGURE = "configure";
 
    private static ApplicationServer instance;
@@ -239,24 +238,23 @@ public final class ApplicationServer {
    void configureServices() {
       IHostEnvironment env = settings.getEnvironment();
       Class<?> startupClass = settings.getStartupClass();
-      String envSpecific = CONFIGURE + env.getName() + "Services";
+      String envSpecific = CONFIGURE + env.getName();
       Method configMethod = ClassUtils.getMethod(startupClass, envSpecific,
                IApplicationOptions.class);
       Object[] args = new Object[] { options };
       if (configMethod == null || !Modifier.isStatic(configMethod.getModifiers())) {
-         configMethod = ClassUtils.getMethod(startupClass, CONFIGURE_SERVICES,
-                  IApplicationOptions.class, IHostEnvironment.class);
+         configMethod = ClassUtils.getMethod(startupClass, CONFIGURE, IApplicationOptions.class,
+                  IHostEnvironment.class);
          args = new Object[] { options, env };
       }
       if (configMethod == null || !Modifier.isStatic(configMethod.getModifiers())) {
-         configMethod = ClassUtils.getMethod(startupClass, CONFIGURE_SERVICES,
-                  IApplicationOptions.class);
+         configMethod = ClassUtils.getMethod(startupClass, CONFIGURE, IApplicationOptions.class);
          args = new Object[] { options };
       }
       if (configMethod == null || !Modifier.isStatic(configMethod.getModifiers())) {
          settings.getLogger().info("Application has no service configuration method");
          return;
-      } else if (!CONFIGURE_SERVICES.equals(configMethod.getName())) {
+      } else if (!CONFIGURE.equals(configMethod.getName())) {
          settings.getLogger().info("Using service configuration specific for the environment");
       }
       try {
@@ -302,7 +300,6 @@ public final class ApplicationServer {
    }
 
    private void initServer() {
-      logStartupMessage(settings.getStartupClass(), settings.getApplicationName());
       AsyncResponder.setExecutor(settings.getJobExecutor());
       Serializer.enableXml(settings.isXmlEnabled());
       options = new ApplicationOptions(services -> {
@@ -320,6 +317,7 @@ public final class ApplicationServer {
          services.put(RouteMatch.class, (Supplier<RouteMatch>) () -> null);
          services.put(IIdentity.class, (Supplier<IIdentity>) () -> null);
       });
+      logStartupMessage(settings.getStartupClass(), settings.getApplicationName());
    }
 
    private void run() {
