@@ -36,6 +36,7 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -228,7 +229,7 @@ public final class ClassUtils {
     *
     * <p>
     * A concrete class is an actual class (not an array, enum, primitive, interface, etc.) which is
-    * not abstract and thus can be instantiated.
+    * not abstract and thus can be instatiated.
     * </p>
     *
     * @param clazz the type to check.
@@ -335,6 +336,9 @@ public final class ClassUtils {
                }
             }
          }
+      }
+      if (atype == UUID.class) {
+         return (T) UUID.fromString(value);
       }
       Method valueOf;
       try {

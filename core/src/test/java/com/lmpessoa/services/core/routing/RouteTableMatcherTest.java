@@ -217,11 +217,11 @@ public final class RouteTableMatcherTest {
       assertTrue(result instanceof MatchedRoute);
       MatchedRoute route = (MatchedRoute) result;
       assertEquals(TestResource.class, route.getResourceClass());
-      assertEquals(TestResource.class.getMethod("put", int.class, ContentObject.class),
+      assertEquals(TestResource.class.getMethod("put", ContentObject.class, int.class),
                route.getMethod());
       assertEquals(2, route.getMethodArgs().length);
-      assertEquals(12, route.getMethodArgs()[0]);
-      assertNull(route.getMethodArgs()[1]);
+      assertEquals(12, route.getMethodArgs()[1]);
+      assertNull(route.getMethodArgs()[0]);
    }
 
    @Test
@@ -235,11 +235,11 @@ public final class RouteTableMatcherTest {
       assertTrue(result instanceof MatchedRoute);
       MatchedRoute route = (MatchedRoute) result;
       assertEquals(TestResource.class, route.getResourceClass());
-      assertEquals(TestResource.class.getMethod("put", int.class, ContentObject.class),
+      assertEquals(TestResource.class.getMethod("put", ContentObject.class, int.class),
                route.getMethod());
       assertEquals(2, route.getMethodArgs().length);
-      assertEquals(12, route.getMethodArgs()[0]);
-      Object obj = route.getMethodArgs()[1];
+      assertEquals(12, route.getMethodArgs()[1]);
+      Object obj = route.getMethodArgs()[0];
       assertNotNull(obj);
       assertTrue(obj instanceof ContentObject);
       ContentObject cobj = (ContentObject) obj;
@@ -260,11 +260,11 @@ public final class RouteTableMatcherTest {
       assertTrue(result instanceof MatchedRoute);
       MatchedRoute route = (MatchedRoute) result;
       assertEquals(TestResource.class, route.getResourceClass());
-      assertEquals(TestResource.class.getMethod("valid", int.class, ContentObject.class),
+      assertEquals(TestResource.class.getMethod("valid", ContentObject.class, int.class),
                route.getMethod());
       assertEquals(2, route.getMethodArgs().length);
-      assertEquals(12, route.getMethodArgs()[0]);
-      Object obj = route.getMethodArgs()[1];
+      assertEquals(12, route.getMethodArgs()[1]);
+      Object obj = route.getMethodArgs()[0];
       assertNotNull(obj);
       assertTrue(obj instanceof ContentObject);
       ContentObject cobj = (ContentObject) obj;
@@ -304,11 +304,11 @@ public final class RouteTableMatcherTest {
       assertTrue(result instanceof MatchedRoute);
       MatchedRoute route = (MatchedRoute) result;
       assertEquals(TestResource.class, route.getResourceClass());
-      assertEquals(TestResource.class.getMethod("valid", int.class, ContentObject.class),
+      assertEquals(TestResource.class.getMethod("valid", ContentObject.class, int.class),
                route.getMethod());
       assertEquals(2, route.getMethodArgs().length);
-      assertEquals(12, route.getMethodArgs()[0]);
-      Object obj = route.getMethodArgs()[1];
+      assertEquals(12, route.getMethodArgs()[1]);
+      Object obj = route.getMethodArgs()[0];
       assertNotNull(obj);
       assertTrue(obj instanceof ContentObject);
       ContentObject cobj = (ContentObject) obj;
@@ -473,13 +473,13 @@ public final class RouteTableMatcherTest {
          throw new NotImplementedException();
       }
 
-      public void put(int i, ContentObject content) {
+      public void put(ContentObject content, int i) {
          // Nothing to do here
       }
 
       @HttpPut
-      @Route("valid/{0}")
-      public void valid(int i, @Valid ContentObject content) {
+      @Route("valid/{1}")
+      public void valid(@Valid ContentObject content, int i) {
          // Nothing to do here
       }
 

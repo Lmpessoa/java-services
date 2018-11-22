@@ -204,7 +204,7 @@ final class RoutePattern implements Comparable<RoutePattern> {
       }
       routePath = routePath.replaceAll("^/" + options.getAreaIndex(area), "");
       List<ITemplatePart> result = RoutePatternParser.parse(clazz, constructors[0], routePath);
-      validateRouteParams(result, params);
+      validateRouteParams(result, constructors[0].getParameters(), params);
       return new RoutePattern(result, clazz, null);
    }
 
@@ -213,18 +213,18 @@ final class RoutePattern implements Comparable<RoutePattern> {
       Arrays.stream(method.getParameters()) //
                .filter(p -> !p.isAnnotationPresent(QueryParam.class))
                .forEach(paramList::add);
-      Class<?> lastArgument = null;
+      Class<?> contentParamType = null;
       if (!paramList.isEmpty()) {
-         lastArgument = paramList.get(paramList.size() - 1).getType();
-         if (lastArgument == InputStream.class || lastArgument == HttpInputStream.class
-                  || lastArgument != String.class && !lastArgument.isArray()
-                           && !lastArgument.isInterface() && !lastArgument.isPrimitive()
-                           && !Modifier.isAbstract(lastArgument.getModifiers())
-                           && !hasValueOfMethod(lastArgument)
-                           && hasParameterlessConstructor(lastArgument)) {
-            paramList.remove(paramList.size() - 1);
+         contentParamType = paramList.get(0).getType();
+         if (contentParamType == InputStream.class || contentParamType == HttpInputStream.class
+                  || contentParamType != String.class && !contentParamType.isArray()
+                           && !contentParamType.isInterface() && !contentParamType.isPrimitive()
+                           && !Modifier.isAbstract(contentParamType.getModifiers())
+                           && !hasValueOfMethod(contentParamType)
+                           && hasParameterlessConstructor(contentParamType)) {
+            paramList.remove(0);
          } else {
-            lastArgument = null;
+            contentParamType = null;
          }
       }
       Parameter[] params = paramList.toArray(new Parameter[0]);
@@ -232,13 +232,13 @@ final class RoutePattern implements Comparable<RoutePattern> {
                : method.getDeclaringClass();
       String routePath = getRouteFor(null, method, params, method);
       List<ITemplatePart> result = RoutePatternParser.parse(resourceClass, method, routePath);
-      validateRouteParams(result, params);
+      validateRouteParams(result, method.getParameters(), params);
       List<ITemplatePart> pattern = new ArrayList<>();
       if (resource != null) {
          pattern.addAll(resource.parts);
       }
       result.forEach(pattern::add);
-      return new RoutePattern(pattern, resourceClass, lastArgument);
+      return new RoutePattern(pattern, resourceClass, contentParamType);
    }
 
    Collection<VariableRoutePart> getVariables() {
@@ -375,19 +375,19 @@ final class RoutePattern implements Comparable<RoutePattern> {
       }
    }
 
-   private static void validateRouteParams(List<ITemplatePart> route, Parameter[] params)
-      throws ParseException {
+   private static void validateRouteParams(List<ITemplatePart> route, Parameter[] allParams,
+      Parameter[] usedParams) throws ParseException {
       long count = route.stream() //
                .filter(p -> p instanceof VariableRoutePart)
                .count();
-      if (count != params.length) {
+      if (count != usedParams.length) {
          throw new ParseException("Wrong parameter count in route (found: " + count + ", expected: "
-                  + params.length + ")", 0);
+                  + usedParams.length + ")", 0);
       }
       for (ITemplatePart part : route) {
          if (part instanceof VariableRoutePart) {
             VariableRoutePart var = (VariableRoutePart) part;
-            Class<?> param = params[var.getParameterIndex()].getType();
+            Class<?> param = allParams[var.getParameterIndex()].getType();
             if (param != String.class && !var.isAssignableTo(param)) {
                throw new TypeMismatchException("Cannot cast parameter " + var.getParameterIndex()
                         + " to " + param.getName());

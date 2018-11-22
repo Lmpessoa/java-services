@@ -27,6 +27,7 @@ import java.lang.annotation.Repeatable;
 import java.lang.reflect.Executable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -132,6 +133,9 @@ final class VariableRoutePart implements IVariablePart, Comparable<VariableRoute
       this.paramName = param.getName();
       this.paramType = param.getType();
       this.catchall = param.isVarArgs();
+      if (!isValidParamType(paramType)) {
+         throw new IllegalStateException("Type cannot be used in path: " + paramType.getName());
+      }
       GroupSequence groupSeq = resourceClass.getAnnotation(GroupSequence.class);
       if (groupSeq != null) {
          this.groups = Arrays.asList(groupSeq.value());
@@ -178,6 +182,18 @@ final class VariableRoutePart implements IVariablePart, Comparable<VariableRoute
 
    boolean isCatchAll() {
       return catchall;
+   }
+
+   private boolean isValidParamType(Class<?> paramType) {
+      Method valueOf = ClassUtils.getMethod(paramType, "valueOf", String.class);
+      if (paramType.isArray()) {
+         paramType = paramType.getComponentType();
+      }
+      return (paramType.isPrimitive() || paramType == String.class || paramType == UUID.class
+               || paramType.isEnum()
+               || valueOf != null && Modifier.isStatic(valueOf.getModifiers()))
+               && paramType != float.class && paramType != double.class && paramType != Float.class
+               && paramType != Double.class;
    }
 
    private <T extends Comparable<T>> int innerCompare(T o1, T o2) {
