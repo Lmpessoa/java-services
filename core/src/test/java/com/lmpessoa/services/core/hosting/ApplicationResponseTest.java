@@ -67,7 +67,7 @@ public final class ApplicationResponseTest {
       when(settings.getJobExecutor()).thenReturn(new ExecutionService(0, log));
       when(settings.getValidationService()).thenCallRealMethod();
       ApplicationServer server = new ApplicationServer(settings);
-      server.getOptions().useIdentity(new IIdentityProvider() {
+      server.getOptions().useIdentityWith(new IIdentityProvider() {
 
          @Override
          public IIdentity getIdentity(String format, String token) {

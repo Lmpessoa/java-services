@@ -59,6 +59,10 @@ public interface RouteMatch {
       return null;
    }
 
+   default Object getContentObject() {
+      return null;
+   }
+
    /**
     * Calls the resolved method.
     *

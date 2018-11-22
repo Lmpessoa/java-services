@@ -141,18 +141,8 @@ final class Wrapper {
          }
 
          @Override
-         public void useAsync() {
-            original.useAsync();
-         }
-
-         @Override
          public void useAsyncWithFeedbackPath(String feedbackPath) {
             original.useAsyncWithFeedbackPath(feedbackPath);
-         }
-
-         @Override
-         public void useStaticFiles() {
-            original.useStaticFiles();
          }
 
          @Override
@@ -161,19 +151,9 @@ final class Wrapper {
          }
 
          @Override
-         public void useIdentity(IIdentityProvider identityProvider) {
-            original.useIdentity(identityProvider);
-         }
-
-         @Override
-         public void useIdentity(IIdentityProvider identityProvider,
+         public void useIdentityWith(IIdentityProvider identityProvider,
             Consumer<IIdentityOptions> options) {
-            original.useIdentity(identityProvider, options);
-         }
-
-         @Override
-         public void useHeath() {
-            original.useHeath();
+            original.useIdentityWith(identityProvider, options);
          }
 
          @Override

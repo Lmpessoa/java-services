@@ -165,13 +165,14 @@ public final class RouteTable implements IRouteTable {
          }
          Map<String, List<String>> query = parseQueryString(request.getQueryString());
          List<Object> result = convertParams(params, route, matcher, query);
+         boolean hasContent = false;
          if (methodEntry.getContentClass() != null) {
-            Object contentObject;
-            contentObject = parseContentBody(request, methodEntry.getContentClass());
-            result.add(0, contentObject);
+            Object contentObject = parseContentBody(request, methodEntry.getContentClass());
+            result.add(constructor.getParameterCount(), contentObject);
+            hasContent = true;
          }
          return new MatchedRoute(services.get(IValidationService.class), methodEntry,
-                  result.toArray());
+                  result.toArray(), hasContent);
       }
       if (!found) {
          return new NotFoundException();

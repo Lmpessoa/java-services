@@ -110,8 +110,8 @@ public final class Localization {
    }
 
    /**
-    * Finds a resource with the given name best suited to the given preferred loacle list and
-    * returns its contents as a string.
+    * Finds a resource with the given name best suited to the given preferred locale list and returns
+    * its contents as a string.
     *
     * @param resourcePath the name of the desired resource.
     * @param locales the list of preferred locales for the resource.
@@ -122,8 +122,8 @@ public final class Localization {
    }
 
    /**
-    * Finds a resource with the given name best suited to the given preferred loacle list and
-    * returns its contents as a string.
+    * Finds a resource with the given name best suited to the given preferred locale list and returns
+    * its contents as a string.
     *
     * @param resourcePath the name of the desired resource.
     * @param encoding the encoding used by the resource.
@@ -187,6 +187,10 @@ public final class Localization {
          }
          return null;
       };
+   }
+
+   private Localization() {
+      // Nothing to be done here
    }
 
    private static List<Locale> normalize(Locale[] locales) {

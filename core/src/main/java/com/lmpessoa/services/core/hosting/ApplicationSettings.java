@@ -128,7 +128,7 @@ class ApplicationSettings {
 
    ExecutionService getJobExecutor() {
       if (jobExec == null) {
-         Property prop = getProperty("limits.jobs");
+         Property prop = getProperty("limits.async");
          if (!prop.isEmpty() && prop.getIntValueOrDefault(0) > 0) {
             jobExec = new ExecutionService(prop.getIntValue(), getLogger());
          } else {

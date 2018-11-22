@@ -115,11 +115,6 @@ final class ApplicationOptions implements IApplicationOptions {
    // Async
 
    @Override
-   public void useAsync() {
-      useAsyncWithFeedbackPath("/feedback/");
-   }
-
-   @Override
    public void useAsyncWithFeedbackPath(String feedbackPath) {
       lockConfiguration();
       Objects.requireNonNull(feedbackPath);
@@ -139,11 +134,6 @@ final class ApplicationOptions implements IApplicationOptions {
    }
 
    // Static files
-
-   @Override
-   public void useStaticFiles() {
-      useStaticFilesAtPath("/static");
-   }
 
    @Override
    public void useStaticFilesAtPath(String staticPath) {
@@ -167,12 +157,8 @@ final class ApplicationOptions implements IApplicationOptions {
    // Identity
 
    @Override
-   public void useIdentity(IIdentityProvider identityProvider) {
-      useIdentity(identityProvider, null);
-   }
-
-   @Override
-   public void useIdentity(IIdentityProvider identityProvider, Consumer<IIdentityOptions> options) {
+   public void useIdentityWith(IIdentityProvider identityProvider,
+      Consumer<IIdentityOptions> options) {
       lockConfiguration();
       Objects.requireNonNull(identityProvider);
       if (this.identityProvider != null) {
@@ -192,11 +178,6 @@ final class ApplicationOptions implements IApplicationOptions {
    }
 
    // Health
-
-   @Override
-   public void useHeath() {
-      useHealthAtPath("health");
-   }
 
    @Override
    public void useHealthAtPath(String healthPath) {

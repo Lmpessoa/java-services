@@ -25,9 +25,13 @@ package com.lmpessoa.services.core.hosting;
 import static com.lmpessoa.services.core.routing.HttpMethod.DELETE;
 import static com.lmpessoa.services.core.routing.HttpMethod.GET;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -37,6 +41,8 @@ import java.util.concurrent.Future;
 
 import com.lmpessoa.services.core.concurrent.Async;
 import com.lmpessoa.services.core.concurrent.ExecutionService;
+import com.lmpessoa.services.core.concurrent.IAsyncRejectionRule;
+import com.lmpessoa.services.core.concurrent.NotAsync;
 import com.lmpessoa.services.core.routing.HttpMethod;
 import com.lmpessoa.services.core.routing.RouteMatch;
 
@@ -44,6 +50,7 @@ final class AsyncResponder {
 
    private static ExecutionService executor;
 
+   private final Map<UUID, RouteMatch> routes = new HashMap<>();
    private final ApplicationOptions options;
    private final NextResponder next;
 
@@ -62,11 +69,39 @@ final class AsyncResponder {
          if (request.getPath().startsWith(feedbackPath)) {
             return respondToStatusRequest(request, feedbackPath, connect);
          }
-         if (route != null && (isCallableResult(route) || isAsync(route))) {
-            return respondToAsyncCall(route, feedbackPath);
+         if (route != null && !(route instanceof HttpException)) {
+            IAsyncRejectionRule rule = getRejectionRule(route);
+            if (rule != null && rule.shouldReject(route, routes.values())) {
+               throw new ConflictException("A request for this is already awaiting completion");
+            } else if (rule != null || isCallableResult(route)) {
+               return respondToAsyncCall(route, feedbackPath);
+            }
          }
       }
       return next.invoke();
+   }
+
+   private IAsyncRejectionRule getRejectionRule(RouteMatch route) {
+      if (route.getMethod().isAnnotationPresent(NotAsync.class)) {
+         return null;
+      }
+      Async async = route.getMethod().getAnnotation(Async.class);
+      if (async == null && route.getResourceClass() != null) {
+         async = route.getResourceClass().getAnnotation(Async.class);
+      }
+      try {
+         if (async == null) {
+            return null;
+         }
+         Constructor<? extends IAsyncRejectionRule> constr = async.rejectWith()
+                  .getConstructor(Async.class);
+         constr.setAccessible(true);
+         return constr.newInstance(async);
+      } catch (InvocationTargetException e) {
+         throw new InternalServerError(e.getCause());
+      } catch (NoSuchMethodException | InstantiationException | IllegalAccessException e) {
+         throw new InternalServerError(e);
+      }
    }
 
    private Object respondToAsyncCall(RouteMatch route, String asyncPath) {
@@ -78,10 +113,11 @@ final class AsyncResponder {
          } else if (result instanceof Runnable) {
             job = Executors.callable((Runnable) result);
          }
-      } else if (isAsync(route)) {
+      } else {
          job = route::invoke;
       }
       String id = executor.submit(job);
+      routes.put(UUID.fromString(id), route);
       return Redirect.accepted(asyncPath + id);
    }
 
@@ -102,6 +138,7 @@ final class AsyncResponder {
          throw new NotFoundException();
       }
       if (result.isDone()) {
+         routes.remove(id);
          try {
             Object obj = result.get();
             if (obj instanceof Redirect) {
@@ -119,13 +156,6 @@ final class AsyncResponder {
          result.cancel(true);
       }
       return result;
-   }
-
-   private boolean isAsync(RouteMatch match) {
-      Method method = match.getMethod();
-      Class<?> clazz = match.getResourceClass();
-      return method != null && method.isAnnotationPresent(Async.class)
-               || clazz != null && clazz.isAnnotationPresent(Async.class);
    }
 
    private boolean isCallableResult(RouteMatch match) {

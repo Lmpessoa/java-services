@@ -22,6 +22,7 @@
  */
 package com.lmpessoa.services.core.hosting;
 
+import static com.lmpessoa.services.core.concurrent.AsyncReject.SAME_PATH;
 import static com.lmpessoa.services.core.routing.HttpMethod.DELETE;
 import static com.lmpessoa.services.core.routing.HttpMethod.GET;
 import static com.lmpessoa.services.core.routing.HttpMethod.PATCH;
@@ -37,6 +38,7 @@ import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
@@ -200,6 +202,7 @@ public final class AsyncResponderTest {
 
       handler.invoke(request, match, connect);
       Object result = handler.invoke(request, match, connect);
+      assertTrue(result instanceof Redirect);
       Redirect redirect = (Redirect) result;
       String url = redirect.getUrl(connect).getPath();
 
@@ -216,6 +219,7 @@ public final class AsyncResponderTest {
 
       handler.invoke(request, match, connect);
       Object result = handler.invoke(request, match, connect);
+      assertTrue(result instanceof Redirect);
       Redirect redirect = (Redirect) result;
       String url = redirect.getUrl(connect).getPath();
 
@@ -253,24 +257,17 @@ public final class AsyncResponderTest {
       fresult.get();
    }
 
-   private RouteMatch matchOfMethod(String methodName) throws NoSuchMethodException {
-      final Method method = AsyncResponderTest.class.getMethod(methodName);
-      return new RouteMatch() {
+   @Test(expected = ConflictException.class)
+   public void testAsyncWithResolver() throws NoSuchMethodException {
+      match = matchOfMethod("sleeper", 7);
+      Object result = handler.invoke(request, match, connect);
+      assertTrue(result instanceof Redirect);
 
-         @Override
-         public Object invoke() {
-            try {
-               return method.invoke(AsyncResponderTest.this);
-            } catch (IllegalAccessException | InvocationTargetException e) {
-               throw new RuntimeException(e);
-            }
-         }
+      match = matchOfMethod("sleeper", 12);
+      result = handler.invoke(request, match, connect);
+      assertTrue(result instanceof Redirect);
 
-         @Override
-         public Method getMethod() {
-            return method;
-         }
-      };
+      handler.invoke(request, match, connect);
    }
 
    @Async
@@ -288,7 +285,7 @@ public final class AsyncResponderTest {
 
    @Async
    public void sleeper() throws InterruptedException {
-      Thread.sleep(50);
+      Thread.sleep(100);
    }
 
    @Async
@@ -299,5 +296,40 @@ public final class AsyncResponderTest {
    @Async
    public URL redirectUrl() throws MalformedURLException {
       return new URL("https://lmpessoa.com/test");
+   }
+
+   @Async(reject = SAME_PATH)
+   public void sleeper(Integer i) throws InterruptedException {
+      Thread.sleep(100);
+   }
+
+   private RouteMatch matchOfMethod(String methodName, Object... params)
+      throws NoSuchMethodException {
+      Class<?>[] paramTypes = Arrays.stream(params).map(Object::getClass).toArray(Class<?>[]::new);
+      final Method method = AsyncResponderTest.class.getMethod(methodName, paramTypes);
+      return new RouteMatch() {
+
+         @Override
+         public Object invoke() {
+            try {
+               return method.invoke(AsyncResponderTest.this, params);
+            } catch (IllegalAccessException | InvocationTargetException e) {
+               throw new RuntimeException(e);
+            }
+         }
+
+         @Override
+         public Method getMethod() {
+            return method;
+         }
+
+         @Override
+         public boolean equals(Object obj) {
+            if (obj instanceof RouteMatch) {
+               return method.equals(((RouteMatch) obj).getMethod());
+            }
+            return false;
+         }
+      };
    }
 }

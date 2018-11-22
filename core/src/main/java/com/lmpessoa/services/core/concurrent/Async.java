@@ -23,6 +23,7 @@
 package com.lmpessoa.services.core.concurrent;
 
 import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Retention;
@@ -45,8 +46,8 @@ import java.lang.annotation.Target;
  * </p>
  *
  * <p>
- * If an entire class is marker <code>@Async</code> each and every method call in that class will be
- * executed asynchronously.
+ * If an entire class is marked with <code>@Async</code> each and every method call in that class
+ * will be executed asynchronously.
  * </p>
  *
  * <p>
@@ -56,6 +57,11 @@ import java.lang.annotation.Target;
  * ability to respond to newer request.
  * </p>
  */
-@Target(METHOD)
 @Retention(RUNTIME)
-public @interface Async {}
+@Target({ TYPE, METHOD })
+public @interface Async {
+
+   AsyncReject reject() default AsyncReject.NEVER;
+
+   Class<? extends IAsyncRejectionRule> rejectWith() default DefaultRejectionRule.class;
+}

@@ -145,7 +145,9 @@ public interface IApplicationOptions {
     * prevent that resource from ever being called.
     * </p>
     */
-   void useAsync();
+   default void useAsync() {
+      useAsyncWithFeedbackPath("/feedback/");
+   }
 
    /**
     * Enables the use of asynchronous requests using the given feedback path to return information
@@ -183,7 +185,9 @@ public interface IApplicationOptions {
     * {@link #useStaticFilesAtPath(String)} with the desired path instead.
     * </p>
     */
-   void useStaticFiles();
+   default void useStaticFiles() {
+      useStaticFilesAtPath("/static");
+   }
 
    /**
     * Enables the application server to publish static files from the given resource path.
@@ -228,7 +232,9 @@ public interface IApplicationOptions {
     *
     * @param identityProvider the identity provider to use with requests.
     */
-   void useIdentity(IIdentityProvider identityProvider);
+   default void useIdentityWith(IIdentityProvider identityProvider) {
+      useIdentityWith(identityProvider, null);
+   }
 
    /**
     * Enables the use of identities in requests using the given identity provider.
@@ -251,7 +257,7 @@ public interface IApplicationOptions {
     * @param identityProvider the identity provider to use with requests.
     * @param options a method used to further configure identity services used by the application.
     */
-   void useIdentity(IIdentityProvider identityProvider, Consumer<IIdentityOptions> options);
+   void useIdentityWith(IIdentityProvider identityProvider, Consumer<IIdentityOptions> options);
 
    /**
     * Enables support for health requests from the application.
@@ -264,7 +270,9 @@ public interface IApplicationOptions {
     *
     * @see IApplicationInfo
     */
-   void useHeath();
+   default void useHeath() {
+      useHealthAtPath("/health");
+   }
 
    /**
     * Enables support for health request from the application at the given path.

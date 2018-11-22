@@ -26,6 +26,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.stream.Collectors;
 
 import com.lmpessoa.services.core.hosting.BadRequestException;
 import com.lmpessoa.services.core.hosting.HttpException;
@@ -36,10 +37,11 @@ import com.lmpessoa.services.core.validating.IValidationService;
 final class MatchedRoute implements RouteMatch {
 
    private final IValidationService validator;
-   private final Class<?> resourceClass;
    private final Object[] constructorArgs;
-   private final Method method;
+   private final Class<?> resourceClass;
    private final Object[] methodArgs;
+   private final boolean hasContent;
+   private final Method method;
 
    @Override
    public Class<?> getResourceClass() {
@@ -66,6 +68,67 @@ final class MatchedRoute implements RouteMatch {
          throw new BadResponseException(errors);
       }
       return result;
+   }
+
+   @Override
+   public Object getContentObject() {
+      return hasContent ? methodArgs[0] : null;
+   }
+
+   @Override
+   public boolean equals(Object obj) {
+      if (obj instanceof MatchedRoute) {
+         MatchedRoute other = (MatchedRoute) obj;
+         Object[] thisMethodArgs = Arrays.copyOfRange(methodArgs, hasContent ? 1 : 0,
+                  methodArgs.length);
+         Object[] otherMethodArgs = Arrays.copyOfRange(other.methodArgs, other.hasContent ? 1 : 0,
+                  methodArgs.length);
+         if (resourceClass == other.resourceClass && method.equals(other.method)
+                  && Arrays.equals(constructorArgs, other.constructorArgs)
+                  && Arrays.equals(thisMethodArgs, otherMethodArgs)) {
+            return true;
+         }
+      }
+      return false;
+   }
+
+   @Override
+   public int hashCode() {
+      return toString().hashCode();
+   }
+
+   @Override
+   public String toString() {
+      StringBuilder result = new StringBuilder();
+      result.append(resourceClass.getName());
+      result.append('(');
+      result.append(Arrays.stream(constructorArgs).map(Object::toString).collect(
+               Collectors.joining(", ")));
+      result.append(").");
+      result.append(method.getName());
+      result.append('(');
+      result.append(
+               Arrays.stream(methodArgs).map(Object::toString).collect(Collectors.joining(", ")));
+      result.append(')');
+      return result.toString();
+   }
+
+   MatchedRoute(IValidationService validator, MethodEntry entry, Object[] args,
+      boolean hasContent) {
+      this.resourceClass = entry.getResourceClass();
+      this.constructorArgs = Arrays.copyOfRange(args, 0, entry.getResourceArgumentCount());
+      this.method = entry.getMethod();
+      this.methodArgs = Arrays.copyOfRange(args, entry.getResourceArgumentCount(), args.length);
+      this.hasContent = hasContent;
+      this.validator = validator;
+   }
+
+   Object[] getConstructorArgs() {
+      return constructorArgs;
+   }
+
+   Object[] getMethodArgs() {
+      return methodArgs;
    }
 
    private Object createResource() {
@@ -101,21 +164,5 @@ final class MatchedRoute implements RouteMatch {
       } catch (Exception e) {
          throw new InternalServerError(e);
       }
-   }
-
-   MatchedRoute(IValidationService validator, MethodEntry entry, Object[] args) {
-      this.resourceClass = entry.getResourceClass();
-      this.constructorArgs = Arrays.copyOfRange(args, 0, entry.getResourceArgumentCount());
-      this.method = entry.getMethod();
-      this.methodArgs = Arrays.copyOfRange(args, entry.getResourceArgumentCount(), args.length);
-      this.validator = validator;
-   }
-
-   Object[] getConstructorArgs() {
-      return constructorArgs;
-   }
-
-   Object[] getMethodArgs() {
-      return methodArgs;
    }
 }

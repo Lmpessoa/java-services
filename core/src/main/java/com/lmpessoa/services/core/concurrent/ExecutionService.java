@@ -22,6 +22,7 @@
  */
 package com.lmpessoa.services.core.concurrent;
 
+import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,6 +46,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.lmpessoa.services.core.hosting.InternalServerError;
 import com.lmpessoa.services.util.logging.ILogger;
 
 /**
@@ -81,7 +83,7 @@ public final class ExecutionService implements IExecutionService {
     *
     * @param maxConcurrentJobs the maximum number of concurrent tasks this {@code ExecutorService}
     *           can execute. If this number is zero or negative, the service will not limit the
-    *           amount of tasks to execute concurrently.
+    *           ammount of tasks to execute concurrently.
     * @param log a logger used to register issues while running tasks.
     */
    public ExecutionService(int maxConcurrentJobs, ILogger log) {
@@ -125,8 +127,8 @@ public final class ExecutionService implements IExecutionService {
     *
     * <p>
     * After this method is executed, an {@code ExecutionService} will cancel any tasks not yet in
-    * executions and refuse any new tasks but will not attempt to interrupt any already running
-    * tasks pending completion.
+    * executions and refuse any new tasks but will not attemp to interrupt any already running tasks
+    * pending completion.
     * </p>
     *
     * <p>
@@ -426,7 +428,7 @@ public final class ExecutionService implements IExecutionService {
       @Override
       public T get() throws InterruptedException, ExecutionException {
          try {
-            return get(49, TimeUnit.DAYS);
+            return get(1, TimeUnit.MINUTES);
          } catch (TimeoutException e) {
             // No application might be running for 49 days straight so ignore
          }
@@ -450,7 +452,6 @@ public final class ExecutionService implements IExecutionService {
             case INTERRUPTED:
                throw new InterruptedException();
             default:
-               // Will never get here
                return result;
          }
       }
@@ -465,10 +466,14 @@ public final class ExecutionService implements IExecutionService {
                status = Status.INTERRUPTED;
                log.warning(e);
                Thread.currentThread().interrupt();
-            } catch (Throwable t) { // NOSONAR
+            } catch (Throwable t) {
+               exception = t;
+               while (exception instanceof InvocationTargetException
+                        || exception instanceof InternalServerError) {
+                  exception = exception.getCause();
+               }
                status = Status.FAILED;
                error = t.getMessage();
-               exception = t;
                log.error(t);
             } finally {
                completed = Instant.now();
