@@ -35,11 +35,13 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import com.lmpessoa.services.core.concurrent.IExecutionService;
 import com.lmpessoa.services.core.routing.IRouteTable;
@@ -195,8 +197,12 @@ public final class ApplicationServer {
                         "Route '%s' is already assigned to another method; ignored",
                         entry.getRoute());
             } else {
-               settings.getLogger().info("Mapped route '%s' to method %s", entry.getRoute(),
-                        entry.getMethod());
+               Method method = entry.getMethod();
+               String paramTypes = Arrays.stream(method.getParameterTypes())
+                        .map(t -> t.getName())
+                        .collect(Collectors.joining(", "));
+               settings.getLogger().info("Mapped route '%s' to method %s.%s(%s)", entry.getRoute(),
+                        method.getDeclaringClass().getName(), method.getName(), paramTypes);
             }
          }
          context = new ApplicationContext(this, settings.getHttpPort(), "http", routes);

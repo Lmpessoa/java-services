@@ -163,10 +163,12 @@ final class ConstraintAnnotation {
       for (Annotation ann : element.getAnnotations()) {
          Method method = ClassUtils.getMethod(ann.annotationType(), VALUE);
          if (method != null && method.getReturnType().isArray()
-                  && method.getReturnType().getComponentType().isAnnotationPresent(Constraint.class)) {
+                  && method.getReturnType().getComponentType().isAnnotationPresent(
+                           Constraint.class)) {
             try {
                Annotation[] list = (Annotation[]) method.invoke(ann);
-               Arrays.asList(list).stream().map(a -> new ConstraintAnnotation(element, a)).forEach(result::add);
+               Arrays.asList(list).stream().map(a -> new ConstraintAnnotation(element, a)).forEach(
+                        result::add);
             } catch (IllegalAccessException | InvocationTargetException e) {
                throw new ConstraintDefinitionException(e);
             }
@@ -266,13 +268,18 @@ final class ConstraintAnnotation {
       for (ConstraintAnnotation ann : nested) {
          ann.validate(entry).forEach(result::add);
       }
-
       if (entry.getValue() != null) {
-         ConstraintValidator<Annotation, Object> validator = findValidator(entry.getValue().getClass(), validators,
-                  entry instanceof CrossParameterPathNode ? ValidationTarget.PARAMETERS : ANNOTATED_ELEMENT);
-         ValidationContext context = new ValidationContext(this, entry, clock);
-         if (!validator.isValid(entry.getValue(), context)) {
-            context.getViolations().forEach(result::add);
+         ConstraintValidator<Annotation, Object> validator = findValidator(
+                  entry.getValue().getClass(), validators,
+                  entry instanceof CrossParameterPathNode ? ValidationTarget.PARAMETERS
+                           : ANNOTATED_ELEMENT);
+         if (validator != null) {
+            ValidationContext context = new ValidationContext(this, entry, clock);
+            if (!validator.isValid(entry.getValue(), context)) {
+               context.getViolations().forEach(result::add);
+            }
+         } else if (nested.isEmpty()) {
+            throw new UnexpectedTypeException();
          }
       }
       if (result.isEmpty()) {
@@ -295,12 +302,16 @@ final class ConstraintAnnotation {
                            && m.getParameterTypes()[1] == ConstraintValidatorContext.class);
          for (Method method : methods) {
             if (foundMethod != null
-                     && foundMethod.getParameterTypes()[0].isAssignableFrom(method.getParameterTypes()[0])
-                     && !method.getParameterTypes()[0].isAssignableFrom(foundMethod.getParameterTypes()[0])) {
+                     && foundMethod.getParameterTypes()[0]
+                              .isAssignableFrom(method.getParameterTypes()[0])
+                     && !method.getParameterTypes()[0]
+                              .isAssignableFrom(foundMethod.getParameterTypes()[0])) {
                throw new UnexpectedTypeException();
             }
-            SupportedValidationTarget validationTarget = validatorClass.getAnnotation(SupportedValidationTarget.class);
-            List<ValidationTarget> targets = validationTarget != null ? Arrays.asList(validationTarget.value())
+            SupportedValidationTarget validationTarget = validatorClass
+                     .getAnnotation(SupportedValidationTarget.class);
+            List<ValidationTarget> targets = validationTarget != null
+                     ? Arrays.asList(validationTarget.value())
                      : Arrays.asList(ANNOTATED_ELEMENT);
             Class<?> param = method.getParameterTypes()[0];
             if (target != ValidationTarget.PARAMETERS || param == Object.class
@@ -311,7 +322,7 @@ final class ConstraintAnnotation {
          }
       }
       if (foundValidator == null) {
-         throw new UnexpectedTypeException();
+         return null;
       }
       try {
          @SuppressWarnings("unchecked")
@@ -329,7 +340,8 @@ final class ConstraintAnnotation {
    private boolean isValid(Object value) {
       value = unwrapOptional(value);
       if (value == null) {
-         return !(annotation instanceof NotNull || annotation instanceof NotEmpty || annotation instanceof NotBlank);
+         return !(annotation instanceof NotNull || annotation instanceof NotEmpty
+                  || annotation instanceof NotBlank);
       } else if (annotation instanceof Null) {
          return false;
       } else if (annotation instanceof NotNull) {
@@ -377,7 +389,8 @@ final class ConstraintAnnotation {
          case "Email":
             return isValidEmail(value);
          default:
-            throw new ConstraintDefinitionException("Unknown constraint type: " + annotation.annotationType());
+            throw new ConstraintDefinitionException(
+                     "Unknown constraint type: " + annotation.annotationType());
       }
    }
 
@@ -510,12 +523,14 @@ final class ConstraintAnnotation {
       if (!(value instanceof CharSequence)) {
          throw new UnexpectedTypeException();
       }
-      return Pattern.matches("(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\\x01-\\x08"
-               + "\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-"
-               + "\\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?"
-               + "|\\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9]"
-               + "[0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|"
-               + "\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\])", (CharSequence) value);
+      return Pattern.matches(
+               "(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\\x01-\\x08"
+                        + "\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-"
+                        + "\\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?"
+                        + "|\\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9]"
+                        + "[0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|"
+                        + "\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\])",
+               (CharSequence) value);
    }
 
    private boolean assertNumber(Object value, Predicate<BigDecimal> assertion) {

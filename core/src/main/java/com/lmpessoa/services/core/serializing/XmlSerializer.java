@@ -140,11 +140,11 @@ final class XmlSerializer extends Serializer {
    private String produceException(Throwable t) {
       StringBuilder result = new StringBuilder();
       result.append(XML_HEAD);
-      result.append("<exception type=\"");
+      result.append("<error type=\"");
       result.append(t.getClass().getSimpleName());
-      if (t.getMessage() != null && !t.getMessage().isEmpty()) {
+      if (t.getMessage() != null && !t.getLocalizedMessage().isEmpty()) {
          result.append("\" message=\"");
-         result.append(t.getMessage());
+         result.append(t.getLocalizedMessage());
       }
       result.append("\"/>");
       return result.toString();

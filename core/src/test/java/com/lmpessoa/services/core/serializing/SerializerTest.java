@@ -30,6 +30,8 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.Locale;
 
 import javax.xml.bind.annotation.XmlRootElement;
@@ -66,6 +68,17 @@ public final class SerializerTest {
    }
 
    @Test
+   public void testParseJsonWithDate() {
+      String content = "{\"created\":\"2017-06-05T05:42:00-03:00\", \"message\":\"Hello, World!\"}";
+      DatedTestObject result = Serializer.toObject(content.getBytes(), ContentType.JSON,
+               DatedTestObject.class);
+      assertNotNull(result);
+      assertEquals("Hello, World!", result.message);
+      assertEquals(ZonedDateTime.of(2017, 6, 5, 5, 42, 0, 0, ZoneOffset.ofHours(-3)),
+               result.created);
+   }
+
+   @Test
    public void testParseXmlFails() {
       thrown.expect(UnsupportedMediaTypeException.class);
       Serializer.enableXml(false);
@@ -86,6 +99,19 @@ public final class SerializerTest {
       assertEquals("Test", result.name);
       assertArrayEquals(new String[] { "test@test.com", "test@test.org" }, result.email);
       assertTrue(result.checked);
+   }
+
+   @Test
+   public void testParseXmlWithDate() {
+      Serializer.enableXml(true);
+      String content = "<?xml version=\"1.0\"?><object><created>2017-06-05T05:42:00-03:00</created>"
+               + "<message>Hello, World!</message></object>";
+      DatedTestObject result = Serializer.toObject(content.getBytes(), ContentType.XML,
+               DatedTestObject.class);
+      assertNotNull(result);
+      assertEquals("Hello, World!", result.message);
+      assertEquals(ZonedDateTime.of(2017, 6, 5, 5, 42, 0, 0, ZoneOffset.ofHours(-3)),
+               result.created);
    }
 
    @Test
@@ -136,15 +162,32 @@ public final class SerializerTest {
       byte[] data = new byte[result.available()];
       result.read(data);
       String content = new String(data, Charset.forName("UTF-8"));
-      assertEquals("<?xml version=\"1.0\"?><exception type=\"NullPointerException\"/>", content);
+      assertEquals("<?xml version=\"1.0\"?><error type=\"NullPointerException\"/>", content);
+   }
+
+   @Test
+   public void testProduceJsonException() throws IOException {
+      HttpInputStream result = Serializer.fromObject(new NullPointerException(),
+               new String[] { ContentType.JSON }, null);
+      byte[] data = new byte[result.available()];
+      result.read(data);
+      String content = new String(data, Charset.forName("UTF-8"));
+      assertEquals("{\"error\":{\"type\":\"NullPointerException\"}}", content);
    }
 
    @XmlRootElement(name = "object")
    public static class TestObject {
 
-      public int id;
-      public String name;
-      public String[] email;
-      public boolean checked;
+      private int id;
+      private String name;
+      private String[] email;
+      private boolean checked;
+   }
+
+   @XmlRootElement(name = "object")
+   public static class DatedTestObject {
+
+      private ZonedDateTime created;
+      private String message;
    }
 }

@@ -23,6 +23,7 @@
 package com.lmpessoa.services.core.serializing;
 
 import java.lang.reflect.Type;
+import java.time.temporal.TemporalAccessor;
 import java.util.Locale;
 import java.util.Map.Entry;
 
@@ -39,10 +40,13 @@ import com.lmpessoa.services.core.validating.ErrorSet;
 final class JsonSerializer extends Serializer {
 
    private final Gson gson = new GsonBuilder() //
+            .registerTypeHierarchyAdapter(Throwable.class,
+                     (com.google.gson.JsonSerializer<Throwable>) this::adaptThrowable)
             .registerTypeHierarchyAdapter(IApplicationInfo.class,
                      (com.google.gson.JsonSerializer<IApplicationInfo>) this::adaptAppInfo)
             .registerTypeHierarchyAdapter(ErrorSet.Entry.class,
                      (com.google.gson.JsonSerializer<ErrorSet.Entry>) this::adaptErrorSetEntry)
+            .registerTypeHierarchyAdapter(TemporalAccessor.class, new TemporalAccessorAdapter())
             .disableHtmlEscaping()
             .create();
    private final Locale[] locales;
@@ -78,6 +82,16 @@ final class JsonSerializer extends Serializer {
          result = result.substring(0, result.length() - 7);
       }
       return Character.toLowerCase(result.charAt(0)) + result.substring(1);
+   }
+
+   private JsonElement adaptThrowable(Throwable src, Type typeOfSrc,
+      JsonSerializationContext context) {
+      JsonObject exception = new JsonObject();
+      exception.addProperty("type", src.getClass().getSimpleName());
+      exception.addProperty("message", src.getLocalizedMessage());
+      JsonObject result = new JsonObject();
+      result.add("error", exception);
+      return result;
    }
 
    private JsonElement adaptErrorSetEntry(ErrorSet.Entry src, Type typeOfSrc,

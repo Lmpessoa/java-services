@@ -83,8 +83,7 @@ final class SerializerResponder {
       } catch (Throwable t) {
          // This is correct; we capture every kind of exception here
          // We also know that Sonar wants us to have each type of exception treated in its own catch
-         // block
-         // but that would cause too many code duplications we'd rather ignore these warnings
+         // block but that would cause too many code duplications we'd rather ignore these warnings
          while ((t instanceof InvocationTargetException || t instanceof InternalServerError)
                   && t.getCause() != null) {
             t = t.getCause();
@@ -191,16 +190,18 @@ final class SerializerResponder {
    }
 
    private HttpInputStream serialize(Object object, HttpRequest request) {
-      String[] accepts;
+      final List<String> accepts = new ArrayList<>();
       if (request.getHeaders().contains(Headers.ACCEPT)) {
-         List<String> acceptList = new ArrayList<>();
          Arrays.stream(request.getHeaders().getAny(Headers.ACCEPT)).map(s -> s.split(",")).forEach(
-                  s -> Arrays.stream(s).map(String::trim).forEach(acceptList::add));
-         accepts = acceptList.toArray(new String[0]);
+                  s -> Arrays.stream(s).map(ss -> ss.split(";")[0].trim()).forEach(accepts::add));
+         if (!accepts.contains(ContentType.JSON) && accepts.contains("*/*")) {
+            accepts.set(accepts.indexOf("*/*"), ContentType.JSON);
+         }
       } else {
-         accepts = new String[] { ContentType.JSON };
+         accepts.add(ContentType.JSON);
       }
-      return Serializer.fromObject(object, accepts, request.getAcceptedLanguages());
+      return Serializer.fromObject(object, accepts.toArray(new String[0]),
+               request.getAcceptedLanguages());
    }
 
    private Charset getCharsetFromMethodOrUTF8(Method method) {

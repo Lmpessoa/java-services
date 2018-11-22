@@ -161,7 +161,7 @@ public final class RouteTable implements IRouteTable {
          Method methodCall = methodEntry.getMethod();
          params.addAll(Arrays.asList(methodCall.getParameters()));
          if (methodEntry.getContentClass() != null) {
-            params.remove(0);
+            params.remove(constructor.getParameterCount());
          }
          Map<String, List<String>> query = parseQueryString(request.getQueryString());
          List<Object> result = convertParams(params, route, matcher, query);
