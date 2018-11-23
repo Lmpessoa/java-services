@@ -22,6 +22,8 @@
  */
 package com.lmpessoa.services.core.hosting;
 
+import com.lmpessoa.services.core.internal.hosting.HttpException;
+
 public final class UnavailableForLegalReasonsException extends HttpException {
 
    private static final long serialVersionUID = 1L;

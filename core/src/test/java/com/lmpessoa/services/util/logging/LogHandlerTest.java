@@ -45,6 +45,9 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import com.lmpessoa.services.core.hosting.ConnectionInfo;
+import com.lmpessoa.services.util.logging.internal.ConsoleHandler;
+import com.lmpessoa.services.util.logging.internal.FileHandler;
+import com.lmpessoa.services.util.logging.internal.Logger;
 
 public final class LogHandlerTest {
 

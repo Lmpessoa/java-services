@@ -22,6 +22,7 @@
  */
 package com.lmpessoa.services.core.hosting;
 
+import com.lmpessoa.services.core.internal.hosting.HttpException;
 import com.lmpessoa.services.core.routing.RouteMatch;
 
 /**

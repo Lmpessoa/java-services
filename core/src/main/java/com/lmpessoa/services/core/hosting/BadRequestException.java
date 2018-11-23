@@ -22,6 +22,7 @@
  */
 package com.lmpessoa.services.core.hosting;
 
+import com.lmpessoa.services.core.internal.hosting.HttpException;
 import com.lmpessoa.services.core.validating.ErrorSet;
 
 /**
@@ -73,8 +74,8 @@ public final class BadRequestException extends HttpException {
    /**
     * Returns a set of errors describing the problems with the current request.
     *
-    * @return a set of errors describing the problems with the current request, or {@code null} if no
-    * such set is present.
+    * @return a set of errors describing the problems with the current request, or {@code null} if
+    *         no such set is present.
     */
    public ErrorSet getErrors() {
       return errors;

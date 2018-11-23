@@ -22,6 +22,8 @@
  */
 package com.lmpessoa.services.core.hosting;
 
+import com.lmpessoa.services.core.internal.hosting.HttpException;
+
 /**
  * Thrown when the current user does not have credentials to access a protected resource method.
  */

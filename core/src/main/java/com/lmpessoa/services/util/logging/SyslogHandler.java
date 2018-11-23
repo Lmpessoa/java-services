@@ -46,6 +46,8 @@ import java.util.function.Predicate;
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocketFactory;
 
+import com.lmpessoa.services.util.logging.internal.LogFormatter;
+
 /**
  * A Handler that publishes log messages to a remote syslog server.
  * <p>

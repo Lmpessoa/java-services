@@ -23,46 +23,21 @@
 package com.lmpessoa.services.core.hosting;
 
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.math.BigDecimal;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Objects;
-import java.util.function.Supplier;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
-import com.lmpessoa.services.core.concurrent.IExecutionService;
-import com.lmpessoa.services.core.routing.IRouteTable;
-import com.lmpessoa.services.core.routing.NonResource;
-import com.lmpessoa.services.core.routing.Resource;
-import com.lmpessoa.services.core.routing.RouteEntry;
-import com.lmpessoa.services.core.routing.RouteMatch;
-import com.lmpessoa.services.core.routing.RouteTable;
-import com.lmpessoa.services.core.security.IIdentity;
-import com.lmpessoa.services.core.serializing.Serializer;
-import com.lmpessoa.services.core.validating.IValidationService;
-import com.lmpessoa.services.util.ClassUtils;
-import com.lmpessoa.services.util.logging.ILogger;
+import com.lmpessoa.services.core.internal.hosting.ApplicationServerImpl;
 
 /**
  * Represents the Application Server.
  *
  * <p>
- * The static methods in this class are used to start and stop the embedded application serve * applications. Applications must call {@link #start()} from their <code>main</code> method to
+ * The static methods in this class are used to start and stop the embedded application server
+ * applications. Applications must call {@link #start()} from their <code>main</code> method to
  * start the application server.
-rver.
  * </p>
  *
  * <p>
@@ -75,14 +50,7 @@ rver.
  */
 public final class ApplicationServer {
 
-   private static final String CONFIGURE = "configure";
-
-   private static ApplicationServer instance;
-
-   private final ApplicationSettings settings;
-
-   private ApplicationOptions options;
-   private ApplicationContext context;
+   private static ApplicationServerImpl instance;
 
    /**
     * Starts the Application Server.
@@ -93,10 +61,8 @@ public final class ApplicationServer {
     */
    public static void start() {
       if (instance == null) {
-         Class<?> startupClass = findStartupClass();
-         outputBanner(startupClass);
-         instance = new ApplicationServer(startupClass);
-         instance.run();
+         instance = new ApplicationServerImpl();
+         instance.start();
       }
    }
 
@@ -110,8 +76,7 @@ public final class ApplicationServer {
     */
    public static void shutdown() {
       if (instance != null) {
-         instance.settings.getLogger().info("Requested application server to shut down");
-         instance.getContext().stop();
+         instance.stop(() -> instance = null);
       }
    }
 
@@ -152,274 +117,7 @@ public final class ApplicationServer {
       return instance != null;
    }
 
-   /**
-    * Returns the startup class in use by this application server.
-    *
-    * @return the startup class in use by this application server, or {@code null} if the
-    *         application server is not running.
-    */
    public static Class<?> getStartupClass() {
-      return instance != null ? instance.settings.getStartupClass() : null;
-   }
-
-   ApplicationServer(Class<?> startupClass) {
-      this.settings = new ApplicationSettings(this, startupClass);
-      initServer();
-   }
-
-   ApplicationServer(ApplicationSettings settings) {
-      this.settings = settings;
-      initServer();
-   }
-
-   static ApplicationServer instance() {
-      return instance;
-   }
-
-   ApplicationSettings getSettings() {
-      return settings;
-   }
-
-   ApplicationOptions getOptions() {
-      return options;
-   }
-
-   synchronized ApplicationContext getContext() {
-      if (context == null) {
-         RouteTable routes = options.getRoutes();
-         Collection<RouteEntry> result = routes.putAll(getResources());
-         for (RouteEntry entry : result) {
-            if (entry.getError() != null) {
-               settings.getLogger().warning(entry.getError());
-            } else if (entry.getDuplicateOf() != null) {
-               settings.getLogger().info(
-                        "Route '%s' is already assigned to another method; ignored",
-                        entry.getRoute());
-            } else {
-               Method method = entry.getMethod();
-               String paramTypes = Arrays.stream(method.getParameterTypes())
-                        .map(t -> t.getName())
-                        .collect(Collectors.joining(", "));
-               settings.getLogger().info("Mapped route '%s' to method %s.%s(%s)", entry.getRoute(),
-                        method.getDeclaringClass().getName(), method.getName(), paramTypes);
-            }
-         }
-         context = new ApplicationContext(this, settings.getHttpPort(), "http", routes);
-      }
-      return context;
-   }
-
-   ConnectionInfo getConnectionInfo() {
-      return options.getServices().get(ConnectionInfo.class);
-   }
-
-   Collection<Class<?>> getResources() {
-      Collection<String> classes = null;
-      try {
-         classes = ClassUtils.scanInProjectOf(settings.getStartupClass());
-      } catch (IOException e) {
-         settings.getLogger().error(e);
-         System.exit(1);
-      }
-      Collection<Class<?>> result = new ArrayList<>();
-      final Pattern endsInResource = Pattern.compile("[a-zA-Z0-9]Resource$");
-      for (String className : classes) {
-         try {
-            Class<?> clazz = Class.forName(className);
-            if (ClassUtils.isConcreteClass(clazz) && Modifier.isPublic(clazz.getModifiers())
-                     && (endsInResource.matcher(clazz.getSimpleName()).find()
-                              || clazz.isAnnotationPresent(Resource.class))
-                     && !clazz.isAnnotationPresent(NonResource.class)) {
-               result.add(clazz);
-            }
-         } catch (ClassNotFoundException e) {
-            // Should never get here since we fetched existing class names
-            settings.getLogger().debug(e);
-         }
-      }
-      return Collections.unmodifiableCollection(result);
-   }
-
-   void configureServices() {
-      IHostEnvironment env = settings.getEnvironment();
-      Class<?> startupClass = settings.getStartupClass();
-      String envSpecific = CONFIGURE + env.getName();
-      Method configMethod = ClassUtils.getMethod(startupClass, envSpecific,
-               IApplicationOptions.class);
-      Object[] args = new Object[] { options };
-      if (configMethod == null || !Modifier.isStatic(configMethod.getModifiers())) {
-         configMethod = ClassUtils.getMethod(startupClass, CONFIGURE, IApplicationOptions.class,
-                  IHostEnvironment.class);
-         args = new Object[] { options, env };
-      }
-      if (configMethod == null || !Modifier.isStatic(configMethod.getModifiers())) {
-         configMethod = ClassUtils.getMethod(startupClass, CONFIGURE, IApplicationOptions.class);
-         args = new Object[] { options };
-      }
-      if (configMethod == null || !Modifier.isStatic(configMethod.getModifiers())) {
-         settings.getLogger().info("Application has no service configuration method");
-         return;
-      } else if (!CONFIGURE.equals(configMethod.getName())) {
-         settings.getLogger().info("Using service configuration specific for the environment");
-      }
-      try {
-         configMethod.invoke(null, args);
-      } catch (IllegalAccessException | InvocationTargetException e) {
-         settings.getLogger().debug(e);
-      }
-      Serializer.enableXml(options.isXmlEnabled());
-   }
-
-   private static Class<?> findStartupClass() {
-      Class<?>[] stackClasses = new SecurityManager() {
-
-         public Class<?>[] getStack() {
-            return getClassContext();
-         }
-      }.getStack();
-      for (int i = 1; i < stackClasses.length; ++i) {
-         if (ApplicationServer.class != stackClasses[i]) {
-            return stackClasses[i];
-         }
-      }
-      return null;
-   }
-
-   private static void outputBanner(Class<?> startupClass) {
-      Objects.requireNonNull(startupClass);
-      URL bannerUrl = startupClass.getResource("/banner.txt");
-      if (bannerUrl == null) {
-         bannerUrl = ApplicationServer.class.getResource("/banner.txt");
-      }
-      if (bannerUrl == null) {
-         return;
-      }
-      try {
-         String version = getVersion();
-         Collection<String> banner = Files.readAllLines(Paths.get(bannerUrl.toURI()));
-         banner.stream() //
-                  .map(s -> s.replaceAll("\\$\\{project.version\\}", version)) //
-                  .forEach(System.out::println);
-      } catch (IOException | URISyntaxException e) {
-         // Should never happen but may just ignore
-      }
-   }
-
-   private void initServer() {
-      AsyncResponder.setExecutor(settings.getJobExecutor());
-      options = new ApplicationOptions(services -> {
-         // Registers Singleton services
-         services.put(ILogger.class, Wrapper.wrap(settings.getLogger()));
-         services.put(IHostEnvironment.class, settings.getEnvironment());
-         services.put(IExecutionService.class, Wrapper.wrap(settings.getJobExecutor()));
-         services.put(IValidationService.class, Wrapper.wrap(settings.getValidationService()));
-         services.put(IApplicationInfo.class, Wrapper.wrap(new ApplicationInfo(settings, options)));
-
-         // Registers PerRequest services
-         services.put(IRouteTable.class, (Supplier<IRouteTable>) () -> null);
-         services.put(ConnectionInfo.class, (Supplier<ConnectionInfo>) () -> null);
-         services.put(HttpRequest.class, (Supplier<HttpRequest>) () -> null);
-         services.put(RouteMatch.class, (Supplier<RouteMatch>) () -> null);
-         services.put(IIdentity.class, (Supplier<IIdentity>) () -> null);
-      });
-      logStartupMessage(settings.getStartupClass(), settings.getApplicationName());
-   }
-
-   private void run() {
-      configureServices();
-      Thread ct = new Thread(getContext());
-      ct.start();
-      logCreatedContext(getContext());
-      logStartedMessage();
-      try {
-         ct.join();
-      } catch (InterruptedException e) {
-         settings.getLogger().warning(e);
-         Thread.currentThread().interrupt();
-      }
-      settings.getMainExecutor().shutdown();
-      settings.getJobExecutor().shutdown();
-      try {
-         settings.getLogger().join();
-      } catch (InterruptedException e) {
-         settings.getLogger().warning(e);
-         Thread.currentThread().interrupt();
-      }
-      logShutdownMessage();
-   }
-
-   private void logStartupMessage(Class<?> startupClass, String appName) {
-      StringBuilder message = new StringBuilder();
-      message.append("Starting application");
-      if (appName != null) {
-         message.append(' ');
-         message.append(appName);
-      }
-      String packVersion = startupClass.getPackage().getImplementationVersion();
-      if (packVersion != null && !packVersion.isEmpty()) {
-         message.append(" v");
-         message.append(packVersion);
-      }
-      message.append(" on '");
-      message.append(settings.getEnvironment().getName());
-      message.append("' environment");
-      settings.getLogger().info(message);
-   }
-
-   private void logCreatedContext(ApplicationContext context) {
-      settings.getLogger().info("Application is now listening on ports: %d [%s]", context.getPort(),
-               context.getName());
-   }
-
-   private void logStartedMessage() {
-      BigDecimal thousand = new BigDecimal(1000);
-      Duration duration = Duration.between(settings.getStartupTime(), Instant.now());
-      BigDecimal uptime = new BigDecimal(duration.toMillis()).divide(thousand);
-      BigDecimal vmUptime = new BigDecimal(ManagementFactory.getRuntimeMXBean().getUptime())
-               .divide(thousand);
-      settings.getLogger().info("Started application in %s seconds (VM running for %s seconds)",
-               uptime, vmUptime);
-   }
-
-   private void logShutdownMessage() {
-      Duration duration = Duration.between(settings.getStartupTime(), Instant.now());
-      long millis = duration.toMillis();
-      long seconds = millis / 1000;
-      long minutes = seconds / 60;
-      seconds -= minutes * 60;
-      long hours = minutes / 60;
-      minutes -= hours * 60;
-      StringBuilder durationStr = new StringBuilder();
-      if (hours > 0) {
-         durationStr.append(hours);
-         durationStr.append(" hour");
-         if (hours > 1) {
-            durationStr.append('s');
-         }
-      }
-      if (minutes > 0) {
-         if (durationStr.length() > 0) {
-            durationStr.append(", ");
-         }
-         durationStr.append(minutes);
-         durationStr.append(" minute");
-         if (minutes > 1) {
-            durationStr.append('s');
-         }
-      }
-      if (seconds > 0) {
-         if (durationStr.length() > 0) {
-            durationStr.append(", ");
-         }
-         durationStr.append(seconds);
-         durationStr.append(" second");
-         if (seconds > 1) {
-            durationStr.append('s');
-         }
-      }
-      if (durationStr.length() > 0) {
-         durationStr.insert(0, " after ");
-      }
-      settings.getLogger().info("Application stopped%s", durationStr);
+      return instance != null ? instance.getStartupClass() : null;
    }
 }

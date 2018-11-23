@@ -22,6 +22,8 @@
  */
 package com.lmpessoa.services.core.hosting;
 
+import com.lmpessoa.services.core.internal.hosting.HttpException;
+
 /**
  * Thrown when the received content type is not supported.
  */

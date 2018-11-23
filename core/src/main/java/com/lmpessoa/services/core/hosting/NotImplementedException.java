@@ -22,6 +22,8 @@
  */
 package com.lmpessoa.services.core.hosting;
 
+import com.lmpessoa.services.core.internal.hosting.HttpException;
+
 /**
  * Thrown when the requested method is recognised but effectively not implemented.
  */

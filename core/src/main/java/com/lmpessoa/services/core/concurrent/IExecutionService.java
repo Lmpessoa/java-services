@@ -66,8 +66,8 @@ public interface IExecutionService {
     * Returns the set of task results retained by the execution service.
     *
     * <p>
-    * This set is kept in synchronisation with the execution service and may reflect later updates to
-    * it due to being submitted new tasks or purging expired ones.
+    * This set is kept in synchronisation with the execution service and may reflect later updates
+    * to it due to being submitted new tasks or purging expired ones.
     * </p>
     *
     * @return the set of task IDs whose results are still retained by the execution service.

@@ -35,11 +35,11 @@ public interface IIdentityOptions {
    /**
     * Defines a policy to be used to restrict users from parts of the application.
     * <p>
-    * A policy defines a complex rule that can be used to restrict users from accessing parts of your
-    * application. While roles are usually only tested for presence in the user's identity, policies
-    * can actually evaluate the presence and content of information in a user's identity. For example,
-    * the following example ensures a user must belong to a certain department to access a method
-    * guarded by it:
+    * A policy defines a complex rule that can be used to restrict users from accessing parts of
+    * your application. While roles are usually only tested for presence in the user's identity,
+    * policies can actually evaluate the presence and content of information in a user's identity.
+    * For example, the following example ensures a user must belong to a certain department to
+    * access a method guarded by it:
     * </p>
     *
     * <pre>
@@ -64,8 +64,8 @@ public interface IIdentityOptions {
     * </pre>
     *
     * <p>
-    * Note that policy names are case sensitive. However, it is recommended that policy names differing
-    * only by case are avoided.
+    * Note that policy names are case sensitive. However, it is recommended that policy names
+    * differing only by case are avoided.
     * </p>
     *
     * @param policyName

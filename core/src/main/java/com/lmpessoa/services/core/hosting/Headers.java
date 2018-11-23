@@ -93,10 +93,10 @@ public final class Headers {
     * Splits an HTTP header value in a component map.
     *
     * <p>
-    * An HTTP header value is composed of a single direct value and, optionally, by multiple key/value
-    * pairs separated by semicolons. This method parses a given HTTP header value in this format into
-    * a {@link Map} where keys can be easily read. The main value of the header value is stored in this
-    * map with an empty string as key.
+    * An HTTP header value is composed of a single direct value and, optionally, by multiple
+    * key/value pairs separated by semicolons. This method parses a given HTTP header value in this
+    * format into a {@link Map} where keys can be easily read. The main value of the header value is
+    * stored in this map with an empty string as key.
     * </p>
     *
     * @param headerValue the HTTP header value to be split.
@@ -134,9 +134,9 @@ public final class Headers {
    /**
     * Returns a normalised version of the given header name.
     * <p>
-    * As a standard, HTTP header names are formatted in all lower case with the initial of each word in
-    * upper case. Words in the header name are separated by dashes. Exceptions to this rule are also
-    * treated by this method.
+    * As a standard, HTTP header names are formatted in all lower case with the initial of each word
+    * in upper case. Words in the header name are separated by dashes. Exceptions to this rule are
+    * also treated by this method.
     * </p>
     *
     * @param headerName the name of the header to be normalised.

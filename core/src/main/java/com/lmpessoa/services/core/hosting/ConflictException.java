@@ -22,6 +22,8 @@
  */
 package com.lmpessoa.services.core.hosting;
 
+import com.lmpessoa.services.core.internal.hosting.HttpException;
+
 /**
  * Thrown when there is a conflict with the current state of the requested resource.
  */

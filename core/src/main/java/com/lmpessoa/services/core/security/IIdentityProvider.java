@@ -50,9 +50,9 @@ public interface IIdentityProvider {
    /**
     * Returns the identity of the user of the given request.
     * <p>
-    * Applications that wish to have more control over how the identity of the user is retrieved from
-    * the request must subclass this method. Most applications however will be fine implementing only
-    * {@link #getIdentity(String, String)}.
+    * Applications that wish to have more control over how the identity of the user is retrieved
+    * from the request must subclass this method. Most applications however will be fine
+    * implementing only {@link #getIdentity(String, String)}.
     * </p>
     *
     * @param request the request from which to retrieve the identity of the user.
@@ -74,10 +74,10 @@ public interface IIdentityProvider {
    /**
     * Returns the identity of the user with the given authentication credentials.
     * <p>
-    * By default, users are identified by a token sent through the {@code Authorization} HTTP header.
-    * The format of this token is not bound by the engine and may bear any format. It is, however,
-    * recommended that developers check the {@code format} argument to verify that the authentication
-    * mechanism is one supported by the identity provider.
+    * By default, users are identified by a token sent through the {@code Authorization} HTTP
+    * header. The format of this token is not bound by the engine and may bear any format. It is,
+    * however, recommended that developers check the {@code format} argument to verify that the
+    * authentication mechanism is one supported by the identity provider.
     * </p>
     *
     * @param format the name of the mechanism used for the user's identification.

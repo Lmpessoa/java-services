@@ -35,14 +35,14 @@ package com.lmpessoa.services.core.hosting;
  * The proxy can only be invoked once per request.
  * </p>
  */
-interface NextResponder {
+public interface NextResponder {
 
    /**
     * Calls the next handler registered in the application.
     * <p>
     * New handlers must be aware that they are expected to return a result of their execution after
-    * completion. Implementors of new handlers may receive that result from the return of calling this
-    * function.
+    * completion. Implementors of new handlers may receive that result from the return of calling
+    * this function.
     * </p>
     *
     * @return the result returned by the next handler.

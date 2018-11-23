@@ -67,6 +67,8 @@ public abstract class AbstractParser<T extends IVariablePart> {
    private final boolean forceLiteralSeparator;
    private final String variablePrefix;
    private final String template;
+
+   private ITemplatePart lastPart = null;
    private int pos;
 
    static {
@@ -111,7 +113,6 @@ public abstract class AbstractParser<T extends IVariablePart> {
    protected final List<ITemplatePart> parse() throws ParseException {
       pos = 0;
       List<ITemplatePart> result = new ArrayList<>();
-      ITemplatePart lastPart = null;
       while (pos < template.length()) {
          ITemplatePart part;
          if (template.startsWith(variablePrefix, pos)) {
@@ -128,6 +129,14 @@ public abstract class AbstractParser<T extends IVariablePart> {
          }
       }
       return result;
+   }
+
+   protected final Character getLastLiteralCharacter() {
+      if (lastPart instanceof LiteralPart) {
+         String value = ((LiteralPart) lastPart).getValue();
+         return value.charAt(value.length() - 1);
+      }
+      return null;
    }
 
    /**

@@ -1,1 +1,1 @@
-Simple Java Microservices Engine v${project.version}
+Simple Java Microservices Engine v${services.version}

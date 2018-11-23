@@ -22,9 +22,6 @@
  */
 package com.lmpessoa.services.util.logging;
 
-import com.lmpessoa.services.util.logging.Handler;
-import com.lmpessoa.services.util.logging.LogEntry;
-
 public final class NullHandler extends Handler {
 
    public NullHandler() {

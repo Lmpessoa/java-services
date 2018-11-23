@@ -22,11 +22,9 @@
  */
 package com.lmpessoa.services.core.hosting;
 
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Objects;
 
-import com.lmpessoa.services.core.routing.RouteTable;
+import com.lmpessoa.services.core.internal.hosting.RedirectImpl;
 
 /**
  * Represents a redirection of the client to another location.
@@ -42,12 +40,7 @@ import com.lmpessoa.services.core.routing.RouteTable;
  * to be effectively sent as response to a request.
  * </p>
  */
-public final class Redirect {
-
-   private static RouteTable routes;
-
-   private final Parameter params;
-   private final int status;
+public interface Redirect {
 
    // 201 Created
 
@@ -65,7 +58,7 @@ public final class Redirect {
     * @return an object representing this redirection.
     */
    public static Redirect createdAt(String url) {
-      return new Redirect(201, new PathParameter(url));
+      return new RedirectImpl(201, url);
    }
 
    /**
@@ -76,7 +69,7 @@ public final class Redirect {
     * @return an object representing this redirection.
     */
    public static Redirect createdAt(URL url) {
-      return new Redirect(201, new PathParameter(url.toExternalForm()));
+      return new RedirectImpl(201, url.toExternalForm());
    }
 
    /**
@@ -96,7 +89,7 @@ public final class Redirect {
     * @return an object representing this redirection.
     */
    public static Redirect createdAt(Class<?> clazz, String method, Object... args) {
-      return new Redirect(201, new ActionParameter(clazz, method, args));
+      return new RedirectImpl(201, clazz, method, args);
    }
 
    // 302 Found
@@ -114,7 +107,7 @@ public final class Redirect {
     * @return an object representing this redirection.
     */
    public static Redirect to(String url) {
-      return new Redirect(302, new PathParameter(url));
+      return new RedirectImpl(302, url);
    }
 
    /**
@@ -124,7 +117,7 @@ public final class Redirect {
     * @return an object representing this redirection.
     */
    public static Redirect to(URL url) {
-      return new Redirect(302, new PathParameter(url.toExternalForm()));
+      return new RedirectImpl(302, url.toExternalForm());
    }
 
    /**
@@ -143,7 +136,7 @@ public final class Redirect {
     * @return an object representing this redirection.
     */
    public static Redirect to(Class<?> clazz, String method, Object... args) {
-      return new Redirect(302, new ActionParameter(clazz, method, args));
+      return new RedirectImpl(302, clazz, method, args);
    }
 
    // 307 Temporary Redirect
@@ -161,7 +154,7 @@ public final class Redirect {
     * @return an object representing this redirection.
     */
    public static Redirect temporaryTo(String url) {
-      return new Redirect(307, new PathParameter(url));
+      return new RedirectImpl(307, url);
    }
 
    /**
@@ -171,7 +164,7 @@ public final class Redirect {
     * @return an object representing this redirection.
     */
    public static Redirect temporaryTo(URL url) {
-      return new Redirect(307, new PathParameter(url.toExternalForm()));
+      return new RedirectImpl(307, url.toExternalForm());
    }
 
    /**
@@ -190,7 +183,7 @@ public final class Redirect {
     * @return an object representing this redirection.
     */
    public static Redirect temporaryTo(Class<?> clazz, String method, Object... args) {
-      return new Redirect(307, new ActionParameter(clazz, method, args));
+      return new RedirectImpl(307, clazz, method, args);
    }
 
    // 308 Permanent Redirect
@@ -208,7 +201,7 @@ public final class Redirect {
     * @return an object representing this redirection.
     */
    public static Redirect permanentTo(String url) {
-      return new Redirect(308, new PathParameter(url));
+      return new RedirectImpl(308, url);
    }
 
    /**
@@ -218,7 +211,7 @@ public final class Redirect {
     * @return an object representing this redirection.
     */
    public static Redirect permanentTo(URL url) {
-      return new Redirect(308, new PathParameter(url.toExternalForm()));
+      return new RedirectImpl(308, url.toExternalForm());
    }
 
    /**
@@ -237,95 +230,6 @@ public final class Redirect {
     * @return an object representing this redirection.
     */
    public static Redirect permanentTo(Class<?> clazz, String method, Object... args) {
-      return new Redirect(308, new ActionParameter(clazz, method, args));
-   }
-
-   @Override
-   public String toString() {
-      return String.format("%s [%d]", params.getPath(), status);
-   }
-
-   int getStatusCode() {
-      return status;
-   }
-
-   static void setRoutes(RouteTable routes) {
-      Redirect.routes = routes;
-   }
-
-   static Redirect accepted(String url) {
-      return new Redirect(202, new PathParameter(url));
-   }
-
-   static Object seeOther(URL url) {
-      return new Redirect(303, new PathParameter(url.toExternalForm()));
-   }
-
-   URL getUrl(ConnectionInfo info) throws MalformedURLException {
-      String result = params.getPath();
-      if (result == null) {
-         throw new MalformedURLException("Cannot find path to resource");
-      }
-      if (result.startsWith("/") && info != null) {
-         int port = info.getServerPort();
-         boolean secure = info.isSecure();
-         int defaultPort = secure ? 443 : 80;
-         StringBuilder resultUrl = new StringBuilder();
-         resultUrl.append("http");
-         if (secure) {
-            resultUrl.append('s');
-         }
-         resultUrl.append("://");
-         resultUrl.append(info.getServerName());
-         if (port != defaultPort) {
-            resultUrl.append(':');
-            resultUrl.append(port);
-         }
-         resultUrl.append(result);
-         result = resultUrl.toString();
-      }
-      return new URL(result);
-   }
-
-   private Redirect(int status, Parameter params) {
-      this.status = status;
-      this.params = params;
-   }
-
-   private static interface Parameter {
-
-      String getPath();
-   }
-
-   private static class PathParameter implements Parameter {
-
-      private final String path;
-
-      public PathParameter(String path) {
-         this.path = Objects.requireNonNull(path);
-      }
-
-      @Override
-      public String getPath() {
-         return path;
-      }
-   }
-
-   private static class ActionParameter implements Parameter {
-
-      private final Class<?> clazz;
-      private final String method;
-      private final Object[] args;
-
-      public ActionParameter(Class<?> clazz, String method, Object[] args) {
-         this.clazz = Objects.requireNonNull(clazz);
-         this.method = Objects.requireNonNull(method);
-         this.args = args;
-      }
-
-      @Override
-      public String getPath() {
-         return routes.findPathTo(clazz, method, args);
-      }
+      return new RedirectImpl(308, clazz, method, args);
    }
 }

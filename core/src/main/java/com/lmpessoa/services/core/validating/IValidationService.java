@@ -26,13 +26,7 @@ import static com.lmpessoa.services.core.services.Reuse.ALWAYS;
 
 import java.lang.reflect.Method;
 
-import javax.validation.Validation;
-import javax.validation.Validator;
-import javax.validation.ValidatorFactory;
-
-import com.lmpessoa.services.core.hosting.ApplicationServer;
 import com.lmpessoa.services.core.services.Service;
-import com.lmpessoa.services.core.validating.ValidationService.ValidatorWrapper;
 
 /**
  * Provides means to validate data on applications.
@@ -44,30 +38,6 @@ import com.lmpessoa.services.core.validating.ValidationService.ValidatorWrapper;
  */
 @Service(reuse = ALWAYS)
 public interface IValidationService {
-
-   /**
-    * Returns a new validation service instance.
-    * <p>
-    * Applications should never call this method directly and instead should use the proper
-    * validation annotations in published methods and objects to be validated in order to follow the
-    * proper execution workflow. If for any reason an application requires the direct usage of a
-    * validation service, instead request the default instance using the resource constructor.
-    * </p>
-    *
-    * @return a new validation service instance.
-    */
-   static IValidationService newInstance() {
-      if (ApplicationServer.isRunning()) {
-         try {
-            ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
-            Validator validator = factory.getValidator();
-            return new ValidatorWrapper(validator);
-         } catch (Exception e) {
-            // Just ignore
-         }
-      }
-      return new ValidationService();
-   }
 
    /**
     * Validates the constraints on the given object.

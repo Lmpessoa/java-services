@@ -109,7 +109,8 @@ public final class GenericIdentity implements IIdentity {
    @Override
    public Collection<Claim> getAllClaims(String claimType) {
       return Collections.unmodifiableCollection(
-               claims.stream().filter(c -> c.getType().equals(claimType)).collect(Collectors.toList()));
+               claims.stream().filter(c -> c.getType().equals(claimType)).collect(
+                        Collectors.toList()));
    }
 
    /**

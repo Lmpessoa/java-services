@@ -22,17 +22,12 @@
  */
 package com.lmpessoa.services.core.hosting;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 /**
  * Represents headers in an HTTP request.
  */
-public final class HeaderMap {
-
-   private final Map<String, List<String>> headers;
+public interface HeaderMap {
 
    /**
     * Returns whether this map contains any value associated with the given header name.
@@ -41,9 +36,7 @@ public final class HeaderMap {
     * @return {@code true} if this map has values associated with the given header name, or
     *         {@code false} otherwise.
     */
-   public boolean contains(String headerName) {
-      return headers.containsKey(headerName);
-   }
+   boolean contains(String headerName);
 
    /**
     * Returns the first value associated of the header with the given header name on this map.
@@ -52,13 +45,7 @@ public final class HeaderMap {
     * @return the first value associated with the given header name, or {@code null} if no such
     *         value exists.
     */
-   public String get(String headerName) {
-      List<String> values = headers.get(headerName);
-      if (values != null && !values.isEmpty()) {
-         return values.get(0);
-      }
-      return null;
-   }
+   String get(String headerName);
 
    /**
     * Returns any values associated with the given header name on this map.
@@ -67,25 +54,12 @@ public final class HeaderMap {
     * @return the values associates with the given header name, or an empty array if no such values
     *         exist.
     */
-   public String[] getAny(String headerName) {
-      List<String> values = headers.get(headerName);
-      String[] result = new String[0];
-      if (values != null && !values.isEmpty()) {
-         result = values.toArray(result);
-      }
-      return result;
-   }
+   String[] getAll(String headerName);
 
    /**
     * Returns a set of header names present in this map.
     *
     * @return a set of header names present in this map.
     */
-   public Set<String> nameSet() {
-      return headers.keySet();
-   }
-
-   HeaderMap(Map<String, List<String>> headers) {
-      this.headers = Objects.requireNonNull(headers);
-   }
+   Set<String> nameSet();
 }

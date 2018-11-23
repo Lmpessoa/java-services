@@ -29,6 +29,8 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+import com.lmpessoa.services.core.internal.concurrent.DefaultRejectionRule;
+
 /**
  * Identifies methods that should be executed asynchronously.
  *

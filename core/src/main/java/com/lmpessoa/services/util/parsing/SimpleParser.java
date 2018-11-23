@@ -56,7 +56,8 @@ public final class SimpleParser extends AbstractParser<SimpleVariablePart> {
     * @return the list of parts found in the given template.
     * @throws ParseException if an error has been reached unexpectedly while parsing.
     */
-   public static List<ITemplatePart> parse(String template, String variablePattern) throws ParseException {
+   public static List<ITemplatePart> parse(String template, String variablePattern)
+      throws ParseException {
       return new SimpleParser(template, variablePattern).parse();
    }
 

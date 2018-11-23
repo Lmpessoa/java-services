@@ -25,9 +25,11 @@ package com.lmpessoa.services.util.logging;
 import java.text.ParseException;
 import java.util.function.Predicate;
 
+import com.lmpessoa.services.util.logging.internal.LogFormatter;
+
 public abstract class FormattedHandler extends Handler {
 
-   static final String DEFAULT = "{Time} {Severity:>7} -- [{Remote.Host:<15}] {Class.Name:<36} : {Message}";
+   public static final String DEFAULT = "{Time} {Severity:>7} -- [{Remote.Host:<15}] {Class.Name:<36} : {Message}";
 
    private LogFormatter template;
    private LogEntry currentEntry;
@@ -47,7 +49,7 @@ public abstract class FormattedHandler extends Handler {
       this.template = LogFormatter.parse(template);
    }
 
-   final LogEntry currentEntry() {
+   protected final LogEntry currentEntry() {
       return currentEntry;
    }
 

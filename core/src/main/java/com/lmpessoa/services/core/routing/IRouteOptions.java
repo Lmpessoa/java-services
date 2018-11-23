@@ -38,18 +38,20 @@ public interface IRouteOptions {
     * <p>
     * Routes are a form oF grouping resources at the root level of the application. Each route can
     * consist of one or two static parts which will be prepended to each resource route that matches
-    * the package expression. Note that resources may be registered manually and those not matching any
-    * other route will be added to the default root route.
+    * the package expression. Note that resources may be registered manually and those not matching
+    * any other route will be added to the default root route.
     * </p>
     *
     * <p>
-    * Areas also define which packages will be scanned for automatic registration by the application.
-    * The empty route (an empty string) represents the default area and can be set to define the
-    * expression of packages that will automatically be added to the root of the application.
+    * Areas also define which packages will be scanned for automatic registration by the
+    * application. The empty route (an empty string) represents the default area and can be set to
+    * define the expression of packages that will automatically be added to the root of the
+    * application.
     * </p>
     *
     * @param areaPath the path of the area being registered.
-    * @param packageExpr an expression to match the package to define if a class belongs to this area.
+    * @param packageExpr an expression to match the package to define if a class belongs to this
+    *           area.
     */
    default void addArea(String areaPath, String packageExpr) {
       addArea(areaPath, packageExpr, "index");
@@ -60,20 +62,22 @@ public interface IRouteOptions {
     * <p>
     * Routes are a form oF grouping resources at the root level of the application. Each route can
     * consist of one or two static parts which will be prepended to each resource route that matches
-    * the package expression. Note that resources may be registered manually and those not matching any
-    * other route will be added to the default root route.
+    * the package expression. Note that resources may be registered manually and those not matching
+    * any other route will be added to the default root route.
     * </p>
     *
     * <p>
-    * Areas also define which packages will be scanned for automatic registration by the application.
-    * The empty route (an empty string) represents the default area and can be set to define the
-    * expression of packages that will automatically be added to the root of the application.
+    * Areas also define which packages will be scanned for automatic registration by the
+    * application. The empty route (an empty string) represents the default area and can be set to
+    * define the expression of packages that will automatically be added to the root of the
+    * application.
     * </p>
     *
     * @param areaPath the path of the area being registered.
-    * @param packageExpr an expression to match the package to define if a class belongs to this area.
-    * @param defaultResource the name of the resource which will register as the default for this area
-    * (default is "index").
+    * @param packageExpr an expression to match the package to define if a class belongs to this
+    *           area.
+    * @param defaultResource the name of the resource which will register as the default for this
+    *           area (default is "index").
     */
    void addArea(String areaPath, String packageExpr, String defaultResource);
 }

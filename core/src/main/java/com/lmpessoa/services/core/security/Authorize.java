@@ -35,8 +35,8 @@ import java.lang.annotation.Target;
  * Methods marked with this annotation are ensured by the engine they can only be accessed by a
  * valid user. Resource classes can also be marked with this annotation meaning each method of the
  * marked class will require the same authorisation specified at the class level. If method and
- * class are both marked with {@code Authorize} the user must fulfil both requirements to be able
- * to access the given method.
+ * class are both marked with {@code Authorize} the user must fulfil both requirements to be able to
+ * access the given method.
  * </p>
  * <p>
  * The {@code Authorize} annotation may require users to have certain roles or pass a given policy
@@ -53,8 +53,8 @@ import java.lang.annotation.Target;
 public @interface Authorize {
 
    /**
-    * The list of roles an identity must have in order to be authorised to access a method protected by
-    * this annotation.
+    * The list of roles an identity must have in order to be authorised to access a method protected
+    * by this annotation.
     */
    String[] roles() default {};
 

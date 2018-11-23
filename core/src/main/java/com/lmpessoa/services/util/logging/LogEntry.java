@@ -22,13 +22,7 @@
  */
 package com.lmpessoa.services.util.logging;
 
-import java.lang.reflect.Array;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Objects;
 
 /**
  * Represents a log entry.
@@ -43,50 +37,33 @@ import java.util.Objects;
  * whenever one of the methods of the {@link ILogger} interface is called.
  * </p>
  */
-public final class LogEntry {
-
-   private static final String AT = "\n...at ";
-
-   private final Map<Class<?>, Object> extraInfo;
-   private final StackTraceElement[] logPoint;
-   private final ZonedDateTime time;
-   private final Severity severity;
-   private final String threadName;
-   private final Object message;
-   private final Logger log;
-   private final long threadId;
+public interface LogEntry {
 
    /**
     * Returns the date and time when the log entry was created.
     *
     * @return the date and time when the log entry was created.
     */
-   public ZonedDateTime getTime() {
-      return time;
-   }
+   ZonedDateTime getTime();
 
    /**
     * Returns the severity of the event of this log entry.
     *
     * <p>
-    * The value of this method is equivalent to the method of the {@link ILogger} interface which was
-    * called to create the log entry.
+    * The value of this method is equivalent to the method of the {@link ILogger} interface which
+    * was called to create the log entry.
     * </p>
     *
     * @return the severity of the event of this log entry.
     */
-   public Severity getSeverity() {
-      return severity;
-   }
+   Severity getSeverity();
 
    /**
     * Returns the actual message of the log entry event.
     *
     * @return the actual message of the log entry event.
     */
-   public String getMessage() {
-      return getMessageResult(message).trim();
-   }
+   String getMessage();
 
    /**
     * Returns the name of the class in which the log entry was created.
@@ -98,9 +75,7 @@ public final class LogEntry {
     *
     * @return the name of the class in which the log entry was created.
     */
-   public String getClassName() {
-      return log.getClassName(logPoint);
-   }
+   String getClassName();
 
    /**
     * Returns the name of the thread in which the log entry was created.
@@ -112,106 +87,27 @@ public final class LogEntry {
     *
     * @return the name of the thread in which the log entry was created.
     */
-   public String getThreadName() {
-      return threadName;
-   }
+   String getThreadName();
 
    /**
     * Returns the ID of the thread in which the log entry was created.
     *
     * @return the ID of the thread in which the log entry was created.
     */
-   public long getThreadId() {
-      return threadId;
-   }
+   long getThreadId();
 
-   public StackTraceElement[] getStackTrace() {
-      return log.filterStack(logPoint);
-   }
+   StackTraceElement[] getStackTrace();
 
    /**
     * Returns the message of the log entry as an object.
     *
     * <p>
     * Log entries automatically convert any value registered with the log methods of the
-    * {@link ILogger} interface to a string message. This method returns the original object sent for
-    * registration with the logging subsystem.
+    * {@link ILogger} interface to a string message. This method returns the original object sent
+    * for registration with the logging subsystem.
     * </p>
     *
     * @return the message of the log entry as an object.
     */
-   public Object getMessageSource() {
-      return message;
-   }
-
-   @Override
-   public String toString() {
-      return String.format("[%s] %s: %s", getSeverity(), getClassName(), getMessage());
-   }
-
-   LogEntry(Severity severity, Object message, Map<Class<?>, Object> extraInfo, Logger log) {
-      this(ZonedDateTime.now(), severity, message, extraInfo, log);
-   }
-
-   LogEntry(ZonedDateTime time, Severity severity, Object message, Map<Class<?>, Object> extraInfo, Logger log) {
-      Thread thread = Thread.currentThread();
-      this.logPoint = message instanceof Throwable ? ((Throwable) message).getStackTrace() : thread.getStackTrace();
-      this.extraInfo = extraInfo != null ? extraInfo : Collections.emptyMap();
-      this.severity = Objects.requireNonNull(severity);
-      this.message = Objects.requireNonNull(message);
-      this.log = Objects.requireNonNull(log);
-      this.threadName = thread.getName();
-      this.threadId = thread.getId();
-      this.time = time;
-   }
-
-   Logger getLogger() {
-      return log;
-   }
-
-   @SuppressWarnings("unchecked")
-   <T> T getExtra(Class<T> type) {
-      return (T) extraInfo.get(type);
-   }
-
-   private String getMessageResult(Object message) {
-      if (message.getClass().isArray()) {
-         Collection<Object> tmp = new ArrayList<>();
-         int len = Array.getLength(message);
-         for (int i = 0; i < len; ++i) {
-            tmp.add(Array.get(message, i));
-         }
-         message = tmp;
-      }
-      StringBuilder result = new StringBuilder();
-      if (message instanceof Collection) {
-         for (Object o : (Collection<?>) message) {
-            String s = getMessageResult(o);
-            if (!s.isEmpty()) {
-               result.append(s);
-               result.append("\n");
-            }
-         }
-      } else {
-         result.append(message.toString());
-      }
-      if (message instanceof Throwable || isTracing()) {
-         StackTraceElement[] filteredStack = getStackTrace();
-         for (StackTraceElement item : filteredStack) {
-            result.append(AT + item);
-         }
-      }
-      if (message instanceof Throwable && isTracing()) {
-         Throwable cause;
-         while ((cause = ((Throwable) message).getCause()) != null) {
-            result.append('\n');
-            result.append(getMessageResult(cause));
-         }
-      }
-      return result.toString();
-   }
-
-   private boolean isTracing() {
-      return log != null && log.isTracing();
-   }
+   Object getMessageSource();
 }

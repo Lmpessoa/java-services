@@ -31,11 +31,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.lmpessoa.services.util.parsing.AbstractParser;
-import com.lmpessoa.services.util.parsing.ITemplatePart;
-import com.lmpessoa.services.util.parsing.IVariablePart;
-import com.lmpessoa.services.util.parsing.LiteralPart;
-
 public final class AbstractParserTest {
 
    @Rule
@@ -149,7 +144,8 @@ public final class AbstractParserTest {
 
    public static class TestParser extends AbstractParser<TestVariablePart> {
 
-      public static ITemplatePart[] parse(String template, boolean force, Character prefix) throws ParseException {
+      public static ITemplatePart[] parse(String template, boolean force, Character prefix)
+         throws ParseException {
          return new TestParser(template, force, prefix).parse().toArray(new ITemplatePart[0]);
       }
 

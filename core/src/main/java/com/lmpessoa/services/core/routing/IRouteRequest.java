@@ -25,6 +25,8 @@ package com.lmpessoa.services.core.routing;
 import java.io.IOException;
 import java.io.InputStream;
 
+import com.lmpessoa.services.core.internal.routing.RouteTable;
+
 /**
  * Represents a request for a route match.
  *

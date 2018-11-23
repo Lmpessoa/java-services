@@ -42,8 +42,8 @@ package com.lmpessoa.services.core.services;
  */
 public enum Reuse {
    /**
-    * Service reuse level which means whenever an instance of the service is required, a new instance
-    * of the providing class will be used.
+    * Service reuse level which means whenever an instance of the service is required, a new
+    * instance of the providing class will be used.
     */
    NEVER,
    /**
@@ -53,9 +53,9 @@ public enum Reuse {
     */
    REQUEST,
    /**
-    * Service reuse level which means a single instance of the service will be created the first time
-    * the service is required and that instance will be reused for any subsequent calls for the same
-    * service.
+    * Service reuse level which means a single instance of the service will be created the first
+    * time the service is required and that instance will be reused for any subsequent calls for the
+    * same service.
     */
    ALWAYS;
 }

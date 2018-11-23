@@ -27,6 +27,7 @@ import static com.lmpessoa.services.core.services.Reuse.REQUEST;
 import java.util.Arrays;
 import java.util.Collection;
 
+import com.lmpessoa.services.core.internal.routing.RouteEntry;
 import com.lmpessoa.services.core.services.Service;
 
 /**

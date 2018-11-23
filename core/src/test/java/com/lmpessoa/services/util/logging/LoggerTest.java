@@ -32,6 +32,8 @@ import java.text.ParseException;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.lmpessoa.services.util.logging.internal.Logger;
+
 public final class LoggerTest {
 
    private TestHandler output;
@@ -89,7 +91,7 @@ public final class LoggerTest {
       assertTrue(message.length > 2);
       assertEquals("Test", message[0]);
       assertEquals(
-               "...at com.lmpessoa.services.util.logging.LoggerTest.testLastErrorMessageWithTrace(LoggerTest.java:85)",
+               "...at com.lmpessoa.services.util.logging.LoggerTest.testLastErrorMessageWithTrace(LoggerTest.java:87)",
                message[1]);
    }
 
@@ -103,7 +105,7 @@ public final class LoggerTest {
       assertTrue(message.length > 2);
       assertEquals("java.lang.RuntimeException: Test", message[0]);
       assertEquals(
-               "...at com.lmpessoa.services.util.logging.LoggerTest.testExceptionNoDebug(LoggerTest.java:98)",
+               "...at com.lmpessoa.services.util.logging.LoggerTest.testExceptionNoDebug(LoggerTest.java:100)",
                message[1]);
    }
 
