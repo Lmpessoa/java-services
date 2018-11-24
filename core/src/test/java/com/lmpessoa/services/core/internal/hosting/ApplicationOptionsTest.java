@@ -28,6 +28,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import com.lmpessoa.services.core.hosting.NextResponder;
+import com.lmpessoa.services.core.internal.hosting.ApplicationOptions;
 
 public final class ApplicationOptionsTest {
 

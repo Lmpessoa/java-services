@@ -107,7 +107,21 @@ public final class ClassUtils {
    @SuppressWarnings("unchecked")
    public static <T> T cast(String value, Class<T> type) {
       if (value == null) {
-         return null;
+         if (type.isPrimitive()) {
+            switch (type.getName()) {
+               case "boolean":
+                  value = "false";
+                  break;
+               case "char":
+                  value = "\0";
+                  break;
+               default:
+                  value = "0";
+                  break;
+            }
+         } else {
+            return null;
+         }
       }
       if (type == String.class) {
          return (T) value;
@@ -122,7 +136,7 @@ public final class ClassUtils {
          for (int i = 0; i < values.length; ++i) {
             Object cvalue = values[i].trim();
             if (atype != String.class) {
-               cvalue = internalCast(values[i].trim(), atype);
+               cvalue = cast(values[i].trim(), atype);
             }
             Array.set(result, i, cvalue);
             if (cvalue != null) {
@@ -321,10 +335,13 @@ public final class ClassUtils {
       Class<?> atype = ClassUtils.box(type);
       if (atype == Boolean.class) {
          Object result = "true".equalsIgnoreCase(value) || "yes".equalsIgnoreCase(value);
-         if (type != atype) {
-            result = ((Boolean) result).booleanValue(); // NOSONAR
-         }
          return (T) result;
+      }
+      if (atype == Character.class) {
+         if (value.length() != 1) {
+            throw new IllegalArgumentException("Value must have exactly one character");
+         }
+         return (T) Character.valueOf(value.charAt(0));
       }
       if (atype.isEnum()) {
          for (Field f : atype.getDeclaredFields()) {

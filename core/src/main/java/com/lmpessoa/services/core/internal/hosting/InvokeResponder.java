@@ -27,7 +27,7 @@ import java.lang.reflect.Method;
 import com.lmpessoa.services.core.hosting.InternalServerError;
 import com.lmpessoa.services.core.hosting.NextResponder;
 import com.lmpessoa.services.core.hosting.NotFoundException;
-import com.lmpessoa.services.core.routing.BadResponseException;
+import com.lmpessoa.services.core.internal.routing.BadResponseException;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.validating.ErrorSet;
 import com.lmpessoa.services.util.logging.ILogger;

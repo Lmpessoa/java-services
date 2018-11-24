@@ -31,7 +31,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
-import java.util.function.Supplier;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -73,12 +72,12 @@ public class FaviconResponderTest {
       app = new ApplicationOptions(null);
       services = app.getServices();
       services.put(ILogger.class, log);
-      services.put(ConnectionInfo.class, (Supplier<ConnectionInfo>) () -> connect);
-      services.put(RouteMatch.class, (Supplier<RouteMatch>) () -> route);
+      services.putSupplier(ConnectionInfo.class, () -> connect);
+      services.putSupplier(RouteMatch.class, () -> route);
       services.put(IValidationService.class, ValidationService.instance());
       services.put(IApplicationInfo.class, new ApplicationInfo(settings, app));
       request = new HttpRequestBuilder().setPath("/favicon.ico").build();
-      services.put(HttpRequest.class, (Supplier<HttpRequest>) () -> request);
+      services.putSupplier(HttpRequest.class, () -> request);
    }
 
    @Test

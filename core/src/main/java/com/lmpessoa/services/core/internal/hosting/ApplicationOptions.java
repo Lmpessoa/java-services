@@ -22,34 +22,48 @@
  */
 package com.lmpessoa.services.core.internal.hosting;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import com.lmpessoa.services.core.concurrent.AsyncReject;
+import com.lmpessoa.services.core.concurrent.IAsyncOptions;
+import com.lmpessoa.services.core.concurrent.IAsyncRequestMatcher;
 import com.lmpessoa.services.core.hosting.IApplicationOptions;
+import com.lmpessoa.services.core.hosting.InternalServerError;
 import com.lmpessoa.services.core.hosting.NextResponder;
+import com.lmpessoa.services.core.internal.concurrent.RejectRequestMatcher;
 import com.lmpessoa.services.core.internal.routing.RouteTable;
+import com.lmpessoa.services.core.internal.services.NoSingleMethodException;
 import com.lmpessoa.services.core.internal.services.ServiceMap;
 import com.lmpessoa.services.core.routing.IRouteOptions;
+import com.lmpessoa.services.core.security.IIdentity;
 import com.lmpessoa.services.core.security.IIdentityOptions;
 import com.lmpessoa.services.core.security.IIdentityProvider;
 import com.lmpessoa.services.util.ClassUtils;
 
-final class ApplicationOptions implements IApplicationOptions {
+public final class ApplicationOptions implements IApplicationOptions {
 
    private static final String INVALID_PATH = "Given path is not valid";
    private static final String SEPARATOR = "/";
 
+   private final Map<String, Predicate<IIdentity>> policies = new HashMap<>();
    private final List<Class<?>> responders = new ArrayList<>();
    private final ServiceMap services = new ServiceMap();
    private final RouteTable routes = new RouteTable(services);
 
-   private IIdentityProvider identityProvider = null;
+   private Class<? extends IIdentityProvider> identityProvider = null;
+   private Class<? extends IAsyncRequestMatcher> defaultRouteMatcher;
    private boolean configured = false;
    private boolean enableXml = false;
+   private AsyncReject defaultReject;
    private String feedbackPath;
    private String staticPath;
    private String healthPath;
@@ -104,12 +118,6 @@ final class ApplicationOptions implements IApplicationOptions {
    }
 
    @Override
-   public <T> void useService(Class<T> serviceClass, Supplier<T> supplier) {
-      lockConfiguration();
-      services.put(serviceClass, supplier);
-   }
-
-   @Override
    public <T> void useService(Class<T> serviceClass, T instance) {
       lockConfiguration();
       services.put(serviceClass, instance);
@@ -118,22 +126,21 @@ final class ApplicationOptions implements IApplicationOptions {
    // Async
 
    @Override
-   public void useAsyncWithFeedbackPath(String feedbackPath) {
+   public <T> void useServiceWith(Class<T> serviceClass, Supplier<T> supplier) {
       lockConfiguration();
-      Objects.requireNonNull(feedbackPath);
-      if (this.feedbackPath != null) {
-         throw new IllegalStateException("Async is already configured");
+      services.putSupplier(serviceClass, supplier);
+   }
+
+   @Override
+   public void useAsyncWith(Consumer<IAsyncOptions> options) {
+      lockConfiguration();
+      if (options != null) {
+         options.accept(new AsyncOptionsImpl());
+      } else {
+         defaultRouteMatcher = RejectRequestMatcher.class;
+         defaultReject = AsyncReject.NEVER;
+         feedbackPath = "/feedback/";
       }
-      if (!feedbackPath.startsWith(SEPARATOR)) {
-         feedbackPath = SEPARATOR + feedbackPath;
-      }
-      if (!feedbackPath.endsWith(SEPARATOR)) {
-         feedbackPath += SEPARATOR;
-      }
-      if (!feedbackPath.matches("/([a-zA-Z0-9.-_]+/)+")) {
-         throw new IllegalArgumentException(INVALID_PATH);
-      }
-      this.feedbackPath = feedbackPath;
    }
 
    // Static files
@@ -160,22 +167,27 @@ final class ApplicationOptions implements IApplicationOptions {
    // Identity
 
    @Override
-   public void useIdentityWith(IIdentityProvider identityProvider,
-      Consumer<IIdentityOptions> options) {
+   public void useIdentityWith(Class<? extends IIdentityProvider> identityProvider,
+      Consumer<IIdentityOptions> options) throws NoSingleMethodException {
       lockConfiguration();
       Objects.requireNonNull(identityProvider);
       if (this.identityProvider != null) {
          throw new IllegalStateException("Identity is already configured");
       }
+      int constrCount = identityProvider.getConstructors().length;
+      if (constrCount != 1) {
+         throw new NoSingleMethodException(
+                  "Identity provider must have exactly one public constructor", constrCount);
+      }
       this.identityProvider = identityProvider;
       if (options != null) {
          options.accept((policyName, policyMethod) -> {
             lockConfiguration();
-            if (IdentityResponder.hasPolicy(policyName)) {
+            if (policies.containsKey(policyName)) {
                throw new IllegalArgumentException(
                         "A policy with that name is already defined: " + policyName);
             }
-            IdentityResponder.addPolicy(policyName, policyMethod);
+            policies.put(policyName, policyMethod);
          });
       }
    }
@@ -202,7 +214,7 @@ final class ApplicationOptions implements IApplicationOptions {
    }
 
    @Override
-   public void useXml() {
+   public void useXmlRequests() {
       lockConfiguration();
       enableXml = true;
    }
@@ -213,8 +225,8 @@ final class ApplicationOptions implements IApplicationOptions {
       }
    }
 
-   void configurationEnded() {
-      configured = true;
+   boolean isXmlEnabled() {
+      return enableXml;
    }
 
    ServiceMap getServices() {
@@ -226,11 +238,29 @@ final class ApplicationOptions implements IApplicationOptions {
    }
 
    IIdentityProvider getIdentityProvider() {
-      return identityProvider;
+      if (identityProvider == null) {
+         return null;
+      }
+      try {
+         return (IIdentityProvider) getServices().invoke(null,
+                  identityProvider.getConstructors()[0]);
+      } catch (InvocationTargetException e) {
+         throw new InternalServerError(e.getCause());
+      } catch (IllegalAccessException | InstantiationException | SecurityException e) {
+         throw new InternalServerError(e);
+      }
    }
 
    String getFeedbakcPath() {
       return feedbackPath;
+   }
+
+   AsyncReject getDefaultRejectRule() {
+      return defaultReject;
+   }
+
+   Class<? extends IAsyncRequestMatcher> getDefaultRouteMatcher() {
+      return defaultRouteMatcher;
    }
 
    String getStaticPath() {
@@ -239,6 +269,14 @@ final class ApplicationOptions implements IApplicationOptions {
 
    String getHealthPath() {
       return healthPath;
+   }
+
+   Predicate<IIdentity> getPolicy(String policyName) {
+      return policies.get(policyName);
+   }
+
+   void addPolicy(String policyName, Predicate<IIdentity> policy) {
+      policies.put(policyName, policy);
    }
 
    NextResponder getFirstResponder() {
@@ -262,10 +300,6 @@ final class ApplicationOptions implements IApplicationOptions {
       }
       result.add(InvokeResponder.class);
       return new NextResponderImpl(services, result, this);
-   }
-
-   boolean isXmlEnabled() {
-      return enableXml;
    }
 
    private void lockConfiguration() {
@@ -293,5 +327,50 @@ final class ApplicationOptions implements IApplicationOptions {
          lockConfiguration();
          options.addArea(areaPath, packageExpr, defaultResource);
       }
+   }
+
+   private class AsyncOptionsImpl implements IAsyncOptions {
+
+      @Override
+      public void useFeedbackPath(String feedbackPath) {
+         lockConfiguration();
+         Objects.requireNonNull(feedbackPath);
+         if (ApplicationOptions.this.feedbackPath != null) {
+            throw new IllegalStateException("Async feedback path is already configured");
+         }
+         if (!feedbackPath.startsWith(SEPARATOR)) {
+            feedbackPath = SEPARATOR + feedbackPath;
+         }
+         if (!feedbackPath.endsWith(SEPARATOR)) {
+            feedbackPath += SEPARATOR;
+         }
+         if (!feedbackPath.matches("/([a-zA-Z0-9.-_]+/)+")) {
+            throw new IllegalArgumentException(INVALID_PATH);
+         }
+         ApplicationOptions.this.feedbackPath = feedbackPath;
+      }
+
+      @Override
+      public void useDefaultRejectionRule(AsyncReject defaultValue) {
+         lockConfiguration();
+         Objects.requireNonNull(defaultValue);
+         if (defaultValue == AsyncReject.DEFAULT) {
+            throw new IllegalArgumentException("Default rejection rule cannot be DEFAULT");
+         }
+         if (ApplicationOptions.this.defaultReject != null) {
+            throw new IllegalStateException("Async default rejection rule is already configured");
+         }
+         ApplicationOptions.this.defaultReject = defaultValue;
+      }
+
+      @Override
+      public void useDefaultRouteMatcher(Class<? extends IAsyncRequestMatcher> matcherClass) {
+         lockConfiguration();
+         if (ApplicationOptions.this.defaultRouteMatcher != null) {
+            throw new IllegalStateException("Async default route matcher is already configured");
+         }
+         ApplicationOptions.this.defaultRouteMatcher = Objects.requireNonNull(matcherClass);
+      }
+
    }
 }

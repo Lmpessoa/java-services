@@ -23,29 +23,69 @@
 package com.lmpessoa.services.core.concurrent;
 
 /**
- * Represents the possible rules for rejection of a new async task.
+ * Represents the built-in rules for rejection of a new async task.
  *
  * <p>
  * By default, all asynchronous tasks are accepted by the engine. However this may lead to duplicate
- * operations being executed, one after the other. This enumerates the possible rules that may be
- * used to indicate a queued task should be treated as similar to one being evaluated for rejection.
+ * operations being executed, one after the other. This may be controlled by changing the rejection
+ * rule for the asynchronous method using one of the given values in this enumeration to indicate a
+ * queued task should be treated as similar to one being evaluated for rejection.
+ * </p>
+ *
+ * <ul>
+ * <li>{@code NEVER} is the default value and indicates a new asynchronous request will never be
+ * rejected;</li>
+ * <li>{@code SAME_PATH} in which all subsequent requests for the same path (including HTTP method)
+ * will be rejected if another request is being processed, and</li>
+ * <li>{@code SAME_CONTENT} which considers not only path and HTTP method but also whether any
+ * content object from both requests are equivalent;</li>
+ * <li>{@code SAME_IDENTITY} is the same as the {@code SAME_PATH} rule except that it also considers
+ * if the request was made by the same user (if identified); and</li>
+ * <li>{@code SAME_REQUEST} is the same as {@code SAME_CONTENT} and {@code SAME_IDENTITY}
+ * combined.</li>
+ * </ul>
+ *
+ * <p>
+ * Developers interested in using the {@code SAME_CONTENT} or {@code SAME_REQUEST} rules must ensure
+ * their content classes implement correctly comparison of those instances through the
+ * {@code #equals(Object)} method, otherwise they will behave as if not evaluating content.
  * </p>
  *
  * @see Async
+ * @see AsyncRejectionRule
  */
 public enum AsyncReject {
    /**
-    * Indicates that the engine should never reject an asynchronous call.
+    * Indicates the engine should use the default rejection rule defined in the configuration of the
+    * application.
+    */
+   DEFAULT,
+   /**
+    * Indicates that the engine should never reject a new asynchronous call.
     */
    NEVER,
    /**
-    * Indicates that the engine should reject an async call if another with the same path is already
-    * queued for execution.
+    * Indicates that the engine should reject a new async call if another with the same path is
+    * already queued for execution.
     */
    SAME_PATH,
    /**
-    * Indicates that the engine should reject an async call if another with the same path and
-    * content object (if present) is already queued for execution.
+    * Indicates that the engine should reject a new async call if another with the same path and
+    * content object (if present) is already queued for execution. Developers interested in using
+    * this rules must ensure their content classes implement correctly comparison of those instances
+    * through the {@code #equals(Object)} method.
+    */
+   SAME_CONTENT,
+   /**
+    * Indicates that the engine should reject a new async call if another with the same path
+    * requested by the same user is already queued for execution.
+    */
+   SAME_IDENTITY,
+   /**
+    * Indicates that the engine should reject a new async call if another with the same path and
+    * content object (if present) requested by the same user is already queued for execution.
+    * Developers interested in using this rules must ensure their content classes implement
+    * correctly comparison of those instances through the {@code #equals(Object)} method.
     */
    SAME_REQUEST;
 }

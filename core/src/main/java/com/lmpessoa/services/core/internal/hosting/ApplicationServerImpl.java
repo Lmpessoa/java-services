@@ -39,7 +39,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
-import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -56,7 +55,6 @@ import com.lmpessoa.services.core.internal.routing.RouteTable;
 import com.lmpessoa.services.core.internal.serializing.Serializer;
 import com.lmpessoa.services.core.routing.IRouteTable;
 import com.lmpessoa.services.core.routing.NonResource;
-import com.lmpessoa.services.core.routing.Resource;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.security.IIdentity;
 import com.lmpessoa.services.core.validating.IValidationService;
@@ -121,7 +119,7 @@ public final class ApplicationServerImpl {
             } else {
                Method method = entry.getMethod();
                String paramTypes = Arrays.stream(method.getParameterTypes())
-                        .map(t -> t.getName())
+                        .map(Class::getName)
                         .collect(Collectors.joining(", "));
                settings.getLogger().info("Mapped route '%s' to method %s.%s(%s)", entry.getRoute(),
                         method.getDeclaringClass().getName(), method.getName(), paramTypes);
@@ -150,8 +148,7 @@ public final class ApplicationServerImpl {
          try {
             Class<?> clazz = Class.forName(className);
             if (ClassUtils.isConcreteClass(clazz) && Modifier.isPublic(clazz.getModifiers())
-                     && (endsInResource.matcher(clazz.getSimpleName()).find()
-                              || clazz.isAnnotationPresent(Resource.class))
+                     && endsInResource.matcher(clazz.getSimpleName()).find()
                      && !clazz.isAnnotationPresent(NonResource.class)) {
                result.add(clazz);
             }
@@ -238,11 +235,11 @@ public final class ApplicationServerImpl {
          services.put(IApplicationInfo.class, Wrapper.wrap(new ApplicationInfo(settings, options)));
 
          // Registers PerRequest services
-         services.put(IRouteTable.class, (Supplier<IRouteTable>) () -> null);
-         services.put(ConnectionInfo.class, (Supplier<ConnectionInfo>) () -> null);
-         services.put(HttpRequest.class, (Supplier<HttpRequest>) () -> null);
-         services.put(RouteMatch.class, (Supplier<RouteMatch>) () -> null);
-         services.put(IIdentity.class, (Supplier<IIdentity>) () -> null);
+         services.putSupplier(IRouteTable.class, () -> null);
+         services.putSupplier(ConnectionInfo.class, () -> null);
+         services.putSupplier(HttpRequest.class, () -> null);
+         services.putSupplier(RouteMatch.class, () -> null);
+         services.putSupplier(IIdentity.class, () -> null);
       });
       logStartupMessage(settings.getStartupClass(), settings.getApplicationName());
    }

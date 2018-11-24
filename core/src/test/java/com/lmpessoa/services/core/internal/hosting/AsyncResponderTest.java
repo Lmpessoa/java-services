@@ -22,12 +22,15 @@
  */
 package com.lmpessoa.services.core.internal.hosting;
 
+import static com.lmpessoa.services.core.concurrent.AsyncReject.SAME_CONTENT;
+import static com.lmpessoa.services.core.concurrent.AsyncReject.SAME_IDENTITY;
 import static com.lmpessoa.services.core.concurrent.AsyncReject.SAME_PATH;
 import static com.lmpessoa.services.core.routing.HttpMethod.DELETE;
 import static com.lmpessoa.services.core.routing.HttpMethod.GET;
 import static com.lmpessoa.services.core.routing.HttpMethod.PATCH;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -39,6 +42,9 @@ import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
@@ -48,15 +54,21 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.lmpessoa.services.core.concurrent.Async;
-import com.lmpessoa.services.core.hosting.ConflictException;
+import com.lmpessoa.services.core.concurrent.AsyncRequest;
+import com.lmpessoa.services.core.concurrent.IAsyncRequestMatcher;
 import com.lmpessoa.services.core.hosting.ConnectionInfo;
 import com.lmpessoa.services.core.hosting.HttpRequest;
 import com.lmpessoa.services.core.hosting.MethodNotAllowedException;
 import com.lmpessoa.services.core.hosting.NextResponder;
 import com.lmpessoa.services.core.hosting.NotFoundException;
 import com.lmpessoa.services.core.hosting.Redirect;
+import com.lmpessoa.services.core.hosting.TooManyRequestsException;
+import com.lmpessoa.services.core.hosting.UnauthorizedException;
 import com.lmpessoa.services.core.internal.concurrent.ExecutionService;
 import com.lmpessoa.services.core.routing.RouteMatch;
+import com.lmpessoa.services.core.security.ClaimType;
+import com.lmpessoa.services.core.security.IIdentity;
+import com.lmpessoa.services.core.security.IdentityBuilder;
 import com.lmpessoa.services.util.logging.ILogger;
 import com.lmpessoa.services.util.logging.NullHandler;
 import com.lmpessoa.services.util.logging.internal.Logger;
@@ -80,8 +92,8 @@ public final class AsyncResponderTest {
    public void setup() {
       app = new ApplicationOptions(null);
       app.useAsync();
-      connect = new ConnectionInfo(mock(Socket.class), "https://lmpessoa.com/");
-      request = mock(HttpRequest.class);
+          connect = new ConnectionInfo(mock(Socket.class), "https://lmpessoa.com/");
+  request = mock(HttpRequest.class);
       when(request.getMethod()).thenReturn(GET);
       when(request.getPath()).thenReturn("/test");
       runnableResult = null;
@@ -96,7 +108,7 @@ public final class AsyncResponderTest {
       InterruptedException, ExecutionException {
       match = matchOfMethod("asyncMethod");
 
-      Object result = handler.invoke(request, match, connect);
+      Object result = handler.invoke(request, match, null, connect);
       assertTrue(result instanceof RedirectImpl);
       RedirectImpl redirect = (RedirectImpl) result;
       assertEquals(202, redirect.getStatusCode());
@@ -111,7 +123,7 @@ public final class AsyncResponderTest {
       InterruptedException, ExecutionException {
       match = matchOfMethod("callableResult");
 
-      Object result = handler.invoke(request, match, connect);
+      Object result = handler.invoke(request, match, null, connect);
       assertTrue(result instanceof RedirectImpl);
       RedirectImpl redirect = (RedirectImpl) result;
       assertEquals(202, redirect.getStatusCode());
@@ -126,7 +138,7 @@ public final class AsyncResponderTest {
       InterruptedException, ExecutionException {
       match = matchOfMethod("runnableResult");
 
-      Object result = handler.invoke(request, match, connect);
+      Object result = handler.invoke(request, match, null, connect);
       assertTrue(result instanceof RedirectImpl);
       RedirectImpl redirect = (RedirectImpl) result;
       assertEquals(202, redirect.getStatusCode());
@@ -142,14 +154,14 @@ public final class AsyncResponderTest {
       InterruptedException, ExecutionException {
       match = matchOfMethod("sleeper");
 
-      Object result = handler.invoke(request, match, connect);
+      Object result = handler.invoke(request, match, null, connect);
       assertTrue(result instanceof RedirectImpl);
       RedirectImpl redirect = (RedirectImpl) result;
       String url = redirect.getUrl(connect).getPath();
 
       match = null;
       when(request.getPath()).thenReturn(url);
-      result = handler.invoke(request, match, connect);
+      result = handler.invoke(request, match, null, connect);
       assertTrue(result instanceof Future);
       Future<?> fresult = (Future<?>) result;
       assertFalse(fresult.isDone());
@@ -162,14 +174,14 @@ public final class AsyncResponderTest {
       throws NoSuchMethodException, InterruptedException, MalformedURLException {
       match = matchOfMethod("redirect");
 
-      Object result = handler.invoke(request, match, connect);
+      Object result = handler.invoke(request, match, null, connect);
       RedirectImpl redirect = (RedirectImpl) result;
       String url = redirect.getUrl(connect).getPath();
       Thread.sleep(100);
 
       match = null;
       when(request.getPath()).thenReturn(url);
-      result = handler.invoke(request, match, connect);
+      result = handler.invoke(request, match, null, connect);
       assertTrue(result instanceof RedirectImpl);
       redirect = (RedirectImpl) result;
       assertEquals(303, redirect.getStatusCode());
@@ -182,14 +194,14 @@ public final class AsyncResponderTest {
       throws NoSuchMethodException, InterruptedException, MalformedURLException {
       match = matchOfMethod("redirectUrl");
 
-      Object result = handler.invoke(request, match, connect);
+      Object result = handler.invoke(request, match, null, connect);
       RedirectImpl redirect = (RedirectImpl) result;
       String url = redirect.getUrl(connect).getPath();
       Thread.sleep(100);
 
       match = null;
       when(request.getPath()).thenReturn(url);
-      result = handler.invoke(request, match, connect);
+      result = handler.invoke(request, match, null, connect);
       assertTrue(result instanceof RedirectImpl);
       redirect = (RedirectImpl) result;
       assertEquals(303, redirect.getStatusCode());
@@ -200,15 +212,15 @@ public final class AsyncResponderTest {
    @Test(expected = NotFoundException.class)
    public void testNonExistentResult() {
       when(request.getPath()).thenReturn("/feedback/test");
-      handler.invoke(request, match, connect);
+      handler.invoke(request, match, null, connect);
    }
 
    @Test(expected = MethodNotAllowedException.class)
    public void testPatchResult() throws NoSuchMethodException, MalformedURLException {
       match = matchOfMethod("sleeper");
 
-      handler.invoke(request, match, connect);
-      Object result = handler.invoke(request, match, connect);
+      handler.invoke(request, match, null, connect);
+      Object result = handler.invoke(request, match, null, connect);
       assertTrue(result instanceof RedirectImpl);
       RedirectImpl redirect = (RedirectImpl) result;
       String url = redirect.getUrl(connect).getPath();
@@ -216,7 +228,7 @@ public final class AsyncResponderTest {
       match = null;
       when(request.getPath()).thenReturn(url);
       when(request.getMethod()).thenReturn(PATCH);
-      handler.invoke(request, match, connect);
+      handler.invoke(request, match, null, connect);
    }
 
    @Test(expected = CancellationException.class)
@@ -224,8 +236,8 @@ public final class AsyncResponderTest {
       InterruptedException, ExecutionException {
       match = matchOfMethod("sleeper");
 
-      handler.invoke(request, match, connect);
-      Object result = handler.invoke(request, match, connect);
+      handler.invoke(request, match, null, connect);
+      Object result = handler.invoke(request, match, null, connect);
       assertTrue(result instanceof RedirectImpl);
       RedirectImpl redirect = (RedirectImpl) result;
       String url = redirect.getUrl(connect).getPath();
@@ -233,7 +245,7 @@ public final class AsyncResponderTest {
       match = null;
       when(request.getPath()).thenReturn(url);
       when(request.getMethod()).thenReturn(DELETE);
-      result = handler.invoke(request, match, connect);
+      result = handler.invoke(request, match, null, connect);
 
       assertTrue(result instanceof Future);
       Future<?> fresult = (Future<?>) result;
@@ -247,7 +259,7 @@ public final class AsyncResponderTest {
       InterruptedException, ExecutionException {
       match = matchOfMethod("sleeper");
 
-      Object result = handler.invoke(request, match, connect);
+      Object result = handler.invoke(request, match, null, connect);
       RedirectImpl redirect = (RedirectImpl) result;
       String url = redirect.getUrl(connect).getPath();
       Thread.sleep(10);
@@ -255,7 +267,7 @@ public final class AsyncResponderTest {
       match = null;
       when(request.getPath()).thenReturn(url);
       when(request.getMethod()).thenReturn(DELETE);
-      result = handler.invoke(request, match, connect);
+      result = handler.invoke(request, match, null, connect);
 
       assertTrue(result instanceof Future);
       Future<?> fresult = (Future<?>) result;
@@ -264,17 +276,125 @@ public final class AsyncResponderTest {
       fresult.get();
    }
 
-   @Test(expected = ConflictException.class)
-   public void testAsyncWithResolver() throws NoSuchMethodException {
+   @Test
+   public void testAsyncWithResolver() throws NoSuchMethodException, MalformedURLException {
       match = matchOfMethod("sleeper", 7);
-      Object result = handler.invoke(request, match, connect);
+      Object result = handler.invoke(request, match, null, connect);
       assertTrue(result instanceof RedirectImpl);
+      URL url1 = ((RedirectImpl) result).getUrl(connect);
 
       match = matchOfMethod("sleeper", 12);
-      result = handler.invoke(request, match, connect);
+      result = handler.invoke(request, match, null, connect);
+      assertTrue(result instanceof RedirectImpl);
+      URL url2 = ((RedirectImpl) result).getUrl(connect);
+      assertNotEquals(url1, url2);
+
+      result = handler.invoke(request, match, null, connect);
+      assertTrue(result instanceof RedirectImpl);
+      URL url3 = ((RedirectImpl) result).getUrl(connect);
+      assertNotEquals(url1, url3);
+      assertEquals(url2, url3);
+   }
+
+   @Test(expected = TooManyRequestsException.class)
+   public void testAsyncWithMatcherFail() throws NoSuchMethodException, MalformedURLException {
+      match = matchOfMethod("sleeper", "test");
+
+      IIdentity identity = new IdentityBuilder() //
+               .compareUsing(ClaimType.SERIAL_NUMBER)
+               .addSerialNumber("1")
+               .build();
+      Object result = handler.invoke(request, match, identity, connect);
       assertTrue(result instanceof RedirectImpl);
 
-      handler.invoke(request, match, connect);
+      handler.invoke(request, match, identity, connect);
+   }
+
+   @Test
+   public void testAsyncWithMatcherPass() throws NoSuchMethodException, MalformedURLException {
+      match = matchOfMethod("sleeper", "test");
+
+      IIdentity identity = new IdentityBuilder() //
+               .compareUsing(ClaimType.SERIAL_NUMBER)
+               .addSerialNumber("1")
+               .build();
+      Object result = handler.invoke(request, match, identity, connect);
+      assertTrue(result instanceof RedirectImpl);
+      URL url1 = ((RedirectImpl) result).getUrl(connect);
+
+      identity = new IdentityBuilder() //
+               .compareUsing(ClaimType.SERIAL_NUMBER)
+               .addSerialNumber("2")
+               .build();
+      result = handler.invoke(request, match, identity, connect);
+      assertTrue(result instanceof RedirectImpl);
+      URL url2 = ((RedirectImpl) result).getUrl(connect);
+
+      assertNotEquals(url1, url2);
+   }
+
+   @Test
+   public void testAsyncWithContentFail() throws NoSuchMethodException, MalformedURLException {
+      Object content = new Object();
+      match = matchOfMethod("sleeper", content, 7L);
+
+      Object result = handler.invoke(request, match, null, connect);
+      assertTrue(result instanceof RedirectImpl);
+      URL url1 = ((RedirectImpl) result).getUrl(connect);
+
+      result = handler.invoke(request, match, null, connect);
+      assertTrue(result instanceof RedirectImpl);
+      URL url2 = ((RedirectImpl) result).getUrl(connect);
+
+      assertEquals(url1, url2);
+   }
+
+   @Test
+   public void testAsyncWithContentPass() throws NoSuchMethodException, MalformedURLException {
+      match = matchOfMethod("sleeper", new Object(), 7L);
+      Object result = handler.invoke(request, match, null, connect);
+      assertTrue(result instanceof RedirectImpl);
+      URL url1 = ((RedirectImpl) result).getUrl(connect);
+
+      match = matchOfMethod("sleeper", new Object(), 7L);
+      result = handler.invoke(request, match, null, connect);
+      assertTrue(result instanceof RedirectImpl);
+      URL url2 = ((RedirectImpl) result).getUrl(connect);
+
+      assertNotEquals(url1, url2);
+   }
+
+   @Test
+   public void testAsyncWithIdentityFail() throws NoSuchMethodException, MalformedURLException {
+      match = matchOfMethod("sleeper", false);
+      IIdentity identity = new IdentityBuilder().addAccountName("jdoe").build();
+
+      Object result = handler.invoke(request, match, identity, connect);
+      assertTrue(result instanceof RedirectImpl);
+      URL url1 = ((RedirectImpl) result).getUrl(connect);
+
+      result = handler.invoke(request, match, identity, connect);
+      assertTrue(result instanceof RedirectImpl);
+      URL url2 = ((RedirectImpl) result).getUrl(connect);
+
+      assertEquals(url1, url2);
+   }
+
+   @Test
+   public void testAsyncWithIdentityPass() throws NoSuchMethodException, MalformedURLException {
+      match = matchOfMethod("sleeper", false);
+
+      IIdentity id1 = new IdentityBuilder().addAccountName("jane.doe").build();
+      Object result = handler.invoke(request, match, id1, connect);
+      assertTrue(result instanceof RedirectImpl);
+      URL url1 = ((RedirectImpl) result).getUrl(connect);
+
+      IIdentity id2 = new IdentityBuilder().addAccountName("john.doe").build();
+      result = handler.invoke(request, match, id2, connect);
+      assertTrue(result instanceof RedirectImpl);
+      URL url2 = ((RedirectImpl) result).getUrl(connect);
+
+      assertNotEquals(url1, url2);
    }
 
    @Async
@@ -310,33 +430,79 @@ public final class AsyncResponderTest {
       Thread.sleep(100);
    }
 
+   @Async(reject = SAME_CONTENT)
+   public void sleeper(Object content, Long l) throws InterruptedException {
+      Thread.sleep(100);
+   }
+
+   @Async(reject = SAME_IDENTITY)
+   public void sleeper(Boolean b) throws InterruptedException {
+      Thread.sleep(100);
+   }
+
+   @Async(rejectWith = IdentityMatcher.class)
+   public void sleeper(String s) throws InterruptedException {
+      Thread.sleep(100);
+   }
+
    private RouteMatch matchOfMethod(String methodName, Object... params)
       throws NoSuchMethodException {
       Class<?>[] paramTypes = Arrays.stream(params).map(Object::getClass).toArray(Class<?>[]::new);
       final Method method = AsyncResponderTest.class.getMethod(methodName, paramTypes);
-      return new RouteMatch() {
+      return new RouteMatchMockImpl(method, params);
+   }
 
-         @Override
-         public Object invoke() {
-            try {
-               return method.invoke(AsyncResponderTest.this, params);
-            } catch (IllegalAccessException | InvocationTargetException e) {
-               throw new RuntimeException(e);
+   public static class IdentityMatcher implements IAsyncRequestMatcher {
+
+      @Override
+      public UUID match(AsyncRequest request, Map<UUID, AsyncRequest> queued) {
+         IIdentity thisIdentity = request.getIdentity();
+         if (thisIdentity == null) {
+            throw new UnauthorizedException();
+         }
+         for (Entry<UUID, AsyncRequest> entry : queued.entrySet()) {
+            IIdentity otherIdentity = entry.getValue().getIdentity();
+            if (thisIdentity.equals(otherIdentity)) {
+               throw new TooManyRequestsException();
             }
          }
+         return null;
+      }
+   }
 
-         @Override
-         public Method getMethod() {
-            return method;
-         }
+   private class RouteMatchMockImpl implements RouteMatch {
 
-         @Override
-         public boolean equals(Object obj) {
-            if (obj instanceof RouteMatch) {
-               return method.equals(((RouteMatch) obj).getMethod());
-            }
-            return false;
+      private final Object[] paramValues;
+      private final Method method;
+
+      public RouteMatchMockImpl(Method method, Object[] paramValues) {
+         this.paramValues = paramValues;
+         this.method = method;
+      }
+
+      @Override
+      public Object invoke() {
+         try {
+            return method.invoke(AsyncResponderTest.this, paramValues);
+         } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException(e);
          }
-      };
+      }
+
+      @Override
+      public Method getMethod() {
+         return method;
+      }
+
+      @Override
+      public Object getContentObject() {
+         return paramValues[0].getClass() == Object.class ? paramValues[0] : null;
+      }
+
+      @Override
+      public boolean equals(Object obj) {
+         return obj instanceof RouteMatchMockImpl && method.equals(((RouteMatch) obj).getMethod())
+                  && Arrays.equals(paramValues, ((RouteMatchMockImpl) obj).paramValues);
+      }
    }
 }

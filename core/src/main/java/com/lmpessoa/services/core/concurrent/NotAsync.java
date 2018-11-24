@@ -28,6 +28,16 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+/**
+ * Indicates that a method should not be executed asynchronously.
+ *
+ * <p>
+ * A resource class marked with {@link Async} is a means to declare that every single published
+ * method in that class should be executed asynchronously. Use this annotation in a method in an all
+ * asynchronous class to indicate that that marked method in particular should not be executed
+ * asynchronously.
+ * </p>
+ */
 @Target(METHOD)
 @Retention(RUNTIME)
 public @interface NotAsync {}

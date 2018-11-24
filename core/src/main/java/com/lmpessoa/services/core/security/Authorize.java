@@ -26,30 +26,37 @@ import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
  * Identifies a method that can only be accessed by an authorised user.
+ *
  * <p>
  * Methods marked with this annotation are ensured by the engine they can only be accessed by a
  * valid user. Resource classes can also be marked with this annotation meaning each method of the
  * marked class will require the same authorisation specified at the class level. If method and
- * class are both marked with {@code Authorize} the user must fulfil both requirements to be able to
- * access the given method.
+ * class are both marked with {@code Authorize} the user must fulfil both requirements to be able
+ * to access the given method.
  * </p>
+ *
  * <p>
  * The {@code Authorize} annotation may require users to have certain roles or pass a given policy
  * in order to be allowed to call the annotated method. If the annotation does not specify a role or
  * policy, the engine will only ensure the request was made by an identified user.
  * </p>
+ *
  * <p>
  * The requirement for a method of an annotated resource class can be lifted by applying the
  * {@link AllowAnonymous} annotation to the desired method.
  * </p>
+ *
+ * @see AllowAnonymous
  */
 @Retention(RUNTIME)
 @Target({ METHOD, TYPE })
+@Repeatable(Authorize.List.class)
 public @interface Authorize {
 
    /**
@@ -62,5 +69,12 @@ public @interface Authorize {
     * The name of the policy an identity must fulfil in order to be authorised to access a method
     * protected by this annotation.
     */
-   String policy() default "";
+   String policy() default "##default";
+
+   @Retention(RUNTIME)
+   @Target({ METHOD, TYPE })
+   public static @interface List {
+
+      Authorize[] value();
+   }
 }

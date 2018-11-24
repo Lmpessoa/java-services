@@ -29,7 +29,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import com.lmpessoa.services.core.internal.concurrent.DefaultRejectionRule;
+import com.lmpessoa.services.core.internal.concurrent.DefaultRequestMatcher;
 
 /**
  * Identifies methods that should be executed asynchronously.
@@ -41,29 +41,58 @@ import com.lmpessoa.services.core.internal.concurrent.DefaultRejectionRule;
  * </p>
  *
  * <p>
- * By marking a method (or a whole resource class) as asynchronous, upon calling the method, the
- * user agent is given another link where it can check back later if the method execution has
- * finished and its effective result once completed. The link can be checked as many times desired
- * until the result is available.
+ * By marking a method as asynchronous, upon calling that method, the engine will schedule the
+ * method to be executed at a later time and make available for the client a link where it can check
+ * the status of the asynchronous processing and retrieve the result of such operation.The link can
+ * be checked as many times desired until the result is available.
  * </p>
  *
  * <p>
- * If an entire class is marked with <code>@Async</code> each and every method call in that class
- * will be executed asynchronously.
+ * Also, by default, each and every method call marked with {@code @Async} will be accepted and
+ * handled by the engine. Developers may change the strategy used to accept or reject new request
+ * using either property defined in this annotation. {@code reject} accepts two additional values:
+ *
+ * <ul>
+ * <li>{@code SAME_PATH} in which all subsequent request for the same path (including HTTP method)
+ * will be rejected if another request is being processed, and</li>
+ * <li>{@code SAME_REQUEST} which considers not only path and HTTP method but also whether any
+ * content object from both requests are equivalent.</li>
+ * </ul>
+ *
+ * Developers requiring more control whether a new asynchronous request should be accepted/rejected
+ * may instead provide an class implementing {@link IAsyncRequestMatcher} to the {@code rejectWith}
+ * property.
+ * </p>
+ *
+ * <p>
+ * Each client requesting an operation rejected by the engine will receive the same link for
+ * checking the result of the asynchronous operation. This link may also be used to abort the
+ * execution of the asynchronous operation if the given path is called with the {@code DELETE} HTTP
+ * method. However, if an identified user makes the request for the asynchronous operation, only
+ * that same user will be allowed to abort the operation.
+ * </p>
+ *
+ * <p>
+ * If an entire class is marked with <code>@Async</code> then each and every method call in that
+ * class will be executed asynchronously unless marked with the {@link NotAsync} annotation.
  * </p>
  *
  * <p>
  * For deployers, note that the execution of asynchronous methods shares the same thread pool used
  * to handle request received by the application, thus if limited it should be taken into
  * consideration that too many asynchronous methods being called concurrently may block the server
- * ability to respond to newer request.
+ * ability to respond to newer request. In this case, we recommend also setting a different limit
+ * for asynchronous tasks as it will create a separate poll for these calls.
  * </p>
+ *
+ * @see NotAsync
  */
 @Retention(RUNTIME)
 @Target({ TYPE, METHOD })
 public @interface Async {
 
-   AsyncReject reject() default AsyncReject.NEVER;
+   AsyncReject reject() default AsyncReject.DEFAULT;
 
-   Class<? extends IAsyncRejectionRule> rejectWith() default DefaultRejectionRule.class;
+   Class<? extends IAsyncRequestMatcher> rejectWith() default DefaultRequestMatcher.class;
+
 }

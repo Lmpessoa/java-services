@@ -23,7 +23,7 @@
 package com.lmpessoa.services.core.internal.services;
 
 /**
- * Thrown when an unexpected situation happened during a lazy service instantiation.
+ * Thrown when an unexpected situation happens during a lazy service instantiation.
  */
 public final class LazyInstatiationException extends RuntimeException {
 

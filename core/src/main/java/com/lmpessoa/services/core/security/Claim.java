@@ -26,22 +26,27 @@ import java.util.Objects;
 
 /**
  * Represents an information about a certain user.
+ *
  * <p>
  * Claims are usually a pair formed by a type and a value. This pair represents some information
  * about an user in an identity, like a name, e-mail or roles assigned to that user. An user's
  * identity may contain as many claims it requires and each claim type can be present multiple times
  * in one single identity.
  * </p>
+ *
  * <p>
  * One created, the value of a {@code Claim} instance cannot be changed. Note, however, that this
  * does not mean the value cannot be changed in the underlying system where it is stored since it's
  * dependent only on the application that provides the identity claim.
  * </p>
+ *
  * <p>
  * It is not mandatory but claims may be associated with the source or issuer of that claim. In
  * identities formed with information from more than one source can use this information about a
  * claim.
  * </p>
+ *
+ * @see IIdentity
  */
 public final class Claim {
 
@@ -57,11 +62,12 @@ public final class Claim {
     * @param value the value to be associated with this claim type.
     */
    public Claim(String type, Object value) {
-      this(type, value, null);
+      this(null, type, value);
    }
 
    /**
     * Creates a new {@code Claim} with the given type, value and issuer.
+    *
     * <p>
     * It is recommended that the issuer of a claim be identified by the base URL of the
     * application's main site. For example, the recommended issuer for a Facebook claim should be
@@ -74,10 +80,15 @@ public final class Claim {
     * @param value the value to be associated with this claim type.
     * @param issuer an identifier of the issuer of this claim, or {@code null} if it cannot be
     *           identified.
+    *
+    * @see ClaimType
     */
-   public Claim(String type, Object value, String issuer) {
+   public Claim(String issuer, String type, Object value) {
       this.value = Objects.requireNonNull(value);
       this.type = Objects.requireNonNull(type);
+      if (!type.matches("([a-z][a-z0-9]*:)+claim:[a-z][a-z0-9]*")) {
+         throw new IllegalArgumentException("Not a valid claim type identifier: " + type);
+      }
       this.issuer = issuer;
    }
 
@@ -99,6 +110,7 @@ public final class Claim {
 
    /**
     * Returns the type of the data of this claim.
+    *
     * <p>
     * The type of a claim identifies what information that claim has associated with it. For a list
     * of examples claim types, see {@link ClaimType}. For custom claims, it is strongly recommended
@@ -107,6 +119,7 @@ public final class Claim {
     * </p>
     *
     * @return the type of the data of this claim.
+    *
     * @see ClaimType
     */
    public String getType() {
@@ -115,6 +128,7 @@ public final class Claim {
 
    /**
     * Returns the value of this claim.
+    *
     * <p>
     * The value of a claim can be an object of any type. Developers are advised to check the type of
     * data expected from any given source/issuer before trying to cast the value into another type.
@@ -128,6 +142,7 @@ public final class Claim {
 
    /**
     * Returns the identifier of the issuer of this claim.
+    *
     * <p>
     * It is recommended this identifier be the main URL used by the issuer of this claim, but it is
     * not mandatory and issuers or identity providers may use other values as long as this value is
@@ -138,5 +153,16 @@ public final class Claim {
     */
    public String getIssuer() {
       return issuer;
+   }
+
+   static boolean equalIssuers(Claim c1, Claim c2) {
+      Objects.requireNonNull(c1);
+      Objects.requireNonNull(c2);
+      if (c1.getIssuer() == null != (c2.getIssuer() == null)) {
+         return false;
+      } else if (c1.getIssuer() != null) {
+         return c1.getIssuer().equals(c2.getIssuer());
+      }
+      return true;
    }
 }

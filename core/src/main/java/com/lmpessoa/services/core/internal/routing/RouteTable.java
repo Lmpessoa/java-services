@@ -313,8 +313,8 @@ public final class RouteTable implements IRouteTable {
       if (method.getDeclaringClass() == Object.class) {
          return Collections.emptyList();
       }
-      HttpMethod[] methodNames = findMethod(method);
-      if (methodNames.length == 0) {
+      HttpMethod[] verbs = findMethod(method);
+      if (verbs.length == 0) {
          return Collections.emptyList();
       }
       List<RouteEntry> result = new ArrayList<>();
@@ -324,17 +324,17 @@ public final class RouteTable implements IRouteTable {
             endpoints.put(methodPat, new ConcurrentHashMap<>());
          }
          Map<HttpMethod, MethodEntry> map = endpoints.get(methodPat);
-         for (HttpMethod methodName : methodNames) {
-            if (map.containsKey(methodName)) {
-               MethodEntry entry = map.get(methodName);
-               result.add(new RouteEntry(method, String.format("%s %s", methodName, methodPat),
+         for (HttpMethod verb : verbs) {
+            if (map.containsKey(verb)) {
+               MethodEntry entry = map.get(verb);
+               result.add(new RouteEntry(method, String.format("%s %s", verb, methodPat),
                         entry.getMethod()));
                continue;
             }
             Constructor<?> constructor = clazz.getConstructors()[0];
-            map.put(methodName, new MethodEntry(clazz, method, constructor.getParameterCount(),
+            map.put(verb, new MethodEntry(clazz, method, constructor.getParameterCount(),
                      methodPat.getContentClass()));
-            result.add(new RouteEntry(method, String.format("%s %s", methodName, methodPat)));
+            result.add(new RouteEntry(method, String.format("%s %s", verb, methodPat)));
 
          }
       } catch (Exception e) {
@@ -362,6 +362,9 @@ public final class RouteTable implements IRouteTable {
                .findFirst();
       if (optionalResult.isPresent()) {
          return new HttpMethod[] { optionalResult.get() };
+      }
+      if (method.isAnnotationPresent(Route.class)) {
+         return new HttpMethod[] { HttpMethod.GET };
       }
       return new HttpMethod[0];
    }

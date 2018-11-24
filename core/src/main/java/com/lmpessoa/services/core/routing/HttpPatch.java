@@ -43,6 +43,4 @@ import java.lang.annotation.Target;
  */
 @Target(METHOD)
 @Retention(RUNTIME)
-public @interface HttpPatch {
-
-}
+public @interface HttpPatch {}

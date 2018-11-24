@@ -34,8 +34,8 @@ import java.util.Map;
 import org.junit.Test;
 
 import com.lmpessoa.services.core.validating.ErrorSet;
-import com.lmpessoa.services.core.validating.ErrorSet.Entry;
 import com.lmpessoa.services.core.validating.IValidationService;
+import com.lmpessoa.services.core.validating.ErrorSet.Entry;
 import com.lmpessoa.services.test.validating.Author;
 import com.lmpessoa.services.test.validating.Book;
 import com.lmpessoa.services.test.validating.Library;

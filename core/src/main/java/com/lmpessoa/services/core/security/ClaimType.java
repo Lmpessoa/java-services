@@ -24,6 +24,7 @@ package com.lmpessoa.services.core.security;
 
 /**
  * Enumerates a series of common/shared claim types.
+ *
  * <p>
  * The identifiers provided by these constants can be used between multiple sources/issuers in a
  * manner of stating their claims contain the very same type of information. Note, however, that
@@ -34,31 +35,31 @@ package com.lmpessoa.services.core.security;
  */
 public final class ClaimType {
 
-   public static final String ACCOUNT_NAME = "identity:claims:accountname";
-   public static final String AVATAR_URL = "identity:claims:avatarurl";
-   public static final String COUNTRY = "identity:claims:country";
-   public static final String DATE_OF_BIRTH = "identity:claims:dateofbirth";
-   public static final String DISPLAY_NAME = "identity:claims:displayname";
-   public static final String EMAIL = "identity:claims:email";
-   public static final String EXPIRATION = "identity:claims:expiration";
-   public static final String EXPIRED = "identity:claims:expired";
-   public static final String GENDER = "identity:claims:gender";
-   public static final String GIVEN_NAME = "identity:claims:givenname";
-   public static final String HOME_PHONE = "identity:claims:homephone";
-   public static final String LOCALE = "identity:claims:locality";
-   public static final String MOBILE_PHONE = "identity:claims:mobilephone";
-   public static final String NAME = "identity:claims:name";
-   public static final String OTHER_PHONE = "identity:claims:otherphone";
-   public static final String POSTAL_CODE = "identity:claims:postalcode";
-   public static final String ROLE = "identity:claims:role";
-   public static final String SERIAL_NUMBER = "identity:claims:serialnumber";
-   public static final String STATE_OR_PROVINCE = "identity:claims:stateorprovince";
-   public static final String STREET_ADDRESS = "identity:claims:streetaddress";
-   public static final String SURNAME = "identity:claims:surname";
-   public static final String THUMBPRINT = "identity:claims:thumbprint";
-   public static final String VERSION = "identity:claims:version";
-   public static final String WEBPAGE = "identity:claims:webpage";
-   public static final String WORK_PHONE = "identity:claims:workphone";
+   public static final String ACCOUNT_NAME = "core:claim:accountname";
+   public static final String AVATAR_URL = "core:claim:avatarurl";
+   public static final String COUNTRY = "core:claim:country";
+   public static final String DATE_OF_BIRTH = "core:claim:dateofbirth";
+   public static final String DISPLAY_NAME = "core:claim:displayname";
+   public static final String EMAIL = "core:claim:email";
+   public static final String EXPIRATION = "core:claim:expiration";
+   public static final String EXPIRED = "core:claim:expired";
+   public static final String GENDER = "core:claim:gender";
+   public static final String GIVEN_NAME = "core:claim:givenname";
+   public static final String HOME_PHONE = "core:claim:homephone";
+   public static final String LOCALE = "core:claim:locality";
+   public static final String MOBILE_PHONE = "core:claim:mobilephone";
+   public static final String NAME = "core:claim:name";
+   public static final String OTHER_PHONE = "core:claim:otherphone";
+   public static final String POSTAL_CODE = "core:claim:postalcode";
+   public static final String ROLE = "core:claim:role";
+   public static final String SERIAL_NUMBER = "core:claim:serialnumber";
+   public static final String STATE_OR_PROVINCE = "core:claim:stateorprovince";
+   public static final String STREET_ADDRESS = "core:claim:streetaddress";
+   public static final String SURNAME = "core:claim:surname";
+   public static final String THUMBPRINT = "core:claim:thumbprint";
+   public static final String VERSION = "core:claim:version";
+   public static final String WEBPAGE = "core:claim:webpage";
+   public static final String WORK_PHONE = "core:claim:workphone";
 
    private ClaimType() {
    }

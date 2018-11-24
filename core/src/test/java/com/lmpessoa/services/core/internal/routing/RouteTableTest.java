@@ -264,17 +264,20 @@ public final class RouteTableTest {
    public static class AnnotatedResource {
 
       @HttpGet
+      @Route("")
       public void someMethod() {
          // Test method, does nothing
       }
 
       @HttpPost
+      @Route("")
       public void anotherMethod() {
          // Test method, does nothing
       }
 
       @HttpPut
       @HttpPatch
+      @Route("{0}")
       public void invalidAnnotations(int i) {
          // Test method, does nothing
       }

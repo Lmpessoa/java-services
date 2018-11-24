@@ -22,8 +22,10 @@
  */
 package com.lmpessoa.services.core.internal.hosting;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.lang.reflect.AnnotatedElement;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Predicate;
 
 import com.lmpessoa.services.core.hosting.ForbiddenException;
@@ -36,55 +38,66 @@ import com.lmpessoa.services.core.security.IIdentity;
 
 final class IdentityResponder {
 
-   private static Map<String, Predicate<IIdentity>> policies = new HashMap<>();
+   private final ApplicationOptions options;
    private final NextResponder next;
 
-   public IdentityResponder(NextResponder next) {
+   public IdentityResponder(NextResponder next, ApplicationOptions options) {
+      this.options = options;
       this.next = next;
    }
 
    public Object invoke(RouteMatch route, IIdentity identity) {
-      if (!(route instanceof HttpException)) {
-         AllowAnonymous anon = route.getMethod().getAnnotation(AllowAnonymous.class);
-         if (anon == null) {
-            anon = route.getResourceClass().getAnnotation(AllowAnonymous.class);
-         }
-         if (anon == null) {
-            Authorize methodAuth = route.getMethod().getAnnotation(Authorize.class);
-            Authorize classAuth = route.getResourceClass().getAnnotation(Authorize.class);
-            if (methodAuth != null || classAuth != null) {
-               if (identity == null) {
-                  throw new UnauthorizedException();
-               }
-               isAuthorized(classAuth, identity);
-               isAuthorized(methodAuth, identity);
+      if (!(route instanceof HttpException)
+               && !route.getMethod().isAnnotationPresent(AllowAnonymous.class)) {
+         Authorize[] classAuth = getAuthorizations(route.getResourceClass());
+         Authorize[] methodAuth = getAuthorizations(route.getMethod());
+         if (classAuth.length > 0 || methodAuth.length > 0) {
+            if (identity == null) {
+               throw new UnauthorizedException();
             }
+            isAuthorized(classAuth, identity);
+            isAuthorized(methodAuth, identity);
          }
       }
       return next.invoke();
    }
 
-   static void addPolicy(String policyName, Predicate<IIdentity> policyRule) {
-      policies.put(policyName, policyRule);
-   }
-
-   static boolean hasPolicy(String policyName) {
-      return policies.containsKey(policyName);
-   }
-
-   private void isAuthorized(Authorize auth, IIdentity identity) {
+   private Authorize[] getAuthorizations(AnnotatedElement element) {
+      List<Authorize> result = new ArrayList<>();
+      Authorize.List list = element.getAnnotation(Authorize.List.class);
+      if (list != null) {
+         result.addAll(Arrays.asList(list.value()));
+      }
+      Authorize auth = element.getAnnotation(Authorize.class);
       if (auth != null) {
-         for (String role : auth.roles()) {
-            if (!identity.hasRole(role)) {
-               throw new ForbiddenException(String.format("User failed role: %s", role));
+         result.add(auth);
+      }
+      return result.toArray(new Authorize[0]);
+   }
+
+   private void isAuthorized(Authorize[] auths, IIdentity identity) {
+      if (auths.length > 0) {
+         for (Authorize auth : auths) {
+            if (isAuthorized(auth, identity)) {
+               return;
             }
          }
-         if (!auth.policy().isEmpty()) {
-            Predicate<IIdentity> policy = policies.get(auth.policy());
-            if (policy == null || !policy.test(identity)) {
-               throw new ForbiddenException("User failed policy: " + auth.policy());
-            }
+         throw new ForbiddenException();
+      }
+   }
+
+   private boolean isAuthorized(Authorize auth, IIdentity identity) {
+      for (String role : auth.roles()) {
+         if (!identity.hasRole(role)) {
+            return false;
          }
       }
+      if (!"##default".equals(auth.policy())) {
+         Predicate<IIdentity> policy = options.getPolicy(auth.policy());
+         if (policy == null || !policy.test(identity)) {
+            return false;
+         }
+      }
+      return true;
    }
 }

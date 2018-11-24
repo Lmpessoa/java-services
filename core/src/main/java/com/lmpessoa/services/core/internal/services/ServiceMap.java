@@ -83,7 +83,7 @@ public final class ServiceMap {
       if (ann == null) {
          throw new IllegalArgumentException(SPECIFY_REUSE_LEVEL + service.getName());
       }
-      put(service, new LazyInitializer<>(service, ann.reuse(), this));
+      putSupplier(service, new LazyInitializer<>(service, ann.reuse(), this));
    }
 
    /**
@@ -103,27 +103,7 @@ public final class ServiceMap {
       if (ann == null) {
          throw new IllegalArgumentException(SPECIFY_REUSE_LEVEL + service.getName());
       }
-      put(service, new LazyInitializer<>(provided, ann.reuse(), this));
-   }
-
-   /**
-    * Registers a service for the given class on the service map.
-    *
-    * <p>
-    * The given {@code service} class is used for service discovery and the {@code supplier}
-    * function is used to create the instance object that will respond to service requests.
-    * </p>
-    *
-    * @param service the class of the service to be registered.
-    * @param supplier the function that supplies new instances of the service.
-    */
-   public <T> void put(Class<T> service, Supplier<T> supplier) {
-      Service ann = service.getAnnotation(Service.class);
-      if (ann == null) {
-         throw new IllegalArgumentException(SPECIFY_REUSE_LEVEL + service.getName());
-      }
-      put(ann.reuse(), service, Objects.requireNonNull(supplier));
-
+      putSupplier(service, new LazyInitializer<>(provided, ann.reuse(), this));
    }
 
    /**
@@ -153,6 +133,26 @@ public final class ServiceMap {
    }
 
    /**
+    * Registers a service for the given class on the service map.
+    *
+    * <p>
+    * The given {@code service} class is used for service discovery and the {@code supplier}
+    * function is used to create the instance object that will respond to service requests.
+    * </p>
+    *
+    * @param service the class of the service to be registered.
+    * @param supplier the function that supplies new instances of the service.
+    */
+   public <T> void putSupplier(Class<T> service, Supplier<T> supplier) {
+      Service ann = service.getAnnotation(Service.class);
+      if (ann == null) {
+         throw new IllegalArgumentException(SPECIFY_REUSE_LEVEL + service.getName());
+      }
+      put(ann.reuse(), service, Objects.requireNonNull(supplier));
+
+   }
+
+   /**
     * Returns whether this {@code ServiceMap} can handle the given service type.
     *
     * @param service the class to test if a service is registered for.
@@ -176,7 +176,7 @@ public final class ServiceMap {
     * Returns an instance of the given service type.
     *
     * <p>
-    * This method will handle creating any intermediary services required to fulfil the required
+    * This method will handle creating any intermediary services required to fullfil the required
     * service and returning the appropriate instance for the context (see {@link Reuse}).
     * </p>
     *
@@ -286,7 +286,7 @@ public final class ServiceMap {
     *
     * <p>
     * Sometimes it is not possible to provide an actual supplier for request level services, mostly
-    * because these values are being produced during the initialisation of the request. This method
+    * because these values are being produced during the initialisation of the resquest. This method
     * allows those produced values to be set on the request level before any automatic value is
     * produced by the engine.
     * </p>

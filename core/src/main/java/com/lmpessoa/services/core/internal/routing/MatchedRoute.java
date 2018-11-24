@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
 import com.lmpessoa.services.core.hosting.BadRequestException;
 import com.lmpessoa.services.core.hosting.InternalServerError;
 import com.lmpessoa.services.core.internal.hosting.HttpException;
-import com.lmpessoa.services.core.routing.BadResponseException;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.validating.ErrorSet;
 import com.lmpessoa.services.core.validating.IValidationService;

@@ -117,7 +117,16 @@ public final class ApplicationServer {
       return instance != null;
    }
 
+   /**
+    * Returns the class used to start up the current server instance.
+    *
+    * @return the class used to start up the current server instance.
+    */
    public static Class<?> getStartupClass() {
       return instance != null ? instance.getStartupClass() : null;
+   }
+
+   private ApplicationServer() {
+      // Nothing to do
    }
 }

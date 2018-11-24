@@ -49,7 +49,7 @@ final class TemporalAccessorAdapter
 
    @Override
    public TemporalAccessor deserialize(JsonElement json, Type typeOfT,
-      JsonDeserializationContext context) throws JsonParseException {
+      JsonDeserializationContext context) {
       Method parser = ClassUtils.getMethod((Class<?>) typeOfT, "parse", CharSequence.class);
       if (parser == null || !Modifier.isStatic(parser.getModifiers())) {
          throw new JsonParseException("Cannot parse value to " + typeOfT.getTypeName());

@@ -240,7 +240,7 @@ public final class Logger implements ILogger {
       }
       List<Class<?>> classes = Arrays.asList(ILogger.class, Logger.class, LogEntry.class,
                LogEntryImpl.class);
-      return !classes.stream().anyMatch(c -> c.getName().equals(trace.getClassName()));
+      return classes.stream().noneMatch(c -> c.getName().equals(trace.getClassName()));
    }
 
    Function<LogEntry, String> getVariable(String name) {

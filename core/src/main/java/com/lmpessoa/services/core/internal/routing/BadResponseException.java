@@ -20,14 +20,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.concurrent;
+package com.lmpessoa.services.core.internal.routing;
 
-import java.util.Collection;
+import com.lmpessoa.services.core.validating.ErrorSet;
 
-import com.lmpessoa.services.core.routing.RouteMatch;
+public final class BadResponseException extends RuntimeException {
 
-@FunctionalInterface
-public interface IAsyncRejectionRule {
+   private static final long serialVersionUID = 1L;
+   private final ErrorSet errors;
 
-   boolean shouldReject(RouteMatch route, Collection<RouteMatch> routes);
+   public BadResponseException(ErrorSet errors) {
+      this.errors = errors;
+   }
+
+   public ErrorSet getErrors() {
+      return errors;
+   }
 }

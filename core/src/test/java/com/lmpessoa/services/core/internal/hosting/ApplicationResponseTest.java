@@ -44,15 +44,15 @@ import com.lmpessoa.services.core.hosting.Headers;
 import com.lmpessoa.services.core.hosting.HttpInputStream;
 import com.lmpessoa.services.core.internal.concurrent.ExecutionService;
 import com.lmpessoa.services.core.internal.routing.RouteTable;
+import com.lmpessoa.services.core.internal.services.NoSingleMethodException;
 import com.lmpessoa.services.core.routing.HttpGet;
 import com.lmpessoa.services.core.routing.HttpMethod;
 import com.lmpessoa.services.core.routing.IRouteTable;
 import com.lmpessoa.services.core.routing.Route;
 import com.lmpessoa.services.core.security.Authorize;
-import com.lmpessoa.services.core.security.ClaimType;
-import com.lmpessoa.services.core.security.GenericIdentity;
 import com.lmpessoa.services.core.security.IIdentity;
 import com.lmpessoa.services.core.security.IIdentityProvider;
+import com.lmpessoa.services.core.security.IdentityBuilder;
 import com.lmpessoa.services.util.logging.NullHandler;
 import com.lmpessoa.services.util.logging.internal.Logger;
 
@@ -62,7 +62,7 @@ public final class ApplicationResponseTest {
    private ApplicationContext context;
 
    @Before
-   public void setup() {
+   public void setup() throws NoSingleMethodException {
       ApplicationSettings settings = mock(ApplicationSettings.class);
       when(settings.getStartupClass()).then(n -> ApplicationResponseTest.class);
       when(settings.getEnvironment()).thenReturn(() -> "Development");
@@ -70,18 +70,7 @@ public final class ApplicationResponseTest {
       when(settings.getJobExecutor()).thenReturn(new ExecutionService(0, log));
       when(settings.getValidationService()).thenCallRealMethod();
       ApplicationServerImpl server = new ApplicationServerImpl(settings);
-      server.getOptions().useIdentityWith(new IIdentityProvider() {
-
-         @Override
-         public IIdentity getIdentity(String format, String token) {
-            if (token == null) {
-               return null;
-            }
-            GenericIdentity id = new GenericIdentity();
-            id.addClaim(ClaimType.DISPLAY_NAME, "Jane Doe");
-            return id;
-         }
-      });
+      server.getOptions().useIdentityWith(TestIdentityProvider.class);
       RouteTable routes = server.getOptions().getRoutes();
       routes.put("", TestResource.class);
       context = new ApplicationContext(server, 5617, "test", routes);
@@ -197,5 +186,16 @@ public final class ApplicationResponseTest {
       ApplicationRequestJob app = new ApplicationRequestJob(context, socket);
       app.run();
       return new String(result.toByteArray()).split("\r\n");
+   }
+
+   public static class TestIdentityProvider implements IIdentityProvider {
+
+      @Override
+      public IIdentity getIdentity(String format, String token) {
+         if (token == null) {
+            return null;
+         }
+         return new IdentityBuilder().addDisplayName("Jane Doe").build();
+      }
    }
 }

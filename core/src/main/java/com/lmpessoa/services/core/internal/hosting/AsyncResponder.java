@@ -25,8 +25,6 @@ package com.lmpessoa.services.core.internal.hosting;
 import static com.lmpessoa.services.core.routing.HttpMethod.DELETE;
 import static com.lmpessoa.services.core.routing.HttpMethod.GET;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -40,24 +38,30 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import com.lmpessoa.services.core.concurrent.Async;
-import com.lmpessoa.services.core.concurrent.IAsyncRejectionRule;
+import com.lmpessoa.services.core.concurrent.AsyncReject;
+import com.lmpessoa.services.core.concurrent.AsyncRequest;
+import com.lmpessoa.services.core.concurrent.IAsyncRequestMatcher;
 import com.lmpessoa.services.core.concurrent.NotAsync;
-import com.lmpessoa.services.core.hosting.ConflictException;
 import com.lmpessoa.services.core.hosting.ConnectionInfo;
+import com.lmpessoa.services.core.hosting.ForbiddenException;
 import com.lmpessoa.services.core.hosting.HttpRequest;
 import com.lmpessoa.services.core.hosting.InternalServerError;
 import com.lmpessoa.services.core.hosting.MethodNotAllowedException;
 import com.lmpessoa.services.core.hosting.NextResponder;
 import com.lmpessoa.services.core.hosting.NotFoundException;
+import com.lmpessoa.services.core.hosting.UnauthorizedException;
+import com.lmpessoa.services.core.internal.concurrent.DefaultRequestMatcher;
 import com.lmpessoa.services.core.internal.concurrent.ExecutionService;
+import com.lmpessoa.services.core.internal.concurrent.RejectRequestMatcher;
 import com.lmpessoa.services.core.routing.HttpMethod;
 import com.lmpessoa.services.core.routing.RouteMatch;
+import com.lmpessoa.services.core.security.IIdentity;
 
 final class AsyncResponder {
 
    private static ExecutionService executor;
 
-   private final Map<UUID, RouteMatch> routes = new HashMap<>();
+   private final Map<UUID, AsyncRequest> routes = new HashMap<>();
    private final ApplicationOptions options;
    private final NextResponder next;
 
@@ -70,25 +74,29 @@ final class AsyncResponder {
       AsyncResponder.executor = Objects.requireNonNull(executor);
    }
 
-   public Object invoke(HttpRequest request, RouteMatch route, ConnectionInfo connect) {
+   public Object invoke(HttpRequest request, RouteMatch route, IIdentity identity,
+      ConnectionInfo connect) {
       if (executor != null) {
          final String feedbackPath = options.getFeedbakcPath();
          if (request.getPath().startsWith(feedbackPath)) {
-            return respondToStatusRequest(request, feedbackPath, connect);
+            return respondToStatusRequest(request, feedbackPath, identity, connect);
          }
          if (route != null && !(route instanceof HttpException)) {
-            IAsyncRejectionRule rule = getRejectionRule(route);
-            if (rule != null && rule.shouldReject(route, routes.values())) {
-               throw new ConflictException("A request for this is already awaiting completion");
-            } else if (rule != null || isCallableResult(route)) {
-               return respondToAsyncCall(route, feedbackPath);
+            IAsyncRequestMatcher rule = getRouteMatcher(route);
+            if (rule != null) {
+               UUID id = rule.match(new AsyncRequestImpl(identity, route), routes);
+               if (id != null) {
+                  return RedirectImpl.accepted(feedbackPath + id);
+               } else {
+                  return respondToAsyncCall(route, identity, feedbackPath);
+               }
             }
          }
       }
       return next.invoke();
    }
 
-   private IAsyncRejectionRule getRejectionRule(RouteMatch route) {
+   private IAsyncRequestMatcher getRouteMatcher(RouteMatch route) {
       if (route.getMethod().isAnnotationPresent(NotAsync.class)) {
          return null;
       }
@@ -96,22 +104,32 @@ final class AsyncResponder {
       if (async == null && route.getResourceClass() != null) {
          async = route.getResourceClass().getAnnotation(Async.class);
       }
-      try {
-         if (async == null) {
-            return null;
+      if (async == null && isCallableResult(route)) {
+         return new RejectRequestMatcher(options.getDefaultRejectRule());
+      } else if (async != null) {
+         Class<? extends IAsyncRequestMatcher> matcherClass = async.rejectWith();
+         if (matcherClass == DefaultRequestMatcher.class
+                  && options.getDefaultRouteMatcher() != null) {
+            matcherClass = options.getDefaultRouteMatcher();
          }
-         Constructor<? extends IAsyncRejectionRule> constr = async.rejectWith()
-                  .getConstructor(Async.class);
-         constr.setAccessible(true);
-         return constr.newInstance(async);
-      } catch (InvocationTargetException e) {
-         throw new InternalServerError(e.getCause());
-      } catch (NoSuchMethodException | InstantiationException | IllegalAccessException e) {
-         throw new InternalServerError(e);
+         if (matcherClass == RejectRequestMatcher.class) {
+            AsyncReject rule = async.reject();
+            if (rule == AsyncReject.DEFAULT) {
+               rule = options.getDefaultRejectRule();
+            }
+            return new RejectRequestMatcher(rule);
+         } else {
+            try {
+               return matcherClass.newInstance();
+            } catch (InstantiationException | IllegalAccessException e) {
+               throw new InternalServerError(e);
+            }
+         }
       }
+      return null;
    }
 
-   private Object respondToAsyncCall(RouteMatch route, String asyncPath) {
+   private Object respondToAsyncCall(RouteMatch route, IIdentity identity, String asyncPath) {
       Callable<?> job = null;
       if (isCallableResult(route)) {
          Object result = next.invoke();
@@ -123,12 +141,12 @@ final class AsyncResponder {
       } else {
          job = route::invoke;
       }
-      String id = executor.submit(job);
-      routes.put(UUID.fromString(id), route);
+      UUID id = UUID.fromString(executor.submit(job));
+      routes.put(id, new AsyncRequestImpl(identity, route));
       return RedirectImpl.accepted(asyncPath + id);
    }
 
-   private Object respondToStatusRequest(HttpRequest request, String asyncPath,
+   private Object respondToStatusRequest(HttpRequest request, String asyncPath, IIdentity identity,
       ConnectionInfo connect) {
       UUID id;
       HttpMethod method = request.getMethod();
@@ -160,6 +178,15 @@ final class AsyncResponder {
             Thread.currentThread().interrupt();
          }
       } else if (method == DELETE) {
+         IIdentity requester = routes.get(id).getIdentity();
+         if (requester != null) {
+            if (identity == null) {
+               throw new UnauthorizedException();
+            }
+            if (!requester.equals(identity)) {
+               throw new ForbiddenException();
+            }
+         }
          result.cancel(true);
       }
       return result;
@@ -172,5 +199,26 @@ final class AsyncResponder {
       }
       Class<?> result = method.getReturnType();
       return result == Callable.class || result == Runnable.class;
+   }
+
+   private static class AsyncRequestImpl implements AsyncRequest {
+
+      private final IIdentity identity;
+      private final RouteMatch route;
+
+      public AsyncRequestImpl(IIdentity identity, RouteMatch route) {
+         this.identity = identity;
+         this.route = route;
+      }
+
+      @Override
+      public IIdentity getIdentity() {
+         return identity;
+      }
+
+      @Override
+      public RouteMatch getRoute() {
+         return route;
+      }
    }
 }

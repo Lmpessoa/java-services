@@ -23,7 +23,6 @@
 package com.lmpessoa.services.core.security;
 
 import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Retention;
@@ -31,10 +30,12 @@ import java.lang.annotation.Target;
 
 /**
  * Identifies a method or type that can be accessed by anonymous users.
+ *
  * <p>
  * Methods marked by this annotation will ignore any further requirement for authorisation before
  * allowing a request to be fulfilled, even allowing non-identified users to call such methods.
  * </p>
+ *
  * <p>
  * If a resource class is marked with this annotation, then every method in it will be callable
  * without a user identity. Note that this even ignores any possible {@link Authorize} marks in
@@ -42,7 +43,9 @@ import java.lang.annotation.Target;
  * given method with the required {@code Authorize} annotation; there is no need to apply any
  * annotations to the resource class itself.
  * </p>
+ *
+ * @see Authorize
  */
+@Target(METHOD)
 @Retention(RUNTIME)
-@Target({ METHOD, TYPE })
 public @interface AllowAnonymous {}

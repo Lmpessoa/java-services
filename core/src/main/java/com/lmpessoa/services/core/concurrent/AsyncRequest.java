@@ -20,41 +20,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.internal.concurrent;
+package com.lmpessoa.services.core.concurrent;
 
-import java.util.Collection;
-
-import com.lmpessoa.services.core.concurrent.Async;
-import com.lmpessoa.services.core.concurrent.AsyncReject;
-import com.lmpessoa.services.core.concurrent.IAsyncRejectionRule;
 import com.lmpessoa.services.core.routing.RouteMatch;
+import com.lmpessoa.services.core.security.IIdentity;
 
-public final class DefaultRejectionRule implements IAsyncRejectionRule {
+/**
+ * Represents an asynchronous request.
+ *
+ * <p>
+ * Applications are not expected to provide classes implementing this interface. It is used only
+ * when implementing an {@link IAsyncRequestMatcher} in order to provide information about executing
+ * and queued asynchronous requests in order to allow these to find if one queued job matched the
+ * given route.
+ * </p>
+ */
+public interface AsyncRequest {
 
-   private final AsyncReject rule;
+   /**
+    * Returns the identity of the client that created this asynchronous request.
+    *
+    * @return the identity of the client that created this asynchronous request or {@code null} if
+    *         the request was created anonymously.
+    */
+   IIdentity getIdentity();
 
-   public DefaultRejectionRule(Async async) {
-      this.rule = async.reject();
-   }
-
-   @Override
-   public boolean shouldReject(RouteMatch route, Collection<RouteMatch> routes) {
-      if (rule != AsyncReject.NEVER) {
-         for (RouteMatch r : routes) {
-            if (route.equals(r)) {
-               if (rule == AsyncReject.SAME_PATH) {
-                  return true;
-               }
-               Object thisContent = route.getContentObject();
-               Object otherContent = r.getContentObject();
-               if (thisContent == null == (otherContent == null)
-                        && (thisContent == null || thisContent.equals(otherContent))) {
-                  return true;
-               }
-            }
-         }
-      }
-      return false;
-   }
-
+   /**
+    * Returns the matched route information about this asynchronous request.
+    *
+    * @return the matched route information about this asynchronous request.
+    */
+   RouteMatch getRoute();
 }

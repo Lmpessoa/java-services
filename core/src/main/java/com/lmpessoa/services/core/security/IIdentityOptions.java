@@ -26,6 +26,7 @@ import java.util.function.Predicate;
 
 /**
  * Provides means to further configure identity support by the application.
+ *
  * <p>
  * Methods in this interface can be used to configure the behaviour of the identity engine.
  * </p>
@@ -34,6 +35,7 @@ public interface IIdentityOptions {
 
    /**
     * Defines a policy to be used to restrict users from parts of the application.
+    *
     * <p>
     * A policy defines a complex rule that can be used to restrict users from accessing parts of
     * your application. While roles are usually only tested for presence in the user's identity,

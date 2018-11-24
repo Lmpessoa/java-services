@@ -25,6 +25,10 @@ package com.lmpessoa.services.core.hosting;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import javax.xml.bind.annotation.XmlRootElement;
+
+import com.lmpessoa.services.core.concurrent.IAsyncOptions;
+import com.lmpessoa.services.core.internal.services.NoSingleMethodException;
 import com.lmpessoa.services.core.routing.IRouteOptions;
 import com.lmpessoa.services.core.security.IIdentityOptions;
 import com.lmpessoa.services.core.security.IIdentityProvider;
@@ -115,18 +119,6 @@ public interface IApplicationOptions {
    /**
     * Registers a service for the given class on the service map.
     * <p>
-    * The given {@code service} class is used for service discovery and the {@code supplier}
-    * function is used to create the instance object that will respond to service requests.
-    * </p>
-    *
-    * @param serviceClass the class of the service to be registered.
-    * @param supplier the function that supplies new instances of the service.
-    */
-   <T> void useService(Class<T> serviceClass, Supplier<T> supplier);
-
-   /**
-    * Registers a service for the given class on the service map.
-    * <p>
     * The given instance will be used to respond to any requests for this service. No other
     * instances of the responder will be created through this call. Only services with reuse level
     * {@link ALWAYS} can be registered with a single instance through this method.
@@ -138,20 +130,49 @@ public interface IApplicationOptions {
    <T> void useService(Class<T> serviceClass, T instance);
 
    /**
-    * Enables the use of asynchronous requests using the default feedback path to return information
-    * about running requests.
+    * Registers a service for the given class on the service map.
+    * <p>
+    * The given {@code service} class is used for service discovery and the {@code supplier}
+    * function is used to create the instance object that will respond to service requests.
+    * </p>
+    *
+    * @param serviceClass the class of the service to be registered.
+    * @param supplier the function that supplies new instances of the service.
+    */
+   <T> void useServiceWith(Class<T> serviceClass, Supplier<T> supplier);
+
+   /**
+    * Enables the use of asynchronous requests using the default options.
+    *
     * <p>
     * Note that by calling this method if a resource with the path {@code '/feedback'} exists it may
     * prevent that resource from ever being called.
     * </p>
     */
    default void useAsync() {
-      useAsyncWithFeedbackPath("/feedback/");
+      useAsyncWith(null);
    }
 
    /**
-    * Enables the use of asynchronous requests using the given feedback path to return information
-    * about running requests.
+    * Enables the use of asynchronous requests using the given options.
+    * <p>
+    * Developers may use the options consumer to configure the asynchronous service i.e. by defining
+    * the feedback path to monitor asynchronous results or by changing the default behaviour of
+    * {@code @Async} annotations.
+    * </p>
+    * <p>
+    * Note that if the path used on the call to configure feedback path matches that of a registered
+    * resource it may prevent that resource from ever being called.
+    * </p>
+    *
+    * @param options a method used to further configure asynchronous services used by the
+    *           application.
+    */
+   void useAsyncWith(Consumer<IAsyncOptions> options);
+
+   /**
+    * Enables the use of asynchronous requests using the given feedback path. Other asynchronous
+    * properties will return their default values.
     * <p>
     * This path must be a valid path (starting and ending with {@code '/'}) but not a full URL. This
     * path will be appended to the current application's server host address to build the correct
@@ -164,7 +185,9 @@ public interface IApplicationOptions {
     *
     * @param feedbackPath the path to be used to poll asynchronous execution results.
     */
-   void useAsyncWithFeedbackPath(String feedbackPath);
+   default void useAsyncWithFeedbackPath(String feedbackPath) {
+      useAsyncWith(options -> options.useFeedbackPath(feedbackPath));
+   }
 
    /**
     * Enables the application server to publish static files from the default resource path.
@@ -231,8 +254,11 @@ public interface IApplicationOptions {
     * </p>
     *
     * @param identityProvider the identity provider to use with requests.
+    * @throws NoSingleMethodException if the identity provider class does not have exactly one
+    *            constructor.
     */
-   default void useIdentityWith(IIdentityProvider identityProvider) {
+   default void useIdentityWith(Class<? extends IIdentityProvider> identityProvider)
+      throws NoSingleMethodException {
       useIdentityWith(identityProvider, null);
    }
 
@@ -256,8 +282,11 @@ public interface IApplicationOptions {
     *
     * @param identityProvider the identity provider to use with requests.
     * @param options a method used to further configure identity services used by the application.
+    * @throws NoSingleMethodException if the identity provider class does not have exactly one
+    *            constructor.
     */
-   void useIdentityWith(IIdentityProvider identityProvider, Consumer<IIdentityOptions> options);
+   void useIdentityWith(Class<? extends IIdentityProvider> identityProvider,
+      Consumer<IIdentityOptions> options) throws NoSingleMethodException;
 
    /**
     * Enables support for health requests from the application.
@@ -294,5 +323,22 @@ public interface IApplicationOptions {
     */
    void useHealthAtPath(String healthPath);
 
-   void useXml();
+   /**
+    * Enables the use of XML in requests/responses.
+    *
+    * <p>
+    * Developers might need to enable XML support in applications for a number of reasons, from
+    * compliance with legacy systems (that cannot benefit from JSON) to easy of usage in a specific
+    * platform.
+    * </p>
+    *
+    * <p>
+    * Returned data from methods in applications that require the usage of XML requests/responses
+    * must be carefully crafted. Since the engine relies on JAXB for XML conversions, many
+    * adjustments (e.g. using annotations) may be required for that content to be read from or
+    * produced adequately from an XML request/response. For example, JAXB requires that all content
+    * classes are annotated with {@link XmlRootElement}.
+    * </p>
+    */
+   void useXmlRequests();
 }

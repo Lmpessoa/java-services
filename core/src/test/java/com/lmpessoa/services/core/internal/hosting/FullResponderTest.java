@@ -40,7 +40,6 @@ import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
-import java.util.function.Supplier;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -107,8 +106,8 @@ public final class FullResponderTest {
       app = new ApplicationOptions(null);
       services = app.getServices();
       services.put(ILogger.class, log);
-      services.put(ConnectionInfo.class, (Supplier<ConnectionInfo>) () -> connect);
-      services.put(RouteMatch.class, (Supplier<RouteMatch>) () -> route);
+      services.putSupplier(ConnectionInfo.class, () -> connect);
+      services.putSupplier(RouteMatch.class, () -> route);
       services.put(IValidationService.class, ValidationService.instance());
       services.put(IApplicationInfo.class, new ApplicationInfo(settings, app));
 
@@ -281,7 +280,7 @@ public final class FullResponderTest {
                .addHeader(Headers.ACCEPT_LANGUAGE, "nl, de; q=0.9, en; q=0.8")
                .setBody("{\"id\": 12,\"message\":\"Test\"}")
                .build();
-      services.put(HttpRequest.class, (Supplier<HttpRequest>) () -> request);
+      services.putSupplier(HttpRequest.class, () -> request);
       route = routes.matches(request);
       HttpResult result = (HttpResult) app.getFirstResponder().invoke();
       assertEquals(400, result.getStatusCode());
@@ -432,7 +431,7 @@ public final class FullResponderTest {
          builder.addHeader(Headers.ACCEPT, accepts);
       }
       request = builder.build();
-      services.put(HttpRequest.class, (Supplier<HttpRequest>) () -> request);
+      services.putSupplier(HttpRequest.class, () -> request);
       route = routes.matches(request);
       return (HttpResult) app.getFirstResponder().invoke();
    }
@@ -440,7 +439,7 @@ public final class FullResponderTest {
    private HttpResult performFile(String resource) throws IOException {
       try (InputStream res = FullResponderTest.class.getResourceAsStream(resource)) {
          request = new HttpRequestImpl(res);
-         services.put(HttpRequest.class, (Supplier<HttpRequest>) () -> request);
+         services.putSupplier(HttpRequest.class, () -> request);
          route = routes.matches(request);
          return (HttpResult) app.getFirstResponder().invoke();
       }

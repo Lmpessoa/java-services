@@ -25,10 +25,7 @@ package com.lmpessoa.services.core.internal.hosting;
 import static org.junit.Assert.assertEquals;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.function.Supplier;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -38,17 +35,13 @@ import org.junit.rules.ExpectedException;
 import com.lmpessoa.services.core.hosting.ForbiddenException;
 import com.lmpessoa.services.core.hosting.NextResponder;
 import com.lmpessoa.services.core.hosting.UnauthorizedException;
-import com.lmpessoa.services.core.internal.hosting.ApplicationOptions;
-import com.lmpessoa.services.core.internal.hosting.IdentityResponder;
-import com.lmpessoa.services.core.internal.hosting.NextResponderImpl;
 import com.lmpessoa.services.core.internal.services.ServiceMap;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.security.AllowAnonymous;
 import com.lmpessoa.services.core.security.Authorize;
-import com.lmpessoa.services.core.security.Claim;
 import com.lmpessoa.services.core.security.ClaimType;
-import com.lmpessoa.services.core.security.GenericIdentity;
 import com.lmpessoa.services.core.security.IIdentity;
+import com.lmpessoa.services.core.security.IdentityBuilder;
 import com.lmpessoa.services.util.ClassUtils;
 
 public class IdentityResponderTest {
@@ -56,7 +49,7 @@ public class IdentityResponderTest {
    @Rule
    public ExpectedException thrown = ExpectedException.none();
 
-   private static IIdentity identity;
+   private IIdentity identity;
 
    private IdentityResponder responder;
    private ApplicationOptions app;
@@ -64,20 +57,14 @@ public class IdentityResponderTest {
    private NextResponder next;
    private RouteMatch match;
 
-   static {
-      Collection<Claim> claims = new ArrayList<>();
-      claims.add(new Claim(ClaimType.ROLE, "foo"));
-      claims.add(new Claim(ClaimType.ROLE, "bar"));
-      identity = new GenericIdentity(claims);
-   }
-
    @Before
    public void setup() {
       app = new ApplicationOptions(null);
       services = app.getServices();
-      services.put(IIdentity.class, (Supplier<IIdentity>) () -> identity);
+      identity = new IdentityBuilder().addRoles(new String[] { "foo", "bar" }).build();
+      services.putSupplier(IIdentity.class, () -> identity);
       next = new NextResponderImpl(services, Arrays.asList(TestResponder.class), app);
-      responder = new IdentityResponder(next);
+      responder = new IdentityResponder(next, app);
    }
 
    @Test
@@ -125,8 +112,8 @@ public class IdentityResponderTest {
    @Test
    public void testMarkedWithPolicy() {
       setMatched(NonMarkedType.class, "markedWithPolicy");
-      ((GenericIdentity) identity).addClaim(ClaimType.DISPLAY_NAME, "Jane Doe");
-      IdentityResponder.addPolicy("named", IdentityResponderTest::testPolicy);
+      identity = new IdentityBuilder().addDisplayName("Jane Doe").build();
+      app.addPolicy("named", IdentityResponderTest::testPolicy);
       Object result = responder.invoke(match, identity);
       assertEquals("Tested", result);
    }
@@ -135,7 +122,39 @@ public class IdentityResponderTest {
    public void testMarkedWithoutPolicy() {
       thrown.expect(ForbiddenException.class);
       setMatched(NonMarkedType.class, "markedWithPolicy");
-      IdentityResponder.addPolicy("named", IdentityResponderTest::testPolicy);
+      app.addPolicy("named", IdentityResponderTest::testPolicy);
+      responder.invoke(match, identity);
+   }
+
+   @Test
+   public void testMarkedWithMissingPolicy() {
+      thrown.expect(ForbiddenException.class);
+      setMatched(NonMarkedType.class, "markedWithMissingPolicy");
+      app.addPolicy("named", IdentityResponderTest::testPolicy);
+      responder.invoke(match, identity);
+   }
+
+   @Test
+   public void testMultipleAuthsPassUsingRole() {
+      setMatched(NonMarkedType.class, "markedWithMultipleAuths");
+      app.addPolicy("named", IdentityResponderTest::testPolicy);
+      responder.invoke(match, identity);
+   }
+
+   @Test
+   public void testMultipleAuthsPassUsingPolicy() {
+      setMatched(NonMarkedType.class, "markedWithMultipleAuths");
+      app.addPolicy("named", IdentityResponderTest::testPolicy);
+      identity = new IdentityBuilder().addDisplayName("Jane Doe").build();
+      responder.invoke(match, identity);
+   }
+
+   @Test
+   public void testMultipleAuthNoPass() {
+      thrown.expect(ForbiddenException.class);
+      setMatched(NonMarkedType.class, "markedWithMultipleAuths");
+      app.addPolicy("named", IdentityResponderTest::testPolicy);
+      identity = new IdentityBuilder().build();
       responder.invoke(match, identity);
    }
 
@@ -174,20 +193,6 @@ public class IdentityResponderTest {
       assertEquals("Tested", result);
    }
 
-   @Test
-   public void testAnonymousWithMarkedMethod() {
-      setMatched(AnonymousType.class, "marked");
-      Object result = responder.invoke(match, null);
-      assertEquals("Tested", result);
-   }
-
-   @Test
-   public void testAnonymousWithMarkedMethodAndIdentity() {
-      setMatched(AnonymousType.class, "marked");
-      Object result = responder.invoke(match, identity);
-      assertEquals("Tested", result);
-   }
-
    private static boolean testPolicy(IIdentity identity) {
       return identity.hasClaim(ClaimType.DISPLAY_NAME);
    }
@@ -211,7 +216,7 @@ public class IdentityResponderTest {
             return "Tested";
          }
       };
-      services.put(RouteMatch.class, (Supplier<RouteMatch>) () -> match);
+      services.putSupplier(RouteMatch.class, () -> match);
    }
 
    public static class NonMarkedType {
@@ -239,6 +244,17 @@ public class IdentityResponderTest {
       public void markedWithPolicy() {
          // Nothing to do here
       }
+
+      @Authorize(policy = "missing")
+      public void markedWithMissingPolicy() {
+         // Nothing to do here
+      }
+
+      @Authorize(policy = "named")
+      @Authorize(roles = "foo")
+      public void markedWithMultipleAuths() {
+         // Nothing to do here
+      }
    }
 
    @Authorize(roles = "foo")
@@ -260,15 +276,6 @@ public class IdentityResponderTest {
 
       @AllowAnonymous
       public void markedAnonymous() {
-         // Nothing to do here
-      }
-   }
-
-   @AllowAnonymous
-   public static class AnonymousType {
-
-      @Authorize(roles = "baz")
-      public void marked() {
          // Nothing to do here
       }
    }

@@ -84,6 +84,7 @@ final class ErrorSetImpl implements ErrorSet {
     *
     * @return a sequential {@code Stream} over the errors in this set.
     */
+   @Override
    public Stream<Entry> stream() {
       return errors.stream();
    }

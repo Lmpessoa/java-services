@@ -33,12 +33,14 @@ import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import com.lmpessoa.services.core.concurrent.IAsyncOptions;
 import com.lmpessoa.services.core.concurrent.IExecutionService;
 import com.lmpessoa.services.core.hosting.HeaderMap;
 import com.lmpessoa.services.core.hosting.HttpRequest;
 import com.lmpessoa.services.core.hosting.IApplicationInfo;
 import com.lmpessoa.services.core.hosting.IApplicationOptions;
 import com.lmpessoa.services.core.internal.routing.RouteEntry;
+import com.lmpessoa.services.core.internal.services.NoSingleMethodException;
 import com.lmpessoa.services.core.routing.HttpMethod;
 import com.lmpessoa.services.core.routing.IRouteOptions;
 import com.lmpessoa.services.core.routing.IRouteTable;
@@ -135,18 +137,13 @@ public final class Wrapper {
          }
 
          @Override
-         public <T> void useService(Class<T> serviceClass, Supplier<T> supplier) {
-            original.useService(serviceClass, supplier);
-         }
-
-         @Override
          public <T> void useService(Class<T> serviceClass, T instance) {
             original.useService(serviceClass, instance);
          }
 
          @Override
-         public void useAsyncWithFeedbackPath(String feedbackPath) {
-            original.useAsyncWithFeedbackPath(feedbackPath);
+         public <T> void useServiceWith(Class<T> serviceClass, Supplier<T> supplier) {
+            original.useServiceWith(serviceClass, supplier);
          }
 
          @Override
@@ -155,8 +152,13 @@ public final class Wrapper {
          }
 
          @Override
-         public void useIdentityWith(IIdentityProvider identityProvider,
-            Consumer<IIdentityOptions> options) {
+         public void useAsyncWith(Consumer<IAsyncOptions> options) {
+            original.useAsyncWith(options);
+         }
+
+         @Override
+         public void useIdentityWith(Class<? extends IIdentityProvider> identityProvider,
+            Consumer<IIdentityOptions> options) throws NoSingleMethodException {
             original.useIdentityWith(identityProvider, options);
          }
 
@@ -166,8 +168,8 @@ public final class Wrapper {
          }
 
          @Override
-         public void useXml() {
-            original.useXml();
+         public void useXmlRequests() {
+            original.useXmlRequests();
          }
       };
    }

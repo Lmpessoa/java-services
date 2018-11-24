@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,32 +20,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.routing;
+package com.lmpessoa.services.core.internal.concurrent;
 
-import static java.lang.annotation.ElementType.TYPE;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import java.util.Map;
+import java.util.UUID;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+import com.lmpessoa.services.core.concurrent.AsyncRequest;
+import com.lmpessoa.services.core.concurrent.IAsyncRequestMatcher;
 
-/**
- * Marks a class that must be seen as a resource by the engine.
- *
- * <p>
- * Classes don't usually need to be annotated with this to be recognised as resources by the engine
- * as long as their names end with the "Resource" sufix and that is not the complete name of the
- * class. To have classes recognised as resources without following this convention, classes must be
- * annotated with <code>@Resource</code>.
- * </p>
- *
- * <p>
- * Note that classes must still be located in one of the registered area packages in order to be
- * automatically registered with the engine.
- */
-@Documented
-@Target(TYPE)
-@Retention(RUNTIME)
-public @interface Resource {
+public final class DefaultRequestMatcher implements IAsyncRequestMatcher {
+
+   @Override
+   public UUID match(AsyncRequest request, Map<UUID, AsyncRequest> queued) {
+      return null;
+   }
+
+   private DefaultRequestMatcher() {
+      throw new UnsupportedOperationException();
+   }
 
 }

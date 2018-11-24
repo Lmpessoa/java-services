@@ -132,15 +132,6 @@ final class RoutePattern implements Comparable<RoutePattern> {
       return other.parts.size() - parts.size();
    }
 
-   private VariableRoutePart extractCatchAllFrom(List<ITemplatePart> parts) {
-      ITemplatePart part = parts.get(parts.size() - 1);
-      if (part instanceof VariableRoutePart && ((VariableRoutePart) part).isCatchAll()) {
-         parts.remove(parts.size() - 1);
-         return (VariableRoutePart) part;
-      }
-      return null;
-   }
-
    public static String getResourceName(Class<?> clazz) {
       String[] nameParts = clazz.getName().replaceAll("\\$", ".").split("\\.");
       String name = nameParts[nameParts.length - 1].replaceAll("([A-Z])", "_$1")
@@ -332,6 +323,10 @@ final class RoutePattern implements Comparable<RoutePattern> {
          result.append(SEPARATOR);
          result.append(prefix);
       }
+      if (exec instanceof Method && !isHttpMethodName(((Method) exec).getName())) {
+         result.append(SEPARATOR);
+         result.append(((Method) exec).getName());
+      }
       for (Parameter param : params) {
          int i = getParameterIndex(param, exec.getParameters());
          Class<?> paramClass = param.getType();
@@ -363,6 +358,11 @@ final class RoutePattern implements Comparable<RoutePattern> {
          }
       }
       throw new IllegalStateException("Parameter does not belong to executable");
+   }
+
+   private static boolean isHttpMethodName(String name) {
+      return "get".equals(name) || "post".equals(name) || "put".equals(name) || "patch".equals(name)
+               || "delete".equals(name) || "options".equals(name);
    }
 
    private static boolean hasValueOfMethod(Class<?> clazz) {
@@ -405,5 +405,14 @@ final class RoutePattern implements Comparable<RoutePattern> {
          }
       }
       return false;
+   }
+
+   private VariableRoutePart extractCatchAllFrom(List<ITemplatePart> parts) {
+      ITemplatePart part = parts.get(parts.size() - 1);
+      if (part instanceof VariableRoutePart && ((VariableRoutePart) part).isCatchAll()) {
+         parts.remove(parts.size() - 1);
+         return (VariableRoutePart) part;
+      }
+      return null;
    }
 }

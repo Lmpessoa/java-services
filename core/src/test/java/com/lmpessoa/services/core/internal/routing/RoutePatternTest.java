@@ -169,14 +169,14 @@ public final class RoutePatternTest {
    public void testMethodNoParams() throws NoSuchMethodException, ParseException {
       RoutePattern pat = RoutePattern.build(null, TestResource.class.getMethod("test"));
       assertNotNull(pat);
-      assertEquals("/", pat.toString());
+      assertEquals("/test", pat.toString());
    }
 
    @Test
    public void testMethodOneParam() throws NoSuchMethodException, ParseException {
       RoutePattern pat = RoutePattern.build(null, TestResource.class.getMethod("test", int.class));
       assertNotNull(pat);
-      assertEquals("/(\\d+)", pat.toString());
+      assertEquals("/test/(\\d+)", pat.toString());
    }
 
    @Test
@@ -184,7 +184,7 @@ public final class RoutePatternTest {
       RoutePattern methodPattern = RoutePattern.build(null,
                TestResource.class.getMethod("test", int.class, String.class));
       assertNotNull(methodPattern);
-      assertEquals("/(\\d+)/([^\\/]+)", methodPattern.toString());
+      assertEquals("/test/(\\d+)/([^\\/]+)", methodPattern.toString());
    }
 
    @Test
@@ -192,7 +192,7 @@ public final class RoutePatternTest {
       RoutePattern pat = RoutePattern.build(null,
                TestResource.class.getMethod("test", DayOfWeek.class));
       assertNotNull(pat);
-      assertEquals("/([^\\/]+)", pat.toString());
+      assertEquals("/test/([^\\/]+)", pat.toString());
    }
 
    @Test
@@ -229,7 +229,7 @@ public final class RoutePatternTest {
       RoutePattern pat = RoutePattern.build(null,
                TestResource.class.getMethod("routed", String.class));
       assertNotNull(pat);
-      assertEquals("/([^\\/]{3,})", pat.toString());
+      assertEquals("/routed/([^\\/]{3,})", pat.toString());
    }
 
    @Test
@@ -264,7 +264,7 @@ public final class RoutePatternTest {
       RoutePattern pat = RoutePattern.build(null,
                TestResource.class.getMethod("content", SimpleTestResource.class));
       assertNotNull(pat);
-      assertEquals("/", pat.toString());
+      assertEquals("/content", pat.toString());
       assertEquals(SimpleTestResource.class, pat.getContentClass());
    }
 
@@ -280,7 +280,7 @@ public final class RoutePatternTest {
       RoutePattern pat = RoutePattern.build(null,
                TestResource.class.getMethod("catchall", String[].class));
       assertNotNull(pat);
-      assertEquals("((?:\\/[^\\/]+)*)", pat.toString());
+      assertEquals("/catchall((?:\\/[^\\/]+)*)", pat.toString());
    }
 
    @Test
@@ -288,7 +288,7 @@ public final class RoutePatternTest {
       RoutePattern pat = RoutePattern.build(null,
                TestResource.class.getMethod("catchall", int.class, String[].class));
       assertNotNull(pat);
-      assertEquals("/(\\d+)((?:\\/[^\\/]+)+)", pat.toString());
+      assertEquals("/catchall/(\\d+)((?:\\/[^\\/]+)+)", pat.toString());
    }
 
    // Pattern ----------
@@ -307,7 +307,7 @@ public final class RoutePatternTest {
       assertNotNull(pat);
       pat = RoutePattern.build(pat, TestResource.class.getMethod("test", int.class));
       assertNotNull(pat);
-      Matcher matcher = pat.getPattern().matcher("/test/12");
+      Matcher matcher = pat.getPattern().matcher("/test/test/12");
       assertTrue(matcher.find());
       assertEquals("12", matcher.group(1));
    }
@@ -331,7 +331,7 @@ public final class RoutePatternTest {
       RoutePattern parentPat = RoutePattern.build(null, TestResource.class, serviceMap, options);
       RoutePattern pat = RoutePattern.build(parentPat, TestResource.class.getMethod("test"));
       String url = pat.getPathWithArgs(new Object[0]);
-      assertEquals("/test", url);
+      assertEquals("/test/test", url);
    }
 
    @Test
@@ -340,7 +340,7 @@ public final class RoutePatternTest {
       RoutePattern parentPat = RoutePattern.build(null, TestResource.class, serviceMap, options);
       RoutePattern pat = RoutePattern.build(parentPat, TestResource.class.getMethod("test"));
       String url = pat.getPathWithArgs(new Object[] { 1 });
-      assertEquals("/test", url);
+      assertEquals("/test/test", url);
    }
 
    @Test
@@ -350,7 +350,7 @@ public final class RoutePatternTest {
       RoutePattern pat = RoutePattern.build(parentPat,
                TestResource.class.getMethod("test", int.class));
       String url = pat.getPathWithArgs(new Object[] { 1 });
-      assertEquals("/test/1", url);
+      assertEquals("/test/test/1", url);
    }
 
    @Test
@@ -370,7 +370,7 @@ public final class RoutePatternTest {
       RoutePattern pat = RoutePattern.build(parentPat,
                TestResource.class.getMethod("test", int.class, String.class));
       String url = pat.getPathWithArgs(new Object[] { "test", 1 });
-      assertEquals("/test/test/1", url);
+      assertEquals("/test/test/test/1", url);
    }
 
    @Test
@@ -390,7 +390,7 @@ public final class RoutePatternTest {
       RoutePattern pat = RoutePattern.build(parentPat,
                TestResource.class.getMethod("content", SimpleTestResource.class));
       String url = pat.getPathWithArgs(new Object[0]);
-      assertEquals("/test", url);
+      assertEquals("/test/content", url);
    }
 
    // Test data ----------

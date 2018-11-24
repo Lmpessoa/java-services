@@ -30,7 +30,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.NoSuchElementException;
-import java.util.function.Supplier;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -132,7 +131,7 @@ public class ServiceMapTest {
    public void testSecondRegistration() {
       thrown.expect(IllegalArgumentException.class);
       thrown.expectMessage("Service " + Singleton.class.getName() + " is already registered");
-      map.put(Singleton.class, (Supplier<Singleton>) () -> new SingletonImpl());
+      map.putSupplier(Singleton.class, () -> new SingletonImpl());
       assertNotNull(map.get(Singleton.class));
       map.put(Singleton.class, SingletonImpl.class);
    }
@@ -140,7 +139,7 @@ public class ServiceMapTest {
    @Test
    public void testInvokeStaticCorrect() throws IllegalAccessException, InvocationTargetException,
       InstantiationException, NoSingleMethodException {
-      map.put(Singleton.class, (Supplier<Singleton>) () -> new SingletonImpl());
+      map.putSupplier(Singleton.class, () -> new SingletonImpl());
       Singleton o = map.get(Singleton.class);
       String str = (String) map.invoke(ServiceMapTest.class, "getRegistryToString");
       assertEquals(o.toString(), str);
@@ -149,7 +148,7 @@ public class ServiceMapTest {
    @Test
    public void testInvokeInstanceCorrect() throws IllegalAccessException, InvocationTargetException,
       InstantiationException, NoSingleMethodException {
-      map.put(Singleton.class, (Supplier<Singleton>) () -> new SingletonImpl());
+      map.putSupplier(Singleton.class, () -> new SingletonImpl());
       Singleton o = map.get(Singleton.class);
       String str = (String) map.invoke(this, "getObserverToString");
       assertEquals(o.toString(), str);
@@ -158,7 +157,7 @@ public class ServiceMapTest {
    @Test
    public void testInvokeStaticWithInstance() throws IllegalAccessException,
       InvocationTargetException, InstantiationException, NoSingleMethodException {
-      map.put(Singleton.class, (Supplier<Singleton>) () -> new SingletonImpl());
+      map.putSupplier(Singleton.class, () -> new SingletonImpl());
       Singleton o = map.get(Singleton.class);
       String result = (String) map.invoke(this, "getRegistryToString");
       assertEquals(o.toString(), result);
@@ -237,7 +236,7 @@ public class ServiceMapTest {
 
    @Test
    public void testRegisterWithSupplier() {
-      map.put(Singleton.class, (Supplier<Singleton>) () -> new SingletonImpl());
+      map.putSupplier(Singleton.class, () -> new SingletonImpl());
       Singleton o1 = map.get(Singleton.class);
       Singleton o2 = map.get(Singleton.class);
       assertNotNull(o1);
