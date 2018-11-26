@@ -118,6 +118,6 @@ public final class HttpRequestBuilder {
    }
 
    public HttpRequest build() throws IOException {
-      return new HttpRequestImpl(buildAsStream());
+      return new HttpRequestImpl(buildAsStream(), 1);
    }
 }

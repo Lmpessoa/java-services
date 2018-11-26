@@ -160,6 +160,10 @@ class ApplicationSettings {
       return getProperty("server.port").getIntValueOrDefault(5617);
    }
 
+   int getRequestTimeout() {
+      return getProperty("limits.timeout").getIntValueOrDefault(115);
+   }
+
    private Property getProperty(String propertyName) {
       return settings != null ? settings.get(propertyName) : Property.EMPTY;
    }

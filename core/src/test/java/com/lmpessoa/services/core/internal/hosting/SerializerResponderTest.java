@@ -48,10 +48,6 @@ import com.lmpessoa.services.core.hosting.HeaderMap;
 import com.lmpessoa.services.core.hosting.Headers;
 import com.lmpessoa.services.core.hosting.HttpRequest;
 import com.lmpessoa.services.core.hosting.NextResponder;
-import com.lmpessoa.services.core.internal.hosting.HeaderEntry;
-import com.lmpessoa.services.core.internal.hosting.HeaderMapImpl;
-import com.lmpessoa.services.core.internal.hosting.HttpResult;
-import com.lmpessoa.services.core.internal.hosting.SerializerResponder;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.util.logging.ILogger;
 import com.lmpessoa.services.util.logging.NullHandler;
@@ -59,9 +55,9 @@ import com.lmpessoa.services.util.logging.internal.Logger;
 
 public class SerializerResponderTest {
 
-   private static final String TEST_URL = "https://lmpessoa.com/test";
    private static final ConnectionInfo connect = new ConnectionInfo(mock(Socket.class),
             "https://lmpessoa.com/");
+   private static final String TEST_URL = "https://lmpessoa.com/test";
    private static final ILogger log = new Logger(new NullHandler());
 
    private HttpRequest request;
@@ -72,6 +68,7 @@ public class SerializerResponderTest {
    @Before
    public void setup() {
       request = mock(HttpRequest.class);
+      when(request.getProtocol()).thenReturn("HTTP/1.1");
    }
 
    @Test
@@ -210,6 +207,15 @@ public class SerializerResponderTest {
       when(request.getHeaders()).thenReturn(headers);
       HttpResult result = handler.invoke(request, null, connect, log);
       assertEquals(406, result.getStatusCode());
+   }
+
+   @Test
+   public void testVersionNotSupported() throws IOException {
+      when(request.getProtocol()).thenReturn("HTTP/1.7");
+      next = () -> 7;
+      handler = new SerializerResponder(next);
+      HttpResult result = handler.invoke(request, null, connect, log);
+      assertEquals(505, result.getStatusCode());
    }
 
    private byte[] readStreamContent(InputStream input) throws IOException {

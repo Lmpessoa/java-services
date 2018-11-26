@@ -357,6 +357,12 @@ public final class ClassUtils {
       if (atype == UUID.class) {
          return (T) UUID.fromString(value);
       }
+      return internalValueOf(value, type);
+   }
+
+   @SuppressWarnings("unchecked")
+   private static <T> T internalValueOf(String value, Class<T> type) {
+      Class<?> atype = ClassUtils.box(type);
       Method valueOf;
       try {
          valueOf = atype.getMethod("valueOf", String.class);

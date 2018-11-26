@@ -29,8 +29,8 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 
 import com.lmpessoa.services.core.BadRequestException;
-import com.lmpessoa.services.core.InternalServerError;
 import com.lmpessoa.services.core.internal.hosting.HttpException;
+import com.lmpessoa.services.core.internal.hosting.InternalServerError;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.validating.ErrorSet;
 import com.lmpessoa.services.core.validating.IValidationService;

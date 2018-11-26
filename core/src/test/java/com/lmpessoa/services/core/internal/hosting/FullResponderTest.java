@@ -55,6 +55,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import com.lmpessoa.services.core.ContentType;
+import com.lmpessoa.services.core.DateHeader;
 import com.lmpessoa.services.core.HttpInputStream;
 import com.lmpessoa.services.core.NotImplementedException;
 import com.lmpessoa.services.core.Patch;
@@ -67,7 +68,6 @@ import com.lmpessoa.services.core.hosting.ConnectionInfo;
 import com.lmpessoa.services.core.hosting.Headers;
 import com.lmpessoa.services.core.hosting.HttpRequest;
 import com.lmpessoa.services.core.hosting.IApplicationInfo;
-import com.lmpessoa.services.core.internal.Constants;
 import com.lmpessoa.services.core.internal.routing.MatchedRouteBridge;
 import com.lmpessoa.services.core.internal.routing.RouteTable;
 import com.lmpessoa.services.core.internal.serializing.Serializer;
@@ -439,7 +439,7 @@ public final class FullResponderTest {
                .map(h -> h.getValue())
                .findFirst()
                .orElse(null);
-      assertEquals(Constants.RFC_7231_DATE_TIME.format(fileTime), fileTimeStr);
+      assertEquals(DateHeader.RFC_7231_DATE_TIME.format(fileTime), fileTimeStr);
    }
 
    private HttpResult perform(String path) throws IOException {
@@ -463,7 +463,7 @@ public final class FullResponderTest {
 
    private HttpResult performFile(String resource) throws IOException {
       try (InputStream res = FullResponderTest.class.getResourceAsStream(resource)) {
-         request = new HttpRequestImpl(res);
+         request = new HttpRequestImpl(res, 1);
          services.putSupplier(HttpRequest.class, () -> request);
          route = routes.matches(request);
          return (HttpResult) app.getFirstResponder().invoke();

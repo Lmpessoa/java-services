@@ -75,15 +75,15 @@ public final class IdentityBuilder {
     * @return the identity built with the previously set of claims.
     */
    public IIdentity build() {
-      final Collection<Claim> claims = Collections.unmodifiableCollection(this.claims);
-      final BiPredicate<IIdentity, IIdentity> comparer = this.comparer;
+      final Collection<Claim> resultClaims = Collections.unmodifiableCollection(this.claims);
+      final BiPredicate<IIdentity, IIdentity> resultComparer = this.comparer;
       this.comparer = IdentityBuilder::fullEquals;
       this.claims = new ArrayList<>();
       return new IIdentity() {
 
          @Override
          public Collection<Claim> claims() {
-            return claims;
+            return resultClaims;
          }
 
          @Override
@@ -91,13 +91,12 @@ public final class IdentityBuilder {
             if (!(obj instanceof IIdentity)) {
                return false;
             }
-            return comparer.test(this, (IIdentity) obj);
+            return resultComparer.test(this, (IIdentity) obj);
          }
 
          @Override
          public int hashCode() {
-            // TODO Auto-generated method stub
-            return super.hashCode();
+            return resultClaims.hashCode();
          }
       };
    }

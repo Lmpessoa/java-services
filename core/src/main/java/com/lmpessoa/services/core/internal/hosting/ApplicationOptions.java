@@ -33,7 +33,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import com.lmpessoa.services.core.InternalServerError;
 import com.lmpessoa.services.core.concurrent.AsyncReject;
 import com.lmpessoa.services.core.concurrent.IAsyncOptions;
 import com.lmpessoa.services.core.concurrent.IAsyncRequestMatcher;

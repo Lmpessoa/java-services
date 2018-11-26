@@ -37,10 +37,10 @@ import java.util.Map;
 
 import com.lmpessoa.services.core.ContentType;
 import com.lmpessoa.services.core.HttpInputStream;
-import com.lmpessoa.services.core.InternalServerError;
 import com.lmpessoa.services.core.NotAcceptableException;
 import com.lmpessoa.services.core.UnsupportedMediaTypeException;
 import com.lmpessoa.services.core.hosting.Headers;
+import com.lmpessoa.services.core.internal.hosting.InternalServerError;
 import com.lmpessoa.services.util.ClassUtils;
 
 /**

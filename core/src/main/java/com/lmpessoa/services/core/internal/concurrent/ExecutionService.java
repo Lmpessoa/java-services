@@ -46,8 +46,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.lmpessoa.services.core.InternalServerError;
 import com.lmpessoa.services.core.concurrent.IExecutionService;
+import com.lmpessoa.services.core.internal.hosting.InternalServerError;
 import com.lmpessoa.services.util.logging.ILogger;
 
 public final class ExecutionService implements IExecutionService {

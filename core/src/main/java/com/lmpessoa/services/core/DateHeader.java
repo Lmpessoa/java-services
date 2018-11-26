@@ -32,6 +32,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * Indicates the source for the HTTP "Date" header.
@@ -75,4 +76,11 @@ import java.time.ZonedDateTime;
  */
 @Retention(RUNTIME)
 @Target({ FIELD, METHOD })
-public @interface DateHeader {}
+public @interface DateHeader {
+
+   // RFC 7231 also estabilishes (https://tools.ietf.org/html/rfc7231#section-7.1.1.1) days must
+   // have 2 digits while RFC 1123 produces days with one digit only
+   public static final DateTimeFormatter RFC_7231_DATE_TIME = DateTimeFormatter
+            .ofPattern("EEE, dd MMM yyyy HH:mm:ss O");
+
+}

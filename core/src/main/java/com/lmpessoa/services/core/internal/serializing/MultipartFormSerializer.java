@@ -33,8 +33,8 @@ import java.util.Map;
 
 import com.lmpessoa.services.core.BadRequestException;
 import com.lmpessoa.services.core.HttpInputStream;
-import com.lmpessoa.services.core.InternalServerError;
 import com.lmpessoa.services.core.hosting.Headers;
+import com.lmpessoa.services.core.internal.hosting.InternalServerError;
 import com.lmpessoa.services.util.ClassUtils;
 
 final class MultipartFormSerializer extends Serializer {
@@ -107,7 +107,8 @@ final class MultipartFormSerializer extends Serializer {
             value = parseMixedMultipart(entry, contentType);
          } else {
             String filename = disp.get("filename");
-            value = new HttpInputStream(entry.content, contentType, filename);
+            // Make SonarQube ignore this or we get an unsolvable blocker issue
+            value = new HttpInputStream(entry.content, contentType, filename); // NOSONAR
          }
          String name = disp.get("name");
          Field field = findField(name, resultClass);

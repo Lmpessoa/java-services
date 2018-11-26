@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,34 +22,36 @@
  */
 package com.lmpessoa.services.core;
 
+import com.lmpessoa.services.core.internal.hosting.HttpException;
+
 /**
- * Thrown when an internal server error has happened.
+ * Thrown when the server is unable to process the instructions contained in the request entity.
  *
  * <p>
- * Any exception other than <code>HttpException</code>s can be thrown from any resource method.
- * These will be understood by the engine as if an internal server error has happened and are
- * wrapped in an instance of this class.
+ * Applications should throw this exception to indicate that the server understands the content type
+ * of the request entity (hence a <i>415 Unsupported Media Type</i> status code is inappropriate),
+ * and the syntax of the request entity is correct (thus a <i>400 Bad Request</i> status code is
+ * inappropriate) but still it contains a set of instructions that cannot be processed by the
+ * application.
  * </p>
  */
-public final class InternalServerError extends Error {
+public class UnprocessableEntityException extends HttpException {
 
    private static final long serialVersionUID = 1L;
 
    /**
-    * Creates a new <code>InternalServerException</code> with the given detail message.
-    *
-    * @param message the detail message.
+    * Creates a new {@code UnprocessableEntityException}.
     */
-   public InternalServerError(String message) {
-      super(message);
+   public UnprocessableEntityException() {
+      super(422);
    }
 
    /**
-    * Creates a new <code>InternalServerException</code> with the given cause.
+    * Creates a new {@code UnprocessableEntityException} with the given detail message.
     *
-    * @param cause the cause.
+    * @param message the detail message.
     */
-   public InternalServerError(Throwable cause) {
-      super(cause);
+   public UnprocessableEntityException(String message) {
+      super(422, message);
    }
 }

@@ -35,7 +35,6 @@ import java.util.Map;
 import java.util.Objects;
 
 import com.lmpessoa.services.core.HttpInputStream;
-import com.lmpessoa.services.core.InternalServerError;
 import com.lmpessoa.services.core.hosting.ConnectionInfo;
 import com.lmpessoa.services.core.hosting.Headers;
 import com.lmpessoa.services.core.hosting.HttpRequest;
@@ -60,7 +59,7 @@ final class ApplicationRequestJob implements Runnable {
    @Override
    public void run() {
       try (Socket socket = this.client) {
-         HttpRequest request = new HttpRequestImpl(socket.getInputStream());
+         HttpRequest request = new HttpRequestImpl(socket.getInputStream(), context.getTimeout());
 
          String host = request.getHeaders().get(Headers.HOST);
          if (host == null) {

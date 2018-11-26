@@ -22,12 +22,12 @@
  */
 package com.lmpessoa.services.core.internal.hosting;
 
-import java.io.IOException;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.net.URISyntaxException;
 import java.net.URL;
 
-import com.lmpessoa.services.core.ContentType;
 import com.lmpessoa.services.core.HttpInputStream;
-import com.lmpessoa.services.core.InternalServerError;
 import com.lmpessoa.services.core.MethodNotAllowedException;
 import com.lmpessoa.services.core.NotFoundException;
 import com.lmpessoa.services.core.hosting.HttpRequest;
@@ -66,8 +66,10 @@ final class FaviconResponder {
          iconUrl = FaviconResponder.class.getResource(FAVICON);
       }
       try {
-         return new HttpInputStream(iconUrl.openStream(), ContentType.ICO);
-      } catch (IOException e) {
+         return new HttpInputStream(new File(iconUrl.toURI()));
+      } catch (FileNotFoundException e) {
+         throw new NotFoundException();
+      } catch (URISyntaxException e) {
          throw new InternalServerError(e);
       }
    }

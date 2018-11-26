@@ -28,6 +28,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -44,11 +46,12 @@ import com.lmpessoa.services.core.routing.HttpMethod;
 
 final class HttpRequestImpl implements HttpRequest {
 
-   private final HeaderMap headers;
    private final String queryString;
    private final HttpMethod method;
+   private final HeaderMap headers;
    private final String protocol;
    private final byte[] content;
+   private final long timeout;
    private final String path;
 
    @Override
@@ -113,9 +116,10 @@ final class HttpRequestImpl implements HttpRequest {
                path + (queryString != null ? "?" + queryString : ""), protocol);
    }
 
-   HttpRequestImpl(InputStream clientStream) throws IOException {
+   HttpRequestImpl(InputStream clientStream, int timeout) throws IOException {
+      this.timeout = timeout * 1000;
       String requestLine = readLine(clientStream);
-      if (requestLine.isEmpty()) {
+      if (requestLine == null) {
          throw new SocketTimeoutException();
       }
       String[] parts = requestLine.split(" ");
@@ -178,9 +182,19 @@ final class HttpRequestImpl implements HttpRequest {
    private String readLine(InputStream input) throws IOException {
       ByteArrayOutputStream result = new ByteArrayOutputStream();
       int[] b = new int[] { 0, 0 };
-      while ((b[1] = input.read()) > -1 && !Arrays.equals(b, new int[] { '\r', '\n' })) {
-         result.write(new byte[] { (byte) b[1] });
+      if (input.available() == 0) {
+         return null;
+      }
+      while (!Arrays.equals(b, new int[] { '\r', '\n' })) {
+         Instant time = Instant.now();
+         while (input.available() == 0) {
+            if (Duration.between(time, Instant.now()).toMillis() > timeout) {
+               throw new SocketTimeoutException();
+            }
+         }
          b[0] = b[1];
+         b[1] = input.read();
+         result.write(b[1]);
       }
       return result.toString(StandardCharsets.UTF_8.name()).trim();
    }

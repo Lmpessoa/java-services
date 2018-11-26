@@ -199,7 +199,7 @@ public final class HttpInputStream extends InputStream implements AutoCloseable 
     *            file, or for some other reason cannot be opened for reading.
     */
    public HttpInputStream(File file, Charset charset) throws FileNotFoundException {
-      this(new FileInputStream(file), contentTypeOf(file), charset, file.getName());
+      this(new FileInputStream(file), contentTypeOf(file), charset, file.getName()); // NOSONAR
       setDate(Instant.ofEpochMilli(file.lastModified()));
    }
 

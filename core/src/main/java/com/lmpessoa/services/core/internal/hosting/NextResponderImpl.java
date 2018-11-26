@@ -27,7 +27,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.List;
 
-import com.lmpessoa.services.core.InternalServerError;
 import com.lmpessoa.services.core.hosting.NextResponder;
 import com.lmpessoa.services.core.internal.services.NoSingleMethodException;
 import com.lmpessoa.services.core.internal.services.ServiceMap;

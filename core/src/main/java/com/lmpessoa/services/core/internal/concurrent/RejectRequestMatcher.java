@@ -22,9 +22,11 @@
  */
 package com.lmpessoa.services.core.internal.concurrent;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
+import java.util.function.BiPredicate;
 
 import com.lmpessoa.services.core.concurrent.AsyncReject;
 import com.lmpessoa.services.core.concurrent.AsyncRequest;
@@ -34,7 +36,15 @@ import com.lmpessoa.services.core.security.IIdentity;
 
 public final class RejectRequestMatcher implements IAsyncRequestMatcher {
 
+   private static final Map<AsyncReject, BiPredicate<AsyncRequest, AsyncRequest>> matchers = new HashMap<>();
+
    private final AsyncReject rule;
+
+   static {
+      matchers.put(AsyncReject.SAME_CONTENT, RejectRequestMatcher::matchContents);
+      matchers.put(AsyncReject.SAME_IDENTITY, RejectRequestMatcher::matchIdentities);
+      matchers.put(AsyncReject.SAME_REQUEST, RejectRequestMatcher::matchBoth);
+   }
 
    public RejectRequestMatcher(AsyncReject rule) {
       this.rule = rule;
@@ -47,25 +57,9 @@ public final class RejectRequestMatcher implements IAsyncRequestMatcher {
             RouteMatch r = entry.getValue().getRoute();
             RouteMatch route = request.getRoute();
             if (route.equals(r)) {
-               switch (rule) {
-                  case SAME_CONTENT:
-                     if (!matchContents(request, entry.getValue())) {
-                        continue;
-                     }
-                     break;
-                  case SAME_IDENTITY:
-                     if (!matchIdentities(request, entry.getValue())) {
-                        continue;
-                     }
-                     break;
-                  case SAME_REQUEST:
-                     if (!matchContents(request, entry.getValue())
-                              || !matchIdentities(request, entry.getValue())) {
-                        continue;
-                     }
-                     break;
-                  default:
-                     break;
+               if (matchers.containsKey(rule)
+                        && !matchers.get(rule).test(request, entry.getValue())) {
+                  continue;
                }
                return entry.getKey();
             }
@@ -74,16 +68,20 @@ public final class RejectRequestMatcher implements IAsyncRequestMatcher {
       return null;
    }
 
-   private boolean matchContents(AsyncRequest request, AsyncRequest queued) {
+   private static boolean matchContents(AsyncRequest request, AsyncRequest queued) {
       Object thisContent = request.getRoute().getContentObject();
       Object otherContent = queued.getRoute().getContentObject();
       return thisContent == null == (otherContent == null)
                && (thisContent == null || thisContent.equals(otherContent));
    }
 
-   private boolean matchIdentities(AsyncRequest request, AsyncRequest queued) {
+   private static boolean matchIdentities(AsyncRequest request, AsyncRequest queued) {
       IIdentity thisIdentity = request.getIdentity();
       IIdentity otherIdentity = queued.getIdentity();
       return otherIdentity == null || thisIdentity != null && thisIdentity.equals(otherIdentity);
+   }
+
+   private static boolean matchBoth(AsyncRequest request, AsyncRequest queued) {
+      return matchContents(request, queued) && matchIdentities(request, queued);
    }
 }

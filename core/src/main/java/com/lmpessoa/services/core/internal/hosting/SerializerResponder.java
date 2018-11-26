@@ -50,13 +50,11 @@ import com.lmpessoa.services.core.BadRequestException;
 import com.lmpessoa.services.core.ContentType;
 import com.lmpessoa.services.core.DateHeader;
 import com.lmpessoa.services.core.HttpInputStream;
-import com.lmpessoa.services.core.InternalServerError;
 import com.lmpessoa.services.core.Redirect;
 import com.lmpessoa.services.core.hosting.ConnectionInfo;
 import com.lmpessoa.services.core.hosting.Headers;
 import com.lmpessoa.services.core.hosting.HttpRequest;
 import com.lmpessoa.services.core.hosting.NextResponder;
-import com.lmpessoa.services.core.internal.Constants;
 import com.lmpessoa.services.core.internal.serializing.Serializer;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.util.ClassUtils;
@@ -72,7 +70,7 @@ final class SerializerResponder {
 
    public HttpResult invoke(HttpRequest request, RouteMatch route, ConnectionInfo connect,
       ILogger log) throws IOException {
-      Object obj = getResultObject();
+      Object obj = getResultObject(request);
       int statusCode = getStatusCode(obj);
       HttpInputStream is;
       try {
@@ -109,7 +107,10 @@ final class SerializerResponder {
                && TemporalAccessor.class.isAssignableFrom(retType);
    }
 
-   private Object getResultObject() {
+   private Object getResultObject(HttpRequest request) {
+      if (!Arrays.asList("HTTP/1.0", "HTTP/1.1").contains(request.getProtocol())) {
+         return new VersionNotSupportedError(request.getProtocol());
+      }
       try {
          Object result = next.invoke();
          if (result instanceof URL) {
@@ -124,7 +125,7 @@ final class SerializerResponder {
                   && t.getCause() != null) {
             t = t.getCause();
          }
-         if (t instanceof HttpException || t instanceof InternalServerError) {
+         if (t instanceof HttpException || t instanceof Error) {
             return t;
          }
          return new InternalServerError(t);
@@ -134,12 +135,8 @@ final class SerializerResponder {
    private int getStatusCode(Object obj) {
       if (obj == null) {
          return 204;
-      } else if (obj instanceof RedirectImpl) {
-         return ((RedirectImpl) obj).getStatusCode();
-      } else if (obj instanceof HttpException) {
-         return ((HttpException) obj).getStatusCode();
-      } else if (obj instanceof InternalServerError) {
-         return 500;
+      } else if (obj instanceof IHttpStatusCodeProvider) {
+         return ((IHttpStatusCodeProvider) obj).getStatusCode();
       }
       return 200;
    }
@@ -169,7 +166,7 @@ final class SerializerResponder {
          String date = getDateHeaderFromContent(obj, log);
          if (date == null) {
             // Date header is nearly mandatory according to RFC 7231
-            date = Constants.RFC_7231_DATE_TIME.format(ZonedDateTime.now());
+            date = DateHeader.RFC_7231_DATE_TIME.format(ZonedDateTime.now());
          }
          result.add(new HeaderEntry(Headers.DATE, date));
       }
@@ -215,7 +212,7 @@ final class SerializerResponder {
          dt = (ZonedDateTime) result;
       }
       dt = dt.withZoneSameInstant(ZoneId.of("GMT"));
-      return Constants.RFC_7231_DATE_TIME.format(dt);
+      return DateHeader.RFC_7231_DATE_TIME.format(dt);
    }
 
    private HttpInputStream getContentBody(Object obj, HttpRequest request, Method method) {

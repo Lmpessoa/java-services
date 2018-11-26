@@ -22,48 +22,20 @@
  */
 package com.lmpessoa.services.core.internal.hosting;
 
-/**
- * An <code>HttpException</code> is an abstract exception class that represents one of the HTTP
- * client error status codes (4xx) or server error status codes (5xx).
- *
- * <p>
- * If a method chooses to throw an <code>HttpException</code> the engine understands that that
- * exception represents the intended result to return to the sender of the request.
- * </p>
- *
- * <p>
- * Any other exception can be thrown from any resource method. These will be understood by the
- * engine as if an internal server error (HTTP status code 500) has happened and that is what will
- * be returned to the sender of the request in this case.
- * </p>
- */
-public abstract class HttpException extends RuntimeException implements IHttpStatusCodeProvider {
+public final class InternalServerError extends Error implements IHttpStatusCodeProvider {
 
    private static final long serialVersionUID = 1L;
 
-   private final int status;
-
-   public HttpException(int status) {
-      super();
-      this.status = status;
-   }
-
-   public HttpException(int status, String message) {
+   public InternalServerError(String message) {
       super(message);
-      this.status = status;
    }
 
-   public HttpException(int status, Throwable cause) {
+   public InternalServerError(Throwable cause) {
       super(cause);
-      this.status = status;
    }
 
-   public HttpException(int status, String message, Throwable cause) {
-      super(message, cause);
-      this.status = status;
-   }
-
+   @Override
    public int getStatusCode() {
-      return status;
+      return 500;
    }
 }

@@ -20,18 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.internal;
+package com.lmpessoa.services.core.internal.hosting;
 
-import java.time.format.DateTimeFormatter;
+public interface IHttpStatusCodeProvider {
 
-public final class Constants {
-
-   // RFC 7231 estabilishes (https://tools.ietf.org/html/rfc7231#section-7.1.1.1) dates must have
-   // 2 digits while RFC 1123 produces dates with one digit
-   public static final DateTimeFormatter RFC_7231_DATE_TIME = DateTimeFormatter
-            .ofPattern("EEE, dd MMM yyyy HH:mm:ss O");
-
-   private Constants() {
-      // Nothing to do here
-   }
+   int getStatusCode();
 }

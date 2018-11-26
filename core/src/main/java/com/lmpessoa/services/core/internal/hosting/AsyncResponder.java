@@ -38,7 +38,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import com.lmpessoa.services.core.ForbiddenException;
-import com.lmpessoa.services.core.InternalServerError;
 import com.lmpessoa.services.core.MethodNotAllowedException;
 import com.lmpessoa.services.core.NotFoundException;
 import com.lmpessoa.services.core.UnauthorizedException;

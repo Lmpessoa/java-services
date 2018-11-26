@@ -43,7 +43,7 @@ public final class HttpRequestTest {
    public ExpectedException thrown = ExpectedException.none();
 
    private HttpRequest getRequest(String filename) throws IOException {
-      return new HttpRequestImpl(this.getClass().getResourceAsStream("/http/" + filename));
+      return new HttpRequestImpl(this.getClass().getResourceAsStream("/http/" + filename), 1);
    }
 
    @Test

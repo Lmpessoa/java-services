@@ -97,6 +97,10 @@ class ApplicationContext implements Runnable {
       return server.getSettings().getMainExecutor();
    }
 
+   int getTimeout() {
+      return server.getSettings().getRequestTimeout();
+   }
+
    NextResponder getFirstResponder() {
       return server.getOptions().getFirstResponder();
    }

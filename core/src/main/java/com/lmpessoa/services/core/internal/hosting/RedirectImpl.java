@@ -62,12 +62,13 @@ public final class RedirectImpl implements Redirect {
    }
 
    @Override
-   public String toString() {
-      return String.format("%s [%d]", params.getPath(), status);
+   public int getStatusCode() {
+      return status;
    }
 
-   int getStatusCode() {
-      return status;
+   @Override
+   public String toString() {
+      return String.format("%s [%d]", params.getPath(), status);
    }
 
    static void setRoutes(RouteTable routes) {
