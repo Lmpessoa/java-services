@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.routing;
+package com.lmpessoa.services.core;
 
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
@@ -29,7 +29,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * Identifies a method that responds for an HTTP <code>GET</code> request.
+ * Identifies a method that responds for an HTTP <code>PUT</code> request.
  *
  * <p>
  * Methods annotated with this will override the default behaviour of the engine, which is to
@@ -43,4 +43,4 @@ import java.lang.annotation.Target;
  */
 @Target(METHOD)
 @Retention(RUNTIME)
-public @interface HttpGet {}
+public @interface Put {}

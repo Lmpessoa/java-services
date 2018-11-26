@@ -22,22 +22,17 @@
  */
 package com.lmpessoa.services.core.internal.hosting;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
 
-import com.lmpessoa.services.core.hosting.ContentType;
-import com.lmpessoa.services.core.hosting.HttpInputStream;
+import com.lmpessoa.services.core.HttpInputStream;
+import com.lmpessoa.services.core.InternalServerError;
+import com.lmpessoa.services.core.MethodNotAllowedException;
+import com.lmpessoa.services.core.NotFoundException;
 import com.lmpessoa.services.core.hosting.HttpRequest;
 import com.lmpessoa.services.core.hosting.IApplicationInfo;
-import com.lmpessoa.services.core.hosting.InternalServerError;
-import com.lmpessoa.services.core.hosting.MethodNotAllowedException;
 import com.lmpessoa.services.core.hosting.NextResponder;
-import com.lmpessoa.services.core.hosting.NotFoundException;
+import com.lmpessoa.services.core.internal.serializing.Serializer;
 import com.lmpessoa.services.core.routing.HttpMethod;
 import com.lmpessoa.services.core.routing.RouteMatch;
 
@@ -61,7 +56,7 @@ final class StaticResponder {
          if (resource != null) {
             String path = resource.getPath();
             String extension = path.substring(path.lastIndexOf('.') + 1);
-            String mimetype = getMimeTypeFromExtension(extension, startupClass);
+            String mimetype = Serializer.getContentTypeFromExtension(extension, startupClass);
             try {
                return new HttpInputStream(resource.openStream(), mimetype);
             } catch (IOException e) {
@@ -70,38 +65,5 @@ final class StaticResponder {
          }
       }
       return next.invoke();
-   }
-
-   private String getMimeTypeFromExtension(String extension, Class<?> startupClass) {
-      String result = getMimeFromResourceIn(extension, StaticResponder.class);
-      if (result == null) {
-         result = getMimeFromResourceIn(extension, startupClass);
-         if (result == null) {
-            result = ContentType.BINARY;
-         }
-      }
-      return result;
-   }
-
-   private String getMimeFromResourceIn(String extension, Class<?> baseClass) {
-      Map<String, String> result = new HashMap<>();
-      // During tests, one file is copied over the other so we need this
-      String filename = baseClass == StaticResponder.class ? "/file.types" : "/mime.types";
-      try (InputStream mimes = baseClass.getResourceAsStream(filename)) {
-         BufferedReader br = new BufferedReader(new InputStreamReader(mimes));
-         String line;
-         while ((line = br.readLine()) != null) {
-            String[] lineParts = line.trim().split(" ");
-            for (int i = 1; i < lineParts.length; ++i) {
-               if (!lineParts[i].trim().isEmpty()) {
-                  result.put(lineParts[i].trim(), lineParts[0].trim());
-               }
-            }
-         }
-      } catch (IOException e) {
-         // Should not happen but in any case...
-         return null;
-      }
-      return result.get(extension);
    }
 }

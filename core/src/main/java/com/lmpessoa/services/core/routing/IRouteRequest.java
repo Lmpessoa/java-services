@@ -25,6 +25,7 @@ package com.lmpessoa.services.core.routing;
 import java.io.IOException;
 import java.io.InputStream;
 
+import com.lmpessoa.services.core.Query;
 import com.lmpessoa.services.core.internal.routing.RouteTable;
 
 /**
@@ -61,7 +62,7 @@ public interface IRouteRequest {
     * </p>
     *
     * @return the path of this HTTP request.
-    * @see QueryParam
+    * @see Query
     */
    String getPath();
 
@@ -69,7 +70,7 @@ public interface IRouteRequest {
     * Returns the query parameters of this HTTP request as a single string.
     *
     * @return the query parameters of this HTTP request.
-    * @see QueryParam
+    * @see Query
     */
    String getQueryString();
 

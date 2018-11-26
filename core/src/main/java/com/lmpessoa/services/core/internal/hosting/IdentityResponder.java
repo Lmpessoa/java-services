@@ -28,9 +28,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Predicate;
 
-import com.lmpessoa.services.core.hosting.ForbiddenException;
+import com.lmpessoa.services.core.ForbiddenException;
+import com.lmpessoa.services.core.UnauthorizedException;
 import com.lmpessoa.services.core.hosting.NextResponder;
-import com.lmpessoa.services.core.hosting.UnauthorizedException;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.security.AllowAnonymous;
 import com.lmpessoa.services.core.security.Authorize;

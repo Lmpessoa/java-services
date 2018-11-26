@@ -20,21 +20,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.hosting;
+package com.lmpessoa.services.core;
 
 import com.lmpessoa.services.core.internal.hosting.HttpException;
+import com.lmpessoa.services.core.routing.RouteMatch;
 
 /**
- * Thrown when the requested method is recognised but effectively not implemented.
+ * Thrown when the requested resource endpoint does not exist.
  */
-public class NotImplementedException extends HttpException {
+public final class NotFoundException extends HttpException implements RouteMatch {
 
    private static final long serialVersionUID = 1L;
 
    /**
-    * Creates a new <code>NotImplementedException</code>.
+    * Creates a new <code>NotFoundException</code>.
     */
-   public NotImplementedException() {
-      super(501);
+   public NotFoundException() {
+      super(404);
+   }
+
+   /**
+    * Creates a new <code>NotFoundException</code> with the given detail message.
+    *
+    * @param message the detail message.
+    */
+   public NotFoundException(String message) {
+      super(404, message);
+   }
+
+   @Override
+   public Object invoke() {
+      throw this;
    }
 }

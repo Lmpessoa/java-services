@@ -20,47 +20,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.internal.hosting;
+package com.lmpessoa.services.core;
 
-import java.util.Collection;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-import com.lmpessoa.services.core.HttpInputStream;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-final class HttpResult {
-
-   private final Collection<HeaderEntry> headers;
-   private final HttpInputStream stream;
-   private final int statusCode;
-   private final int length;
-
-   public int getStatusCode() {
-      return statusCode;
-   }
-
-   public Collection<HeaderEntry> getHeaders() {
-      return headers;
-   }
-
-   public HttpInputStream getInputStream() {
-      return stream;
-   }
-
-   @Override
-   public String toString() {
-      String resultType = stream != null ? stream.getType() : "(empty)";
-      return String.format("%s %s %s", statusCode, length, resultType);
-   }
-
-   HttpResult(int statusCode, Collection<HeaderEntry> headers, HttpInputStream stream) {
-      this.statusCode = statusCode;
-      this.headers = headers;
-      this.stream = stream;
-      int size = 0;
-      try {
-         size = stream.available();
-      } catch (Exception e) {
-         // Just ignore for now
-      }
-      this.length = size;
-   }
-}
+/**
+ * Identifies a method that responds for an HTTP <code>POST</code> request.
+ *
+ * <p>
+ * Methods annotated with this will override the default behaviour of the engine, which is to
+ * identify the HTTP method from the name of the method.
+ * </p>
+ *
+ * <p>
+ * A method can be combined with others HTTP method annotations, thus a method can respond to more
+ * than one HTTP method request.
+ * </p>
+ */
+@Target(METHOD)
+@Retention(RUNTIME)
+public @interface Post {}

@@ -33,11 +33,11 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import com.lmpessoa.services.core.InternalServerError;
 import com.lmpessoa.services.core.concurrent.AsyncReject;
 import com.lmpessoa.services.core.concurrent.IAsyncOptions;
 import com.lmpessoa.services.core.concurrent.IAsyncRequestMatcher;
 import com.lmpessoa.services.core.hosting.IApplicationOptions;
-import com.lmpessoa.services.core.hosting.InternalServerError;
 import com.lmpessoa.services.core.hosting.NextResponder;
 import com.lmpessoa.services.core.internal.concurrent.RejectRequestMatcher;
 import com.lmpessoa.services.core.internal.routing.RouteTable;

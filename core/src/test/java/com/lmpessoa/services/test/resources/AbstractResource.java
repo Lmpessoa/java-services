@@ -22,9 +22,9 @@
  */
 package com.lmpessoa.services.test.resources;
 
-import com.lmpessoa.services.core.routing.NonResource;
+import com.lmpessoa.services.core.NotPublished;
 
-@NonResource
+@NotPublished
 public class AbstractResource {
 
    public void get() {

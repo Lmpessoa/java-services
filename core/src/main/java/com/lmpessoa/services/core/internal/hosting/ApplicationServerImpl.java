@@ -42,6 +42,7 @@ import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import com.lmpessoa.services.core.NotPublished;
 import com.lmpessoa.services.core.concurrent.IExecutionService;
 import com.lmpessoa.services.core.hosting.ApplicationServer;
 import com.lmpessoa.services.core.hosting.ConnectionInfo;
@@ -54,7 +55,6 @@ import com.lmpessoa.services.core.internal.routing.RouteEntry;
 import com.lmpessoa.services.core.internal.routing.RouteTable;
 import com.lmpessoa.services.core.internal.serializing.Serializer;
 import com.lmpessoa.services.core.routing.IRouteTable;
-import com.lmpessoa.services.core.routing.NonResource;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.security.IIdentity;
 import com.lmpessoa.services.core.validating.IValidationService;
@@ -149,7 +149,7 @@ public final class ApplicationServerImpl {
             Class<?> clazz = Class.forName(className);
             if (ClassUtils.isConcreteClass(clazz) && Modifier.isPublic(clazz.getModifiers())
                      && endsInResource.matcher(clazz.getSimpleName()).find()
-                     && !clazz.isAnnotationPresent(NonResource.class)) {
+                     && !clazz.isAnnotationPresent(NotPublished.class)) {
                result.add(clazz);
             }
          } catch (ClassNotFoundException e) {

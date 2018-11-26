@@ -41,10 +41,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.lmpessoa.services.core.hosting.ContentType;
-import com.lmpessoa.services.core.hosting.HttpInputStream;
-import com.lmpessoa.services.core.hosting.NotAcceptableException;
-import com.lmpessoa.services.core.hosting.UnsupportedMediaTypeException;
+import com.lmpessoa.services.core.ContentType;
+import com.lmpessoa.services.core.HttpInputStream;
+import com.lmpessoa.services.core.NotAcceptableException;
+import com.lmpessoa.services.core.UnsupportedMediaTypeException;
 
 public final class SerializerTest {
 

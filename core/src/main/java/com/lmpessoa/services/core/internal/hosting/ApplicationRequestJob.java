@@ -34,11 +34,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import com.lmpessoa.services.core.HttpInputStream;
+import com.lmpessoa.services.core.InternalServerError;
 import com.lmpessoa.services.core.hosting.ConnectionInfo;
 import com.lmpessoa.services.core.hosting.Headers;
-import com.lmpessoa.services.core.hosting.HttpInputStream;
 import com.lmpessoa.services.core.hosting.HttpRequest;
-import com.lmpessoa.services.core.hosting.InternalServerError;
 import com.lmpessoa.services.core.hosting.NextResponder;
 import com.lmpessoa.services.core.internal.Wrapper;
 import com.lmpessoa.services.core.internal.routing.RouteTable;

@@ -35,20 +35,21 @@ import java.io.InputStream;
 import java.net.Socket;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 import org.junit.Before;
 import org.junit.Test;
 
-import com.lmpessoa.services.core.hosting.ContentType;
+import com.lmpessoa.services.core.ContentType;
+import com.lmpessoa.services.core.Get;
+import com.lmpessoa.services.core.HttpInputStream;
+import com.lmpessoa.services.core.Route;
 import com.lmpessoa.services.core.hosting.Headers;
-import com.lmpessoa.services.core.hosting.HttpInputStream;
 import com.lmpessoa.services.core.internal.concurrent.ExecutionService;
 import com.lmpessoa.services.core.internal.routing.RouteTable;
 import com.lmpessoa.services.core.internal.services.NoSingleMethodException;
-import com.lmpessoa.services.core.routing.HttpGet;
 import com.lmpessoa.services.core.routing.HttpMethod;
 import com.lmpessoa.services.core.routing.IRouteTable;
-import com.lmpessoa.services.core.routing.Route;
 import com.lmpessoa.services.core.security.Authorize;
 import com.lmpessoa.services.core.security.IIdentity;
 import com.lmpessoa.services.core.security.IIdentityProvider;
@@ -98,6 +99,8 @@ public final class ApplicationResponseTest {
    @Test
    public void testJobResquestString() throws InterruptedException, IOException {
       String[] result = runJob(GET, "/test");
+      assertEquals(6, result.length);
+      result = Arrays.stream(result).filter(s -> !s.startsWith("Date: ")).toArray(String[]::new);
       assertArrayEquals(new String[] { //
                "HTTP/1.1 200 OK", //
                "Content-Type: text/plain; charset=\"utf-8\"", //
@@ -109,6 +112,8 @@ public final class ApplicationResponseTest {
    @Test
    public void testJobRequestDownload() throws InterruptedException, IOException {
       String[] result = runJob(GET, "/test/download");
+      assertEquals(7, result.length);
+      result = Arrays.stream(result).filter(s -> !s.startsWith("Date: ")).toArray(String[]::new);
       assertArrayEquals(new String[] { //
                "HTTP/1.1 200 OK", //
                "Content-Type: text/plain; charset=\"utf-8\"", //
@@ -133,6 +138,8 @@ public final class ApplicationResponseTest {
    @Test
    public void testJobRequestAuthenticated() throws InterruptedException, IOException {
       String[] result = runJob(POST, "/test", true);
+      assertEquals(6, result.length);
+      result = Arrays.stream(result).filter(s -> !s.startsWith("Date: ")).toArray(String[]::new);
       assertArrayEquals(new String[] { "HTTP/1.1 200 OK", //
                "Content-Type: text/plain; charset=\"utf-8\"", //
                "Content-Length: 4", //
@@ -142,7 +149,7 @@ public final class ApplicationResponseTest {
 
    public static class TestResource {
 
-      @HttpGet
+      @Get
       @Route("empty")
       public void empty() {
          // Test method, does nothing
@@ -152,7 +159,7 @@ public final class ApplicationResponseTest {
          return "Test";
       }
 
-      @HttpGet
+      @Get
       @Route("download")
       public HttpInputStream download() {
          Charset utf8 = StandardCharsets.UTF_8;

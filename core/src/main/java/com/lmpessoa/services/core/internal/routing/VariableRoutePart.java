@@ -54,7 +54,7 @@ import javax.validation.constraints.PositiveOrZero;
 import javax.validation.constraints.Size;
 import javax.validation.groups.Default;
 
-import com.lmpessoa.services.core.routing.QueryParam;
+import com.lmpessoa.services.core.Query;
 import com.lmpessoa.services.util.ClassUtils;
 import com.lmpessoa.services.util.parsing.IVariablePart;
 
@@ -143,7 +143,7 @@ final class VariableRoutePart implements IVariablePart, Comparable<VariableRoute
       } else {
          this.groups = Collections.singleton(Default.class);
       }
-      if (param.isAnnotationPresent(QueryParam.class)) {
+      if (param.isAnnotationPresent(Query.class)) {
          throw new IllegalStateException("Query params cannot be in path");
       }
       if (!getConstraints(param, Null.class).isEmpty()) {

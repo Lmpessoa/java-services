@@ -49,19 +49,18 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.lmpessoa.services.core.hosting.BadRequestException;
-import com.lmpessoa.services.core.hosting.ContentType;
+import com.lmpessoa.services.core.BadRequestException;
+import com.lmpessoa.services.core.ContentType;
+import com.lmpessoa.services.core.MethodNotAllowedException;
+import com.lmpessoa.services.core.NotFoundException;
+import com.lmpessoa.services.core.NotImplementedException;
+import com.lmpessoa.services.core.Put;
+import com.lmpessoa.services.core.Query;
+import com.lmpessoa.services.core.Route;
 import com.lmpessoa.services.core.hosting.HttpRequest;
-import com.lmpessoa.services.core.hosting.MethodNotAllowedException;
-import com.lmpessoa.services.core.hosting.NotFoundException;
-import com.lmpessoa.services.core.hosting.NotImplementedException;
 import com.lmpessoa.services.core.internal.hosting.HttpRequestBuilder;
 import com.lmpessoa.services.core.internal.services.ServiceMap;
 import com.lmpessoa.services.core.internal.validating.ValidationService;
-import com.lmpessoa.services.core.routing.HttpGet;
-import com.lmpessoa.services.core.routing.HttpPut;
-import com.lmpessoa.services.core.routing.QueryParam;
-import com.lmpessoa.services.core.routing.Route;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.services.Service;
 import com.lmpessoa.services.core.validating.ErrorSet;
@@ -455,15 +454,13 @@ public final class RouteTableMatcherTest {
          return "GET/" + i + "+" + j;
       }
 
-      @HttpGet
       @Route("query")
-      public String getNew(@QueryParam Integer id) {
+      public String getNew(@Query Integer id) {
          return String.valueOf(id);
       }
 
-      @HttpGet
       @Route("query/{0}")
-      public String getNew(int cid, @QueryParam int id) {
+      public String getNew(int cid, @Query int id) {
          return String.valueOf(cid + id);
       }
 
@@ -483,13 +480,12 @@ public final class RouteTableMatcherTest {
          // Nothing to do here
       }
 
-      @HttpPut
+      @Put
       @Route("valid/{1}")
       public void valid(@Valid ContentObject content, int i) {
          // Nothing to do here
       }
 
-      @HttpGet
       @Route("catchall/{0}")
       public void catchall(String... path) {
          // Nothing to do here

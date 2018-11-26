@@ -40,14 +40,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import com.lmpessoa.services.core.Patch;
+import com.lmpessoa.services.core.Post;
+import com.lmpessoa.services.core.Put;
+import com.lmpessoa.services.core.Route;
 import com.lmpessoa.services.core.internal.services.ServiceMap;
-import com.lmpessoa.services.core.routing.HttpGet;
 import com.lmpessoa.services.core.routing.HttpMethod;
-import com.lmpessoa.services.core.routing.HttpPatch;
-import com.lmpessoa.services.core.routing.HttpPost;
-import com.lmpessoa.services.core.routing.HttpPut;
 import com.lmpessoa.services.core.routing.IRouteTable;
-import com.lmpessoa.services.core.routing.Route;
 import com.lmpessoa.services.test.services.Singleton;
 import com.lmpessoa.services.test.services.SingletonImpl;
 import com.lmpessoa.services.util.parsing.TypeMismatchException;
@@ -263,20 +262,19 @@ public final class RouteTableTest {
    @Route("test")
    public static class AnnotatedResource {
 
-      @HttpGet
       @Route("")
       public void someMethod() {
          // Test method, does nothing
       }
 
-      @HttpPost
+      @Post
       @Route("")
       public void anotherMethod() {
          // Test method, does nothing
       }
 
-      @HttpPut
-      @HttpPatch
+      @Put
+      @Patch
       @Route("{0}")
       public void invalidAnnotations(int i) {
          // Test method, does nothing

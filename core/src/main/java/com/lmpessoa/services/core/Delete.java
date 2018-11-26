@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Leonardo Pessoa
+ * Copyright (c) 2017 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,30 +20,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.hosting;
+package com.lmpessoa.services.core;
 
-import com.lmpessoa.services.core.internal.hosting.HttpException;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
 /**
- * Thrown when the received content type is not supported.
+ * Identifies a method that responds for an HTTP <code>DELETE</code> request.
+ *
+ * <p>
+ * Methods annotated with this will override the default behaviour of the engine, which is to
+ * identify the HTTP method from the name of the method.
+ * </p>
+ *
+ * <p>
+ * A method can be combined with others HTTP method annotations, thus a method can respond to more
+ * than one HTTP method request.
+ * </p>
  */
-public final class UnsupportedMediaTypeException extends HttpException {
-
-   private static final long serialVersionUID = 1L;
-
-   /**
-    * Creates a new {@code UnsupportedMediaTypeException}.
-    */
-   public UnsupportedMediaTypeException() {
-      super(415);
-   }
-
-   /**
-    * Creates a new {@code UnsupportedMediaTypeException} with the given detail message.
-    * 
-    * @param message the detail message.
-    */
-   public UnsupportedMediaTypeException(String message) {
-      super(415, message);
-   }
-}
+@Target(METHOD)
+@Retention(RUNTIME)
+public @interface Delete {}

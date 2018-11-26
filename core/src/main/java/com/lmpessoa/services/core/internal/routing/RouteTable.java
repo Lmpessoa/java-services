@@ -47,25 +47,25 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
-import com.lmpessoa.services.core.hosting.HttpInputStream;
-import com.lmpessoa.services.core.hosting.MethodNotAllowedException;
-import com.lmpessoa.services.core.hosting.NotFoundException;
+import com.lmpessoa.services.core.Delete;
+import com.lmpessoa.services.core.Get;
+import com.lmpessoa.services.core.HttpInputStream;
+import com.lmpessoa.services.core.MethodNotAllowedException;
+import com.lmpessoa.services.core.NotFoundException;
+import com.lmpessoa.services.core.NotPublished;
+import com.lmpessoa.services.core.Options;
+import com.lmpessoa.services.core.Patch;
+import com.lmpessoa.services.core.Post;
+import com.lmpessoa.services.core.Put;
+import com.lmpessoa.services.core.Query;
+import com.lmpessoa.services.core.Route;
 import com.lmpessoa.services.core.internal.serializing.Serializer;
 import com.lmpessoa.services.core.internal.services.NoSingleMethodException;
 import com.lmpessoa.services.core.internal.services.ServiceMap;
-import com.lmpessoa.services.core.routing.HttpDelete;
-import com.lmpessoa.services.core.routing.HttpGet;
 import com.lmpessoa.services.core.routing.HttpMethod;
-import com.lmpessoa.services.core.routing.HttpOptions;
-import com.lmpessoa.services.core.routing.HttpPatch;
-import com.lmpessoa.services.core.routing.HttpPost;
-import com.lmpessoa.services.core.routing.HttpPut;
 import com.lmpessoa.services.core.routing.IRouteOptions;
 import com.lmpessoa.services.core.routing.IRouteRequest;
 import com.lmpessoa.services.core.routing.IRouteTable;
-import com.lmpessoa.services.core.routing.NonResource;
-import com.lmpessoa.services.core.routing.QueryParam;
-import com.lmpessoa.services.core.routing.Route;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.validating.IValidationService;
 import com.lmpessoa.services.util.ClassUtils;
@@ -292,14 +292,16 @@ public final class RouteTable implements IRouteTable {
          for (Entry<Class<?>, String> entry : classes.entrySet()) {
             Class<?> clazz = entry.getKey();
             try {
-               if (clazz.isAnnotationPresent(NonResource.class)) {
+               if (clazz.isAnnotationPresent(NotPublished.class)) {
                   continue;
                }
                validateResourceClass(clazz);
                String area = entry.getValue();
                RoutePattern classPat = RoutePattern.build(area, clazz, services, options);
                for (Method method : clazz.getMethods()) {
-                  result.addAll(putMethod(clazz, classPat, method));
+                  if (!method.isAnnotationPresent(NotPublished.class)) {
+                     result.addAll(putMethod(clazz, classPat, method));
+                  }
                }
             } catch (Exception e) {
                result.add(new RouteEntry(clazz, e));
@@ -344,14 +346,13 @@ public final class RouteTable implements IRouteTable {
    }
 
    private HttpMethod[] findMethod(Method method) {
-      Annotation[] methods = new Annotation[] { method.getAnnotation(HttpGet.class),
-               method.getAnnotation(HttpPost.class), method.getAnnotation(HttpPut.class),
-               method.getAnnotation(HttpPatch.class), method.getAnnotation(HttpDelete.class),
-               method.getAnnotation(HttpOptions.class) };
+      Annotation[] methods = new Annotation[] { method.getAnnotation(Get.class),
+               method.getAnnotation(Post.class), method.getAnnotation(Put.class),
+               method.getAnnotation(Patch.class), method.getAnnotation(Delete.class),
+               method.getAnnotation(Options.class) };
       HttpMethod[] result = Arrays.stream(methods)
                .filter(Objects::nonNull)
-               .map(a -> HttpMethod
-                        .valueOf(a.annotationType().getSimpleName().substring(4).toUpperCase()))
+               .map(a -> HttpMethod.valueOf(a.annotationType().getSimpleName().toUpperCase()))
                .toArray(HttpMethod[]::new);
       if (result.length > 0) {
          return result;
@@ -363,10 +364,7 @@ public final class RouteTable implements IRouteTable {
       if (optionalResult.isPresent()) {
          return new HttpMethod[] { optionalResult.get() };
       }
-      if (method.isAnnotationPresent(Route.class)) {
-         return new HttpMethod[] { HttpMethod.GET };
-      }
-      return new HttpMethod[0];
+      return new HttpMethod[] { HttpMethod.GET };
    }
 
    private void validateResourceClass(Class<?> clazz) throws NoSingleMethodException {
@@ -393,9 +391,10 @@ public final class RouteTable implements IRouteTable {
          Class<?> type = param.getType();
          if (services.contains(type)) {
             result.add(services.get(type));
-         } else if (param.isAnnotationPresent(QueryParam.class)) {
-            QueryParam qp = param.getAnnotation(QueryParam.class);
-            List<String> values = query.get(qp.value().isEmpty() ? param.getName() : qp.value());
+         } else if (param.isAnnotationPresent(Query.class)) {
+            Query qp = param.getAnnotation(Query.class);
+            List<String> values = query
+                     .get("##default".equals(qp.value()) ? param.getName() : qp.value());
             result.add(values != null ? ClassUtils.cast(String.join(",", values), type) : null);
          } else {
             for (Entry<VariableRoutePart, String> entry : paramValues.entrySet()) {

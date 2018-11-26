@@ -20,30 +20,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.hosting;
+package com.lmpessoa.services.core;
 
-import com.lmpessoa.services.core.internal.hosting.HttpException;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
 /**
- * Thrown when the current user does not have credentials to access a protected resource method.
+ * Excludes methods from being registered as actions.
+ *
+ * <p>
+ * Published methods refer to public methods in resource classes that are mapped to respond to
+ * requests to a designated path and HTTP method received by the server. However, it is possible
+ * that not all public methods in a resource class are be meant to be published. Use this annotation
+ * on those methods to to declare that the engine should not resolve routes to them.
+ * </p>
+ *
+ * <p>
+ * Classes may also be annotated with {@code @NotPublished}. In this case, all methods from the
+ * class will be ignored by the engine and will not be available.
+ * </p>
+ *
+ * @see Route
  */
-public final class ForbiddenException extends HttpException {
-
-   private static final long serialVersionUID = 1L;
-
-   /**
-    * Creates a new instance of {@code ForbiddenException}.
-    */
-   public ForbiddenException() {
-      super(403);
-   }
-
-   /**
-    * Creates a new instance of {@code ForbiddenException} with the given detail message.
-    * 
-    * @param message the detail message.
-    */
-   public ForbiddenException(String message) {
-      super(403, message);
-   }
-}
+@Retention(RUNTIME)
+@Target({ TYPE, METHOD })
+public @interface NotPublished {}

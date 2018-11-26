@@ -34,13 +34,13 @@ import java.io.IOException;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.lmpessoa.services.core.hosting.ContentType;
-import com.lmpessoa.services.core.hosting.HttpInputStream;
+import com.lmpessoa.services.core.ContentType;
+import com.lmpessoa.services.core.HttpInputStream;
+import com.lmpessoa.services.core.MethodNotAllowedException;
+import com.lmpessoa.services.core.NotFoundException;
 import com.lmpessoa.services.core.hosting.HttpRequest;
 import com.lmpessoa.services.core.hosting.IApplicationInfo;
-import com.lmpessoa.services.core.hosting.MethodNotAllowedException;
 import com.lmpessoa.services.core.hosting.NextResponder;
-import com.lmpessoa.services.core.hosting.NotFoundException;
 import com.lmpessoa.services.core.internal.hosting.ApplicationOptions;
 import com.lmpessoa.services.core.internal.hosting.StaticResponder;
 import com.lmpessoa.services.core.routing.HttpMethod;

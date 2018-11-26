@@ -28,27 +28,38 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-import com.lmpessoa.services.core.hosting.BadRequestException;
+import com.lmpessoa.services.core.BadRequestException;
+import com.lmpessoa.services.core.ContentType;
+import com.lmpessoa.services.core.DateHeader;
+import com.lmpessoa.services.core.HttpInputStream;
+import com.lmpessoa.services.core.InternalServerError;
+import com.lmpessoa.services.core.Redirect;
 import com.lmpessoa.services.core.hosting.ConnectionInfo;
-import com.lmpessoa.services.core.hosting.ContentType;
 import com.lmpessoa.services.core.hosting.Headers;
-import com.lmpessoa.services.core.hosting.HttpInputStream;
 import com.lmpessoa.services.core.hosting.HttpRequest;
-import com.lmpessoa.services.core.hosting.InternalServerError;
 import com.lmpessoa.services.core.hosting.NextResponder;
-import com.lmpessoa.services.core.hosting.Redirect;
+import com.lmpessoa.services.core.internal.Constants;
 import com.lmpessoa.services.core.internal.serializing.Serializer;
 import com.lmpessoa.services.core.routing.RouteMatch;
+import com.lmpessoa.services.util.ClassUtils;
 import com.lmpessoa.services.util.logging.ILogger;
 
 final class SerializerResponder {
@@ -71,7 +82,7 @@ final class SerializerResponder {
          statusCode = getStatusCode(obj);
          is = getContentBody(obj, request, null);
       }
-      Collection<HeaderEntry> headers = getExtraHeaders(obj, is, connect);
+      Collection<HeaderEntry> headers = getExtraHeaders(obj, is, connect, log);
       if (obj instanceof Throwable && !(obj instanceof Redirect)) {
          Throwable t = (Throwable) obj;
          if (t instanceof InternalServerError) {
@@ -80,6 +91,22 @@ final class SerializerResponder {
          log.error(t);
       }
       return new HttpResult(statusCode, headers, is);
+   }
+
+   static boolean isTextual(String contentType) {
+      List<String> extraTextTypes = Arrays.asList(ContentType.ATOM, ContentType.JS,
+               ContentType.JSON, ContentType.RSS, ContentType.SVG, ContentType.WSDL,
+               ContentType.XHTML, ContentType.XML);
+      return contentType.startsWith("text/") || extraTextTypes.contains(contentType);
+   }
+
+   private static boolean isDateHeaderMethod(Method method) {
+      Class<?> retType = method.getReturnType();
+      int mod = method.getModifiers();
+      return method.isAnnotationPresent(DateHeader.class) && method.getName().matches("get[A-Z].*")
+               && !Modifier.isStatic(mod) && !Modifier.isAbstract(mod)
+               && method.getParameterCount() == 0
+               && TemporalAccessor.class.isAssignableFrom(retType);
    }
 
    private Object getResultObject() {
@@ -118,7 +145,7 @@ final class SerializerResponder {
    }
 
    private Collection<HeaderEntry> getExtraHeaders(Object obj, HttpInputStream content,
-      ConnectionInfo connect) throws IOException {
+      ConnectionInfo connect, ILogger log) throws IOException {
       List<HeaderEntry> result = new ArrayList<>();
       if (content != null) {
          String contentType = content.getType();
@@ -138,7 +165,57 @@ final class SerializerResponder {
          RedirectImpl redirect = (RedirectImpl) obj;
          result.add(new HeaderEntry(Headers.LOCATION, redirect.getUrl(connect).toExternalForm()));
       }
+      if (obj != null) {
+         String date = getDateHeaderFromContent(obj, log);
+         if (date == null) {
+            // Date header is nearly mandatory according to RFC 7231
+            date = Constants.RFC_7231_DATE_TIME.format(ZonedDateTime.now());
+         }
+         result.add(new HeaderEntry(Headers.DATE, date));
+      }
       return Collections.unmodifiableCollection(result);
+   }
+
+   private String getDateHeaderFromContent(Object obj, ILogger log) {
+      // Find the field or getter with @DateInfo
+      TemporalAccessor result = null;
+      Class<?> clazz = obj.getClass();
+      Method[] methods = ClassUtils.findMethods(clazz, SerializerResponder::isDateHeaderMethod);
+      if (methods.length > 1) {
+         log.debug("Too many methods providing date header: "
+                  + Arrays.stream(methods).map(Method::getName).collect(Collectors.joining(", ")));
+         return null;
+      } else if (methods.length == 1) {
+         try {
+            result = (TemporalAccessor) methods[0].invoke(obj);
+         } catch (InvocationTargetException e) {
+            log.debug(e.getCause());
+            return null;
+         } catch (IllegalAccessException | IllegalArgumentException e) {
+            log.debug(e);
+            return null;
+         }
+         if (!(result instanceof OffsetDateTime || result instanceof ZonedDateTime
+                  || result instanceof LocalDateTime || result instanceof Instant)) {
+            return null;
+         }
+      } else {
+         return null;
+      }
+
+      // Convert LocalDateTime, ZonedDateTime or Instant to OffsetDateTime
+      ZonedDateTime dt;
+      if (result instanceof LocalDateTime) {
+         dt = ((LocalDateTime) result).atZone(ZoneId.systemDefault());
+      } else if (result instanceof Instant) {
+         dt = ((Instant) result).atZone(ZoneId.systemDefault());
+      } else if (result instanceof OffsetDateTime) {
+         dt = ((OffsetDateTime) result).toZonedDateTime();
+      } else {
+         dt = (ZonedDateTime) result;
+      }
+      dt = dt.withZoneSameInstant(ZoneId.of("GMT"));
+      return Constants.RFC_7231_DATE_TIME.format(dt);
    }
 
    private HttpInputStream getContentBody(Object obj, HttpRequest request, Method method) {
@@ -226,12 +303,5 @@ final class SerializerResponder {
          }
       }
       return StandardCharsets.UTF_8;
-   }
-
-   static boolean isTextual(String contentType) {
-      List<String> extraTextTypes = Arrays.asList(ContentType.ATOM, ContentType.JS,
-               ContentType.JSON, ContentType.RSS, ContentType.SVG, ContentType.WSDL,
-               ContentType.XHTML, ContentType.XML);
-      return contentType.startsWith("text/") || extraTextTypes.contains(contentType);
    }
 }

@@ -26,8 +26,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Objects;
 
+import com.lmpessoa.services.core.Redirect;
 import com.lmpessoa.services.core.hosting.ConnectionInfo;
-import com.lmpessoa.services.core.hosting.Redirect;
 import com.lmpessoa.services.core.internal.routing.RouteTable;
 
 /**

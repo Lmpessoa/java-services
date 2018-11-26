@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,27 +20,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.routing;
+package com.lmpessoa.services.core;
 
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+import com.lmpessoa.services.core.internal.hosting.HttpException;
 
 /**
- * Identifies a method that responds for an HTTP <code>PATCH</code> request.
- *
- * <p>
- * Methods annotated with this will override the default behaviour of the engine, which is to
- * identify the HTTP method from the name of the method.
- * </p>
- *
- * <p>
- * A method can be combined with others HTTP method annotations, thus a method can respond to more
- * than one HTTP method request.
- * </p>
+ * Thrown when a non-identified user tries to access a protected resource method.
  */
-@Target(METHOD)
-@Retention(RUNTIME)
-public @interface HttpPatch {}
+public final class UnauthorizedException extends HttpException {
+
+   private static final long serialVersionUID = 1L;
+
+   /**
+    * Creates a new instance of {@code UnauthorizedException}.
+    */
+   public UnauthorizedException() {
+      super(401);
+   }
+
+   /**
+    * Creates a new instance of {@code UnauthorizedException} with the given detail message.
+    *
+    * @param message the detail message.
+    */
+   public UnauthorizedException(String message) {
+      super(401, message);
+   }
+}

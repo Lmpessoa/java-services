@@ -20,30 +20,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.hosting;
+package com.lmpessoa.services.core;
 
 import com.lmpessoa.services.core.internal.hosting.HttpException;
 
 /**
- * Thrown when the server has received too many requests from the client in a short time.
+ * Thrown when the requested resource was not modified since the previous client request.
  */
-public final class TooManyRequestsException extends HttpException {
+public final class NotModifiedException extends HttpException {
 
    private static final long serialVersionUID = 1L;
 
    /**
-    * Creates a new instance of {@code ForbiddenException}.
+    * Creates a new <code>NotModifiedException</code>.
     */
-   public TooManyRequestsException() {
-      super(429);
+   public NotModifiedException() {
+      super(304);
    }
 
    /**
-    * Creates a new instance of {@code ForbiddenException} with the given detail message.
+    * Creates a new <code>NotModifiedException</code> with the given detail message.
     *
     * @param message the detail message.
     */
-   public TooManyRequestsException(String message) {
-      super(429, message);
+   public NotModifiedException(String message) {
+      super(304, message);
    }
 }

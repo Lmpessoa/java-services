@@ -20,26 +20,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.routing;
+package com.lmpessoa.services.core;
 
-import static java.lang.annotation.ElementType.TYPE;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+import com.lmpessoa.services.core.internal.hosting.HttpException;
 
 /**
- * Marks a class that is a potential resource so that the engine does not recognise it automatically
- * as one.
- *
- * <p>
- * Use this annotation in non abstract resource classes which are to be used as superclasses for
- * other resources. No methods from the annotated class will be available immediately as an endpoint
- * but will be registered from the subclasses.
- * </p>
+ * Thrown when the requested method is recognised but effectively not implemented.
  */
-@Target(TYPE)
-@Retention(RUNTIME)
-public @interface NonResource {
+public class NotImplementedException extends HttpException {
 
+   private static final long serialVersionUID = 1L;
+
+   /**
+    * Creates a new <code>NotImplementedException</code>.
+    */
+   public NotImplementedException() {
+      super(501);
+   }
 }

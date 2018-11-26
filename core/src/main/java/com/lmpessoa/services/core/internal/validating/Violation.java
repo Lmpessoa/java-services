@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
-import com.lmpessoa.services.core.hosting.InternalServerError;
+import com.lmpessoa.services.core.InternalServerError;
 import com.lmpessoa.services.util.Localization;
 import com.lmpessoa.services.util.parsing.ITemplatePart;
 import com.lmpessoa.services.util.parsing.LiteralPart;

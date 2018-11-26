@@ -40,14 +40,14 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.lmpessoa.services.core.ContentType;
+import com.lmpessoa.services.core.NotFoundException;
+import com.lmpessoa.services.core.Redirect;
 import com.lmpessoa.services.core.hosting.ConnectionInfo;
-import com.lmpessoa.services.core.hosting.ContentType;
 import com.lmpessoa.services.core.hosting.HeaderMap;
 import com.lmpessoa.services.core.hosting.Headers;
 import com.lmpessoa.services.core.hosting.HttpRequest;
 import com.lmpessoa.services.core.hosting.NextResponder;
-import com.lmpessoa.services.core.hosting.NotFoundException;
-import com.lmpessoa.services.core.hosting.Redirect;
 import com.lmpessoa.services.core.internal.hosting.HeaderEntry;
 import com.lmpessoa.services.core.internal.hosting.HeaderMapImpl;
 import com.lmpessoa.services.core.internal.hosting.HttpResult;

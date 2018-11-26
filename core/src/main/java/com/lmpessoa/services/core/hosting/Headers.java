@@ -31,6 +31,8 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.lmpessoa.services.core.BadRequestException;
+
 /**
  * Represents a map of HTTP header values.
  *

@@ -37,8 +37,8 @@ import java.util.Map;
 
 import org.junit.Test;
 
-import com.lmpessoa.services.core.hosting.ContentType;
-import com.lmpessoa.services.core.hosting.HttpInputStream;
+import com.lmpessoa.services.core.ContentType;
+import com.lmpessoa.services.core.HttpInputStream;
 import com.lmpessoa.services.core.internal.serializing.MultipartFormSerializer;
 
 public final class MultipartFormSerializerTest {

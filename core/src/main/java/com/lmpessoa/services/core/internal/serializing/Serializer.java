@@ -22,6 +22,10 @@
  */
 package com.lmpessoa.services.core.internal.serializing;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -31,12 +35,12 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
-import com.lmpessoa.services.core.hosting.ContentType;
+import com.lmpessoa.services.core.ContentType;
+import com.lmpessoa.services.core.HttpInputStream;
+import com.lmpessoa.services.core.InternalServerError;
+import com.lmpessoa.services.core.NotAcceptableException;
+import com.lmpessoa.services.core.UnsupportedMediaTypeException;
 import com.lmpessoa.services.core.hosting.Headers;
-import com.lmpessoa.services.core.hosting.HttpInputStream;
-import com.lmpessoa.services.core.hosting.InternalServerError;
-import com.lmpessoa.services.core.hosting.NotAcceptableException;
-import com.lmpessoa.services.core.hosting.UnsupportedMediaTypeException;
 import com.lmpessoa.services.util.ClassUtils;
 
 /**
@@ -126,6 +130,17 @@ public abstract class Serializer {
       }
    }
 
+   public static String getContentTypeFromExtension(String extension, Class<?> startupClass) {
+      String result = getMimeFromResourceIn(extension, Serializer.class);
+      if (result == null && startupClass != null) {
+         result = getMimeFromResourceIn(extension, startupClass);
+      }
+      if (result == null) {
+         result = ContentType.BINARY;
+      }
+      return result;
+   }
+
    protected <T> T read(byte[] content, Class<T> type, Map<String, String> contentType) {
       Charset charset = Charset.forName("UTF-8");
       if (contentType.containsKey("charset")) {
@@ -163,6 +178,26 @@ public abstract class Serializer {
       int modifiers = field.getModifiers();
       return Modifier.isStatic(modifiers) || Modifier.isTransient(modifiers)
                || Modifier.isVolatile(modifiers);
+   }
+
+   private static String getMimeFromResourceIn(String extension, Class<?> baseClass) {
+      // During tests, one file is copied over the other so we need this
+      String filename = baseClass == Serializer.class ? "/file.types" : "/mime.types";
+      try (InputStream mimes = baseClass.getResourceAsStream(filename)) {
+         BufferedReader br = new BufferedReader(new InputStreamReader(mimes));
+         String line;
+         while ((line = br.readLine()) != null) {
+            String[] lineParts = line.trim().split("\\s+");
+            for (int i = 1; i < lineParts.length; ++i) {
+               if (!lineParts[i].isEmpty() && lineParts[i].equals(extension)) {
+                  return lineParts[0].trim();
+               }
+            }
+         }
+      } catch (IOException e) {
+         // Should not happen but in any case...
+      }
+      return null;
    }
 
    private static Serializer instanceOf(String contentType, Locale... locales) {

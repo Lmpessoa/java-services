@@ -39,7 +39,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.lmpessoa.services.core.routing.QueryParam;
+import com.lmpessoa.services.core.Query;
 
 public final class RoutePatternParserTest {
 
@@ -61,7 +61,7 @@ public final class RoutePatternParserTest {
    public void methodToTest(@Min(7) int number,
       @Pattern(regexp = "[0-9a-f]+") @Size(max = 12) String hexNumber, UUID uuid,
       @Negative String numString, @Size(min = 7) long strNumber, @Null String nullValue,
-      @Null @QueryParam String nullQueryParam) {
+      @Null @Query String nullQueryParam) {
       // Nothing to do here
    }
 

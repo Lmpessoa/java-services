@@ -33,7 +33,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.lmpessoa.services.core.hosting.ContentType;
+import com.lmpessoa.services.core.ContentType;
 import com.lmpessoa.services.core.hosting.Headers;
 import com.lmpessoa.services.core.hosting.HttpRequest;
 

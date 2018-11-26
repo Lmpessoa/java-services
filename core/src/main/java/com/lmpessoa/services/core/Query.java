@@ -20,30 +20,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.hosting;
+package com.lmpessoa.services.core;
 
-import com.lmpessoa.services.core.internal.hosting.HttpException;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
 /**
- * Thrown when the target resource cannot be represented in a format accepted by the user agent.
+ * Identifies a method parameter whose value is retrieved from the HTTP request query string.
+ * <p>
+ * By default, values of parameters of exposed methods have their values retrieved from the request
+ * path (except for content parameters, which are parsed from the request body). However, parameters
+ * annotated with {@code Query} will have its values retrieved from the request query string
+ * instead.
+ * </p>
+ * <p>
+ * When using this annotation, developers might choose to provide the name of the query string
+ * parameter that will provide values to fill the annotated parameter. If this name is not present,
+ * it will attempt to read the query string value with the same name as the method parameter.
+ * </p>
  */
-public final class NotAcceptableException extends HttpException {
+@Target(PARAMETER)
+@Retention(RUNTIME)
+public @interface Query {
 
-   private static final long serialVersionUID = 1L;
-
-   /**
-    * Creates a new instance of {@code NotAcceptableException}.
-    */
-   public NotAcceptableException() {
-      super(406);
-   }
-
-   /**
-    * Creates a new instance of {@code NotAcceptableException} with the given detail message.
-    * 
-    * @param message the detail message.
-    */
-   public NotAcceptableException(String message) {
-      super(406, message);
-   }
+   String value() default "##default";
 }

@@ -20,30 +20,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.hosting;
+package com.lmpessoa.services.core;
 
 import com.lmpessoa.services.core.internal.hosting.HttpException;
 
 /**
- * Thrown when a non-identified user tries to access a protected resource method.
+ * Thrown when the target resource cannot be represented in a format accepted by the user agent.
  */
-public final class UnauthorizedException extends HttpException {
+public final class NotAcceptableException extends HttpException {
 
    private static final long serialVersionUID = 1L;
 
    /**
-    * Creates a new instance of {@code UnauthorizedException}.
+    * Creates a new instance of {@code NotAcceptableException}.
     */
-   public UnauthorizedException() {
-      super(401);
+   public NotAcceptableException() {
+      super(406);
    }
 
    /**
-    * Creates a new instance of {@code UnauthorizedException} with the given detail message.
-    *
+    * Creates a new instance of {@code NotAcceptableException} with the given detail message.
+    * 
     * @param message the detail message.
     */
-   public UnauthorizedException(String message) {
-      super(401, message);
+   public NotAcceptableException(String message) {
+      super(406, message);
    }
 }

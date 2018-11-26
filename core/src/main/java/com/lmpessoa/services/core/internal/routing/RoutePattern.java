@@ -42,11 +42,11 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import com.lmpessoa.services.core.hosting.HttpInputStream;
+import com.lmpessoa.services.core.HttpInputStream;
+import com.lmpessoa.services.core.Query;
+import com.lmpessoa.services.core.Route;
 import com.lmpessoa.services.core.internal.services.NoSingleMethodException;
 import com.lmpessoa.services.core.internal.services.ServiceMap;
-import com.lmpessoa.services.core.routing.QueryParam;
-import com.lmpessoa.services.core.routing.Route;
 import com.lmpessoa.services.util.parsing.ITemplatePart;
 import com.lmpessoa.services.util.parsing.IVariablePart;
 import com.lmpessoa.services.util.parsing.LiteralPart;
@@ -204,7 +204,7 @@ final class RoutePattern implements Comparable<RoutePattern> {
    static RoutePattern build(RoutePattern resource, Method method) throws ParseException {
       List<Parameter> paramList = new ArrayList<>();
       Arrays.stream(method.getParameters()) //
-               .filter(p -> !p.isAnnotationPresent(QueryParam.class))
+               .filter(p -> !p.isAnnotationPresent(Query.class))
                .forEach(paramList::add);
       Class<?> contentParamType = null;
       if (!paramList.isEmpty()) {

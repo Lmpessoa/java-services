@@ -40,9 +40,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import com.lmpessoa.services.core.Route;
 import com.lmpessoa.services.core.internal.services.NoSingleMethodException;
 import com.lmpessoa.services.core.internal.services.ServiceMap;
-import com.lmpessoa.services.core.routing.Route;
 import com.lmpessoa.services.test.services.Singleton;
 import com.lmpessoa.services.test.services.SingletonImpl;
 import com.lmpessoa.services.util.parsing.TypeMismatchException;

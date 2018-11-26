@@ -33,12 +33,17 @@ import static org.mockito.Mockito.mock;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Locale;
 
 import javax.validation.Valid;
@@ -49,26 +54,26 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import com.lmpessoa.services.core.ContentType;
+import com.lmpessoa.services.core.HttpInputStream;
+import com.lmpessoa.services.core.NotImplementedException;
+import com.lmpessoa.services.core.Patch;
+import com.lmpessoa.services.core.Post;
+import com.lmpessoa.services.core.Query;
+import com.lmpessoa.services.core.Redirect;
+import com.lmpessoa.services.core.Route;
 import com.lmpessoa.services.core.hosting.ApplicationServer;
 import com.lmpessoa.services.core.hosting.ConnectionInfo;
-import com.lmpessoa.services.core.hosting.ContentType;
 import com.lmpessoa.services.core.hosting.Headers;
-import com.lmpessoa.services.core.hosting.HttpInputStream;
 import com.lmpessoa.services.core.hosting.HttpRequest;
 import com.lmpessoa.services.core.hosting.IApplicationInfo;
-import com.lmpessoa.services.core.hosting.NotImplementedException;
-import com.lmpessoa.services.core.hosting.Redirect;
+import com.lmpessoa.services.core.internal.Constants;
 import com.lmpessoa.services.core.internal.routing.MatchedRouteBridge;
 import com.lmpessoa.services.core.internal.routing.RouteTable;
 import com.lmpessoa.services.core.internal.serializing.Serializer;
 import com.lmpessoa.services.core.internal.services.ServiceMap;
 import com.lmpessoa.services.core.internal.validating.ValidationService;
-import com.lmpessoa.services.core.routing.HttpGet;
 import com.lmpessoa.services.core.routing.HttpMethod;
-import com.lmpessoa.services.core.routing.HttpPatch;
-import com.lmpessoa.services.core.routing.HttpPost;
-import com.lmpessoa.services.core.routing.QueryParam;
-import com.lmpessoa.services.core.routing.Route;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.services.HealthStatus;
 import com.lmpessoa.services.core.services.IHealthProvider;
@@ -97,6 +102,12 @@ public final class FullResponderTest {
       connect = new ConnectionInfo(socket, "https://lmpessoa.com/");
    }
 
+   public static String readAll(InputStream is) throws IOException {
+      byte[] data = new byte[is.available()];
+      is.read(data);
+      return new String(data, Charset.forName("UTF-8"));
+   }
+
    @Before
    public void setup() {
       Serializer.enableXml(false);
@@ -113,12 +124,6 @@ public final class FullResponderTest {
 
       routes = app.getRoutes();
       routes.put("", TestResource.class);
-   }
-
-   public static String readAll(InputStream is) throws IOException {
-      byte[] data = new byte[is.available()];
-      is.read(data);
-      return new String(data, Charset.forName("UTF-8"));
    }
 
    @Test
@@ -353,8 +358,7 @@ public final class FullResponderTest {
       String content = readAll(result.getInputStream());
       assertEquals("{\"errors\":[{\"path\":\"content\"," //
                + "\"message\":\"unexpected content type\","
-               + "\"invalidValue\":\"<com.lmpessoa.services.core.hosting.HttpInputStream>\"}]}",
-               content);
+               + "\"invalidValue\":\"<com.lmpessoa.services.core.HttpInputStream>\"}]}", content);
    }
 
    @Test
@@ -417,6 +421,27 @@ public final class FullResponderTest {
                "\\{\"app\":\"fullResponderTest\",\"status\":\"PARTIAL\",\"services\":\\{\"db\":\"FAILED\"},\"uptime\":\\d+,\"memory\":\\d+}"));
    }
 
+   @Test
+   public void testMediatorWithFileToHttpInputStream() throws IOException, URISyntaxException {
+      HttpResult result = perform(GET, "/test/file");
+      assertEquals(200, result.getStatusCode());
+      assertNotNull(result.getInputStream());
+      assertEquals("random/test", result.getInputStream().getType());
+      assertEquals("sample.random", result.getInputStream().getFilename());
+      File file = new File(FullResponderTest.class.getResource("/static/sample.random").toURI());
+      ZonedDateTime fileTime = Instant.ofEpochMilli(file.lastModified())
+               .atZone(ZoneId.systemDefault());
+      assertEquals(fileTime, result.getInputStream().getDate());
+      fileTime = fileTime.withZoneSameInstant(ZoneId.of("GMT"));
+      String fileTimeStr = result.getHeaders()
+               .stream()
+               .filter(h -> h.getKey().equals(Headers.DATE))
+               .map(h -> h.getValue())
+               .findFirst()
+               .orElse(null);
+      assertEquals(Constants.RFC_7231_DATE_TIME.format(fileTime), fileTimeStr);
+   }
+
    private HttpResult perform(String path) throws IOException {
       return perform(GET, path);
    }
@@ -468,88 +493,69 @@ public final class FullResponderTest {
 
    public static class TestResource {
 
-      @HttpGet
-      @Route("string")
       public String string() {
          return "Test";
       }
 
-      @HttpGet
-      @Route("empty")
       public void empty() {
          // Test method, does nothing
       }
 
-      @HttpGet
       @Route("impl")
       public void notimpl() {
          throw new NotImplementedException();
       }
 
-      @HttpGet
-      @Route("error")
       public void error() {
          throw new IllegalStateException("Test");
       }
 
-      @HttpGet
-      @Route("object")
       public TestObject object() {
          return new TestObject(12, "Test");
       }
 
-      @HttpPost
-      @Route("object")
+      @Post
       public int object(TestObject value) {
          return value.id;
       }
 
-      @HttpPatch
-      @Route("invalid")
+      @Patch
       public void invalid(@Valid InvalidTestObject value) {
          // Nothing to do here
       }
 
-      @HttpGet
-      @Route("binary")
       public byte[] binary() {
          return "Test".getBytes();
       }
 
-      @HttpGet
-      @Route("typed")
       @ContentType(ContentType.YAML)
       public byte[] typed() {
          return "Test".getBytes();
       }
 
-      @HttpGet
-      @Route("result")
       @ContentType(ContentType.ATOM)
       public InputStream result() {
          return new HttpInputStream("Test".getBytes(), ContentType.YAML);
       }
 
-      @HttpGet
-      @Route("redirect")
+      public InputStream file() throws URISyntaxException, FileNotFoundException {
+         URI uri = FullResponderTest.class.getResource("/static/sample.random").toURI();
+         return new HttpInputStream(new File(uri));
+      }
+
       public Redirect redirect() {
          return Redirect.to("/test/7");
       }
 
-      @HttpGet
-      @Route("query")
-      public String query(@QueryParam int id) {
+      public String query(@Query int id) {
          return String.valueOf(id);
       }
 
-      @HttpGet
-      @Route("catchall/{0}")
       public String catchall(String... path) {
          return "'" + String.join("', '", path) + "'";
       }
 
-      @HttpPost
-      @Route("stream")
+      @Post
       public String stream(@ContentType(ContentType.YAML) InputStream content) throws IOException {
          return readAll(content);
       }

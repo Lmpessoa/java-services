@@ -31,10 +31,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.lmpessoa.services.core.hosting.BadRequestException;
+import com.lmpessoa.services.core.BadRequestException;
+import com.lmpessoa.services.core.HttpInputStream;
+import com.lmpessoa.services.core.InternalServerError;
 import com.lmpessoa.services.core.hosting.Headers;
-import com.lmpessoa.services.core.hosting.HttpInputStream;
-import com.lmpessoa.services.core.hosting.InternalServerError;
 import com.lmpessoa.services.util.ClassUtils;
 
 final class MultipartFormSerializer extends Serializer {

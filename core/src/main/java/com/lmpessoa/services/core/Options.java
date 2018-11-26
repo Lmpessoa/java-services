@@ -20,36 +20,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.hosting;
+package com.lmpessoa.services.core;
+
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
 /**
- * Thrown when an internal server error has happened.
+ * Identifies a method that responds for an HTTP <code>OPTIONS</code> request.
  *
  * <p>
- * Any exception other than <code>HttpException</code>s can be thrown from any resource method.
- * These will be understood by the engine as if an internal server error has happened and are
- * wrapped in an instance of this class.
+ * Methods annotated with this will override the default behaviour of the engine, which is to
+ * identify the HTTP method from the name of the method.
+ * </p>
+ *
+ * <p>
+ * A method can be combined with others HTTP method annotations, thus a method can respond to more
+ * than one HTTP method request.
  * </p>
  */
-public final class InternalServerError extends Error {
-
-   private static final long serialVersionUID = 1L;
-
-   /**
-    * Creates a new <code>InternalServerException</code> with the given detail message.
-    *
-    * @param message the detail message.
-    */
-   public InternalServerError(String message) {
-      super(message);
-   }
-
-   /**
-    * Creates a new <code>InternalServerException</code> with the given cause.
-    *
-    * @param cause the cause.
-    */
-   public InternalServerError(Throwable cause) {
-      super(cause);
-   }
-}
+@Target(METHOD)
+@Retention(RUNTIME)
+public @interface Options {}

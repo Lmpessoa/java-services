@@ -32,9 +32,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.lmpessoa.services.core.hosting.ForbiddenException;
+import com.lmpessoa.services.core.ForbiddenException;
+import com.lmpessoa.services.core.UnauthorizedException;
 import com.lmpessoa.services.core.hosting.NextResponder;
-import com.lmpessoa.services.core.hosting.UnauthorizedException;
 import com.lmpessoa.services.core.internal.services.ServiceMap;
 import com.lmpessoa.services.core.routing.RouteMatch;
 import com.lmpessoa.services.core.security.AllowAnonymous;

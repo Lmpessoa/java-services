@@ -22,8 +22,7 @@
  */
 package com.lmpessoa.services.test.resources;
 
-import com.lmpessoa.services.core.routing.HttpGet;
-import com.lmpessoa.services.core.routing.Route;
+import com.lmpessoa.services.core.Route;
 
 public final class IndexResource {
 
@@ -31,7 +30,6 @@ public final class IndexResource {
       // Test method, does nothing
    }
 
-   @HttpGet
    @Route("test")
    public void test() {
       // Test method, does nothing

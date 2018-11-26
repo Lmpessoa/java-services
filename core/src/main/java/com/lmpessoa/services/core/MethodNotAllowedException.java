@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Leonardo Pessoa
+ * Copyright (c) 2017 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,30 +20,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.hosting;
+package com.lmpessoa.services.core;
 
 import com.lmpessoa.services.core.internal.hosting.HttpException;
+import com.lmpessoa.services.core.routing.RouteMatch;
 
 /**
- * Thrown when the requested resource was not modified since the previous client request.
+ * Thrown when the requested resource exists but is not allow to respond to the requested method.
  */
-public final class NotModifiedException extends HttpException {
+public final class MethodNotAllowedException extends HttpException implements RouteMatch {
 
    private static final long serialVersionUID = 1L;
 
    /**
-    * Creates a new <code>NotModifiedException</code>.
+    * Creates a new <code>MethodNotAllowedException</code>.
     */
-   public NotModifiedException() {
-      super(304);
+   public MethodNotAllowedException() {
+      super(405);
    }
 
    /**
-    * Creates a new <code>NotModifiedException</code> with the given detail message.
+    * Creates a new <code>MethodNotAllowedException</code> with the given detail message.
     *
     * @param message the detail message.
     */
-   public NotModifiedException(String message) {
-      super(304, message);
+   public MethodNotAllowedException(String message) {
+      super(405, message);
+   }
+
+   @Override
+   public Object invoke() {
+      throw this;
    }
 }

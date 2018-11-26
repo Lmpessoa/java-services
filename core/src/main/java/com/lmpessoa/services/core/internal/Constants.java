@@ -20,31 +20,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.routing;
+package com.lmpessoa.services.core.internal;
 
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import java.time.format.DateTimeFormatter;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+public final class Constants {
 
-/**
- * Identifies a method parameter whose value is retrieved from the HTTP request query string.
- * <p>
- * By default, values of parameters of exposed methods have their values retrieved from the request
- * path (except for content parameters, which are parsed from the request body). However, parameters
- * annotated with {@code QueryParam} will have its values retrieved from the request query string
- * instead.
- * </p>
- * <p>
- * When using this annotation, developers might choose to provide the name of the query string
- * parameter that will provide values to fill the annotated parameter. If this name is not present,
- * it will attempt to read the query string value with the same name as the method parameter.
- * </p>
- */
-@Target(PARAMETER)
-@Retention(RUNTIME)
-public @interface QueryParam {
+   // RFC 7231 estabilishes (https://tools.ietf.org/html/rfc7231#section-7.1.1.1) dates must have
+   // 2 digits while RFC 1123 produces dates with one digit
+   public static final DateTimeFormatter RFC_7231_DATE_TIME = DateTimeFormatter
+            .ofPattern("EEE, dd MMM yyyy HH:mm:ss O");
 
-   String value() default "";
+   private Constants() {
+      // Nothing to do here
+   }
 }

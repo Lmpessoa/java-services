@@ -20,36 +20,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.hosting;
-
-import com.lmpessoa.services.core.internal.hosting.HttpException;
-import com.lmpessoa.services.core.routing.RouteMatch;
+package com.lmpessoa.services.core;
 
 /**
- * Thrown when the requested resource exists but is not allow to respond to the requested method.
+ * Thrown when an internal server error has happened.
+ *
+ * <p>
+ * Any exception other than <code>HttpException</code>s can be thrown from any resource method.
+ * These will be understood by the engine as if an internal server error has happened and are
+ * wrapped in an instance of this class.
+ * </p>
  */
-public final class MethodNotAllowedException extends HttpException implements RouteMatch {
+public final class InternalServerError extends Error {
 
    private static final long serialVersionUID = 1L;
 
    /**
-    * Creates a new <code>MethodNotAllowedException</code>.
-    */
-   public MethodNotAllowedException() {
-      super(405);
-   }
-
-   /**
-    * Creates a new <code>MethodNotAllowedException</code> with the given detail message.
+    * Creates a new <code>InternalServerException</code> with the given detail message.
     *
     * @param message the detail message.
     */
-   public MethodNotAllowedException(String message) {
-      super(405, message);
+   public InternalServerError(String message) {
+      super(message);
    }
 
-   @Override
-   public Object invoke() {
-      throw this;
+   /**
+    * Creates a new <code>InternalServerException</code> with the given cause.
+    *
+    * @param cause the cause.
+    */
+   public InternalServerError(Throwable cause) {
+      super(cause);
    }
 }

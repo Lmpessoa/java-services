@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,27 +20,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.core.routing;
+package com.lmpessoa.services.core;
 
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import com.lmpessoa.services.core.internal.hosting.HttpException;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+public final class UnavailableForLegalReasonsException extends HttpException {
 
-/**
- * Identifies a method that responds for an HTTP <code>PUT</code> request.
- *
- * <p>
- * Methods annotated with this will override the default behaviour of the engine, which is to
- * identify the HTTP method from the name of the method.
- * </p>
- *
- * <p>
- * A method can be combined with others HTTP method annotations, thus a method can respond to more
- * than one HTTP method request.
- * </p>
- */
-@Target(METHOD)
-@Retention(RUNTIME)
-public @interface HttpPut {}
+   private static final long serialVersionUID = 1L;
+
+   UnavailableForLegalReasonsException(String message) {
+      super(451, message);
+   }
+
+   public UnavailableForLegalReasonsException(Throwable throwable) {
+      super(451, throwable);
+   }
+}
