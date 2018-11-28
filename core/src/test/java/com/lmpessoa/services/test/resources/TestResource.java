@@ -22,7 +22,7 @@
  */
 package com.lmpessoa.services.test.resources;
 
-import com.lmpessoa.services.util.logging.ILogger;
+import com.lmpessoa.services.logging.ILogger;
 
 public class TestResource {
 

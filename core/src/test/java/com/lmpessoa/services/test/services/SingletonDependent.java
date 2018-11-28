@@ -22,9 +22,9 @@
  */
 package com.lmpessoa.services.test.services;
 
-import static com.lmpessoa.services.core.services.Reuse.NEVER;
+import static com.lmpessoa.services.services.Reuse.NEVER;
 
-import com.lmpessoa.services.core.services.Service;
+import com.lmpessoa.services.services.Service;
 
 @Service(reuse = NEVER)
 public class SingletonDependent {

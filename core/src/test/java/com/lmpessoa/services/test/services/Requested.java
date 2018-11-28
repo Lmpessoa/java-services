@@ -22,9 +22,9 @@
  */
 package com.lmpessoa.services.test.services;
 
-import static com.lmpessoa.services.core.services.Reuse.REQUEST;
+import static com.lmpessoa.services.services.Reuse.REQUEST;
 
-import com.lmpessoa.services.core.services.Service;
+import com.lmpessoa.services.services.Service;
 
 @Service(reuse = REQUEST)
 public interface Requested {

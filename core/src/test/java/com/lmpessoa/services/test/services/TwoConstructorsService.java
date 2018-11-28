@@ -22,9 +22,9 @@
  */
 package com.lmpessoa.services.test.services;
 
-import static com.lmpessoa.services.core.services.Reuse.ALWAYS;
+import static com.lmpessoa.services.services.Reuse.ALWAYS;
 
-import com.lmpessoa.services.core.services.Service;
+import com.lmpessoa.services.services.Service;
 
 @Service(reuse = ALWAYS)
 public class TwoConstructorsService {

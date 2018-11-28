@@ -22,7 +22,7 @@
  */
 package com.lmpessoa.services.test.resources;
 
-import com.lmpessoa.services.core.Route;
+import com.lmpessoa.services.Route;
 
 public final class IndexResource {
 

@@ -22,7 +22,7 @@
  */
 package com.lmpessoa.services.test.resources;
 
-import com.lmpessoa.services.core.NotPublished;
+import com.lmpessoa.services.NotPublished;
 
 @NotPublished
 public class AbstractResource {
