@@ -1,0 +1,14 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+   <modelVersion>4.0.0</modelVersion>
+   <parent>
+      <groupId>com.lmpessoa.services</groupId>
+      <artifactId>parent</artifactId>
+      <version>1.0.0</version>
+   </parent>
+   <artifactId>views-api</artifactId>
+
+   <name>Java Services: Views API</name>
+   <description>A common API used by template renderers in an application that uses the Views module</description>
+</project>
