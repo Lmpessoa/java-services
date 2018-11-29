@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
  *
  * <p>
  * Classes implementing a renderization engine must implements this interface in order to be used as
- * renderization engines for the Leeow:Views module.
+ * renderization engines for the Views module.
  * </p>
  *
  * @param <T> the actual type of the template produced by the engine.

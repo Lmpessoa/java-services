@@ -23,7 +23,7 @@ Although it is possible to use it without Maven, it was designed to be more easi
    <dependency>
       <groupId>com.lmpessoa.services</groupId>
       <artifactId>core</artifactId>
-      <version>1.0</version>
+      <version>1.0.0</version>
    </dependency>
    ...
 ```
@@ -33,12 +33,12 @@ After your dependencies are updated, all you need to do is start the application
 ```java
 package com.example;
 
-import com.lmpessoa.services.core.Application;
+import com.lmpessoa.services.ApplicationServer;
 
 public class SampleMicroservice {
 
    public static void main(String[] args) {
-      Application.startWith(args);
+      ApplicationServer.start();
    }
 }
 ```
@@ -78,5 +78,3 @@ That’s just it! Now go write some services yourself!
 This project originally used a different name/namespace for which I no longer maintain the domain. Since the project has never been published before, it was my decision to change the namespace from the very first commit in order to use only the current namespace. The multiple projects that form the entire framework have also been merged into one single repository, even thou it is not best practice, in order to facilitate this migration and possible future maintenance of the project.
 
 Since this is an open source project under MIT, anyone is entitled to do whatever they please from this project including but not limited to use it on your own projects or derive into a new project, even replacing the base package name if you please, as long as the original authorship of the project is retained.
-
-The original commit date this change is:   Sun Aug 26 13:48:47 2018 -0300
