@@ -28,7 +28,6 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import com.lmpessoa.services.internal.ClassUtils;
 import com.lmpessoa.services.logging.Severity;
 
 public class ClassUtilsTest {

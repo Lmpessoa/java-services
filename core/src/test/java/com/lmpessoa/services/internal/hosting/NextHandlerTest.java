@@ -32,8 +32,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.lmpessoa.services.hosting.NextResponder;
-import com.lmpessoa.services.internal.hosting.ApplicationOptions;
-import com.lmpessoa.services.internal.hosting.NextResponderImpl;
 import com.lmpessoa.services.internal.services.ServiceMap;
 import com.lmpessoa.services.services.Service;
 

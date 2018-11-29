@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Locale;
 
+import com.lmpessoa.services.Query;
 import com.lmpessoa.services.routing.HttpMethod;
 import com.lmpessoa.services.services.Service;
 

@@ -43,7 +43,7 @@ import com.lmpessoa.services.BadRequestException;
 import com.lmpessoa.services.hosting.HeaderMap;
 import com.lmpessoa.services.hosting.Headers;
 import com.lmpessoa.services.hosting.HttpRequest;
-import com.lmpessoa.services.internal.ErrorMessage;
+import com.lmpessoa.services.internal.CoreMessage;
 import com.lmpessoa.services.routing.HttpMethod;
 
 final class HttpRequestImpl implements HttpRequest {
@@ -169,7 +169,8 @@ final class HttpRequestImpl implements HttpRequest {
       while ((headerLine = readLine(clientStream)) != null && !headerLine.isEmpty()) {
          String[] head = headerLine.split(":", 2);
          if (head.length != 2) {
-            throw new BadRequestException(ErrorMessage.ILLEGAL_HEADER_LINE.with(headerLine));
+            throw new BadRequestException(null, null,
+                     CoreMessage.ILLEGAL_HEADER_LINE.with(headerLine));
          }
          String headerName = Headers.normalise(head[0]);
          if (!headerMap.containsKey(headerName)) {

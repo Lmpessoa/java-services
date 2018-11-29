@@ -40,7 +40,7 @@ import java.util.function.Supplier;
 
 import com.lmpessoa.services.hosting.ConnectionInfo;
 import com.lmpessoa.services.internal.ClassUtils;
-import com.lmpessoa.services.internal.ErrorMessage;
+import com.lmpessoa.services.internal.CoreMessage;
 import com.lmpessoa.services.logging.Handler;
 import com.lmpessoa.services.logging.ILogger;
 import com.lmpessoa.services.logging.LogEntry;
@@ -162,14 +162,14 @@ public final class Logger implements ILogger {
 
    public <T> void addSupplier(Class<T> type, Supplier<T> supplier) {
       if (suppliers.containsKey(Objects.requireNonNull(type))) {
-         throw new IllegalArgumentException(ErrorMessage.SUPPLIER_DEFINED.with(type.getName()));
+         throw new IllegalArgumentException(CoreMessage.SUPPLIER_DEFINED.with(type.getName()));
       }
       suppliers.put(type, Objects.requireNonNull(supplier));
    }
 
    public <T> void addVariable(String name, Class<T> type, Function<T, String> func) {
       if (variables.containsKey(name)) {
-         throw new IllegalArgumentException(ErrorMessage.VARIABLE_DEFINED.with(name));
+         throw new IllegalArgumentException(CoreMessage.VARIABLE_DEFINED.with(name));
       }
       variables.put(name, new VariableInfo(Objects.requireNonNull(type), //
                Objects.requireNonNull(func)));

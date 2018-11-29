@@ -59,8 +59,6 @@ import com.lmpessoa.services.Query;
 import com.lmpessoa.services.Route;
 import com.lmpessoa.services.hosting.HttpRequest;
 import com.lmpessoa.services.internal.hosting.HttpRequestBuilder;
-import com.lmpessoa.services.internal.routing.MatchedRoute;
-import com.lmpessoa.services.internal.routing.RouteTable;
 import com.lmpessoa.services.internal.services.ServiceMap;
 import com.lmpessoa.services.internal.validating.ValidationService;
 import com.lmpessoa.services.routing.RouteMatch;
@@ -363,15 +361,15 @@ public final class RouteTableMatcherTest {
    public void testMatchesWithWrongQueryParam() throws NoSuchMethodException, IOException {
       thrown.expect(BadRequestException.class);
       HttpRequest request = new HttpRequestBuilder().setPath("/test/query/12")
-               .setQueryString("type=class")
+               .setQueryString("id=class")
                .build();
       RouteMatch result = table.matches(request);
-      assertTrue(result instanceof MatchedRoute);
-      MatchedRoute route = (MatchedRoute) result;
-      assertEquals(TestResource.class, route.getResourceClass());
-      assertEquals(TestResource.class.getMethod("getNew", int.class, int.class), route.getMethod());
-      assertArrayEquals(new Object[] { 12, null }, route.getMethodArgs());
-      route.invoke();
+      assertTrue(result instanceof BadRequestException);
+      BadRequestException exception = (BadRequestException) result;
+      assertEquals(TestResource.class, exception.getResourceClass());
+      assertEquals(TestResource.class.getMethod("getNew", int.class, int.class),
+               exception.getMethod());
+      exception.invoke();
    }
 
    @Test

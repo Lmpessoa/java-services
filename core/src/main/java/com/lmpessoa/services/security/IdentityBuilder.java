@@ -34,7 +34,7 @@ import java.util.Objects;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
-import com.lmpessoa.services.internal.ErrorMessage;
+import com.lmpessoa.services.internal.CoreMessage;
 
 /**
  * Helps creating an identity instance.
@@ -110,7 +110,7 @@ public final class IdentityBuilder {
 
    public IdentityBuilder compareUsing(String issuer, String claimType) {
       if (!claimType.matches("([a-z][a-z0-9]*:)+claim:[a-z][a-z0-9]*")) {
-         throw new IllegalArgumentException(ErrorMessage.INVALID_CLAIM_TYPE.with(claimType));
+         throw new IllegalArgumentException(CoreMessage.INVALID_CLAIM_TYPE.with(claimType));
       }
       this.comparer = (i1, i2) -> claimEquals(i1, i2, issuer, claimType);
       return this;

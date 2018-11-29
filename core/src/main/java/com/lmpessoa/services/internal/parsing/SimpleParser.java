@@ -25,7 +25,7 @@ package com.lmpessoa.services.internal.parsing;
 import java.util.List;
 import java.util.Objects;
 
-import com.lmpessoa.services.internal.ErrorMessage;
+import com.lmpessoa.services.internal.CoreMessage;
 
 /**
  * A simple parser.
@@ -65,7 +65,7 @@ public final class SimpleParser extends AbstractParser<SimpleVariablePart> {
    @Override
    protected SimpleVariablePart parseVariable(int pos, String variablePart) {
       if (!variablePart.matches(variablePattern)) {
-         throw new ParseException(ErrorMessage.INVALID_VARIABLE_NAME.with(variablePart), pos);
+         throw new ParseException(CoreMessage.INVALID_VARIABLE_NAME.with(variablePart), pos);
       }
       return new SimpleVariablePart(variablePart);
    }

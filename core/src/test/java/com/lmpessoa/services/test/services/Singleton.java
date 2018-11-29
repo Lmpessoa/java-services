@@ -27,6 +27,4 @@ import static com.lmpessoa.services.services.Reuse.ALWAYS;
 import com.lmpessoa.services.services.Service;
 
 @Service(reuse = ALWAYS)
-public interface Singleton {
-
-}
+public interface Singleton {}

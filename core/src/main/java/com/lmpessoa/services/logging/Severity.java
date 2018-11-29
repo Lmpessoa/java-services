@@ -25,8 +25,6 @@ package com.lmpessoa.services.logging;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-import com.lmpessoa.services.logging.LogEntry;
-
 /**
  * Defines the level of severity for event logs.
  * <p>

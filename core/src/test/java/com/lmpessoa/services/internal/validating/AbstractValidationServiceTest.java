@@ -40,8 +40,8 @@ import com.lmpessoa.services.test.validating.Book;
 import com.lmpessoa.services.test.validating.Category;
 import com.lmpessoa.services.test.validating.Library;
 import com.lmpessoa.services.validating.ErrorSet;
-import com.lmpessoa.services.validating.IValidationService;
 import com.lmpessoa.services.validating.ErrorSet.Entry;
+import com.lmpessoa.services.validating.IValidationService;
 
 public abstract class AbstractValidationServiceTest {
 

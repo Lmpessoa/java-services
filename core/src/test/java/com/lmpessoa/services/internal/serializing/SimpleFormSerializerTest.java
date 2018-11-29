@@ -34,7 +34,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import com.lmpessoa.services.internal.hosting.InternalServerError;
-import com.lmpessoa.services.internal.serializing.SimpleFormSerializer;
 
 public final class SimpleFormSerializerTest {
 

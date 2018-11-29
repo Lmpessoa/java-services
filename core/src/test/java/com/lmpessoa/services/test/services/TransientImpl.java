@@ -22,6 +22,4 @@
  */
 package com.lmpessoa.services.test.services;
 
-public class TransientImpl implements Transient {
-
-}
+public class TransientImpl implements Transient {}

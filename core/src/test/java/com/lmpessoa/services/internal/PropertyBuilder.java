@@ -26,8 +26,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.lmpessoa.services.internal.Property;
-
 public class PropertyBuilder {
 
    private final Map<String, String> values = new HashMap<>();

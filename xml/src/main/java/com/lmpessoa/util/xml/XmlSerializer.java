@@ -24,5 +24,6 @@ package com.lmpessoa.util.xml;
 
 public interface XmlSerializer<T> {
 
-   public XmlElement serialize(T src, Class<? extends T> classOfSrc, XmlSerializationContext context);
+   public XmlElement serialize(T src, Class<? extends T> classOfSrc,
+      XmlSerializationContext context);
 }

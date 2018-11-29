@@ -1,4 +1,4 @@
-GET /test/query?type=class HTTP/1.1
+GET /test/query?id=class HTTP/1.1
 Host: rsid.112.2o7.net
 Keep-Alive: timeout=15
 Connection: Keep-Alive

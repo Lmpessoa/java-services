@@ -38,7 +38,6 @@ import java.util.concurrent.TimeoutException;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.lmpessoa.services.internal.concurrent.ExecutionService;
 import com.lmpessoa.services.internal.logging.Logger;
 import com.lmpessoa.services.logging.ILogger;
 import com.lmpessoa.services.logging.NullHandler;

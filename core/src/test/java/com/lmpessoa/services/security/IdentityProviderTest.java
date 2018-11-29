@@ -32,10 +32,6 @@ import org.junit.Test;
 import com.lmpessoa.services.hosting.Headers;
 import com.lmpessoa.services.hosting.HttpRequest;
 import com.lmpessoa.services.internal.hosting.HttpRequestBuilder;
-import com.lmpessoa.services.security.Claim;
-import com.lmpessoa.services.security.IIdentity;
-import com.lmpessoa.services.security.IIdentityProvider;
-import com.lmpessoa.services.security.IdentityBuilder;
 
 public class IdentityProviderTest {
 

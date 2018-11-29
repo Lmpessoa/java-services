@@ -41,8 +41,6 @@ import com.lmpessoa.services.NotFoundException;
 import com.lmpessoa.services.hosting.HttpRequest;
 import com.lmpessoa.services.hosting.IApplicationInfo;
 import com.lmpessoa.services.hosting.NextResponder;
-import com.lmpessoa.services.internal.hosting.ApplicationOptions;
-import com.lmpessoa.services.internal.hosting.StaticResponder;
 import com.lmpessoa.services.routing.HttpMethod;
 import com.lmpessoa.services.routing.RouteMatch;
 

@@ -40,8 +40,6 @@ import org.junit.rules.ExpectedException;
 
 import com.lmpessoa.services.Query;
 import com.lmpessoa.services.internal.parsing.ParseException;
-import com.lmpessoa.services.internal.routing.RoutePatternParser;
-import com.lmpessoa.services.internal.routing.VariableRoutePart;
 
 public final class RoutePatternParserTest {
 

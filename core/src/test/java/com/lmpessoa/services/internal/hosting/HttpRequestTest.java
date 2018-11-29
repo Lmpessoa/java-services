@@ -36,9 +36,6 @@ import org.junit.rules.ExpectedException;
 import com.lmpessoa.services.ContentType;
 import com.lmpessoa.services.hosting.Headers;
 import com.lmpessoa.services.hosting.HttpRequest;
-import com.lmpessoa.services.internal.hosting.HttpRequestImpl;
-import com.lmpessoa.services.internal.hosting.LengthRequiredException;
-import com.lmpessoa.services.internal.hosting.PayloadTooLargeException;
 
 public final class HttpRequestTest {
 

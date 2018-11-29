@@ -60,7 +60,7 @@ final class MatchedRoute implements RouteMatch {
 
       ErrorSet errors = validator.validateParameters(resource, method, methodArgs);
       if (!errors.isEmpty()) {
-         throw new BadRequestException(errors);
+         throw new BadRequestException(resourceClass, method, errors);
       }
 
       Object result = invokeMethod(resource);
@@ -161,7 +161,7 @@ final class MatchedRoute implements RouteMatch {
          }
          throw new InternalServerError(e.getCause());
       } catch (IllegalArgumentException e) {
-         throw new BadRequestException(e);
+         throw new BadRequestException(resourceClass, method, e);
       } catch (Exception e) {
          throw new InternalServerError(e);
       }

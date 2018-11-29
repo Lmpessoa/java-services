@@ -92,7 +92,7 @@ final class ApplicationRequestJob implements Runnable {
             output.flush();
          }
       } catch (Exception e) {
-         log.error(e);
+         log.debug(e);
       }
    }
 

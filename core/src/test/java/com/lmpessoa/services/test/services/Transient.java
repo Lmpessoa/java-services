@@ -27,6 +27,4 @@ import static com.lmpessoa.services.services.Reuse.NEVER;
 import com.lmpessoa.services.services.Service;
 
 @Service(reuse = NEVER)
-public interface Transient {
-
-}
+public interface Transient {}

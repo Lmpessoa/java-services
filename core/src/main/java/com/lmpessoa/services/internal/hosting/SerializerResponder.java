@@ -56,7 +56,7 @@ import com.lmpessoa.services.hosting.Headers;
 import com.lmpessoa.services.hosting.HttpRequest;
 import com.lmpessoa.services.hosting.NextResponder;
 import com.lmpessoa.services.internal.ClassUtils;
-import com.lmpessoa.services.internal.ErrorMessage;
+import com.lmpessoa.services.internal.CoreMessage;
 import com.lmpessoa.services.internal.serializing.Serializer;
 import com.lmpessoa.services.logging.ILogger;
 import com.lmpessoa.services.routing.RouteMatch;
@@ -251,7 +251,7 @@ final class SerializerResponder {
                && method.isAnnotationPresent(ContentType.class)) {
          String[] types = method.getAnnotation(ContentType.class).value();
          if (types.length != 1) {
-            throw new IllegalStateException(ErrorMessage.SERIALIZE_CONTENT_TYPE.get());
+            throw new IllegalStateException(CoreMessage.SERIALIZE_CONTENT_TYPE.get());
          }
          contentType = types[0];
       } else if (serialised instanceof String) {
@@ -293,7 +293,7 @@ final class SerializerResponder {
       if (method != null && method.isAnnotationPresent(ContentType.class)) {
          String[] types = method.getAnnotation(ContentType.class).value();
          if (types.length != 1) {
-            throw new IllegalStateException(ErrorMessage.SERIALIZE_CONTENT_TYPE.get());
+            throw new IllegalStateException(CoreMessage.SERIALIZE_CONTENT_TYPE.get());
          }
          String contentType = types[0];
          Map<String, String> ctypeMap = Headers.split(contentType);

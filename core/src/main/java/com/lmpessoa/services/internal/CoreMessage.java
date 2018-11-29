@@ -26,7 +26,7 @@ import java.util.Locale;
 
 import com.lmpessoa.services.Localized;
 
-public final class ErrorMessage {
+public final class CoreMessage {
 
    private static final Localized.MessageSet MESSAGES = Localized
             .messagesAt("messages/ExceptionMessages.properties", Locale.getDefault());
@@ -103,6 +103,8 @@ public final class ErrorMessage {
             .get("com.lmpessoa.services.internal.parsing.unexpectedend");
    public static final Localized.Message INVALID_VARIABLE_NAME = MESSAGES
             .get("com.lmpessoa.services.internal.parsing.invalidvariable");
+   public static final Localized.Message NO_DELIMITERS = MESSAGES
+            .get("com.lmpessoa.services.internal.parsing.nodelimiters");
 
    // com.lmpessoa.services.internal.routing
    public static final Localized.Message INVALID_AREA_PATH = MESSAGES
@@ -183,7 +185,7 @@ public final class ErrorMessage {
    public static final Localized.Message INVALID_FILE = MESSAGES
             .get("com.lmpessoa.services.internal.Property.notafile");
 
-   private ErrorMessage() {
+   private CoreMessage() {
       // Nothing to be done here
    }
 }

@@ -22,6 +22,8 @@
  */
 package com.lmpessoa.services.internal.serializing;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,7 +32,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -41,21 +42,9 @@ import com.lmpessoa.services.NotAcceptableException;
 import com.lmpessoa.services.UnsupportedMediaTypeException;
 import com.lmpessoa.services.hosting.Headers;
 import com.lmpessoa.services.internal.ClassUtils;
-import com.lmpessoa.services.internal.ErrorMessage;
+import com.lmpessoa.services.internal.CoreMessage;
 import com.lmpessoa.services.internal.hosting.InternalServerError;
 
-/**
- * Represents a serialisation format.
- * <p>
- * Subclasses of {@code Serializer} provide means to convert object to and from a string
- * representation suitable for transmission over the HTTP protocol.
- * </p>
- * <p>
- * This class is not intended to be used directly by applications. Instead, choose to return the
- * object which should be serialised from the application code and the engine will handle all
- * serialisation automatically.
- * </p>
- */
 public abstract class Serializer {
 
    private static final Map<String, Class<? extends Serializer>> handlers = new HashMap<>();
@@ -67,27 +56,17 @@ public abstract class Serializer {
       handlers.put("*/*", JsonSerializer.class);
    }
 
-   /**
-    * Converts the given content into an object of the given type.
-    *
-    * @param content the content to be converted into an object representation.
-    * @param contentType the content type of the content.
-    * @param type the type of the object to be returned.
-    * @return an object representation of given content.
-    * @throws ValidationException
-    * @throws UnsupportedMediaTypeException if the content type or encoding are not supported.
-    */
    public static <T> T toObject(byte[] content, String contentType, Class<T> type) {
       Map<String, String> contentTypeMap = Headers.split(contentType);
       String realContentType = contentTypeMap.get("");
       if (!handlers.containsKey(realContentType)) {
          throw new UnsupportedMediaTypeException(
-                  ErrorMessage.UNEXPECTED_CONTENT_TYPE.with(realContentType));
+                  CoreMessage.UNEXPECTED_CONTENT_TYPE.with(realContentType));
       }
       Serializer ser = instanceOf(realContentType);
       if (ser == null) {
          throw new UnsupportedMediaTypeException(
-                  ErrorMessage.UNEXPECTED_CONTENT_TYPE.with(realContentType));
+                  CoreMessage.UNEXPECTED_CONTENT_TYPE.with(realContentType));
       }
       try {
          return ser.read(content, type, contentTypeMap);
@@ -96,13 +75,6 @@ public abstract class Serializer {
       }
    }
 
-   /**
-    * Converts the given object into a representation in an acceptable format.
-    *
-    * @param object the object to be converted.
-    * @param accepts a list of content types into which the object is accepted to be converted.
-    * @return a representation of the given object with the used format.
-    */
    public static HttpInputStream fromObject(Object object, String[] accepts, Locale[] locales) {
       if (accepts.length == 0) {
          accepts = new String[] { ContentType.JSON };
@@ -112,19 +84,13 @@ public abstract class Serializer {
          if (ser != null) {
             String result = ser.write(object);
             if (result != null) {
-               return new HttpInputStream(result.getBytes(StandardCharsets.UTF_8), contentType,
-                        StandardCharsets.UTF_8);
+               return new HttpInputStream(result.getBytes(UTF_8), contentType, UTF_8);
             }
          }
       }
       throw new NotAcceptableException();
    }
 
-   /**
-    * Enables or disables support for processing XML requests.
-    *
-    * @param enable {@code true} to enable support for XML requests, or {@code false} to disable it.
-    */
    public static void enableXml(boolean enable) {
       if (enable && !handlers.containsKey(ContentType.XML)) {
          handlers.put(ContentType.XML, XmlSerializer.class);
@@ -145,14 +111,14 @@ public abstract class Serializer {
    }
 
    protected <T> T read(byte[] content, Class<T> type, Map<String, String> contentType) {
-      Charset charset = Charset.forName("UTF-8");
+      Charset charset = UTF_8;
       if (contentType.containsKey("charset")) {
          String charsetName = contentType.get("charset");
          try {
             charset = Charset.forName(charsetName);
          } catch (Exception e) {
             throw new UnsupportedMediaTypeException(
-                     ErrorMessage.UNEXPECTED_ENCODING.with(charsetName));
+                     CoreMessage.UNEXPECTED_ENCODING.with(charsetName));
          }
       }
       String contentStr = new String(content, charset);

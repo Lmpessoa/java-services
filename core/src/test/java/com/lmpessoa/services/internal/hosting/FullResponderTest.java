@@ -68,12 +68,6 @@ import com.lmpessoa.services.hosting.ConnectionInfo;
 import com.lmpessoa.services.hosting.Headers;
 import com.lmpessoa.services.hosting.HttpRequest;
 import com.lmpessoa.services.hosting.IApplicationInfo;
-import com.lmpessoa.services.internal.hosting.ApplicationInfo;
-import com.lmpessoa.services.internal.hosting.ApplicationOptions;
-import com.lmpessoa.services.internal.hosting.ApplicationSettings;
-import com.lmpessoa.services.internal.hosting.HeaderEntry;
-import com.lmpessoa.services.internal.hosting.HttpRequestImpl;
-import com.lmpessoa.services.internal.hosting.HttpResult;
 import com.lmpessoa.services.internal.logging.Logger;
 import com.lmpessoa.services.internal.routing.MatchedRouteBridge;
 import com.lmpessoa.services.internal.routing.RouteTable;
@@ -331,7 +325,9 @@ public final class FullResponderTest {
       assertNotNull(result.getInputStream());
       assertEquals(ContentType.TEXT, result.getInputStream().getType());
       String content = readAll(result.getInputStream());
-      assertEquals("java.lang.IllegalArgumentException", content);
+      assertEquals(
+               "java.lang.IllegalArgumentException: java.lang.reflect.InvocationTargetException",
+               content);
    }
 
    @Test

@@ -83,8 +83,8 @@ public interface IHostEnvironment {
    /**
     * Returns whether this application is running in a production environment.
     *
-    * @return {@code true} if this application is running in a production environment,
-    *         {@code false} otherwise.
+    * @return {@code true} if this application is running in a production environment, {@code false}
+    *         otherwise.
     */
    default boolean isProduction() {
       return "Production".equalsIgnoreCase(getName());

@@ -35,7 +35,6 @@ import org.junit.Test;
 
 import com.lmpessoa.services.Redirect;
 import com.lmpessoa.services.hosting.ConnectionInfo;
-import com.lmpessoa.services.internal.hosting.RedirectImpl;
 import com.lmpessoa.services.internal.routing.RouteTable;
 import com.lmpessoa.services.internal.services.ServiceMap;
 

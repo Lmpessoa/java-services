@@ -33,8 +33,6 @@ import java.util.Objects;
 
 import org.junit.Test;
 
-import com.lmpessoa.services.internal.Property;
-
 public class PropertyTest {
 
    @Test

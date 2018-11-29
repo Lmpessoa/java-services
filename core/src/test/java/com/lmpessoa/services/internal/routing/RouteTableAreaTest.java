@@ -31,7 +31,6 @@ import java.util.Arrays;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.lmpessoa.services.internal.routing.RouteTable;
 import com.lmpessoa.services.internal.services.ServiceMap;
 
 public final class RouteTableAreaTest {

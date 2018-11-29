@@ -45,7 +45,6 @@ import com.lmpessoa.services.ContentType;
 import com.lmpessoa.services.HttpInputStream;
 import com.lmpessoa.services.NotAcceptableException;
 import com.lmpessoa.services.UnsupportedMediaTypeException;
-import com.lmpessoa.services.internal.serializing.Serializer;
 
 public final class SerializerTest {
 

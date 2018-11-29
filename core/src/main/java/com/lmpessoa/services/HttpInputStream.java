@@ -40,7 +40,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import com.lmpessoa.services.hosting.Headers;
-import com.lmpessoa.services.internal.ErrorMessage;
+import com.lmpessoa.services.internal.CoreMessage;
 import com.lmpessoa.services.internal.serializing.Serializer;
 
 /**
@@ -170,8 +170,8 @@ public final class HttpInputStream extends InputStream implements AutoCloseable 
       if (charset == null && values.containsKey("charset")) {
          charset = Charset.forName(values.get("charset"));
       }
-      if (!contentType.matches("[a-z]+/[a-z0-9-]+")) {
-         throw new IllegalArgumentException(ErrorMessage.INVALID_CONTENT_TYPE.get());
+      if (!contentType.matches("[a-z]+/[a-z0-9+-]+")) {
+         throw new IllegalArgumentException(CoreMessage.INVALID_CONTENT_TYPE.get());
       }
       this.contentType = Objects.requireNonNull(contentType);
       this.stream = Objects.requireNonNull(stream);

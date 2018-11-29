@@ -24,9 +24,6 @@ package com.lmpessoa.services.logging;
 
 import java.util.function.Predicate;
 
-import com.lmpessoa.services.logging.FormattedHandler;
-import com.lmpessoa.services.logging.LogEntry;
-
 final class TestFormattedHandler extends FormattedHandler {
 
    public TestFormattedHandler(Predicate<LogEntry> filter) {

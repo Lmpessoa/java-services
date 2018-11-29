@@ -56,7 +56,7 @@ import javax.validation.groups.Default;
 
 import com.lmpessoa.services.Query;
 import com.lmpessoa.services.internal.ClassUtils;
-import com.lmpessoa.services.internal.ErrorMessage;
+import com.lmpessoa.services.internal.CoreMessage;
 import com.lmpessoa.services.internal.parsing.IVariablePart;
 
 final class VariableRoutePart implements IVariablePart, Comparable<VariableRoutePart> {
@@ -128,7 +128,7 @@ final class VariableRoutePart implements IVariablePart, Comparable<VariableRoute
       this.paramIndex = paramIndex;
       if (paramIndex >= exec.getParameterCount()) {
          throw new ArrayIndexOutOfBoundsException(
-                  ErrorMessage.MISSING_PARAMETERS.with(paramIndex + 1, exec.getParameterCount()));
+                  CoreMessage.MISSING_PARAMETERS.with(paramIndex + 1, exec.getParameterCount()));
       }
       Parameter param = exec.getParameters()[paramIndex];
       this.paramName = param.getName();
@@ -136,7 +136,7 @@ final class VariableRoutePart implements IVariablePart, Comparable<VariableRoute
       this.catchall = param.isVarArgs();
       if (!isValidParamType(paramType)) {
          throw new IllegalStateException(
-                  ErrorMessage.ILLEGAL_TYPE_IN_ROUTE.with(paramType.getName()));
+                  CoreMessage.ILLEGAL_TYPE_IN_ROUTE.with(paramType.getName()));
       }
       GroupSequence groupSeq = resourceClass.getAnnotation(GroupSequence.class);
       if (groupSeq != null) {
@@ -145,10 +145,10 @@ final class VariableRoutePart implements IVariablePart, Comparable<VariableRoute
          this.groups = Collections.singleton(Default.class);
       }
       if (param.isAnnotationPresent(Query.class)) {
-         throw new IllegalStateException(ErrorMessage.QUERY_IN_PATH.get());
+         throw new IllegalStateException(CoreMessage.QUERY_IN_PATH.get());
       }
       if (!getConstraints(param, Null.class).isEmpty()) {
-         throw new IllegalStateException(ErrorMessage.NULL_PATH.get());
+         throw new IllegalStateException(CoreMessage.NULL_PATH.get());
       }
       this.minValue = getMinValue(param);
       this.maxValue = getMaxValue(param);
@@ -250,7 +250,7 @@ final class VariableRoutePart implements IVariablePart, Comparable<VariableRoute
       }
       if (result != null && !isNumberType(source.getType())) {
          throw new UnexpectedTypeException(
-                  ErrorMessage.EXPECTED_NUMBER_TYPE.with(source.getType().getName()));
+                  CoreMessage.EXPECTED_NUMBER_TYPE.with(source.getType().getName()));
       }
       return result;
    }
@@ -281,7 +281,7 @@ final class VariableRoutePart implements IVariablePart, Comparable<VariableRoute
       }
       if (result != null && !isNumberType(source.getType())) {
          throw new UnexpectedTypeException(
-                  ErrorMessage.EXPECTED_NUMBER_TYPE.with(source.getType().getName()));
+                  CoreMessage.EXPECTED_NUMBER_TYPE.with(source.getType().getName()));
       }
       return result;
    }
@@ -306,7 +306,7 @@ final class VariableRoutePart implements IVariablePart, Comparable<VariableRoute
          return null;
       } else if (source.getType() != String.class) {
          throw new UnexpectedTypeException(
-                  ErrorMessage.EXPECTED_STRING_TYPE.with(source.getType().getName()));
+                  CoreMessage.EXPECTED_STRING_TYPE.with(source.getType().getName()));
       }
       StringBuilder result = new StringBuilder("[^\\/]{");
       if (min != null) {
@@ -340,7 +340,7 @@ final class VariableRoutePart implements IVariablePart, Comparable<VariableRoute
       }
       if (!result.isEmpty() && source.getType() != String.class) {
          throw new UnexpectedTypeException(
-                  ErrorMessage.EXPECTED_STRING_TYPE.with(source.getType().getName()));
+                  CoreMessage.EXPECTED_STRING_TYPE.with(source.getType().getName()));
       }
       if (typePattern != null) {
          result.add(typePattern);

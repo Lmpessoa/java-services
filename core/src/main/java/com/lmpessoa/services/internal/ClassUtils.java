@@ -292,19 +292,11 @@ public final class ClassUtils {
             return getClassContext();
          }
       }.getStack();
-      return stackClasses[3];
-   }
-
-   public static Class<?> findCaller(Predicate<Class<?>> matches) {
-      Class<?>[] stackClasses = new SecurityManager() {
-
-         public Class<?>[] getStack() {
-            return getClassContext();
-         }
-      }.getStack();
+      Class<?> called = stackClasses[2];
       for (int i = 3; i < stackClasses.length; ++i) {
-         if (matches.test(stackClasses[i])) {
-            return stackClasses[i];
+         Class<?> clazz = stackClasses[i];
+         if (!clazz.isMemberClass() && clazz != called) {
+            return clazz;
          }
       }
       return null;
@@ -363,7 +355,7 @@ public final class ClassUtils {
       }
       if (atype == Character.class) {
          if (value.length() != 1) {
-            throw new IllegalArgumentException(ErrorMessage.INVALID_CHAR_CAST.get());
+            throw new IllegalArgumentException(CoreMessage.INVALID_CHAR_CAST.get());
          }
          return (T) Character.valueOf(value.charAt(0));
       }
@@ -395,7 +387,7 @@ public final class ClassUtils {
       }
       if (!Modifier.isStatic(valueOf.getModifiers())) {
          throw new IllegalArgumentException(
-                  new NoSuchMethodException(ErrorMessage.VALUEOF_STATIC.with(atype.getName())));
+                  new NoSuchMethodException(CoreMessage.VALUEOF_STATIC.with(atype.getName())));
       }
       try {
          Object cvalue = valueOf.invoke(null, value);

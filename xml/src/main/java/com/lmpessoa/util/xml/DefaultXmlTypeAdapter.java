@@ -73,7 +73,8 @@ final class DefaultXmlTypeAdapter implements XmlSerializer<Object>, XmlDeseriali
    // @XmlSchemaTypes
    // @XmlSeeAlso
    // @XmlType
-   private XmlElement defaultSerialize(Object src, Class<?> typeOfSrc, XmlSerializationContext context) {
+   private XmlElement defaultSerialize(Object src, Class<?> typeOfSrc,
+      XmlSerializationContext context) {
       if (src instanceof Boolean) {
          return new XmlPrimitive((Boolean) src);
       } else if (src instanceof Character) {
@@ -148,7 +149,8 @@ final class DefaultXmlTypeAdapter implements XmlSerializer<Object>, XmlDeseriali
       return result;
    }
 
-   private Object defaultDeserialize(XmlElement xml, Class<?> typeOfT, XmlDeserializationContext context) {
+   private Object defaultDeserialize(XmlElement xml, Class<?> typeOfT,
+      XmlDeserializationContext context) {
       // TODO Auto-generated method stub
       return null;
    }

@@ -39,8 +39,6 @@ import com.lmpessoa.services.hosting.IHostEnvironment;
 import com.lmpessoa.services.internal.Property;
 import com.lmpessoa.services.internal.PropertyBuilder;
 import com.lmpessoa.services.internal.concurrent.ExecutionService;
-import com.lmpessoa.services.internal.hosting.ApplicationServerImpl;
-import com.lmpessoa.services.internal.hosting.ApplicationSettings;
 import com.lmpessoa.services.internal.logging.Logger;
 import com.lmpessoa.services.logging.Handler;
 import com.lmpessoa.services.logging.LogEntry;
@@ -114,8 +112,7 @@ public final class ApplicationSettingsTest {
 
       log.error("Test");
       log.join();
-      assertEquals(
-               "[ERROR] com.lmpessoa.services.internal.hosting.ApplicationSettingsTest: Test",
+      assertEquals("[ERROR] com.lmpessoa.services.internal.hosting.ApplicationSettingsTest: Test",
                logResult);
    }
 

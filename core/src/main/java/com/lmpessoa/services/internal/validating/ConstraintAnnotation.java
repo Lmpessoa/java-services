@@ -87,7 +87,7 @@ import javax.validation.constraintvalidation.ValidationTarget;
 import javax.validation.groups.Default;
 
 import com.lmpessoa.services.internal.ClassUtils;
-import com.lmpessoa.services.internal.ErrorMessage;
+import com.lmpessoa.services.internal.CoreMessage;
 import com.lmpessoa.services.internal.validating.PathNode.CrossParameterPathNode;
 
 final class ConstraintAnnotation {
@@ -213,7 +213,7 @@ final class ConstraintAnnotation {
          } else if (exec instanceof Method && ((Method) exec).getReturnType() == void.class) {
             target = ConstraintTarget.PARAMETERS;
          } else {
-            throw new ConstraintDefinitionException(ErrorMessage.AMBIGUOUS_TARGET.get());
+            throw new ConstraintDefinitionException(CoreMessage.AMBIGUOUS_TARGET.get());
          }
       }
       return target;
@@ -406,7 +406,7 @@ final class ConstraintAnnotation {
             return isValidEmail(value);
          default:
             throw new ConstraintDefinitionException(
-                     ErrorMessage.UNKNOWN_CONSTRAINT.with(annotation.annotationType()));
+                     CoreMessage.UNKNOWN_CONSTRAINT.with(annotation.annotationType()));
       }
    }
 

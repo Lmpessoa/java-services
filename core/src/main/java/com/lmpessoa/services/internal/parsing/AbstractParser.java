@@ -28,7 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.lmpessoa.services.internal.ErrorMessage;
+import com.lmpessoa.services.internal.CoreMessage;
 
 /**
  * <p>
@@ -118,7 +118,7 @@ public abstract class AbstractParser<T extends IVariablePart> {
          ITemplatePart part;
          if (template.startsWith(variablePrefix, pos)) {
             if (forceLiteralSeparator && lastPart != null && lastPart instanceof IVariablePart) {
-               throw new ParseException(ErrorMessage.LITERAL_REQUIRED.get(), pos);
+               throw new ParseException(CoreMessage.LITERAL_REQUIRED.get(), pos);
             }
             part = parseVariable();
          } else {
@@ -182,7 +182,7 @@ public abstract class AbstractParser<T extends IVariablePart> {
       while (pos < template.length()) {
          pos += 1;
          if (pos == template.length()) {
-            throw new ParseException(ErrorMessage.UNEXPECTED_END.get(), pos - 1);
+            throw new ParseException(CoreMessage.UNEXPECTED_END.get(), pos - 1);
          }
          char ch = template.charAt(pos);
          if (BLOCKS.containsKey(ch)) {
@@ -197,7 +197,7 @@ public abstract class AbstractParser<T extends IVariablePart> {
             result.append(ch);
          }
       }
-      throw new ParseException(ErrorMessage.UNEXPECTED_END.get(), pos);
+      throw new ParseException(CoreMessage.UNEXPECTED_END.get(), pos);
    }
 
    private LiteralPart parseLiteral() {

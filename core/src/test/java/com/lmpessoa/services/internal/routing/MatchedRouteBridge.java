@@ -24,7 +24,6 @@ package com.lmpessoa.services.internal.routing;
 
 import java.lang.reflect.Method;
 
-import com.lmpessoa.services.internal.routing.MatchedRoute;
 import com.lmpessoa.services.routing.RouteMatch;
 
 public final class MatchedRouteBridge {

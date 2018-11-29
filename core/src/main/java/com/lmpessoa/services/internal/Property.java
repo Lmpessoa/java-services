@@ -71,7 +71,7 @@ public final class Property {
     */
    public static Property fromFile(File file) throws IOException {
       if (!file.isFile()) {
-         throw new IllegalArgumentException(ErrorMessage.INVALID_FILE.get());
+         throw new IllegalArgumentException(CoreMessage.INVALID_FILE.get());
       }
       final List<String> lines = Files.readAllLines(file.toPath());
       String content = String.join("\n", lines.stream().toArray(String[]::new));

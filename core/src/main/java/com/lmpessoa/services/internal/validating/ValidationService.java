@@ -42,7 +42,7 @@ import javax.validation.ValidatorFactory;
 import javax.validation.groups.Default;
 
 import com.lmpessoa.services.ApplicationServer;
-import com.lmpessoa.services.internal.ErrorMessage;
+import com.lmpessoa.services.internal.CoreMessage;
 import com.lmpessoa.services.internal.validating.PathNode.ContainerElementPathNode;
 import com.lmpessoa.services.internal.validating.PathNode.ContainerElementProviderPathNode;
 import com.lmpessoa.services.internal.validating.PathNode.CrossParameterPathNode;
@@ -96,7 +96,7 @@ public final class ValidationService implements IValidationService {
    @Override
    public ErrorSet validateParameters(Object object, Method method, Object[] paramValues) {
       if (!method.getDeclaringClass().isInstance(object)) {
-         throw new ValidationException(ErrorMessage.MISSING_METHOD.with(method.toString()));
+         throw new ValidationException(CoreMessage.MISSING_METHOD.with(method.toString()));
       }
       ConstrainedMethod cmethod = ConstrainedElement.of(method);
       MethodPathNode path = PathNode.ofMethod(method.getName(), method.getParameters());
@@ -113,7 +113,7 @@ public final class ValidationService implements IValidationService {
    @Override
    public ErrorSet validateReturnValue(Object object, Method method, Object returnValue) {
       if (!method.getDeclaringClass().isInstance(object)) {
-         throw new ValidationException(ErrorMessage.MISSING_METHOD.with(method.toString()));
+         throw new ValidationException(CoreMessage.MISSING_METHOD.with(method.toString()));
       }
       ConstrainedMethod cmethod = ConstrainedElement.of(method);
       ReturnValuePathNode path = PathNode.ofMethod(method.getName(), method.getParameters())

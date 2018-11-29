@@ -32,7 +32,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.lmpessoa.services.BadRequestException;
-import com.lmpessoa.services.internal.ErrorMessage;
+import com.lmpessoa.services.internal.CoreMessage;
 
 /**
  * Represents a map of HTTP header values.
@@ -149,7 +149,8 @@ public final class Headers {
       Objects.requireNonNull(headerName);
       headerName = headerName.trim();
       if (!headerName.matches("[a-zA-Z][a-zA-Z0-9-]*")) {
-         throw new BadRequestException(ErrorMessage.ILLEGAL_HEADER_NAME.with(headerName));
+         throw new BadRequestException(null, null,
+                  CoreMessage.ILLEGAL_HEADER_NAME.with(headerName));
       }
       for (Field f : Headers.class.getDeclaredFields()) {
          if (Modifier.isPublic(f.getModifiers()) && Modifier.isStatic(f.getModifiers())) {

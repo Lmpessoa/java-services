@@ -26,8 +26,6 @@ import javax.validation.Configuration;
 import javax.validation.Validation;
 import javax.validation.ValidatorFactory;
 
-import com.lmpessoa.services.internal.validating.LocalizedMessageInterpolator;
-import com.lmpessoa.services.internal.validating.ValidationService;
 import com.lmpessoa.services.validating.IValidationService;
 
 public class HibernateValidationServiceTest extends AbstractValidationServiceTest {

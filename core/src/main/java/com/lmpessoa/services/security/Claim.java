@@ -24,7 +24,7 @@ package com.lmpessoa.services.security;
 
 import java.util.Objects;
 
-import com.lmpessoa.services.internal.ErrorMessage;
+import com.lmpessoa.services.internal.CoreMessage;
 
 /**
  * Represents an information about a certain user.
@@ -89,7 +89,7 @@ public final class Claim {
       this.value = Objects.requireNonNull(value);
       this.type = Objects.requireNonNull(type);
       if (!type.matches("([a-z][a-z0-9]*:)+claim:[a-z][a-z0-9]*")) {
-         throw new IllegalArgumentException(ErrorMessage.INVALID_CLAIM_TYPE.with(type));
+         throw new IllegalArgumentException(CoreMessage.INVALID_CLAIM_TYPE.with(type));
       }
       this.issuer = issuer;
    }

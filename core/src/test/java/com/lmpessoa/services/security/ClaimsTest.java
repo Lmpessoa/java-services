@@ -28,9 +28,6 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import com.lmpessoa.services.security.Claim;
-import com.lmpessoa.services.security.ClaimType;
-
 public class ClaimsTest {
 
    @Test(expected = IllegalArgumentException.class)

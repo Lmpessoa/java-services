@@ -37,7 +37,7 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.lmpessoa.services.internal.ClassUtils;
-import com.lmpessoa.services.internal.ErrorMessage;
+import com.lmpessoa.services.internal.CoreMessage;
 
 final class TemporalAccessorAdapter
    implements JsonSerializer<TemporalAccessor>, JsonDeserializer<TemporalAccessor> {
@@ -53,7 +53,7 @@ final class TemporalAccessorAdapter
       JsonDeserializationContext context) {
       Method parser = ClassUtils.getMethod((Class<?>) typeOfT, "parse", CharSequence.class);
       if (parser == null || !Modifier.isStatic(parser.getModifiers())) {
-         throw new JsonParseException(ErrorMessage.CANNOT_PARSE_DATE.with(typeOfT.getTypeName()));
+         throw new JsonParseException(CoreMessage.CANNOT_PARSE_DATE.with(typeOfT.getTypeName()));
       }
       try {
          return (TemporalAccessor) parser.invoke(null, json.getAsString());

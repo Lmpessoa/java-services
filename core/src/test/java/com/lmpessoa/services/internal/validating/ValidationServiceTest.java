@@ -22,8 +22,6 @@
  */
 package com.lmpessoa.services.internal.validating;
 
-import com.lmpessoa.services.internal.validating.ValidationService;
-
 public class ValidationServiceTest extends AbstractValidationServiceTest {
 
    public ValidationServiceTest() {

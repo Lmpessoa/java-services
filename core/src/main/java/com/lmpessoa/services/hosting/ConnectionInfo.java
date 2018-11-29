@@ -126,8 +126,8 @@ public final class ConnectionInfo {
     * Returns the server name of this application.
     * <p>
     * This method returns the host name of the server as requested by the user agent and parsed from
-    * the {@code Host} header of the request. If this information is not available, "localhost"
-    * will be returned instead.
+    * the {@code Host} header of the request. If this information is not available, "localhost" will
+    * be returned instead.
     * </p>
     *
     * @return the host name of the server in the current request.
@@ -148,8 +148,7 @@ public final class ConnectionInfo {
    /**
     * Returns whether the current request was made using HTTPS.
     *
-    * @return {@code true} if the current request was made using HTTPS, {@code false}
-    *         otherwise.
+    * @return {@code true} if the current request was made using HTTPS, {@code false} otherwise.
     */
    public boolean isSecure() {
       return secure;

@@ -39,7 +39,7 @@ import com.lmpessoa.services.concurrent.IAsyncRequestMatcher;
 import com.lmpessoa.services.hosting.IApplicationOptions;
 import com.lmpessoa.services.hosting.NextResponder;
 import com.lmpessoa.services.internal.ClassUtils;
-import com.lmpessoa.services.internal.ErrorMessage;
+import com.lmpessoa.services.internal.CoreMessage;
 import com.lmpessoa.services.internal.concurrent.RejectRequestMatcher;
 import com.lmpessoa.services.internal.routing.RouteTable;
 import com.lmpessoa.services.internal.services.NoSingleMethodException;
@@ -75,18 +75,18 @@ public final class ApplicationOptions implements IApplicationOptions {
       lockConfiguration();
       Objects.requireNonNull(responderClass);
       if (responders.contains(responderClass)) {
-         throw new IllegalArgumentException(ErrorMessage.RESPONDER_REGISTERED.get());
+         throw new IllegalArgumentException(CoreMessage.RESPONDER_REGISTERED.get());
       }
       if (!ClassUtils.isConcreteClass(responderClass)) {
-         throw new IllegalArgumentException(ErrorMessage.RESPONDER_NOT_CONCRETE.get());
+         throw new IllegalArgumentException(CoreMessage.RESPONDER_NOT_CONCRETE.get());
       }
       if (ClassUtils.getConstructor(responderClass, NextResponder.class) == null) {
-         throw new IllegalArgumentException(ErrorMessage.RESPONDER_CONSTRUCTOR_MISSING.get());
+         throw new IllegalArgumentException(CoreMessage.RESPONDER_CONSTRUCTOR_MISSING.get());
       }
       Method[] invokes = ClassUtils.findMethods(responderClass, m -> "invoke".equals(m.getName()));
       if (invokes.length != 1) {
          throw new IllegalArgumentException(
-                  ErrorMessage.RESPONDER_INVOKE_MISSING.with(invokes.length));
+                  CoreMessage.RESPONDER_INVOKE_MISSING.with(invokes.length));
       }
       responders.add(responderClass);
    }
@@ -150,7 +150,7 @@ public final class ApplicationOptions implements IApplicationOptions {
       lockConfiguration();
       Objects.requireNonNull(staticPath);
       if (this.staticPath != null) {
-         throw new IllegalStateException(ErrorMessage.STATIC_CONFIGURED.get());
+         throw new IllegalStateException(CoreMessage.STATIC_CONFIGURED.get());
       }
       if (!staticPath.startsWith(SEPARATOR)) {
          staticPath = SEPARATOR + staticPath;
@@ -172,12 +172,12 @@ public final class ApplicationOptions implements IApplicationOptions {
       lockConfiguration();
       Objects.requireNonNull(identityProvider);
       if (this.identityProvider != null) {
-         throw new IllegalStateException(ErrorMessage.IDENTITY_CONFIGURED.get());
+         throw new IllegalStateException(CoreMessage.IDENTITY_CONFIGURED.get());
       }
       int constrCount = identityProvider.getConstructors().length;
       if (constrCount != 1) {
          throw new NoSingleMethodException(
-                  ErrorMessage.IDENTITY_CONSTRUCTOR_MISSING.with(constrCount));
+                  CoreMessage.IDENTITY_CONSTRUCTOR_MISSING.with(constrCount));
       }
       this.identityProvider = identityProvider;
       if (options != null) {
@@ -185,7 +185,7 @@ public final class ApplicationOptions implements IApplicationOptions {
             lockConfiguration();
             if (policies.containsKey(policyName)) {
                throw new IllegalArgumentException(
-                        ErrorMessage.IDENTITY_DUPLICATE_POLICY.with(policyName));
+                        CoreMessage.IDENTITY_DUPLICATE_POLICY.with(policyName));
             }
             policies.put(policyName, policyMethod);
          });
@@ -199,7 +199,7 @@ public final class ApplicationOptions implements IApplicationOptions {
       lockConfiguration();
       Objects.requireNonNull(healthPath);
       if (this.healthPath != null) {
-         throw new IllegalStateException(ErrorMessage.HEALTH_CONFIGURED.get());
+         throw new IllegalStateException(CoreMessage.HEALTH_CONFIGURED.get());
       }
       if (!healthPath.startsWith(SEPARATOR)) {
          healthPath = SEPARATOR + healthPath;
@@ -304,7 +304,7 @@ public final class ApplicationOptions implements IApplicationOptions {
 
    private void lockConfiguration() {
       if (configured) {
-         throw new IllegalStateException(ErrorMessage.APPLICATION_CONFIGURED.get());
+         throw new IllegalStateException(CoreMessage.APPLICATION_CONFIGURED.get());
       }
    }
 
@@ -336,7 +336,7 @@ public final class ApplicationOptions implements IApplicationOptions {
          lockConfiguration();
          Objects.requireNonNull(feedbackPath);
          if (ApplicationOptions.this.feedbackPath != null) {
-            throw new IllegalStateException(ErrorMessage.ASYNC_PATH_CONFIGURED.get());
+            throw new IllegalStateException(CoreMessage.ASYNC_PATH_CONFIGURED.get());
          }
          if (!feedbackPath.startsWith(SEPARATOR)) {
             feedbackPath = SEPARATOR + feedbackPath;
@@ -355,10 +355,10 @@ public final class ApplicationOptions implements IApplicationOptions {
          lockConfiguration();
          Objects.requireNonNull(defaultValue);
          if (defaultValue == AsyncReject.DEFAULT) {
-            throw new IllegalArgumentException(ErrorMessage.ASYNC_ILLEGAL_DEFAULT.get());
+            throw new IllegalArgumentException(CoreMessage.ASYNC_ILLEGAL_DEFAULT.get());
          }
          if (ApplicationOptions.this.defaultReject != null) {
-            throw new IllegalStateException(ErrorMessage.ASYNC_REJECT_CONFIGURED.get());
+            throw new IllegalStateException(CoreMessage.ASYNC_REJECT_CONFIGURED.get());
          }
          ApplicationOptions.this.defaultReject = defaultValue;
       }
@@ -367,7 +367,7 @@ public final class ApplicationOptions implements IApplicationOptions {
       public void useDefaultRouteMatcher(Class<? extends IAsyncRequestMatcher> matcherClass) {
          lockConfiguration();
          if (ApplicationOptions.this.defaultRouteMatcher != null) {
-            throw new IllegalStateException(ErrorMessage.ASYNC_MATCHER_CONFIGURED.get());
+            throw new IllegalStateException(CoreMessage.ASYNC_MATCHER_CONFIGURED.get());
          }
          ApplicationOptions.this.defaultRouteMatcher = Objects.requireNonNull(matcherClass);
       }

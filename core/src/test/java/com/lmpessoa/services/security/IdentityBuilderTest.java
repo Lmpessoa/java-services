@@ -31,11 +31,6 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.lmpessoa.services.security.Claim;
-import com.lmpessoa.services.security.ClaimType;
-import com.lmpessoa.services.security.IIdentity;
-import com.lmpessoa.services.security.IdentityBuilder;
-
 public class IdentityBuilderTest {
 
    private IdentityBuilder builder;

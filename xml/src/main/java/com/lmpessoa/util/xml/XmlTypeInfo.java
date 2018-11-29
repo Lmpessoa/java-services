@@ -64,18 +64,20 @@ final class XmlTypeInfo {
    public XmlTypeInfo(Class<?> type) {
       this.type = Objects.requireNonNull(type);
       Set<Class<? extends Annotation>> annotations = Arrays
-               .asList(XmlAccessorOrder.class, XmlEnum.class, XmlRootElement.class, XmlSeeAlso.class,
-                        XmlTransient.class, XmlType.class)
+               .asList(XmlAccessorOrder.class, XmlEnum.class, XmlRootElement.class,
+                        XmlSeeAlso.class, XmlTransient.class, XmlType.class)
                .stream()
                .filter(type::isAnnotationPresent)
                .collect(Collectors.toSet());
       // @XmlTransient
       validateCompatibleAnnotations(annotations, XmlTransient.class);
       // @XmlAccessorOrder
-      validateCompatibleAnnotations(annotations, XmlAccessorOrder.class, XmlType.class, XmlRootElement.class,
-               XmlAccessorType.class, XmlSchema.class, XmlSchemaType.class, XmlSchemaTypes.class);
+      validateCompatibleAnnotations(annotations, XmlAccessorOrder.class, XmlType.class,
+               XmlRootElement.class, XmlAccessorType.class, XmlSchema.class, XmlSchemaType.class,
+               XmlSchemaTypes.class);
       // @XmlEnum
-      if (validateCompatibleAnnotations(annotations, XmlEnum.class, XmlType.class, XmlRootElement.class)) {
+      if (validateCompatibleAnnotations(annotations, XmlEnum.class, XmlType.class,
+               XmlRootElement.class)) {
          if (!type.isEnum()) {
             throw new XmlSerializeException("{XmlTypeInfo.1}");
          }
@@ -86,8 +88,8 @@ final class XmlTypeInfo {
       // @XmlSeeAlso
       validateCompatibleAnnotations(annotations, XmlSeeAlso.class);
       // @XmlType
-      validateCompatibleAnnotations(annotations, XmlType.class, XmlRootElement.class, XmlAccessorOrder.class,
-               XmlAccessorType.class, XmlEnum.class);
+      validateCompatibleAnnotations(annotations, XmlType.class, XmlRootElement.class,
+               XmlAccessorOrder.class, XmlAccessorType.class, XmlEnum.class);
 
       this.fields = getAllDeclaredFields(type).stream() //
                .filter(XmlFieldInfoImpl::nonTransient)
@@ -105,7 +107,8 @@ final class XmlTypeInfo {
       long valueCount = fields.stream().filter(XmlFieldInfoImpl::isValue).count();
       if (valueCount > 1) {
          throw new XmlSerializeException("{XmlTypeInfo.4}");
-      } else if (valueCount == 1 && fields.stream().filter(XmlFieldInfoImpl::isElement).count() > 0) {
+      } else if (valueCount == 1
+               && fields.stream().filter(XmlFieldInfoImpl::isElement).count() > 0) {
          throw new XmlSerializeException("{XmlTypeInfo.5}");
       }
    }
@@ -133,7 +136,8 @@ final class XmlTypeInfo {
    private Collection<Field> getAllDeclaredFields(Class<?> type) {
       List<Field> result = new ArrayList<>();
       while (type != Object.class) {
-         Arrays.stream(type.getDeclaredFields()).filter(XmlFieldInfoImpl::nonTransient).forEach(result::add);
+         Arrays.stream(type.getDeclaredFields()).filter(XmlFieldInfoImpl::nonTransient).forEach(
+                  result::add);
          type = type.getSuperclass();
       }
       return result;

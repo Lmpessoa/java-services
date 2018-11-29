@@ -22,6 +22,8 @@
  */
 package com.lmpessoa.services.internal.routing;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
@@ -31,7 +33,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -47,6 +48,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
+import com.lmpessoa.services.BadRequestException;
 import com.lmpessoa.services.Delete;
 import com.lmpessoa.services.Get;
 import com.lmpessoa.services.HttpInputStream;
@@ -61,7 +63,7 @@ import com.lmpessoa.services.Query;
 import com.lmpessoa.services.Route;
 import com.lmpessoa.services.hosting.HttpRequest;
 import com.lmpessoa.services.internal.ClassUtils;
-import com.lmpessoa.services.internal.ErrorMessage;
+import com.lmpessoa.services.internal.CoreMessage;
 import com.lmpessoa.services.internal.serializing.Serializer;
 import com.lmpessoa.services.internal.services.NoSingleMethodException;
 import com.lmpessoa.services.internal.services.ServiceMap;
@@ -179,7 +181,12 @@ public final class RouteTable implements IRouteTable {
             params.remove(constructor.getParameterCount());
          }
          Map<String, List<String>> query = parseQueryString(request.getQueryString());
-         List<Object> result = convertParams(params, route, matcher, query);
+         List<Object> result;
+         try {
+            result = convertParams(params, route, matcher, query);
+         } catch (IllegalArgumentException e) {
+            return new BadRequestException(resourceClass, methodCall, e);
+         }
          boolean hasContent = false;
          if (methodEntry.getContentClass() != null) {
             Object contentObject = parseContentBody(request, methodEntry.getContentClass());
@@ -370,12 +377,12 @@ public final class RouteTable implements IRouteTable {
 
    private void validateResourceClass(Class<?> clazz) throws NoSingleMethodException {
       if (!ClassUtils.isConcreteClass(clazz) || !Modifier.isPublic(clazz.getModifiers())) {
-         throw new IllegalArgumentException(ErrorMessage.RESOURCE_NOT_CONCRETE.get());
+         throw new IllegalArgumentException(CoreMessage.RESOURCE_NOT_CONCRETE.get());
       }
       Constructor<?>[] constructors = clazz.getConstructors();
       if (constructors.length != 1) {
          throw new NoSingleMethodException(
-                  ErrorMessage.TOO_MANY_CONSTRUCTORS.with(clazz.getName(), constructors.length));
+                  CoreMessage.TOO_MANY_CONSTRUCTORS.with(clazz.getName(), constructors.length));
       }
    }
 
@@ -395,7 +402,7 @@ public final class RouteTable implements IRouteTable {
             Query qp = param.getAnnotation(Query.class);
             List<String> values = query
                      .get("##default".equals(qp.value()) ? param.getName() : qp.value());
-            result.add(values != null ? ClassUtils.cast(String.join(",", values), type) : null);
+            result.add(ClassUtils.cast(values != null ? String.join(",", values) : null, type));
          } else {
             for (Entry<VariableRoutePart, String> entry : paramValues.entrySet()) {
                if (entry.getKey().isSimilarTo(param)) {
@@ -403,7 +410,7 @@ public final class RouteTable implements IRouteTable {
                   if (param.isVarArgs() && value.length() > 1) {
                      value = String.join(",", value.substring(1).split("/"));
                   }
-                  result.add(ClassUtils.cast(value, type));
+                  result.add(type == String.class ? value : ClassUtils.cast(value, type));
                   break;
                }
             }
@@ -418,8 +425,11 @@ public final class RouteTable implements IRouteTable {
          for (String var : queryString.split("&")) {
             String[] parts = var.split("=", 2);
             try {
-               parts[0] = URLDecoder.decode(parts[0], StandardCharsets.UTF_8.name());
-               parts[1] = URLDecoder.decode(parts[1], StandardCharsets.UTF_8.name());
+               if (parts.length == 1) {
+                  parts = new String[] { parts[0], "true" };
+               }
+               parts[0] = URLDecoder.decode(parts[0], UTF_8.name());
+               parts[1] = URLDecoder.decode(parts[1], UTF_8.name());
             } catch (UnsupportedEncodingException e) {
                // Ignore; never happens
             }

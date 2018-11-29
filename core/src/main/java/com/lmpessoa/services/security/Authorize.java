@@ -37,8 +37,8 @@ import java.lang.annotation.Target;
  * Methods marked with this annotation are ensured by the engine they can only be accessed by a
  * valid user. Resource classes can also be marked with this annotation meaning each method of the
  * marked class will require the same authorisation specified at the class level. If method and
- * class are both marked with {@code Authorize} the user must fulfil both requirements to be able
- * to access the given method.
+ * class are both marked with {@code Authorize} the user must fulfil both requirements to be able to
+ * access the given method.
  * </p>
  *
  * <p>

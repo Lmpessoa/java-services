@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
 import com.lmpessoa.services.HttpInputStream;
 import com.lmpessoa.services.Query;
 import com.lmpessoa.services.Route;
-import com.lmpessoa.services.internal.ErrorMessage;
+import com.lmpessoa.services.internal.CoreMessage;
 import com.lmpessoa.services.internal.parsing.ITemplatePart;
 import com.lmpessoa.services.internal.parsing.IVariablePart;
 import com.lmpessoa.services.internal.parsing.LiteralPart;
@@ -184,13 +184,13 @@ final class RoutePattern implements Comparable<RoutePattern> {
       final Constructor<?>[] constructors = clazz.getConstructors();
       if (constructors.length != 1) {
          throw new NoSingleMethodException(
-                  ErrorMessage.TOO_MANY_CONSTRUCTORS.with(clazz.getName(), constructors.length));
+                  CoreMessage.TOO_MANY_CONSTRUCTORS.with(clazz.getName(), constructors.length));
       }
       Parameter[] params = validateParamsToRoute(serviceMap, constructors);
       String routePath = getRouteFor(getResourceName(clazz), constructors[0], params, clazz);
       if (area != null && !area.isEmpty()) {
          if (!areaPattern.matcher(area).find()) {
-            throw new IllegalArgumentException(ErrorMessage.INVALID_AREA_NAME.with(area));
+            throw new IllegalArgumentException(CoreMessage.INVALID_AREA_NAME.with(area));
          }
          routePath = SEPARATOR + area.replaceAll("^/", "") + routePath;
          routePath = routePath.replaceAll("/$", "");
@@ -303,7 +303,7 @@ final class RoutePattern implements Comparable<RoutePattern> {
          Class<?> invalidClass = invalid.get().getType();
          String paramClassName = invalidClass.isArray() ? invalidClass.getComponentType() + "[]"
                   : invalidClass.getName();
-         throw new TypeMismatchException(ErrorMessage.INVALID_ROUTE_PART.with(paramClassName));
+         throw new TypeMismatchException(CoreMessage.INVALID_ROUTE_PART.with(paramClassName));
       }
       return params;
    }
@@ -316,7 +316,7 @@ final class RoutePattern implements Comparable<RoutePattern> {
          if (!result.startsWith(SEPARATOR)) {
             result = SEPARATOR + result;
          }
-         return result.replaceAll("\\.", "\\\\.");
+         return result;
       }
       StringBuilder result = new StringBuilder();
       if (prefix != null) {
@@ -338,7 +338,7 @@ final class RoutePattern implements Comparable<RoutePattern> {
             if (paramClass.isArray()) {
                paramClassName = paramClass.getComponentType().getName() + "[]";
             }
-            throw new TypeMismatchException(ErrorMessage.INVALID_ROUTE_PART.with(paramClassName));
+            throw new TypeMismatchException(CoreMessage.INVALID_ROUTE_PART.with(paramClassName));
          }
          result.append(SEPARATOR);
          result.append('{');
@@ -357,7 +357,7 @@ final class RoutePattern implements Comparable<RoutePattern> {
             return i;
          }
       }
-      throw new IllegalStateException(ErrorMessage.ILLEGAL_PARAMETER.get());
+      throw new IllegalStateException(CoreMessage.ILLEGAL_PARAMETER.get());
    }
 
    private static boolean isHttpMethodName(String name) {
@@ -383,15 +383,14 @@ final class RoutePattern implements Comparable<RoutePattern> {
                .filter(p -> p instanceof VariableRoutePart)
                .count();
       if (count != usedParams.length) {
-         throw new ParseException(ErrorMessage.MISSING_PARAMETERS.with(count, usedParams.length),
-                  0);
+         throw new ParseException(CoreMessage.MISSING_PARAMETERS.with(count, usedParams.length), 0);
       }
       for (ITemplatePart part : route) {
          if (part instanceof VariableRoutePart) {
             VariableRoutePart var = (VariableRoutePart) part;
             Class<?> param = allParams[var.getParameterIndex()].getType();
             if (param != String.class && !var.isAssignableTo(param)) {
-               throw new TypeMismatchException(ErrorMessage.CANNOT_CAST_VALUE
+               throw new TypeMismatchException(CoreMessage.CANNOT_CAST_VALUE
                         .with(var.getParameterIndex(), param.getName()));
             }
          }

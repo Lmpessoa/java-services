@@ -96,11 +96,11 @@ public final class Localized {
     * to this method are absolute, prefixed or not with a {@code '/'} (<tt>'&#92;u002f'</tt>).
     * </p>
     *
-    * *
     * <p>
-    * the languages accepted by the client request (or the default language in the absence of any).
-    * However, this method can be given a list of different {@link Locale}s from which localisation
-    * of messages should be based on.
+    * By default, this method returns the URL of a resource that corresponds to the first match
+    * using the client request (or the default language in the absence of any). However, this method
+    * can be given a list of different {@link Locale}s from which localisation of messages should be
+    * based on.
     * </p>
     *
     * @param name the name of the desired resource.
@@ -207,8 +207,7 @@ public final class Localized {
       if (ApplicationServer.isRunning()) {
          return ApplicationServer.getStartupClass();
       }
-      return ClassUtils
-               .findCaller(c -> c != Localized.class && c.getDeclaringClass() != Localized.class);
+      return ClassUtils.findCaller();
    }
 
    private static String[] getLocaleSufixes(Locale[] locales) {
@@ -239,7 +238,10 @@ public final class Localized {
          String fullPath = String.format("%s%s.%s", path[0], sufixes.next(), path[1]);
          result = getApplicationClass().getResource(fullPath);
          if (result == null) {
-            result = Localized.class.getResource(fullPath);
+            result = ClassUtils.findCaller().getResource(fullPath);
+            if (result == null) {
+               result = Localized.class.getResource(fullPath);
+            }
          }
       }
       return result;
@@ -247,19 +249,21 @@ public final class Localized {
 
    private static String getResourceContents(String name, Charset encoding, Locale... locales) {
       URL resource = getResourceUriFrom(name, locales);
-      try (InputStream is = resource.openStream()) {
-         if (is == null) {
-            return null;
+      if (resource != null) {
+         try (InputStream is = resource.openStream()) {
+            if (is == null) {
+               return null;
+            }
+            ByteArrayOutputStream contents = new ByteArrayOutputStream();
+            int read;
+            byte[] buffer = new byte[1024];
+            while ((read = is.read(buffer)) > 0) {
+               contents.write(buffer, 0, read);
+            }
+            return new String(contents.toByteArray(), encoding);
+         } catch (Exception e) {
+            // Ignore
          }
-         ByteArrayOutputStream contents = new ByteArrayOutputStream();
-         int read;
-         byte[] buffer = new byte[1024];
-         while ((read = is.read(buffer)) > 0) {
-            contents.write(buffer, 0, read);
-         }
-         return new String(contents.toByteArray(), encoding);
-      } catch (Exception e) {
-         // Ignore
       }
       return null;
    }

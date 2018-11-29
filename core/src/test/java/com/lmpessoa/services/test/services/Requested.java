@@ -27,6 +27,4 @@ import static com.lmpessoa.services.services.Reuse.REQUEST;
 import com.lmpessoa.services.services.Service;
 
 @Service(reuse = REQUEST)
-public interface Requested {
-
-}
+public interface Requested {}

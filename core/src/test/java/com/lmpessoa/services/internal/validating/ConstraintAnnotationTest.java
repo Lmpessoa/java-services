@@ -39,8 +39,6 @@ import javax.validation.constraints.NotNull;
 
 import org.junit.Test;
 
-import com.lmpessoa.services.internal.validating.ConstraintAnnotation;
-
 public final class ConstraintAnnotationTest {
 
    @NotNull

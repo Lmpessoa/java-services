@@ -29,7 +29,7 @@ import java.util.List;
 
 import com.lmpessoa.services.hosting.NextResponder;
 import com.lmpessoa.services.internal.ClassUtils;
-import com.lmpessoa.services.internal.ErrorMessage;
+import com.lmpessoa.services.internal.CoreMessage;
 import com.lmpessoa.services.internal.services.NoSingleMethodException;
 import com.lmpessoa.services.internal.services.ServiceMap;
 
@@ -44,7 +44,7 @@ final class NextResponderImpl implements NextResponder {
    @Override
    public Object invoke() {
       if (invoked) {
-         throw new IllegalStateException(ErrorMessage.NEXT_RESPONDER_INVOKED.get());
+         throw new IllegalStateException(CoreMessage.NEXT_RESPONDER_INVOKED.get());
       }
       invoked = true;
       Class<?> handlerClass = handlers.get(0);

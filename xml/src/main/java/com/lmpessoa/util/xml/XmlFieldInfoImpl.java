@@ -108,16 +108,16 @@ final class XmlFieldInfoImpl implements XmlFieldInfo {
    XmlFieldInfoImpl(Field field) {
       this.field = Objects.requireNonNull(field);
       Set<Class<? extends Annotation>> annotations = Arrays
-               .asList(XmlAttribute.class, XmlAnyAttribute.class, XmlAnyElement.class, XmlElement.class,
-                        XmlElements.class, XmlElementRef.class, XmlElementWrapper.class, XmlEnumValue.class,
-                        XmlList.class, XmlValue.class)
+               .asList(XmlAttribute.class, XmlAnyAttribute.class, XmlAnyElement.class,
+                        XmlElement.class, XmlElements.class, XmlElementRef.class,
+                        XmlElementWrapper.class, XmlEnumValue.class, XmlList.class, XmlValue.class)
                .stream()
                .filter(field::isAnnotationPresent)
                .collect(Collectors.toSet());
       // @XmlAttribute
-      XmlTypeInfo.validateCompatibleAnnotations(annotations, XmlAttribute.class, XmlID.class, XmlIDREF.class,
-               XmlList.class, XmlSchemaType.class, XmlValue.class, XmlAttachmentRef.class, XmlMimeType.class,
-               XmlInlineBinaryData.class);
+      XmlTypeInfo.validateCompatibleAnnotations(annotations, XmlAttribute.class, XmlID.class,
+               XmlIDREF.class, XmlList.class, XmlSchemaType.class, XmlValue.class,
+               XmlAttachmentRef.class, XmlMimeType.class, XmlInlineBinaryData.class);
       // @XmlAnyAttribute
       if (XmlTypeInfo.validateCompatibleAnnotations(annotations, XmlAnyAttribute.class)) {
          if (!Map.class.isAssignableFrom(field.getType())) {
@@ -125,17 +125,20 @@ final class XmlFieldInfoImpl implements XmlFieldInfo {
          }
       }
       // @XmlAnyElement
-      XmlTypeInfo.validateCompatibleAnnotations(annotations, XmlAnyElement.class, XmlElementRef.class,
-               XmlElementRefs.class, XmlElementWrapper.class, XmlList.class, XmlMixed.class);
+      XmlTypeInfo.validateCompatibleAnnotations(annotations, XmlAnyElement.class,
+               XmlElementRef.class, XmlElementRefs.class, XmlElementWrapper.class, XmlList.class,
+               XmlMixed.class);
       // @XmlElement
-      XmlTypeInfo.validateCompatibleAnnotations(annotations, XmlElement.class, XmlID.class, XmlIDREF.class,
-               XmlList.class, XmlSchemaType.class, XmlValue.class, XmlAttachmentRef.class, XmlMimeType.class,
-               XmlInlineBinaryData.class, XmlElementWrapper.class);
+      XmlTypeInfo.validateCompatibleAnnotations(annotations, XmlElement.class, XmlID.class,
+               XmlIDREF.class, XmlList.class, XmlSchemaType.class, XmlValue.class,
+               XmlAttachmentRef.class, XmlMimeType.class, XmlInlineBinaryData.class,
+               XmlElementWrapper.class);
       // @XmlElements
       XmlTypeInfo.validateCompatibleAnnotations(annotations, XmlElements.class, XmlIDREF.class,
                XmlElementWrapper.class);
       // @XmlElementRef
-      if (XmlTypeInfo.validateCompatibleAnnotations(annotations, XmlElementRef.class, XmlElementWrapper.class)) {
+      if (XmlTypeInfo.validateCompatibleAnnotations(annotations, XmlElementRef.class,
+               XmlElementWrapper.class)) {
          if (field.getType() == JAXBElement.class) {
             throw new XmlSerializeException("{XmlFieldInfo.3}");
          } else if (!field.getType().isAnnotationPresent(XmlRootElement.class)) {
@@ -143,15 +146,15 @@ final class XmlFieldInfoImpl implements XmlFieldInfo {
          }
       }
       // @XmlElementWrapper
-      if (XmlTypeInfo.validateCompatibleAnnotations(annotations, XmlElementWrapper.class, XmlElement.class,
-               XmlElements.class, XmlElementRef.class, XmlElementRefs.class)) {
+      if (XmlTypeInfo.validateCompatibleAnnotations(annotations, XmlElementWrapper.class,
+               XmlElement.class, XmlElements.class, XmlElementRef.class, XmlElementRefs.class)) {
          if (!Collection.class.isAssignableFrom(field.getType())) {
             throw new XmlSerializeException("{XmlFieldInfo.5}");
          }
       }
       // @XmlList
-      XmlTypeInfo.validateCompatibleAnnotations(annotations, XmlList.class, XmlElement.class, XmlAttribute.class,
-               XmlValue.class, XmlIDREF.class);
+      XmlTypeInfo.validateCompatibleAnnotations(annotations, XmlList.class, XmlElement.class,
+               XmlAttribute.class, XmlValue.class, XmlIDREF.class);
       // @XmlValue
       XmlTypeInfo.validateCompatibleAnnotations(annotations, XmlValue.class, XmlList.class);
       // @XmlEnumValue

@@ -39,7 +39,6 @@ import org.junit.Test;
 
 import com.lmpessoa.services.ContentType;
 import com.lmpessoa.services.HttpInputStream;
-import com.lmpessoa.services.internal.serializing.MultipartFormSerializer;
 
 public final class MultipartFormSerializerTest {
 

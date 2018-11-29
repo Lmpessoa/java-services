@@ -22,6 +22,4 @@
  */
 package com.lmpessoa.services.test.services;
 
-public class SingletonImpl implements Singleton {
-
-}
+public class SingletonImpl implements Singleton {}

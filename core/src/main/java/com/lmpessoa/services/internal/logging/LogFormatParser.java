@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.lmpessoa.services.internal.ErrorMessage;
+import com.lmpessoa.services.internal.CoreMessage;
 import com.lmpessoa.services.internal.parsing.AbstractParser;
 import com.lmpessoa.services.internal.parsing.ITemplatePart;
 import com.lmpessoa.services.internal.parsing.ParseException;
@@ -40,7 +40,7 @@ final class LogFormatParser extends AbstractParser<LogVariable> {
    protected LogVariable parseVariable(int pos, String variablePart) {
       Matcher matcher = VARIABLE_DEF.matcher(variablePart);
       if (!matcher.find()) {
-         throw new ParseException(ErrorMessage.INVALID_VARIABLE_REFERENCE.with(variablePart), pos);
+         throw new ParseException(CoreMessage.INVALID_VARIABLE_REFERENCE.with(variablePart), pos);
       }
       final String varName = matcher.group(1);
       boolean rightAlign = ">".equals(matcher.group(2));

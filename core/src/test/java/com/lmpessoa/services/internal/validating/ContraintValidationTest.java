@@ -75,11 +75,9 @@ import javax.validation.constraints.Size;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.lmpessoa.services.internal.validating.ConstraintAnnotation;
-import com.lmpessoa.services.internal.validating.ValidationService;
 import com.lmpessoa.services.validating.ErrorSet;
-import com.lmpessoa.services.validating.IValidationService;
 import com.lmpessoa.services.validating.ErrorSet.Entry;
+import com.lmpessoa.services.validating.IValidationService;
 
 public class ContraintValidationTest {
 

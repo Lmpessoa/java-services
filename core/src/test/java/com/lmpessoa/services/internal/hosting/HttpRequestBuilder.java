@@ -32,7 +32,6 @@ import java.util.Map;
 
 import com.lmpessoa.services.hosting.Headers;
 import com.lmpessoa.services.hosting.HttpRequest;
-import com.lmpessoa.services.internal.hosting.HttpRequestImpl;
 import com.lmpessoa.services.routing.HttpMethod;
 
 public final class HttpRequestBuilder {

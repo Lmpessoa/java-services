@@ -23,12 +23,12 @@
 package com.lmpessoa.services.internal.hosting;
 
 /**
- * An {@code HttpException} is an abstract exception class that represents one of the HTTP
- * client error status codes (4xx) or server error status codes (5xx).
+ * An {@code HttpException} is an abstract exception class that represents one of the HTTP client
+ * error status codes (4xx) or server error status codes (5xx).
  *
  * <p>
- * If a method chooses to throw an {@code HttpException} the engine understands that that
- * exception represents the intended result to return to the sender of the request.
+ * If a method chooses to throw an {@code HttpException} the engine understands that that exception
+ * represents the intended result to return to the sender of the request.
  * </p>
  *
  * <p>

@@ -28,7 +28,7 @@ import java.util.Objects;
 
 import com.lmpessoa.services.Redirect;
 import com.lmpessoa.services.hosting.ConnectionInfo;
-import com.lmpessoa.services.internal.ErrorMessage;
+import com.lmpessoa.services.internal.CoreMessage;
 import com.lmpessoa.services.internal.routing.RouteTable;
 
 /**
@@ -95,7 +95,7 @@ public final class RedirectImpl implements Redirect {
    URL getUrl(ConnectionInfo info) throws MalformedURLException {
       String result = params.getPath();
       if (result == null) {
-         throw new MalformedURLException(ErrorMessage.PATH_MISSING.get());
+         throw new MalformedURLException(CoreMessage.PATH_MISSING.get());
       }
       if (result.startsWith("/") && info != null) {
          int port = info.getServerPort();

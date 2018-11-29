@@ -37,8 +37,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.lmpessoa.services.internal.services.NoSingleMethodException;
-import com.lmpessoa.services.internal.services.ServiceMap;
 import com.lmpessoa.services.test.services.AbstractTestService;
 import com.lmpessoa.services.test.services.Requested;
 import com.lmpessoa.services.test.services.RequestedImpl;

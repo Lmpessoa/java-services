@@ -35,7 +35,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 
-import com.lmpessoa.services.internal.ErrorMessage;
+import com.lmpessoa.services.internal.CoreMessage;
 import com.lmpessoa.services.internal.parsing.ITemplatePart;
 import com.lmpessoa.services.internal.parsing.LiteralPart;
 import com.lmpessoa.services.logging.LogEntry;
@@ -92,7 +92,7 @@ public final class LogFormatter {
                   func = ((LogEntryImpl) entry).getLogger().getVariable(var.getName());
                   if (func == null) {
                      throw new IllegalArgumentException(
-                              ErrorMessage.UNKNOWN_VARIABLE.with(var.getName()));
+                              CoreMessage.UNKNOWN_VARIABLE.with(var.getName()));
                   }
                }
                result.append(var.format(func.apply(entry)));

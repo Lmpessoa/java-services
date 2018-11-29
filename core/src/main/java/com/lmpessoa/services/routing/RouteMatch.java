@@ -29,8 +29,8 @@ import java.lang.reflect.Method;
 import com.lmpessoa.services.services.Service;
 
 /**
- * A {@code RouteMatch} represents a set of information about a matched request route to enable
- * the resolved route method to be executed.
+ * A {@code RouteMatch} represents a set of information about a matched request route to enable the
+ * resolved route method to be executed.
  *
  * <p>
  * Instances of this class are produced by matching HTTP request information with the route table of
@@ -71,8 +71,7 @@ public interface RouteMatch {
     * arguments gathered from the HTTP request are internally known to this class.
     * </p>
     *
-    * @return a object result returned by the called method or {@code null} if nothing was
-    *         returned.
+    * @return a object result returned by the called method or {@code null} if nothing was returned.
     */
    Object invoke();
 }

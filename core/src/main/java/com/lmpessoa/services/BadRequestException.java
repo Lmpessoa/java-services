@@ -22,53 +22,99 @@
  */
 package com.lmpessoa.services;
 
+import java.lang.reflect.Method;
+
 import com.lmpessoa.services.internal.hosting.HttpException;
+import com.lmpessoa.services.routing.RouteMatch;
 import com.lmpessoa.services.validating.ErrorSet;
 
 /**
  * Thrown when the received request is not valid.
  */
-public final class BadRequestException extends HttpException {
+public final class BadRequestException extends HttpException implements RouteMatch {
 
    private static final long serialVersionUID = 1L;
+   private final Class<?> resourceClass;
    private final ErrorSet errors;
+   private final Method method;
 
    /**
     * Creates a new {@code BadRequestException}.
     */
    public BadRequestException() {
-      super(400);
-      this.errors = null;
+      this(null, null, (String) null);
+   }
+
+   /**
+    * Creates a new {@code BadRequestException}.
+    *
+    * <p>
+    * By providing a resource class and method the exception indicates a problem regarding the
+    * arguments of the method (i.e. values incompatible with the actual type of the parameters).
+    * </p>
+    *
+    * @param resourceClass the resource class that contains the method.
+    * @param method the method called with incompatible arguments.
+    */
+   public BadRequestException(Class<?> resourceClass, Method method) {
+      this(resourceClass, method, (String) null);
    }
 
    /**
     * Creates a new {@code BadRequestException} with the given detail message.
     *
+    * <p>
+    * By providing a resource class and method the exception indicates a problem regarding the
+    * arguments of the method (i.e. values incompatible with the actual type of the parameters).
+    * </p>
+    *
+    * @param resourceClass the resource class that contains the method.
+    * @param method the method called with incompatible arguments.
     * @param message the detail message.
     */
-   public BadRequestException(String message) {
+   public BadRequestException(Class<?> resourceClass, Method method, String message) {
       super(400, message);
+      this.resourceClass = resourceClass;
+      this.method = method;
       this.errors = null;
    }
 
    /**
     * Creates a new {@code BadRequestException} with the given detail messages.
     *
+    * <p>
+    * By providing a resource class and method the exception indicates a problem regarding the
+    * arguments of the method (i.e. values incompatible with the actual type of the parameters).
+    * </p>
+    *
+    * @param resourceClass the resource class that contains the method.
+    * @param method the method called with incompatible arguments.
     * @param errors the detail messages.
     */
-   public BadRequestException(ErrorSet errors) {
+   public BadRequestException(Class<?> resourceClass, Method method, ErrorSet errors) {
       super(400);
+      this.resourceClass = resourceClass;
+      this.method = method;
       this.errors = errors;
    }
 
    /**
     * Creates a new {@code BadRequestException} with the given cause.
     *
+    * <p>
+    * By providing a resource class and method the exception indicates a problem regarding the
+    * arguments of the method (i.e. values incompatible with the actual type of the parameters).
+    * </p>
+    *
+    * @param resourceClass the resource class that contains the method.
+    * @param method the method called with incompatible arguments.
     * @param cause the cause for the exception.
     */
-   public BadRequestException(Throwable t) {
+   public BadRequestException(Class<?> resourceClass, Method method, Throwable t) {
       super(400, t);
-      errors = null;
+      this.resourceClass = resourceClass;
+      this.method = method;
+      this.errors = null;
    }
 
    /**
@@ -79,5 +125,20 @@ public final class BadRequestException extends HttpException {
     */
    public ErrorSet getErrors() {
       return errors;
+   }
+
+   @Override
+   public Class<?> getResourceClass() {
+      return resourceClass;
+   }
+
+   @Override
+   public Method getMethod() {
+      return method;
+   }
+
+   @Override
+   public Object invoke() {
+      throw this;
    }
 }

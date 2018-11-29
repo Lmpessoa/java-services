@@ -29,12 +29,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.lmpessoa.services.internal.parsing.AbstractParser;
-import com.lmpessoa.services.internal.parsing.ITemplatePart;
-import com.lmpessoa.services.internal.parsing.IVariablePart;
-import com.lmpessoa.services.internal.parsing.LiteralPart;
-import com.lmpessoa.services.internal.parsing.ParseException;
-
 public final class AbstractParserTest {
 
    @Rule

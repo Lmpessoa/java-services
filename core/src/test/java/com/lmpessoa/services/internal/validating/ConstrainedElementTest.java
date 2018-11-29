@@ -43,14 +43,6 @@ import javax.validation.groups.Default;
 
 import org.junit.Test;
 
-import com.lmpessoa.services.internal.validating.ConstrainedConstructor;
-import com.lmpessoa.services.internal.validating.ConstrainedElement;
-import com.lmpessoa.services.internal.validating.ConstrainedField;
-import com.lmpessoa.services.internal.validating.ConstrainedMethod;
-import com.lmpessoa.services.internal.validating.ConstrainedParameter;
-import com.lmpessoa.services.internal.validating.ConstrainedType;
-import com.lmpessoa.services.internal.validating.ConstrainedTypeArgument;
-import com.lmpessoa.services.internal.validating.ConstraintAnnotation;
 import com.lmpessoa.services.test.validating.Author;
 import com.lmpessoa.services.test.validating.Book;
 import com.lmpessoa.services.test.validating.ForceStrongPassword;

@@ -45,7 +45,7 @@ import java.util.function.Predicate;
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocketFactory;
 
-import com.lmpessoa.services.internal.ErrorMessage;
+import com.lmpessoa.services.internal.CoreMessage;
 import com.lmpessoa.services.internal.parsing.ParseException;
 import com.lmpessoa.services.logging.Handler;
 import com.lmpessoa.services.logging.LogEntry;
@@ -163,7 +163,7 @@ public final class SyslogHandler extends Handler {
    public void setFacility(int facility) {
       this.facility = facility;
       if (facility < 0 || facility > 7) {
-         throw new IllegalArgumentException(ErrorMessage.INVALID_FACILITY_VALUE.get());
+         throw new IllegalArgumentException(CoreMessage.INVALID_FACILITY_VALUE.get());
       }
    }
 
@@ -196,7 +196,7 @@ public final class SyslogHandler extends Handler {
    public void setTimeout(int timeout) {
       this.timeout = timeout;
       if (timeout < 0) {
-         throw new IllegalArgumentException(ErrorMessage.NEGATIVE_TIMEOUT.get());
+         throw new IllegalArgumentException(CoreMessage.NEGATIVE_TIMEOUT.get());
       }
    }
 
@@ -272,7 +272,7 @@ public final class SyslogHandler extends Handler {
                      RFC_5424_VERSION, formatter.format(entry.getTime()), hostname,
                      appName == null ? "-" : appName, msgId, message.trim());
          default:
-            throw new IllegalArgumentException(ErrorMessage.UNKNOWN_SYSLOG_FORMAT.with(format));
+            throw new IllegalArgumentException(CoreMessage.UNKNOWN_SYSLOG_FORMAT.with(format));
       }
    }
 

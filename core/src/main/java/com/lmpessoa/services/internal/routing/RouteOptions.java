@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
-import com.lmpessoa.services.internal.ErrorMessage;
+import com.lmpessoa.services.internal.CoreMessage;
 import com.lmpessoa.services.routing.IRouteOptions;
 
 final class RouteOptions implements IRouteOptions {
@@ -42,13 +42,13 @@ final class RouteOptions implements IRouteOptions {
    @Override
    public void addArea(String areaPath, String packageExpr, String defaultResource) {
       if (!Pattern.matches("^([a-zA-Z0-9]+(\\/[a-zA-Z0-9]+)?)?$", areaPath)) {
-         throw new IllegalArgumentException(ErrorMessage.INVALID_AREA_PATH.with(areaPath));
+         throw new IllegalArgumentException(CoreMessage.INVALID_AREA_PATH.with(areaPath));
       }
       String packExpr = packageExpr.replaceAll("\\.", "\\\\.");
       packages.put(areaPath, Pattern.compile(packExpr));
       String defRes = defaultResource.toLowerCase();
       if (!Pattern.matches("^[a-z][a-z0-9]*$", defRes)) {
-         throw new IllegalArgumentException(ErrorMessage.INVALID_DEFAULT_RESOURCE.with(defRes));
+         throw new IllegalArgumentException(CoreMessage.INVALID_DEFAULT_RESOURCE.with(defRes));
       }
       if (!"index".equals(defRes)) {
          indices.put(areaPath, defRes);

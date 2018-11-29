@@ -28,7 +28,7 @@ import java.lang.reflect.Modifier;
 import java.util.function.Supplier;
 
 import com.lmpessoa.services.internal.ClassUtils;
-import com.lmpessoa.services.internal.ErrorMessage;
+import com.lmpessoa.services.internal.CoreMessage;
 import com.lmpessoa.services.services.Reuse;
 
 final class LazyInitializer<T> implements Supplier<T> {
@@ -40,23 +40,22 @@ final class LazyInitializer<T> implements Supplier<T> {
       this.serviceMap = serviceMap;
       this.provider = provider;
       if (!Modifier.isPublic(provider.getModifiers()) || !ClassUtils.isConcreteClass(provider)) {
-         throw new IllegalArgumentException(ErrorMessage.SERVICE_NOT_CONCRETE.get());
+         throw new IllegalArgumentException(CoreMessage.SERVICE_NOT_CONCRETE.get());
       }
       final Constructor<?>[] constructors = provider.getDeclaredConstructors();
       if (constructors.length != 1) {
-         throw new IllegalArgumentException(
-                  new NoSingleMethodException(ErrorMessage.TOO_MANY_CONSTRUCTORS
-                           .with(provider.getName(), constructors.length)));
+         throw new IllegalArgumentException(new NoSingleMethodException(
+                  CoreMessage.TOO_MANY_CONSTRUCTORS.with(provider.getName(), constructors.length)));
       }
       for (Class<?> paramType : constructors[0].getParameterTypes()) {
          ServiceEntry entry = this.serviceMap.getEntry(paramType);
          if (entry == null) {
             throw new IllegalArgumentException(
-                     ErrorMessage.SERVICE_DEPENDENCY.with(provider.getName(), paramType.getName()));
+                     CoreMessage.SERVICE_DEPENDENCY.with(provider.getName(), paramType.getName()));
 
          }
          if (entry.getLevel().compareTo(level) < 0) {
-            throw new IllegalArgumentException(ErrorMessage.SERVICE_LOWER_LIFETIME
+            throw new IllegalArgumentException(CoreMessage.SERVICE_LOWER_LIFETIME
                      .with(provider.getName(), paramType.getName()));
          }
       }

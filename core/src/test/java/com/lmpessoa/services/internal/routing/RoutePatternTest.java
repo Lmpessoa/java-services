@@ -42,8 +42,6 @@ import org.junit.rules.ExpectedException;
 import com.lmpessoa.services.Route;
 import com.lmpessoa.services.internal.parsing.ParseException;
 import com.lmpessoa.services.internal.parsing.TypeMismatchException;
-import com.lmpessoa.services.internal.routing.RouteOptions;
-import com.lmpessoa.services.internal.routing.RoutePattern;
 import com.lmpessoa.services.internal.services.NoSingleMethodException;
 import com.lmpessoa.services.internal.services.ServiceMap;
 import com.lmpessoa.services.test.services.Singleton;
@@ -257,7 +255,7 @@ public final class RoutePatternTest {
       RoutePattern pat = RoutePattern.build(null,
                TestResource.class.getMethod("routed", String.class, int.class));
       assertNotNull(pat);
-      assertEquals("/(\\d+)\\.([^\\/]+)", pat.toString());
+      assertEquals("/(\\d+).([^\\/]+)", pat.toString());
    }
 
    @Test

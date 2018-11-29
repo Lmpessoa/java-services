@@ -29,8 +29,6 @@ import java.util.Locale;
 
 import org.junit.Test;
 
-import com.lmpessoa.services.Localized;
-
 public class LocalizationTest {
 
    private Localized.MessageSet source;
