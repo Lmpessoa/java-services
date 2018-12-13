@@ -24,6 +24,7 @@ package com.lmpessoa.services.security;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNull;
 
 import java.io.IOException;
 
@@ -33,12 +34,12 @@ import com.lmpessoa.services.hosting.Headers;
 import com.lmpessoa.services.hosting.HttpRequest;
 import com.lmpessoa.services.internal.hosting.HttpRequestBuilder;
 
-public class IdentityProviderTest {
+public class TokenManagerTest {
 
    @Test
    public void testTokensSameUser() {
-      String t1 = IIdentityProvider.generateTokenFor("lmpessoa");
-      String t2 = IIdentityProvider.generateTokenFor("lmpessoa");
+      String t1 = ITokenManager.generateTokenFor("lmpessoa");
+      String t2 = ITokenManager.generateTokenFor("lmpessoa");
       assertEquals(45, t1.length());
       assertEquals(45, t2.length());
       assertNotEquals(t1, t2);
@@ -47,8 +48,8 @@ public class IdentityProviderTest {
 
    @Test
    public void testTokensDifferentUsers() {
-      String t1 = IIdentityProvider.generateTokenFor("lmpessoa");
-      String t2 = IIdentityProvider.generateTokenFor("sh_rt");
+      String t1 = ITokenManager.generateTokenFor("lmpessoa");
+      String t2 = ITokenManager.generateTokenFor("sh_rt");
       assertEquals(45, t1.length());
       assertEquals(45, t2.length());
       assertNotEquals(t1, t2);
@@ -57,17 +58,12 @@ public class IdentityProviderTest {
 
    @Test
    public void testIdentityProvider() throws IOException {
-      IIdentityProvider provider = new TestIdentityProvider();
-      String token = IIdentityProvider.generateTokenFor("lmpessoa");
+      ITokenManager provider = new TestTokenManager();
+      String token = ITokenManager.generateTokenFor("lmpessoa");
       HttpRequest request = new HttpRequestBuilder() //
                .addHeader(Headers.AUTHORIZATION, token)
                .build();
-      IIdentity identity = provider.getIdentity(request);
-      assertEquals("Token", identity.claims("test:claim:type") //
-               .stream()
-               .map(Claim::getValue)
-               .findFirst()
-               .orElse(null));
+      IIdentity identity = provider.get(request);
       assertEquals(token, identity.claims("test:claim:token") //
                .stream()
                .map(Claim::getValue)
@@ -77,30 +73,20 @@ public class IdentityProviderTest {
 
    @Test
    public void testIdentityProviderOtherName() throws IOException {
-      IIdentityProvider provider = new TestIdentityProvider();
-      String token = IIdentityProvider.generateTokenFor("lmpessoa");
+      ITokenManager provider = new TestTokenManager();
+      String token = ITokenManager.generateTokenFor("lmpessoa");
       HttpRequest request = new HttpRequestBuilder() //
                .addHeader(Headers.AUTHORIZATION, "Key " + token)
                .build();
-      IIdentity identity = provider.getIdentity(request);
-      assertEquals("Key", identity.claims("test:claim:type") //
-               .stream()
-               .map(Claim::getValue)
-               .findFirst()
-               .orElse(null));
-      assertEquals(token, identity.claims("test:claim:token") //
-               .stream()
-               .map(Claim::getValue)
-               .findFirst()
-               .orElse(null));
+      IIdentity identity = provider.get(request);
+      assertNull(identity);
    }
 
-   public static class TestIdentityProvider implements IIdentityProvider {
+   public static class TestTokenManager implements ITokenManager {
 
       @Override
-      public IIdentity getIdentity(String format, String token) {
+      public IIdentity get(String token) {
          return new IdentityBuilder() //
-                  .addClaim("test:claim:type", format)
                   .addClaim("test:claim:token", token)
                   .build();
       }

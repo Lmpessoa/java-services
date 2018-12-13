@@ -67,6 +67,7 @@ import com.lmpessoa.services.Route;
 import com.lmpessoa.services.hosting.ConnectionInfo;
 import com.lmpessoa.services.hosting.Headers;
 import com.lmpessoa.services.hosting.HttpRequest;
+import com.lmpessoa.services.hosting.HttpResponse;
 import com.lmpessoa.services.hosting.IApplicationInfo;
 import com.lmpessoa.services.internal.logging.Logger;
 import com.lmpessoa.services.internal.routing.MatchedRouteBridge;
@@ -128,29 +129,30 @@ public final class FullResponderTest {
 
    @Test
    public void testMediatorWithString() throws IOException {
-      HttpResult result = perform("/test/string");
+      HttpResponse result = perform("/test/string");
       assertEquals(200, result.getStatusCode());
-      assertNotNull(result.getInputStream());
-      assertEquals(ContentType.TEXT, result.getInputStream().getType());
+      assertNotNull(result.getContentBody());
+      assertEquals(ContentType.TEXT, result.getContentBody().getType());
    }
 
    @Test
    public void testMediatorEmpty() throws IOException {
-      HttpResult result = perform("/test/empty");
+      HttpResponse result = perform("/test/empty");
       assertEquals(204, result.getStatusCode());
+      assertNull(result.getContentBody());
    }
 
    @Test
    public void testMediatorNotFound() throws IOException {
-      HttpResult result = perform("/test/impl");
+      HttpResponse result = perform("/test/impl");
       assertEquals(501, result.getStatusCode());
    }
 
    @Test
    public void testMediatorError() throws IOException {
-      HttpResult result = perform("/test/error");
+      HttpResponse result = perform("/test/error");
       assertEquals(500, result.getStatusCode());
-      HttpInputStream is = result.getInputStream();
+      HttpInputStream is = result.getContentBody();
       assertEquals(ContentType.TEXT, is.getType());
       ByteArrayOutputStream out = new ByteArrayOutputStream();
       is.sendTo(out);
@@ -160,21 +162,21 @@ public final class FullResponderTest {
 
    @Test
    public void testMediatorWithObject() throws IOException {
-      HttpResult result = perform("/test/object");
+      HttpResponse result = perform("/test/object");
       assertEquals(200, result.getStatusCode());
-      assertNotNull(result.getInputStream());
-      assertEquals(ContentType.JSON, result.getInputStream().getType());
-      String content = readAll(result.getInputStream());
+      assertNotNull(result.getContentBody());
+      assertEquals(ContentType.JSON, result.getContentBody().getType());
+      String content = readAll(result.getContentBody());
       assertEquals("{\"id\":12,\"message\":\"Test\"}", content);
    }
 
    @Test
    public void testMediatorWithObjectPost() throws IOException, NoSuchMethodException {
-      HttpResult result = performFile("/http/multi_post_request.txt");
+      HttpResponse result = performFile("/http/multi_post_request.txt");
       assertEquals(200, result.getStatusCode());
-      assertNotNull(result.getInputStream());
-      assertEquals(ContentType.JSON, result.getInputStream().getType());
-      String content = readAll(result.getInputStream());
+      assertNotNull(result.getContentBody());
+      assertEquals(ContentType.JSON, result.getContentBody().getType());
+      String content = readAll(result.getContentBody());
       assertEquals("12", content);
 
       assertTrue(MatchedRouteBridge.isMatchedRoute(route));
@@ -198,63 +200,59 @@ public final class FullResponderTest {
 
    @Test
    public void testMediatorWithStream() throws IOException {
-      HttpResult result = perform("/test/binary");
+      HttpResponse result = perform("/test/binary");
       assertEquals(200, result.getStatusCode());
-      assertNotNull(result.getInputStream());
-      assertEquals(ContentType.BINARY, result.getInputStream().getType());
-      String content = readAll(result.getInputStream());
+      assertNotNull(result.getContentBody());
+      assertEquals(ContentType.BINARY, result.getContentBody().getType());
+      String content = readAll(result.getContentBody());
       assertEquals("Test", content);
    }
 
    @Test
    public void testMediatorWithTypedStream() throws IOException {
-      HttpResult result = perform("/test/typed");
+      HttpResponse result = perform("/test/typed");
       assertEquals(200, result.getStatusCode());
-      assertNotNull(result.getInputStream());
-      assertEquals(ContentType.YAML, result.getInputStream().getType());
-      String content = readAll(result.getInputStream());
+      assertNotNull(result.getContentBody());
+      assertEquals(ContentType.YAML, result.getContentBody().getType());
+      String content = readAll(result.getContentBody());
       assertEquals("Test", content);
    }
 
    @Test
    public void testMediatorWithResultStream() throws IOException {
-      HttpResult result = perform("/test/result");
+      HttpResponse result = perform("/test/result");
       assertEquals(500, result.getStatusCode());
-      assertNotNull(result.getInputStream());
-      assertEquals(ContentType.TEXT, result.getInputStream().getType());
-      String content = readAll(result.getInputStream());
+      assertNotNull(result.getContentBody());
+      assertEquals(ContentType.TEXT, result.getContentBody().getType());
+      String content = readAll(result.getContentBody());
       assertEquals("Application produced an unexpected result", content);
    }
 
    @Test
    public void testMediatorWithFavicon() throws IOException, URISyntaxException {
-      HttpResult result = perform("/test/favicon.ico");
+      HttpResponse result = perform("/test/favicon.ico");
       assertEquals(200, result.getStatusCode());
-      assertNotNull(result.getInputStream());
-      assertEquals(ContentType.ICO, result.getInputStream().getType());
+      assertNotNull(result.getContentBody());
+      assertEquals(ContentType.ICO, result.getContentBody().getType());
       File favicon = new File(ApplicationServer.class.getResource("/favicon.ico").toURI());
-      assertEquals(favicon.length(), result.getInputStream().available());
+      assertEquals(favicon.length(), result.getContentBody().available());
    }
 
    @Test
    public void testMediatorWithRedirect() throws IOException {
-      HttpResult result = perform("/test/redirect");
+      HttpResponse result = perform("/test/redirect");
       assertEquals(302, result.getStatusCode());
-      assertNull(result.getInputStream());
-      for (HeaderEntry entry : result.getHeaders()) {
-         if (entry.getKey().equals(Headers.LOCATION)) {
-            assertEquals("https://lmpessoa.com/test/7", entry.getValue());
-         }
-      }
+      assertNull(result.getContentBody());
+      assertEquals("https://lmpessoa.com/test/7", result.getHeaders().get(Headers.LOCATION));
    }
 
    @Test
    public void testMediatorWithInvalidParamToJson() throws IOException {
-      HttpResult result = performFile("/http/invalid_patch_request.txt");
+      HttpResponse result = performFile("/http/invalid_patch_request.txt");
       assertEquals(400, result.getStatusCode());
-      assertNotNull(result.getInputStream());
-      assertEquals(ContentType.JSON, result.getInputStream().getType());
-      String content = readAll(result.getInputStream());
+      assertNotNull(result.getContentBody());
+      assertEquals(ContentType.JSON, result.getContentBody().getType());
+      String content = readAll(result.getContentBody());
       assertEquals("{\"errors\":[{\"path\":\"value.invalid\","
                + "\"message\":\"must not be null\",\"invalidValue\":\"null\"}]}", content);
    }
@@ -262,11 +260,11 @@ public final class FullResponderTest {
    @Test
    public void testMediatorWithInvalidParamToJsonLocalised() throws IOException {
       Locale.setDefault(Locale.forLanguageTag("nl"));
-      HttpResult result = performFile("/http/invalid_patch_request.txt");
+      HttpResponse result = performFile("/http/invalid_patch_request.txt");
       assertEquals(400, result.getStatusCode());
-      assertNotNull(result.getInputStream());
-      assertEquals(ContentType.JSON, result.getInputStream().getType());
-      String content = readAll(result.getInputStream());
+      assertNotNull(result.getContentBody());
+      assertEquals(ContentType.JSON, result.getContentBody().getType());
+      String content = readAll(result.getContentBody());
       assertEquals(
                "{\"errors\":[{\"path\":\"value.invalid\","
                         + "\"message\":\"mag niet null zijn\",\"invalidValue\":\"null\"}]}",
@@ -287,11 +285,11 @@ public final class FullResponderTest {
                .build();
       services.putSupplier(HttpRequest.class, () -> request);
       route = routes.matches(request);
-      HttpResult result = (HttpResult) app.getFirstResponder().invoke();
+      HttpResponse result = (HttpResponse) app.getFirstResponder().invoke();
       assertEquals(400, result.getStatusCode());
-      assertNotNull(result.getInputStream());
-      assertEquals(ContentType.JSON, result.getInputStream().getType());
-      String content = readAll(result.getInputStream());
+      assertNotNull(result.getContentBody());
+      assertEquals(ContentType.JSON, result.getContentBody().getType());
+      String content = readAll(result.getContentBody());
       assertEquals(
                "{\"errors\":[{\"path\":\"value.invalid\","
                         + "\"message\":\"mag niet null zijn\",\"invalidValue\":\"null\"}]}",
@@ -301,11 +299,11 @@ public final class FullResponderTest {
    @Test
    public void testMediatorWithInvalidParamToXml() throws IOException {
       Serializer.enableXml(true);
-      HttpResult result = performFile("/http/invalid_patch_request.txt");
+      HttpResponse result = performFile("/http/invalid_patch_request.txt");
       assertEquals(400, result.getStatusCode());
-      assertNotNull(result.getInputStream());
-      assertEquals(ContentType.XML, result.getInputStream().getType());
-      String content = readAll(result.getInputStream());
+      assertNotNull(result.getContentBody());
+      assertEquals(ContentType.XML, result.getContentBody().getType());
+      String content = readAll(result.getContentBody());
       assertEquals("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n" + "<errors>\n"
                + "  <error path=\"value.invalid\" message=\"must not be null\" invalidValue=\"null\"/>\n"
                + "</errors>\n", content);
@@ -313,18 +311,18 @@ public final class FullResponderTest {
 
    @Test
    public void testMediatorWithoutInvalidParam() throws IOException {
-      HttpResult result = perform(PATCH, "/test/invalid");
+      HttpResponse result = perform(PATCH, "/test/invalid");
       assertEquals(204, result.getStatusCode());
-      assertNull(result.getInputStream());
+      assertNull(result.getContentBody());
    }
 
    @Test
    public void testMediatorWithoutQueryParam() throws IOException {
-      HttpResult result = performFile("/http/query_get_request.txt");
+      HttpResponse result = performFile("/http/query_get_request.txt");
       assertEquals(400, result.getStatusCode());
-      assertNotNull(result.getInputStream());
-      assertEquals(ContentType.TEXT, result.getInputStream().getType());
-      String content = readAll(result.getInputStream());
+      assertNotNull(result.getContentBody());
+      assertEquals(ContentType.TEXT, result.getContentBody().getType());
+      String content = readAll(result.getContentBody());
       assertEquals(
                "java.lang.IllegalArgumentException: java.lang.reflect.InvocationTargetException",
                content);
@@ -332,32 +330,32 @@ public final class FullResponderTest {
 
    @Test
    public void testMediatorWithCatchAllParam() throws IOException {
-      HttpResult result = perform(GET, "/test/catchall/path/to/real/object");
+      HttpResponse result = perform(GET, "/test/catchall/path/to/real/object");
       assertEquals(200, result.getStatusCode());
-      assertNotNull(result.getInputStream());
-      assertEquals(ContentType.TEXT, result.getInputStream().getType());
-      String content = readAll(result.getInputStream());
+      assertNotNull(result.getContentBody());
+      assertEquals(ContentType.TEXT, result.getContentBody().getType());
+      String content = readAll(result.getContentBody());
       assertEquals("'path', 'to', 'real', 'object'", content);
    }
 
    @Test
    public void testMediatorWithValidStream() throws IOException {
-      HttpResult result = performFile("/http/valid_stream_request.txt");
+      HttpResponse result = performFile("/http/valid_stream_request.txt");
       assertEquals(200, result.getStatusCode());
-      assertEquals(ContentType.TEXT, result.getInputStream().getType());
-      assertEquals(StandardCharsets.UTF_8, result.getInputStream().getEncoding());
-      String content = readAll(result.getInputStream());
+      assertEquals(ContentType.TEXT, result.getContentBody().getType());
+      assertEquals(StandardCharsets.UTF_8, result.getContentBody().getEncoding());
+      String content = readAll(result.getContentBody());
       assertEquals("Test", content);
    }
 
    @Test
    public void testMediatorWithInvalidStream() throws IOException {
-      HttpResult result = performFile("/http/invalid_stream_request.txt");
+      HttpResponse result = performFile("/http/invalid_stream_request.txt");
       assertEquals(400, result.getStatusCode());
-      assertNotNull(result.getInputStream());
-      assertEquals(ContentType.JSON, result.getInputStream().getType());
-      assertEquals(StandardCharsets.UTF_8, result.getInputStream().getEncoding());
-      String content = readAll(result.getInputStream());
+      assertNotNull(result.getContentBody());
+      assertEquals(ContentType.JSON, result.getContentBody().getType());
+      assertEquals(StandardCharsets.UTF_8, result.getContentBody().getEncoding());
+      String content = readAll(result.getContentBody());
       assertEquals("{\"errors\":[{\"path\":\"content\"," //
                + "\"message\":\"unexpected content type\","
                + "\"invalidValue\":\"<com.lmpessoa.services.HttpInputStream>\"}]}", content);
@@ -366,12 +364,12 @@ public final class FullResponderTest {
    @Test
    public void testMediatorWithHealthRequest() throws IOException {
       app.useHeath();
-      HttpResult result = perform("/health");
+      HttpResponse result = perform("/health");
       assertEquals(200, result.getStatusCode());
-      assertNotNull(result.getInputStream());
-      assertEquals(ContentType.JSON, result.getInputStream().getType());
-      assertEquals(StandardCharsets.UTF_8, result.getInputStream().getEncoding());
-      String content = readAll(result.getInputStream());
+      assertNotNull(result.getContentBody());
+      assertEquals(ContentType.JSON, result.getContentBody().getType());
+      assertEquals(StandardCharsets.UTF_8, result.getContentBody().getEncoding());
+      String content = readAll(result.getContentBody());
       assertTrue(content.matches(
                "\\{\"app\":\"fullResponderTest\",\"status\":\"OK\",\"uptime\":\\d+,\"memory\":\\d+}"));
    }
@@ -382,12 +380,12 @@ public final class FullResponderTest {
       try {
          services.put(IDbService.class, (IDbService) () -> HealthStatus.OK);
          app.useHeath();
-         HttpResult result = perform(GET, "/health", ContentType.XML);
+         HttpResponse result = perform(GET, "/health", ContentType.XML);
          assertEquals(200, result.getStatusCode());
-         assertNotNull(result.getInputStream());
-         assertEquals(ContentType.XML, result.getInputStream().getType());
-         assertEquals(StandardCharsets.UTF_8, result.getInputStream().getEncoding());
-         String content = readAll(result.getInputStream());
+         assertNotNull(result.getContentBody());
+         assertEquals(ContentType.XML, result.getContentBody().getType());
+         assertEquals(StandardCharsets.UTF_8, result.getContentBody().getEncoding());
+         String content = readAll(result.getContentBody());
          assertTrue(content.matches(
                   "<\\?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"\\?>\\n<appInfo>\\n  <name>fullResponderTest</name>\\n  <status>OK</status>\\n  <services>\\n    <service name=\"db\" status=\"OK\"/>\\n  </services>\\n  <uptime>\\d+</uptime>\\n  <memory>\\d+</memory>\\n</appInfo>\\n"));
       } finally {
@@ -399,12 +397,12 @@ public final class FullResponderTest {
    public void testMediatorHealthWithServiceStatusOk() throws IOException {
       services.put(IDbService.class, (IDbService) () -> HealthStatus.OK);
       app.useHeath();
-      HttpResult result = perform("/health");
+      HttpResponse result = perform("/health");
       assertEquals(200, result.getStatusCode());
-      assertNotNull(result.getInputStream());
-      assertEquals(ContentType.JSON, result.getInputStream().getType());
-      assertEquals(StandardCharsets.UTF_8, result.getInputStream().getEncoding());
-      String content = readAll(result.getInputStream());
+      assertNotNull(result.getContentBody());
+      assertEquals(ContentType.JSON, result.getContentBody().getType());
+      assertEquals(StandardCharsets.UTF_8, result.getContentBody().getEncoding());
+      String content = readAll(result.getContentBody());
       assertTrue(content.matches(
                "\\{\"app\":\"fullResponderTest\",\"status\":\"OK\",\"services\":\\{\"db\":\"OK\"},\"uptime\":\\d+,\"memory\":\\d+}"));
    }
@@ -413,46 +411,41 @@ public final class FullResponderTest {
    public void testMediatorHealthWithServiceStatusFail() throws IOException {
       services.put(IDbService.class, (IDbService) () -> HealthStatus.FAILED);
       app.useHeath();
-      HttpResult result = perform("/health");
+      HttpResponse result = perform("/health");
       assertEquals(200, result.getStatusCode());
-      assertNotNull(result.getInputStream());
-      assertEquals(ContentType.JSON, result.getInputStream().getType());
-      assertEquals(StandardCharsets.UTF_8, result.getInputStream().getEncoding());
-      String content = readAll(result.getInputStream());
+      assertNotNull(result.getContentBody());
+      assertEquals(ContentType.JSON, result.getContentBody().getType());
+      assertEquals(StandardCharsets.UTF_8, result.getContentBody().getEncoding());
+      String content = readAll(result.getContentBody());
       assertTrue(content.matches(
                "\\{\"app\":\"fullResponderTest\",\"status\":\"PARTIAL\",\"services\":\\{\"db\":\"FAILED\"},\"uptime\":\\d+,\"memory\":\\d+}"));
    }
 
    @Test
    public void testMediatorWithFileToHttpInputStream() throws IOException, URISyntaxException {
-      HttpResult result = perform(GET, "/test/file");
+      HttpResponse result = perform(GET, "/test/file");
       assertEquals(200, result.getStatusCode());
-      assertNotNull(result.getInputStream());
-      assertEquals("random/test", result.getInputStream().getType());
-      assertEquals("sample.random", result.getInputStream().getFilename());
+      assertNotNull(result.getContentBody());
+      assertEquals("random/test", result.getContentBody().getType());
+      assertEquals("sample.random", result.getContentBody().getFilename());
       File file = new File(FullResponderTest.class.getResource("/static/sample.random").toURI());
       ZonedDateTime fileTime = Instant.ofEpochMilli(file.lastModified())
                .atZone(ZoneId.systemDefault());
-      assertEquals(fileTime, result.getInputStream().getDate());
+      assertEquals(fileTime, result.getContentBody().getDate());
       fileTime = fileTime.withZoneSameInstant(ZoneId.of("GMT"));
-      String fileTimeStr = result.getHeaders()
-               .stream()
-               .filter(h -> h.getKey().equals(Headers.DATE))
-               .map(h -> h.getValue())
-               .findFirst()
-               .orElse(null);
+      String fileTimeStr = result.getHeaders().get(Headers.DATE);
       assertEquals(DateHeader.RFC_7231_DATE_TIME.format(fileTime), fileTimeStr);
    }
 
-   private HttpResult perform(String path) throws IOException {
+   private HttpResponse perform(String path) throws IOException {
       return perform(GET, path);
    }
 
-   private HttpResult perform(HttpMethod method, String path) throws IOException {
+   private HttpResponse perform(HttpMethod method, String path) throws IOException {
       return perform(method, path, null);
    }
 
-   private HttpResult perform(HttpMethod method, String path, String accepts) throws IOException {
+   private HttpResponse perform(HttpMethod method, String path, String accepts) throws IOException {
       HttpRequestBuilder builder = new HttpRequestBuilder().setMethod(method).setPath(path);
       if (accepts != null) {
          builder.addHeader(Headers.ACCEPT, accepts);
@@ -460,15 +453,17 @@ public final class FullResponderTest {
       request = builder.build();
       services.putSupplier(HttpRequest.class, () -> request);
       route = routes.matches(request);
-      return (HttpResult) app.getFirstResponder().invoke();
+      HttpResponse result = (HttpResponse) app.getFirstResponder().invoke();
+      result.setConnectionInfo(connect);
+      return result;
    }
 
-   private HttpResult performFile(String resource) throws IOException {
+   private HttpResponse performFile(String resource) throws IOException {
       try (InputStream res = FullResponderTest.class.getResourceAsStream(resource)) {
          request = new HttpRequestImpl(res, 1);
          services.putSupplier(HttpRequest.class, () -> request);
          route = routes.matches(request);
-         return (HttpResult) app.getFirstResponder().invoke();
+         return (HttpResponse) app.getFirstResponder().invoke();
       }
    }
 

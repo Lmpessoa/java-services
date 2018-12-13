@@ -22,7 +22,13 @@
  */
 package com.lmpessoa.services.internal.hosting;
 
-public final class InternalServerError extends Error implements IHttpStatusCodeProvider {
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+import com.lmpessoa.services.ContentType;
+import com.lmpessoa.services.HttpInputStream;
+import com.lmpessoa.services.hosting.HttpResponse;
+
+public final class InternalServerError extends Error implements HttpResponse {
 
    private static final long serialVersionUID = 1L;
 
@@ -37,5 +43,10 @@ public final class InternalServerError extends Error implements IHttpStatusCodeP
    @Override
    public int getStatusCode() {
       return 500;
+   }
+
+   @Override
+   public HttpInputStream getContentBody() {
+      return new HttpInputStream(getMessage().getBytes(UTF_8), ContentType.TEXT, UTF_8);
    }
 }

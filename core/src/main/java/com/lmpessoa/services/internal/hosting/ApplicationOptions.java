@@ -22,7 +22,6 @@
  */
 package com.lmpessoa.services.internal.hosting;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -47,7 +46,7 @@ import com.lmpessoa.services.internal.services.ServiceMap;
 import com.lmpessoa.services.routing.IRouteOptions;
 import com.lmpessoa.services.security.IIdentity;
 import com.lmpessoa.services.security.IIdentityOptions;
-import com.lmpessoa.services.security.IIdentityProvider;
+import com.lmpessoa.services.security.ITokenManager;
 
 public final class ApplicationOptions implements IApplicationOptions {
 
@@ -59,8 +58,8 @@ public final class ApplicationOptions implements IApplicationOptions {
    private final ServiceMap services = new ServiceMap();
    private final RouteTable routes = new RouteTable(services);
 
-   private Class<? extends IIdentityProvider> identityProvider = null;
    private Class<? extends IAsyncRequestMatcher> defaultRouteMatcher;
+   private boolean hasTokenManager = false;
    private boolean configured = false;
    private boolean enableXml = false;
    private AsyncReject defaultReject;
@@ -167,19 +166,15 @@ public final class ApplicationOptions implements IApplicationOptions {
    // Identity
 
    @Override
-   public void useIdentityWith(Class<? extends IIdentityProvider> identityProvider,
+   public void useIdentityWith(Class<? extends ITokenManager> tokenManager,
       Consumer<IIdentityOptions> options) throws NoSingleMethodException {
       lockConfiguration();
-      Objects.requireNonNull(identityProvider);
-      if (this.identityProvider != null) {
-         throw new IllegalStateException(CoreMessage.IDENTITY_CONFIGURED.get());
+      Objects.requireNonNull(tokenManager);
+      if (hasTokenManager) {
+         throw new IllegalArgumentException(CoreMessage.IDENTITY_CONFIGURED.get());
       }
-      int constrCount = identityProvider.getConstructors().length;
-      if (constrCount != 1) {
-         throw new NoSingleMethodException(
-                  CoreMessage.IDENTITY_CONSTRUCTOR_MISSING.with(constrCount));
-      }
-      this.identityProvider = identityProvider;
+      services.put(ITokenManager.class, tokenManager);
+      hasTokenManager = true;
       if (options != null) {
          options.accept((policyName, policyMethod) -> {
             lockConfiguration();
@@ -223,6 +218,7 @@ public final class ApplicationOptions implements IApplicationOptions {
       if (configuration != null) {
          configuration.accept(services);
       }
+      RedirectImpl.setRoutes(routes);
    }
 
    boolean isXmlEnabled() {
@@ -235,20 +231,6 @@ public final class ApplicationOptions implements IApplicationOptions {
 
    RouteTable getRoutes() {
       return routes;
-   }
-
-   IIdentityProvider getIdentityProvider() {
-      if (identityProvider == null) {
-         return null;
-      }
-      try {
-         return (IIdentityProvider) getServices().invoke(null,
-                  identityProvider.getConstructors()[0]);
-      } catch (InvocationTargetException e) {
-         throw new InternalServerError(e.getCause());
-      } catch (IllegalAccessException | InstantiationException | SecurityException e) {
-         throw new InternalServerError(e);
-      }
    }
 
    String getFeedbakcPath() {
@@ -292,7 +274,7 @@ public final class ApplicationOptions implements IApplicationOptions {
 
       result.addAll(this.responders);
 
-      if (identityProvider != null) {
+      if (hasTokenManager) {
          result.add(IdentityResponder.class);
       }
       if (feedbackPath != null) {

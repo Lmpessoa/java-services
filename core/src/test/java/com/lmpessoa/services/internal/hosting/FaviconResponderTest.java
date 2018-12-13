@@ -41,6 +41,7 @@ import com.lmpessoa.services.NotFoundException;
 import com.lmpessoa.services.Route;
 import com.lmpessoa.services.hosting.ConnectionInfo;
 import com.lmpessoa.services.hosting.HttpRequest;
+import com.lmpessoa.services.hosting.HttpResponse;
 import com.lmpessoa.services.hosting.IApplicationInfo;
 import com.lmpessoa.services.internal.logging.Logger;
 import com.lmpessoa.services.internal.services.ServiceMap;
@@ -83,8 +84,8 @@ public class FaviconResponderTest {
    @Test
    public void testDefaultFavicon() throws IOException {
       route = new NotFoundException();
-      HttpResult result = (HttpResult) app.getFirstResponder().invoke();
-      assertContent(result.getInputStream(),
+      HttpResponse result = (HttpResponse) app.getFirstResponder().invoke();
+      assertContent(result.getContentBody(),
                FaviconResponder.class.getResourceAsStream("/favicon.ico"));
    }
 
@@ -92,16 +93,16 @@ public class FaviconResponderTest {
    public void testStaticFavicon() throws IOException {
       app.useStaticFiles();
       route = new NotFoundException();
-      HttpResult result = (HttpResult) app.getFirstResponder().invoke();
-      assertContent(result.getInputStream(),
+      HttpResponse result = (HttpResponse) app.getFirstResponder().invoke();
+      assertContent(result.getContentBody(),
                FaviconResponderTest.class.getResourceAsStream("/static/favicon.ico"));
    }
 
    @Test
    public void testResourceFavicon() throws IOException {
       route = () -> new TestResource().get(false);
-      HttpResult result = (HttpResult) app.getFirstResponder().invoke();
-      assertContent(result.getInputStream(),
+      HttpResponse result = (HttpResponse) app.getFirstResponder().invoke();
+      assertContent(result.getContentBody(),
                FaviconResponderTest.class.getResourceAsStream("/http/resource-favicon.ico"));
    }
 
@@ -109,8 +110,8 @@ public class FaviconResponderTest {
    public void testResourceFaviconMissing() throws IOException {
       app.useStaticFiles();
       route = () -> new TestResource().get(true);
-      HttpResult result = (HttpResult) app.getFirstResponder().invoke();
-      assertContent(result.getInputStream(),
+      HttpResponse result = (HttpResponse) app.getFirstResponder().invoke();
+      assertContent(result.getContentBody(),
                FaviconResponder.class.getResourceAsStream("/favicon.ico"));
    }
 

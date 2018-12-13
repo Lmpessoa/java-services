@@ -26,6 +26,7 @@ import static com.lmpessoa.services.services.Reuse.REQUEST;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.Locale;
 
 import com.lmpessoa.services.Query;
@@ -74,6 +75,8 @@ public interface HttpRequest {
     */
    String getQueryString();
 
+   ValuesMap getQuery();
+
    /**
     * Returns the protocol used with this HTTP request.
     * <p>
@@ -95,14 +98,19 @@ public interface HttpRequest {
     * @return the content length of the body of this HTTP request, or {@code 0} if this value is not
     *         present.
     */
-   long getContentLength();
+   default long getContentLength() {
+      String length = getHeaders().get(Headers.CONTENT_LENGTH);
+      return length != null ? Long.parseLong(length) : 0;
+   }
 
    /**
     * Returns the content type of the body of this HTTP request.
     *
     * @return the content type of the body of this HTTP request.
     */
-   String getContentType();
+   default String getContentType() {
+      return getHeaders().get(Headers.CONTENT_TYPE);
+   }
 
    /**
     * Returns the list of languages accepted by the issuer of this HTTP request.
@@ -113,14 +121,23 @@ public interface HttpRequest {
     *
     * @return the list of languages accepted by the issuer of this HTTP request.
     */
-   Locale[] getAcceptedLanguages();
+   default Locale[] getAcceptedLanguages() {
+      String langs = getHeaders().get(Headers.ACCEPT_LANGUAGE);
+      if (langs == null) {
+         return new Locale[0];
+      }
+      return Arrays.stream(langs.split(",")) //
+               .map(s -> s.split(";")[0].trim())
+               .map(Locale::forLanguageTag)
+               .toArray(Locale[]::new);
+   }
 
    /**
     * Returns the headers associates with this HTTP request.
     *
     * @return the headers associates with this HTTP request.
     */
-   HeaderMap getHeaders();
+   ValuesMap getHeaders();
 
    /**
     * Returns a stream with the content of this HTTP request.
@@ -129,4 +146,6 @@ public interface HttpRequest {
     * @throws IOException
     */
    InputStream getContentBody();
+
+   ValuesMap getForm();
 }

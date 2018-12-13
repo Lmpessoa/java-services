@@ -20,9 +20,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.internal.hosting;
+package com.lmpessoa.shrt.model;
 
-public interface IHttpStatusCodeProvider {
+public class DataManagerException extends RuntimeException {
 
-   int getStatusCode();
+   private static final long serialVersionUID = 1L;
+
+   public DataManagerException(String message) {
+      super(message);
+   }
+
+   public DataManagerException(Throwable t) {
+      super(t);
+   }
 }

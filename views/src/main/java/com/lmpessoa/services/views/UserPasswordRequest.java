@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Leonardo Pessoa
+ * Copyright (c) 2018 Leonardo Pessoa
  * https://github.com/lmpessoa/java-services
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,47 +20,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.internal.hosting;
+package com.lmpessoa.services.views;
 
-import java.util.Collection;
+import javax.validation.constraints.NotNull;
 
-import com.lmpessoa.services.HttpInputStream;
+public class UserPasswordRequest {
 
-final class HttpResult {
+   @NotNull
+   private String username;
 
-   private final Collection<HeaderEntry> headers;
-   private final HttpInputStream stream;
-   private final int statusCode;
-   private final int length;
+   @NotNull
+   private String password;
 
-   public int getStatusCode() {
-      return statusCode;
+   public UserPasswordRequest() {
+      // Nothing to do here
    }
 
-   public Collection<HeaderEntry> getHeaders() {
-      return headers;
+   public UserPasswordRequest(String username, String password) {
+      this.username = username;
+      this.password = password;
    }
 
-   public HttpInputStream getInputStream() {
-      return stream;
+   public String getUsername() {
+      return username;
    }
 
-   @Override
-   public String toString() {
-      String resultType = stream != null ? stream.getType() : "(empty)";
-      return String.format("%s %s %s", statusCode, length, resultType);
-   }
-
-   HttpResult(int statusCode, Collection<HeaderEntry> headers, HttpInputStream stream) {
-      this.statusCode = statusCode;
-      this.headers = headers;
-      this.stream = stream;
-      int size = 0;
-      try {
-         size = stream.available();
-      } catch (Exception e) {
-         // Just ignore for now
-      }
-      this.length = size;
+   public String getPassword() {
+      return password;
    }
 }

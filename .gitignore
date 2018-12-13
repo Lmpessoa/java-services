@@ -10,6 +10,7 @@ local.properties
 .recommenders
 .scannerwork/
 .sonarlint/
+*.sqlite3
 
 # Eclipse Core
 .project

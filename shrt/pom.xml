@@ -1,0 +1,44 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+   <modelVersion>4.0.0</modelVersion>
+   <parent>
+      <groupId>com.lmpessoa.services</groupId>
+      <artifactId>parent</artifactId>
+      <version>1.0.0</version>
+   </parent>
+   <artifactId>shrt</artifactId>
+   <name>A short URL service implemented as an example of using the engine.</name>
+   <build>
+      <resources>
+         <resource>
+            <directory>src/main/resources</directory>
+            <filtering>true</filtering>
+         </resource>
+      </resources>
+      <plugins>
+         <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <version>3.5</version>
+            <configuration>
+               <compilerArgs>
+                  <arg>-parameters</arg>
+               </compilerArgs>
+            </configuration>
+         </plugin>
+      </plugins>
+   </build>
+   <dependencies>
+      <dependency>
+         <groupId>com.lmpessoa.services</groupId>
+         <artifactId>views</artifactId>
+         <version>1.0.0</version>
+      </dependency>
+      <dependency>
+         <groupId>com.lmpessoa.services</groupId>
+         <artifactId>liquid</artifactId>
+         <version>1.0.0</version>
+      </dependency>
+   </dependencies>
+</project>

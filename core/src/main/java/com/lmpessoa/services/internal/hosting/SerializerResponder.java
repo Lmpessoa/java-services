@@ -40,8 +40,6 @@ import java.time.ZonedDateTime;
 import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -54,6 +52,7 @@ import com.lmpessoa.services.Redirect;
 import com.lmpessoa.services.hosting.ConnectionInfo;
 import com.lmpessoa.services.hosting.Headers;
 import com.lmpessoa.services.hosting.HttpRequest;
+import com.lmpessoa.services.hosting.HttpResponse;
 import com.lmpessoa.services.hosting.NextResponder;
 import com.lmpessoa.services.internal.ClassUtils;
 import com.lmpessoa.services.internal.CoreMessage;
@@ -69,20 +68,23 @@ final class SerializerResponder {
       this.next = next;
    }
 
-   public HttpResult invoke(HttpRequest request, RouteMatch route, ConnectionInfo connect,
+   public HttpResponse invoke(HttpRequest request, RouteMatch route, ConnectionInfo connect,
       ILogger log) throws IOException {
       Localization.setLocales(request.getAcceptedLanguages());
       Object obj = getResultObject(request);
-      int statusCode = getStatusCode(obj);
+      if (obj instanceof HttpResponse) {
+         if (obj instanceof BadRequestException) {
+            ((BadRequestException) obj).setRequest(request);
+         }
+         return (HttpResponse) obj;
+      }
+      int statusCode = obj == null ? 204 : 200;
       HttpInputStream is;
       try {
          is = getContentBody(obj, request, route != null ? route.getMethod() : null);
       } catch (Throwable e) {
-         obj = e instanceof HttpException ? e : new InternalServerError(e);
-         statusCode = getStatusCode(obj);
-         is = getContentBody(obj, request, null);
+         return e instanceof HttpException ? (HttpException) e : new InternalServerError(e);
       }
-      Collection<HeaderEntry> headers = getExtraHeaders(obj, is, connect, log);
       if (obj instanceof Throwable && !(obj instanceof Redirect)) {
          Throwable t = (Throwable) obj;
          if (t instanceof InternalServerError) {
@@ -90,7 +92,11 @@ final class SerializerResponder {
          }
          log.error(t);
       }
-      return new HttpResult(statusCode, headers, is);
+      String date = getDateHeaderFromContent(obj, log);
+      if (date == null) {
+         date = DateHeader.RFC_7231_DATE_TIME.format(ZonedDateTime.now());
+      }
+      return new HttpResponseImpl(statusCode, is, date);
    }
 
    static boolean isTextual(String contentType) {
@@ -134,48 +140,10 @@ final class SerializerResponder {
       }
    }
 
-   private int getStatusCode(Object obj) {
-      if (obj == null) {
-         return 204;
-      } else if (obj instanceof IHttpStatusCodeProvider) {
-         return ((IHttpStatusCodeProvider) obj).getStatusCode();
-      }
-      return 200;
-   }
-
-   private Collection<HeaderEntry> getExtraHeaders(Object obj, HttpInputStream content,
-      ConnectionInfo connect, ILogger log) throws IOException {
-      List<HeaderEntry> result = new ArrayList<>();
-      if (content != null) {
-         String contentType = content.getType();
-         if (isTextual(contentType) && content.getEncoding() != null) {
-            contentType += String.format("; charset=\"%s\"",
-                     content.getEncoding().name().toLowerCase());
-         }
-         result.add(new HeaderEntry(Headers.CONTENT_TYPE, contentType));
-         result.add(new HeaderEntry(Headers.CONTENT_LENGTH, String.valueOf(content.available())));
-         if (content.getFilename() != null) {
-            String disposition = content.isDownloadable() ? "attachment" : "inline";
-            result.add(new HeaderEntry(Headers.CONTENT_DISPOSITION,
-                     String.format("%s; filename=\"%s\"", disposition, content.getFilename())));
-         }
-      }
-      if (obj instanceof RedirectImpl) {
-         RedirectImpl redirect = (RedirectImpl) obj;
-         result.add(new HeaderEntry(Headers.LOCATION, redirect.getUrl(connect).toExternalForm()));
-      }
-      if (obj != null) {
-         String date = getDateHeaderFromContent(obj, log);
-         if (date == null) {
-            // Date header is nearly mandatory according to RFC 7231
-            date = DateHeader.RFC_7231_DATE_TIME.format(ZonedDateTime.now());
-         }
-         result.add(new HeaderEntry(Headers.DATE, date));
-      }
-      return Collections.unmodifiableCollection(result);
-   }
-
    private String getDateHeaderFromContent(Object obj, ILogger log) {
+      if (obj == null) {
+         return null;
+      }
       // Find the field or getter with @DateInfo
       TemporalAccessor result = null;
       Class<?> clazz = obj.getClass();
@@ -224,16 +192,6 @@ final class SerializerResponder {
       }
       if (object == null || object instanceof Redirect) {
          return null;
-      }
-      if (object instanceof InternalServerError
-               && ((InternalServerError) object).getCause() != null) {
-         object = ((InternalServerError) obj).getCause();
-      }
-      if (object instanceof BadRequestException) {
-         BadRequestException e = (BadRequestException) object;
-         if (e.getErrors() != null) {
-            object = e.getErrors();
-         }
       }
       if (object instanceof Throwable) {
          object = ((Throwable) obj).getMessage();

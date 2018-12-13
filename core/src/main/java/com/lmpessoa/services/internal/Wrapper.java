@@ -35,10 +35,10 @@ import java.util.function.Supplier;
 
 import com.lmpessoa.services.concurrent.IAsyncOptions;
 import com.lmpessoa.services.concurrent.IExecutionService;
-import com.lmpessoa.services.hosting.HeaderMap;
 import com.lmpessoa.services.hosting.HttpRequest;
 import com.lmpessoa.services.hosting.IApplicationInfo;
 import com.lmpessoa.services.hosting.IApplicationOptions;
+import com.lmpessoa.services.hosting.ValuesMap;
 import com.lmpessoa.services.internal.routing.RouteEntry;
 import com.lmpessoa.services.internal.services.NoSingleMethodException;
 import com.lmpessoa.services.logging.ILogger;
@@ -46,7 +46,7 @@ import com.lmpessoa.services.routing.HttpMethod;
 import com.lmpessoa.services.routing.IRouteOptions;
 import com.lmpessoa.services.routing.IRouteTable;
 import com.lmpessoa.services.security.IIdentityOptions;
-import com.lmpessoa.services.security.IIdentityProvider;
+import com.lmpessoa.services.security.ITokenManager;
 import com.lmpessoa.services.services.HealthStatus;
 import com.lmpessoa.services.validating.ErrorSet;
 import com.lmpessoa.services.validating.IValidationService;
@@ -157,9 +157,9 @@ public final class Wrapper {
          }
 
          @Override
-         public void useIdentityWith(Class<? extends IIdentityProvider> identityProvider,
+         public void useIdentityWith(Class<? extends ITokenManager> tokenManager,
             Consumer<IIdentityOptions> options) throws NoSingleMethodException {
-            original.useIdentityWith(identityProvider, options);
+            original.useIdentityWith(tokenManager, options);
          }
 
          @Override
@@ -235,13 +235,23 @@ public final class Wrapper {
          }
 
          @Override
-         public HeaderMap getHeaders() {
+         public Locale[] getAcceptedLanguages() {
+            return original.getAcceptedLanguages();
+         }
+
+         @Override
+         public ValuesMap getQuery() {
+            return original.getQuery();
+         }
+
+         @Override
+         public ValuesMap getHeaders() {
             return original.getHeaders();
          }
 
          @Override
-         public Locale[] getAcceptedLanguages() {
-            return original.getAcceptedLanguages();
+         public ValuesMap getForm() {
+            return original.getForm();
          }
       };
    }

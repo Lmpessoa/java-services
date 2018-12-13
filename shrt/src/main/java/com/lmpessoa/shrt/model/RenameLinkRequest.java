@@ -19,16 +19,27 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- */
-package com.lmpessoa.services.views;
+ */package com.lmpessoa.shrt.model;
 
-import com.lmpessoa.services.views.templating.RenderizationEngine;
-import com.lmpessoa.services.views.templating.TemplateParseException;
+import javax.validation.constraints.NotNull;
 
-public class TestEngine implements RenderizationEngine<TestTemplate> {
+import com.lmpessoa.shrt.validation.Slug;
 
-   @Override
-   public TestTemplate parse(String filename, String template) throws TemplateParseException {
-      return new TestTemplate(template);
+public class RenameLinkRequest {
+
+   @Slug
+   @NotNull
+   private String old_slug;
+
+   @Slug
+   @NotNull
+   private String new_slug;
+
+   public String getOldSlug() {
+      return old_slug;
+   }
+
+   public String getNewSlug() {
+      return new_slug;
    }
 }

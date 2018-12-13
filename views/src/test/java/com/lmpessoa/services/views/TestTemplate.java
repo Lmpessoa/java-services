@@ -22,6 +22,9 @@
  */
 package com.lmpessoa.services.views;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import com.lmpessoa.services.views.templating.RenderizationContext;
 import com.lmpessoa.services.views.templating.Template;
 
@@ -36,11 +39,17 @@ public class TestTemplate implements Template {
    @Override
    public String render(RenderizationContext context) {
       StringBuilder result = new StringBuilder();
-      result.append(template);
-      Object model = context.get("model");
-      if (model != null) {
-         result.append(' ');
-         result.append(model);
+
+      int pos = 0;
+      Matcher m = Pattern.compile("\\{([a-zA-Z0-9._]*)\\}").matcher(template);
+      while (m.find()) {
+         result.append(template.substring(pos, m.start()));
+         Object value = context.get(m.group(1));
+         result.append(value == null ? "" : value);
+         pos = m.end();
+      }
+      if (pos < template.length()) {
+         result.append(template.substring(pos));
       }
       return result.toString();
    }

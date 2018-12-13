@@ -35,7 +35,6 @@ import com.lmpessoa.services.internal.concurrent.ExecutionService;
 import com.lmpessoa.services.internal.logging.Logger;
 import com.lmpessoa.services.internal.routing.RouteTable;
 import com.lmpessoa.services.internal.services.ServiceMap;
-import com.lmpessoa.services.security.IIdentityProvider;
 
 class ApplicationContext implements Runnable {
 
@@ -107,10 +106,6 @@ class ApplicationContext implements Runnable {
 
    RouteTable getRouteTable() {
       return routes;
-   }
-
-   IIdentityProvider getIdenityProvider() {
-      return server.getOptions().getIdentityProvider();
    }
 
    int getPort() {

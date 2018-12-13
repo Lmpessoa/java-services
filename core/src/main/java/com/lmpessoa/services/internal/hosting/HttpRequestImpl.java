@@ -30,31 +30,30 @@ import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import com.lmpessoa.services.BadRequestException;
-import com.lmpessoa.services.hosting.HeaderMap;
+import com.lmpessoa.services.ContentType;
 import com.lmpessoa.services.hosting.Headers;
 import com.lmpessoa.services.hosting.HttpRequest;
+import com.lmpessoa.services.hosting.ValuesMap;
 import com.lmpessoa.services.internal.CoreMessage;
+import com.lmpessoa.services.internal.ValuesMapBuilder;
+import com.lmpessoa.services.internal.serializing.Serializer;
 import com.lmpessoa.services.routing.HttpMethod;
 
 final class HttpRequestImpl implements HttpRequest {
 
    private final String queryString;
    private final HttpMethod method;
-   private final HeaderMap headers;
+   private final ValuesMap headers;
    private final String protocol;
    private final byte[] content;
    private final long timeout;
    private final String path;
+
+   private ValuesMap query;
+   private ValuesMap form;
 
    @Override
    public HttpMethod getMethod() {
@@ -77,14 +76,14 @@ final class HttpRequestImpl implements HttpRequest {
    }
 
    @Override
-   public long getContentLength() {
-      String length = getHeaders().get(Headers.CONTENT_LENGTH);
-      return length != null ? Long.parseLong(length) : 0;
-   }
-
-   @Override
-   public String getContentType() {
-      return getHeaders().get(Headers.CONTENT_TYPE);
+   public ValuesMap getQuery() {
+      if (query == null) {
+         query = Serializer.parseHttpForm(this.queryString);
+         if (query == null) {
+            query = new ValuesMapBuilder().build();
+         }
+      }
+      return query;
    }
 
    @Override
@@ -96,20 +95,21 @@ final class HttpRequestImpl implements HttpRequest {
    }
 
    @Override
-   public HeaderMap getHeaders() {
-      return headers;
+   public ValuesMap getForm() {
+      if (form == null) {
+         if (ContentType.FORM.equals(getContentType())) {
+            form = Serializer.parseHttpForm(new String(this.content));
+         }
+         if (form == null) {
+            form = new ValuesMapBuilder().build();
+         }
+      }
+      return form;
    }
 
    @Override
-   public Locale[] getAcceptedLanguages() {
-      String langs = getHeaders().get(Headers.ACCEPT_LANGUAGE);
-      if (langs == null) {
-         return new Locale[0];
-      }
-      return Arrays.stream(langs.split(",")) //
-               .map(s -> s.split(";")[0].trim())
-               .map(Locale::forLanguageTag)
-               .toArray(Locale[]::new);
+   public ValuesMap getHeaders() {
+      return headers;
    }
 
    @Override
@@ -129,19 +129,17 @@ final class HttpRequestImpl implements HttpRequest {
       this.protocol = parts[2];
       parts = parts[1].split("\\?", 2);
       String thePath = parts[0];
-      Map<String, List<String>> headerMap = new HashMap<>();
+      ValuesMapBuilder headerBuilder = new ValuesMapBuilder();
       if (thePath.startsWith("http://") || thePath.startsWith("https://")) {
          int index = thePath.indexOf('/', thePath.indexOf("://") + 3);
-         List<String> hostList = new ArrayList<>();
-         hostList.add(thePath.substring(0, index));
-         headerMap.put(Headers.HOST, hostList);
+         headerBuilder.add(Headers.HOST, thePath.substring(0, index));
          thePath = thePath.substring(index);
       }
       this.path = thePath;
       this.queryString = parts.length > 1 ? parts[1] : null;
-      this.headers = new HeaderMapImpl(extractHeaders(clientStream, headerMap));
-      if (headerMap.containsKey(Headers.CONTENT_TYPE)) {
-         if (!headerMap.containsKey(Headers.CONTENT_LENGTH)) {
+      this.headers = extractHeaders(clientStream, headerBuilder);
+      if (headers.contains(Headers.CONTENT_TYPE)) {
+         if (!headers.contains(Headers.CONTENT_LENGTH)) {
             throw new LengthRequiredException();
          }
          long contentLength = getContentLength();
@@ -163,23 +161,19 @@ final class HttpRequestImpl implements HttpRequest {
       }
    }
 
-   private Map<String, List<String>> extractHeaders(InputStream clientStream,
-      Map<String, List<String>> headerMap) throws IOException {
+   private ValuesMap extractHeaders(InputStream clientStream, ValuesMapBuilder builder)
+      throws IOException {
       String headerLine;
       while ((headerLine = readLine(clientStream)) != null && !headerLine.isEmpty()) {
-         String[] head = headerLine.split(":", 2);
-         if (head.length != 2) {
+         String[] header = headerLine.split(":", 2);
+         if (header.length != 2) {
             throw new BadRequestException(null, null,
                      CoreMessage.ILLEGAL_HEADER_LINE.with(headerLine));
          }
-         String headerName = Headers.normalise(head[0]);
-         if (!headerMap.containsKey(headerName)) {
-            headerMap.put(headerName, new ArrayList<>());
-         }
-         headerMap.get(headerName).add(head[1].trim());
+         String headerName = Headers.normalise(header[0]);
+         builder.add(headerName, header[1].trim());
       }
-      return headerMap.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
-               e -> Collections.unmodifiableList(e.getValue())));
+      return builder.build();
    }
 
    private String readLine(InputStream input) throws IOException {

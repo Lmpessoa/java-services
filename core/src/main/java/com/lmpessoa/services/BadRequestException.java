@@ -22,9 +22,17 @@
  */
 package com.lmpessoa.services;
 
-import java.lang.reflect.Method;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import com.lmpessoa.services.hosting.Headers;
+import com.lmpessoa.services.hosting.HttpRequest;
 import com.lmpessoa.services.internal.hosting.HttpException;
+import com.lmpessoa.services.internal.serializing.Serializer;
 import com.lmpessoa.services.routing.RouteMatch;
 import com.lmpessoa.services.validating.ErrorSet;
 
@@ -34,9 +42,12 @@ import com.lmpessoa.services.validating.ErrorSet;
 public final class BadRequestException extends HttpException implements RouteMatch {
 
    private static final long serialVersionUID = 1L;
+
    private final Class<?> resourceClass;
    private final ErrorSet errors;
    private final Method method;
+
+   private HttpRequest request;
 
    /**
     * Creates a new {@code BadRequestException}.
@@ -125,6 +136,31 @@ public final class BadRequestException extends HttpException implements RouteMat
     */
    public ErrorSet getErrors() {
       return errors;
+   }
+
+   public void setRequest(HttpRequest request) {
+      this.request = request;
+   }
+
+   @Override
+   public HttpInputStream getContentBody() {
+      if (errors != null && request != null) {
+         final List<String> accepts = new ArrayList<>();
+         if (request.getHeaders().contains(Headers.ACCEPT)) {
+            Arrays.stream(request.getHeaders().getAll(Headers.ACCEPT))
+                     .map(s -> s.split(","))
+                     .forEach(s -> Arrays.stream(s).map(ss -> ss.split(";")[0].trim()).forEach(
+                              accepts::add));
+            if (!accepts.contains(ContentType.JSON) && accepts.contains("*/*")) {
+               accepts.set(accepts.indexOf("*/*"), ContentType.JSON);
+            }
+         } else {
+            accepts.add(ContentType.JSON);
+         }
+         return Serializer.fromObject(errors, accepts.toArray(new String[0]),
+                  request.getAcceptedLanguages());
+      }
+      return new HttpInputStream(getMessage().getBytes(UTF_8), ContentType.TEXT, UTF_8);
    }
 
    @Override

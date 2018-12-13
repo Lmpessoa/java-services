@@ -1,0 +1,125 @@
+* {
+   font-family: "Open Sans";
+}
+time {
+   color: #8f989d;
+   display: inline-block;
+   font-size: 11px;
+   letter-spacing: .3px;
+   margin: 16px 0 8px;
+   text-transform: uppercase;
+}
+h3 {
+   color: #464c50;
+   font: normal normal 24px/32px "Open Sans";
+   margin: 0;
+   overflow: hidden;
+   text-overflow: ellipsis;
+   white-space: nowrap;
+   width: 100%;
+}
+a {
+   display: inline;
+   text-decoration: none;
+   word-wrap: break-word;
+}
+.link-wrapper {
+   margin: 30px 0 10px;
+}
+.link-wrapper a {
+   color: #ff6900;
+}
+a.url {
+   color: #8f989d;
+   font-size: 14px;
+   line-height: 19px;
+}
+span.creator {
+   color: #61b3de;
+   font-size: 11px;
+}
+.user-clicks {
+   border-top: 1px solid #e2e0dd;
+   margin-top: 21px;
+   padding-top: 21px;
+   text-transform: uppercase;
+   width: 100%;
+}
+.user-clicks .header {
+   color: #464c50;
+   font-size: 22px;
+   line-height: 32px;
+   letter-spacing: .5px;
+   position: relative;
+   display: inline-block;
+}
+.user-clicks .selected-day {
+   color: #8f989d;
+   letter-spacing: .3px;
+   font-size: 10px;
+   line-height: 15px;
+}
+div#graphs {
+   border-bottom: 1px solid #e2e0dd;
+   display: block;
+   margin-bottom: 21px;
+   padding-bottom: 21px;
+}
+div#graphs img {
+   width: 100%;
+}
+div#graphs div:first-child {
+   box-sizing: content-box;
+   margin-bottom: 15px;
+   width: 100%;
+}
+div#graphs div:nth-child(2) {
+   box-sizing: content-box;
+   width: 100%;
+}
+@media(min-width: 992px) {
+   div#graphs {
+      display: inline-flex;
+   }
+   div#graphs div:first-child {
+      margin-bottom: 0;
+      margin-right: 5px;
+      width: 50%;
+   }
+   div#graphs div:nth-child(2) {
+      margin-left: 5px;
+      width: 50%;
+   }
+}
+.error {
+   margin-top: 15vh;
+   text-align: center;
+}
+.error h1 {
+   font-size: 8.5rem;
+   font-weight: 600;
+}
+.signin-container {
+   position: absolute;
+   top: 0;
+   left: 0;
+   width: 100vw;
+   height: 100vh;
+   display: flex;
+}
+.form-signin {
+    margin: auto;
+    max-width: 330px;
+    padding: 15px;
+    text-align: center;
+    width: 100%;
+}
+.form-signin #inputUsername {
+   border-bottom-left-radius: 0;
+   border-bottom-right-radius: 0;
+}
+.form-signin #inputPassword {
+   border-top-left-radius: 0;
+   border-top-right-radius: 0;
+   margin-bottom: 10px;
+}

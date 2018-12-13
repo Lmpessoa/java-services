@@ -116,7 +116,7 @@ public final class Headers {
             i = skipString(i, headerValue);
          } else if (ch == ';') {
             String[] subvalue = headerValue.substring(pos, i).split("=");
-            if (result.isEmpty()) {
+            if (result.isEmpty() && subvalue.length == 1) {
                result.put("", subvalue[0].trim());
             } else {
                subvalue[0] = subvalue[0].trim();

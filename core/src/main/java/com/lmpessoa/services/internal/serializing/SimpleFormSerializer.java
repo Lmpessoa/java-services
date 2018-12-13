@@ -26,26 +26,23 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 
+import com.lmpessoa.services.hosting.ValuesMap;
 import com.lmpessoa.services.internal.ClassUtils;
+import com.lmpessoa.services.internal.ValuesMapBuilder;
 import com.lmpessoa.services.internal.hosting.InternalServerError;
 
 final class SimpleFormSerializer extends Serializer {
 
    @Override
    protected <T> T read(String content, Class<T> type) {
-      Map<String, Object> values = parseQueryString(content);
+      ValuesMap values = parse(content);
       try {
          T result = type.newInstance();
-         for (Entry<String, Object> entry : values.entrySet()) {
-            Field field = findField(entry.getKey(), type);
-            setValueToField(entry.getValue(), field, result);
+         for (String key : values.keySet()) {
+            Field field = findField(key, type);
+            setValueToField(values.getAll(key), field, result);
          }
          return result;
       } catch (Exception e) {
@@ -58,45 +55,31 @@ final class SimpleFormSerializer extends Serializer {
       return null;
    }
 
-   private Map<String, Object> parseQueryString(String body) {
-      String[][] values = Arrays.stream(body.split("&")).map(s -> s.split("=", 2)).toArray(
-               String[][]::new);
-      Map<String, List<String>> groups = new HashMap<>();
-      for (String[] value : values) {
-         try {
-            String key = URLDecoder.decode(value[0], StandardCharsets.UTF_8.name());
-            if (key.endsWith("[]")) {
-               key = key.substring(0, key.length() - 2);
+   protected static ValuesMap parse(String valueSet) {
+      ValuesMapBuilder result = new ValuesMapBuilder();
+      if (valueSet != null && !valueSet.isEmpty()) {
+         String[][] values = Arrays.stream(valueSet.split("&")).map(s -> s.split("=", 2)).toArray(
+                  String[][]::new);
+         for (String[] value : values) {
+            try {
+               String key = URLDecoder.decode(value[0], StandardCharsets.UTF_8.name());
+               if (key.endsWith("[]")) {
+                  key = key.substring(0, key.length() - 2);
+               }
+               result.add(key, URLDecoder.decode(value[1], StandardCharsets.UTF_8.name()));
+            } catch (UnsupportedEncodingException e) {
+               // Might never reach here but be safe
             }
-            if (!groups.containsKey(key)) {
-               groups.put(key, new ArrayList<>());
-            }
-            groups.get(key).add(URLDecoder.decode(value[1], StandardCharsets.UTF_8.name()));
-         } catch (UnsupportedEncodingException e) {
-            // Might never reach here but be safe
-            throw new InternalServerError(e);
          }
       }
-      Map<String, Object> result = new HashMap<>();
-      for (Entry<String, List<String>> entry : groups.entrySet()) {
-         String key = entry.getKey();
-         List<String> value = entry.getValue();
-         if (value.size() > 1) {
-            result.put(key, value.toArray(new String[0]));
-         } else if (value.size() == 1) {
-            result.put(key, value.get(0));
-         }
-      }
-      return result;
+      return result.build();
    }
 
-   private void setValueToField(Object value, Field field, Object result)
+   private void setValueToField(String[] value, Field field, Object result)
       throws IllegalAccessException {
       if (field != null && !isStaticOrTransientOrVolatile(field)) {
-         if (value instanceof String[]) {
-            value = String.join(",", (String[]) value);
-         }
-         Object fieldValue = ClassUtils.cast(value.toString(), field.getType());
+         String svalue = String.join(",", value);
+         Object fieldValue = ClassUtils.cast(svalue, field.getType());
          field.setAccessible(true);
          field.set(result, fieldValue);
       }

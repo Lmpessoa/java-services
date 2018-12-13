@@ -22,7 +22,9 @@
  */
 package com.lmpessoa.services.internal.hosting;
 
-final class VersionNotSupportedError extends Error implements IHttpStatusCodeProvider {
+import com.lmpessoa.services.hosting.HttpResponse;
+
+final class VersionNotSupportedError extends Error implements HttpResponse {
 
    private static final long serialVersionUID = 1L;
 

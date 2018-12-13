@@ -22,6 +22,8 @@
  */
 package com.lmpessoa.services.internal.hosting;
 
+import com.lmpessoa.services.hosting.HttpResponse;
+
 /**
  * An {@code HttpException} is an abstract exception class that represents one of the HTTP client
  * error status codes (4xx) or server error status codes (5xx).
@@ -37,7 +39,7 @@ package com.lmpessoa.services.internal.hosting;
  * be returned to the sender of the request in this case.
  * </p>
  */
-public abstract class HttpException extends RuntimeException implements IHttpStatusCodeProvider {
+public abstract class HttpException extends RuntimeException implements HttpResponse {
 
    private static final long serialVersionUID = 1L;
 
@@ -63,6 +65,7 @@ public abstract class HttpException extends RuntimeException implements IHttpSta
       this.status = status;
    }
 
+   @Override
    public int getStatusCode() {
       return status;
    }

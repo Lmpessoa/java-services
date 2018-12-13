@@ -32,11 +32,7 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URL;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -45,10 +41,12 @@ import com.lmpessoa.services.ContentType;
 import com.lmpessoa.services.NotFoundException;
 import com.lmpessoa.services.Redirect;
 import com.lmpessoa.services.hosting.ConnectionInfo;
-import com.lmpessoa.services.hosting.HeaderMap;
 import com.lmpessoa.services.hosting.Headers;
 import com.lmpessoa.services.hosting.HttpRequest;
+import com.lmpessoa.services.hosting.HttpResponse;
 import com.lmpessoa.services.hosting.NextResponder;
+import com.lmpessoa.services.hosting.ValuesMap;
+import com.lmpessoa.services.internal.ValuesMapBuilder;
 import com.lmpessoa.services.internal.logging.Logger;
 import com.lmpessoa.services.logging.ILogger;
 import com.lmpessoa.services.logging.NullHandler;
@@ -77,12 +75,12 @@ public class SerializerResponderTest {
    public void testStringResult() throws IOException {
       next = () -> "success";
       handler = new SerializerResponder(next);
-      HttpResult result = handler.invoke(request, null, connect, log);
+      HttpResponse result = handler.invoke(request, null, connect, log);
       assertEquals(200, result.getStatusCode());
-      assertEquals(ContentType.TEXT, result.getInputStream().getType());
-      assertEquals("UTF-8", result.getInputStream().getEncoding().name());
-      String str = new String(readStreamContent(result.getInputStream()),
-               result.getInputStream().getEncoding());
+      assertEquals(ContentType.TEXT, result.getContentBody().getType());
+      assertEquals("UTF-8", result.getContentBody().getEncoding().name());
+      String str = new String(readStreamContent(result.getContentBody()),
+               result.getContentBody().getEncoding());
       assertEquals("success", str);
    }
 
@@ -90,13 +88,12 @@ public class SerializerResponderTest {
    public void testIntResult() throws IOException {
       next = () -> 7;
       handler = new SerializerResponder(next);
-      Map<String, List<String>> headerValues = new HashMap<>();
-      headerValues.put(Headers.ACCEPT, Arrays.asList(ContentType.JSON));
-      when(request.getHeaders()).thenReturn(new HeaderMapImpl(headerValues));
-      HttpResult result = handler.invoke(request, null, connect, log);
+      ValuesMap headers = new ValuesMapBuilder().add(Headers.ACCEPT, ContentType.JSON).build();
+      when(request.getHeaders()).thenReturn(headers);
+      HttpResponse result = handler.invoke(request, null, connect, log);
       assertEquals(200, result.getStatusCode());
-      assertEquals(ContentType.JSON, result.getInputStream().getType());
-      String str = new String(readStreamContent(result.getInputStream()));
+      assertEquals(ContentType.JSON, result.getContentBody().getType());
+      String str = new String(readStreamContent(result.getContentBody()));
       assertEquals("7", str);
    }
 
@@ -104,10 +101,10 @@ public class SerializerResponderTest {
    public void testBinaryResult() throws IOException {
       next = () -> new byte[] { 115, 117, 99, 99, 101, 115, 115 };
       handler = new SerializerResponder(next);
-      HttpResult result = handler.invoke(request, null, connect, log);
+      HttpResponse result = handler.invoke(request, null, connect, log);
       assertEquals(200, result.getStatusCode());
-      assertEquals(ContentType.BINARY, result.getInputStream().getType());
-      String str = new String(readStreamContent(result.getInputStream()));
+      assertEquals(ContentType.BINARY, result.getContentBody().getType());
+      String str = new String(readStreamContent(result.getContentBody()));
       assertEquals("success", str);
    }
 
@@ -118,10 +115,10 @@ public class SerializerResponderTest {
       RouteMatch route = mock(RouteMatch.class);
       when(route.getMethod())
                .thenReturn(SerializerResponderTest.class.getMethod("getResultWithContentType"));
-      HttpResult result = handler.invoke(request, route, connect, log);
+      HttpResponse result = handler.invoke(request, route, connect, log);
       assertEquals(200, result.getStatusCode());
-      assertEquals(ContentType.TEXT, result.getInputStream().getType());
-      String str = new String(readStreamContent(result.getInputStream()));
+      assertEquals(ContentType.TEXT, result.getContentBody().getType());
+      String str = new String(readStreamContent(result.getContentBody()));
       assertEquals("success", str);
    }
 
@@ -133,13 +130,12 @@ public class SerializerResponderTest {
    @Test
    public void testErrorProducingContent() throws IOException {
       handler = new SerializerResponder(null);
-      Map<String, List<String>> headerValues = new HashMap<>();
-      headerValues.put(Headers.ACCEPT, Arrays.asList(ContentType.JSON));
-      when(request.getHeaders()).thenReturn(new HeaderMapImpl(headerValues));
-      HttpResult result = handler.invoke(request, null, connect, log);
+      ValuesMap headers = new ValuesMapBuilder().add(Headers.ACCEPT, ContentType.JSON).build();
+      when(request.getHeaders()).thenReturn(headers);
+      HttpResponse result = handler.invoke(request, null, connect, log);
       assertEquals(500, result.getStatusCode());
-      assertEquals(ContentType.TEXT, result.getInputStream().getType());
-      String str = new String(readStreamContent(result.getInputStream()));
+      assertEquals(ContentType.TEXT, result.getContentBody().getType());
+      String str = new String(readStreamContent(result.getContentBody()));
       assertEquals("java.lang.NullPointerException", str);
    }
 
@@ -154,26 +150,19 @@ public class SerializerResponderTest {
          }
       };
       handler = new SerializerResponder(next);
-      HttpResult result = handler.invoke(request, null, connect, log);
+      HttpResponse result = handler.invoke(request, null, connect, log);
       assertEquals(302, result.getStatusCode());
-      for (HeaderEntry entry : result.getHeaders()) {
-         if (entry.getKey().equals(Headers.LOCATION)) {
-            assertEquals(TEST_URL, entry.getValue());
-         }
-      }
+      assertEquals(TEST_URL, result.getHeaders().get(Headers.LOCATION));
    }
 
    @Test
    public void testRedirectWithPath() throws IOException {
       next = () -> Redirect.createdAt("/test");
       handler = new SerializerResponder(next);
-      HttpResult result = handler.invoke(request, null, connect, log);
+      HttpResponse result = handler.invoke(request, null, connect, log);
+      result.setConnectionInfo(connect);
       assertEquals(201, result.getStatusCode());
-      for (HeaderEntry entry : result.getHeaders()) {
-         if (entry.getKey().equals(Headers.LOCATION)) {
-            assertEquals(TEST_URL, entry.getValue());
-         }
-      }
+      assertEquals(TEST_URL, result.getHeaders().get(Headers.LOCATION));
    }
 
    @Test
@@ -182,7 +171,7 @@ public class SerializerResponderTest {
          throw new NotFoundException();
       };
       handler = new SerializerResponder(next);
-      HttpResult result = handler.invoke(request, null, connect, log);
+      HttpResponse result = handler.invoke(request, null, connect, log);
       assertEquals(404, result.getStatusCode());
    }
 
@@ -192,10 +181,10 @@ public class SerializerResponderTest {
          throw new NullPointerException();
       };
       handler = new SerializerResponder(next);
-      HttpResult result = handler.invoke(request, null, connect, log);
+      HttpResponse result = handler.invoke(request, null, connect, log);
       assertEquals(500, result.getStatusCode());
-      assertEquals(ContentType.TEXT, result.getInputStream().getType());
-      String str = new String(readStreamContent(result.getInputStream()));
+      assertEquals(ContentType.TEXT, result.getContentBody().getType());
+      String str = new String(readStreamContent(result.getContentBody()));
       assertEquals("java.lang.NullPointerException", str);
    }
 
@@ -203,11 +192,9 @@ public class SerializerResponderTest {
    public void testNotAcceptableContent() throws IOException {
       next = () -> 7;
       handler = new SerializerResponder(next);
-      Map<String, List<String>> headerValues = new HashMap<>();
-      headerValues.put(Headers.ACCEPT, Arrays.asList(ContentType.HTML));
-      HeaderMap headers = new HeaderMapImpl(headerValues);
+      ValuesMap headers = new ValuesMapBuilder().add(Headers.ACCEPT, ContentType.HTML).build();
       when(request.getHeaders()).thenReturn(headers);
-      HttpResult result = handler.invoke(request, null, connect, log);
+      HttpResponse result = handler.invoke(request, null, connect, log);
       assertEquals(406, result.getStatusCode());
    }
 
@@ -216,7 +203,7 @@ public class SerializerResponderTest {
       when(request.getProtocol()).thenReturn("HTTP/1.7");
       next = () -> 7;
       handler = new SerializerResponder(next);
-      HttpResult result = handler.invoke(request, null, connect, log);
+      HttpResponse result = handler.invoke(request, null, connect, log);
       assertEquals(505, result.getStatusCode());
    }
 

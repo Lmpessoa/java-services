@@ -24,7 +24,7 @@ package com.lmpessoa.services;
 
 import java.net.URL;
 
-import com.lmpessoa.services.internal.hosting.IHttpStatusCodeProvider;
+import com.lmpessoa.services.hosting.HttpResponse;
 import com.lmpessoa.services.internal.hosting.RedirectImpl;
 
 /**
@@ -41,7 +41,7 @@ import com.lmpessoa.services.internal.hosting.RedirectImpl;
  * to be effectively sent as response to a request.
  * </p>
  */
-public interface Redirect extends IHttpStatusCodeProvider {
+public interface Redirect extends HttpResponse {
 
    // 201 Created
 

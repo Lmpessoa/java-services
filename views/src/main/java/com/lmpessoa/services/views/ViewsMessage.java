@@ -25,6 +25,7 @@ package com.lmpessoa.services.views;
 import java.util.Locale;
 
 import com.lmpessoa.services.Localized;
+import com.lmpessoa.services.Localized.Message;
 
 class ViewsMessage {
 
@@ -38,6 +39,12 @@ class ViewsMessage {
 
    public static final Localized.Message INVALID_VARIABLE_NAME = MESSAGES
             .get("com.lmpessoa.services.views.internal.variableName");
+
+   public static final Message LOGIN_POST_MISSING = MESSAGES
+            .get("com.lmpessoa.services.views.internal.noLoginPost");
+
+   public static final Message FAILED_LOGIN = MESSAGES
+            .get("com.lmpessoa.services.views.internal.failedLogin");
 
    private ViewsMessage() {
       // Nothing to be done here

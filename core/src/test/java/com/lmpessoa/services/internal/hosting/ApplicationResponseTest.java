@@ -26,6 +26,7 @@ import static com.lmpessoa.services.routing.HttpMethod.GET;
 import static com.lmpessoa.services.routing.HttpMethod.POST;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -41,9 +42,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.lmpessoa.services.ContentType;
-import com.lmpessoa.services.Get;
 import com.lmpessoa.services.HttpInputStream;
-import com.lmpessoa.services.Route;
 import com.lmpessoa.services.hosting.Headers;
 import com.lmpessoa.services.internal.concurrent.ExecutionService;
 import com.lmpessoa.services.internal.logging.Logger;
@@ -54,7 +53,7 @@ import com.lmpessoa.services.routing.HttpMethod;
 import com.lmpessoa.services.routing.IRouteTable;
 import com.lmpessoa.services.security.Authorize;
 import com.lmpessoa.services.security.IIdentity;
-import com.lmpessoa.services.security.IIdentityProvider;
+import com.lmpessoa.services.security.ITokenManager;
 import com.lmpessoa.services.security.IdentityBuilder;
 
 public final class ApplicationResponseTest {
@@ -71,7 +70,7 @@ public final class ApplicationResponseTest {
       when(settings.getJobExecutor()).thenReturn(new ExecutionService(0, log));
       when(settings.getValidationService()).thenCallRealMethod();
       ApplicationServerImpl server = new ApplicationServerImpl(settings);
-      server.getOptions().useIdentityWith(TestIdentityProvider.class);
+      server.getOptions().useIdentityWith(TestTokenManager.class);
       RouteTable routes = server.getOptions().getRoutes();
       routes.put("", TestResource.class);
       context = new ApplicationContext(server, 5617, "test", routes);
@@ -81,18 +80,22 @@ public final class ApplicationResponseTest {
    @Test
    public void testJobRequestEmpty() throws InterruptedException, IOException {
       String[] result = runJob(GET, "/test/empty");
+      assertEquals(2, result.length);
       assertEquals("HTTP/1.1 204 No Content", result[0]);
+      assertTrue(result[1].startsWith("Date: "));
    }
 
    @Test
    public void testJobRequestNotFound() throws InterruptedException, IOException {
       String[] result = runJob(GET, "/test/notfound");
+      assertEquals(1, result.length);
       assertEquals("HTTP/1.1 404 Not Found", result[0]);
    }
 
    @Test
    public void testJobRequestWrongMethod() throws InterruptedException, IOException {
       String[] result = runJob(POST, "/test/empty");
+      assertEquals(1, result.length);
       assertEquals("HTTP/1.1 405 Method Not Allowed", result[0]);
    }
 
@@ -124,14 +127,9 @@ public final class ApplicationResponseTest {
    }
 
    @Test
-   public void testJobRequestAllowed() throws InterruptedException, IOException {
-      String[] result = runJob(GET, "/test/empty", true);
-      assertEquals("HTTP/1.1 204 No Content", result[0]);
-   }
-
-   @Test
    public void testJobRequestUnauthenticated() throws InterruptedException, IOException {
       String[] result = runJob(POST, "/test");
+      assertEquals(1, result.length);
       assertEquals("HTTP/1.1 401 Unauthorized", result[0]);
    }
 
@@ -149,8 +147,6 @@ public final class ApplicationResponseTest {
 
    public static class TestResource {
 
-      @Get
-      @Route("empty")
       public void empty() {
          // Test method, does nothing
       }
@@ -159,8 +155,6 @@ public final class ApplicationResponseTest {
          return "Test";
       }
 
-      @Get
-      @Route("download")
       public HttpInputStream download() {
          Charset utf8 = StandardCharsets.UTF_8;
          HttpInputStream result = new HttpInputStream("Test".getBytes(utf8), ContentType.TEXT, utf8,
@@ -195,11 +189,11 @@ public final class ApplicationResponseTest {
       return new String(result.toByteArray()).split("\r\n");
    }
 
-   public static class TestIdentityProvider implements IIdentityProvider {
+   public static class TestTokenManager implements ITokenManager {
 
       @Override
-      public IIdentity getIdentity(String format, String token) {
-         if (token == null) {
+      public IIdentity get(String token) {
+         if (!"sample".equals(token)) {
             return null;
          }
          return new IdentityBuilder().addDisplayName("Jane Doe").build();

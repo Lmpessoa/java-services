@@ -31,7 +31,7 @@ import com.lmpessoa.services.concurrent.IAsyncOptions;
 import com.lmpessoa.services.internal.services.NoSingleMethodException;
 import com.lmpessoa.services.routing.IRouteOptions;
 import com.lmpessoa.services.security.IIdentityOptions;
-import com.lmpessoa.services.security.IIdentityProvider;
+import com.lmpessoa.services.security.ITokenManager;
 
 /**
  * Enables the configuration of the behaviour of applications.
@@ -257,9 +257,9 @@ public interface IApplicationOptions {
     * @throws NoSingleMethodException if the identity provider class does not have exactly one
     *            constructor.
     */
-   default void useIdentityWith(Class<? extends IIdentityProvider> identityProvider)
+   default void useIdentityWith(Class<? extends ITokenManager> tokenManager)
       throws NoSingleMethodException {
-      useIdentityWith(identityProvider, null);
+      useIdentityWith(tokenManager, null);
    }
 
    /**
@@ -285,7 +285,7 @@ public interface IApplicationOptions {
     * @throws NoSingleMethodException if the identity provider class does not have exactly one
     *            constructor.
     */
-   void useIdentityWith(Class<? extends IIdentityProvider> identityProvider,
+   void useIdentityWith(Class<? extends ITokenManager> tokenManager,
       Consumer<IIdentityOptions> options) throws NoSingleMethodException;
 
    /**

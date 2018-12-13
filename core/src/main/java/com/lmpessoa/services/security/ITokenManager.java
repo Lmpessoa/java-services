@@ -22,13 +22,17 @@
  */
 package com.lmpessoa.services.security;
 
+import static com.lmpessoa.services.services.Reuse.ALWAYS;
+
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Random;
 
 import com.lmpessoa.services.hosting.Headers;
 import com.lmpessoa.services.hosting.HttpRequest;
+import com.lmpessoa.services.services.Service;
 
 /**
  * Provides means for the engine to retrieve user information.
@@ -53,7 +57,8 @@ import com.lmpessoa.services.hosting.HttpRequest;
  * identity from anywhere in the request.
  * </p>
  */
-public interface IIdentityProvider {
+@Service(reuse = ALWAYS)
+public interface ITokenManager {
 
    /**
     * Returns a pseudo random token for the user represented by the given ID.
@@ -137,14 +142,13 @@ public interface IIdentityProvider {
     * @param request the request from which to retrieve the identity of the user.
     * @return the identity of the user of the given request.
     */
-   default IIdentity getIdentity(HttpRequest request) {
+   default IIdentity get(HttpRequest request) {
       String auth = request.getHeaders().get(Headers.AUTHORIZATION);
       if (auth != null) {
-         String[] parts = auth.split(" ", 2);
-         if (parts.length == 2) {
-            return getIdentity(parts[0], parts[1]);
-         } else {
-            return getIdentity("Token", auth);
+         String[] parts = auth.split(" ");
+         auth = parts[parts.length > 1 ? 1 : 0];
+         if (parts.length == 1 || parts.length > 1 && "Token".equals(parts[0])) {
+            return get(auth);
          }
       }
       return null;
@@ -164,7 +168,18 @@ public interface IIdentityProvider {
     * @param token a token that identifies the current user.
     * @return the identity of the user with the given authentication credentials.
     */
-   default IIdentity getIdentity(String format, String token) {
+   default IIdentity get(String token) {
       return null;
+   }
+
+   default String add(IIdentity identity) {
+      return add(identity, null);
+   }
+
+   default String add(IIdentity identity, Duration expiration) {
+      return null;
+   }
+
+   default void remove(String token) {
    }
 }

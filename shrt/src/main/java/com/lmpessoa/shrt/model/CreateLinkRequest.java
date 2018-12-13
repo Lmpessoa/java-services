@@ -20,49 +20,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.lmpessoa.services.internal.hosting;
+package com.lmpessoa.shrt.model;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import com.lmpessoa.shrt.validation.Slug;
+import com.lmpessoa.shrt.validation.Url;
 
-import com.lmpessoa.services.hosting.HeaderMap;
+public class CreateLinkRequest {
 
-public final class HeaderMapImpl implements HeaderMap {
+   @Url
+   private String long_url;
 
-   private final Map<String, List<String>> headers;
+   @Slug
+   private String short_url;
 
-   @Override
-   public boolean contains(String headerName) {
-      return headers.containsKey(headerName);
+   private String title;
+
+   public String getShortUrl() {
+      return short_url;
    }
 
-   @Override
-   public String get(String headerName) {
-      List<String> values = headers.get(headerName);
-      if (values != null && !values.isEmpty()) {
-         return values.get(0);
-      }
-      return null;
+   public String getLongUrl() {
+      return long_url;
    }
 
-   @Override
-   public String[] getAll(String headerName) {
-      List<String> values = headers.get(headerName);
-      String[] result = new String[0];
-      if (values != null && !values.isEmpty()) {
-         result = values.toArray(result);
-      }
-      return result;
-   }
-
-   @Override
-   public Set<String> nameSet() {
-      return headers.keySet();
-   }
-
-   public HeaderMapImpl(Map<String, List<String>> headers) {
-      this.headers = Objects.requireNonNull(headers);
+   public String getTitle() {
+      return title;
    }
 }

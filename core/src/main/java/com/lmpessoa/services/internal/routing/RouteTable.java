@@ -231,9 +231,39 @@ public final class RouteTable implements IRouteTable {
             final MethodEntry methodEntry = entry.getValue();
             if (clazz == methodEntry.getResourceClass()
                      && isMethodArgsCompatible(methodEntry, methodName, args)) {
-               return endpoint.getKey().getPathWithArgs(args);
+               String result = endpoint.getKey().getPathWithArgs(args);
+               String queryString = buildQueryString(methodEntry.getMethod(), args);
+               if (queryString != null) {
+                  result += "?" + queryString;
+               }
+               return result;
             }
          }
+      }
+      return null;
+   }
+
+   private String buildQueryString(Method method, Object[] args) {
+      StringBuilder result = new StringBuilder();
+      for (int i = 0; i < method.getParameterCount(); ++i) {
+         Parameter param = method.getParameters()[i];
+         Query query = param.getAnnotation(Query.class);
+         if (query != null && args[i] != null) {
+            String queryName = "##default".equals(query.value()) ? param.getName() : query.value();
+            Object[] values = args[i].getClass().isArray() ? (Object[]) args[i]
+                     : new Object[] { args[i] };
+            for (Object value : values) {
+               if (value != null) {
+                  result.append("&");
+                  result.append(queryName);
+                  result.append("=");
+                  result.append(value.toString());
+               }
+            }
+         }
+      }
+      if (result.length() > 1) {
+         return result.toString().substring(1);
       }
       return null;
    }

@@ -28,7 +28,10 @@ import java.util.Objects;
 
 import com.lmpessoa.services.Redirect;
 import com.lmpessoa.services.hosting.ConnectionInfo;
+import com.lmpessoa.services.hosting.Headers;
+import com.lmpessoa.services.hosting.ValuesMap;
 import com.lmpessoa.services.internal.CoreMessage;
+import com.lmpessoa.services.internal.ValuesMapBuilder;
 import com.lmpessoa.services.internal.routing.RouteTable;
 
 /**
@@ -49,8 +52,13 @@ public final class RedirectImpl implements Redirect {
 
    private static RouteTable routes;
 
+   private ConnectionInfo connection;
    private final Parameter params;
    private final int status;
+
+   public static void setRoutes(RouteTable routes) {
+      RedirectImpl.routes = routes;
+   }
 
    public RedirectImpl(int status, String url) {
       this.status = status;
@@ -68,12 +76,23 @@ public final class RedirectImpl implements Redirect {
    }
 
    @Override
-   public String toString() {
-      return String.format("%s [%d]", params.getPath(), status);
+   public ValuesMap getHeaders() {
+      try {
+         return new ValuesMapBuilder().add(Headers.LOCATION, getUrl(connection).toExternalForm())
+                  .build();
+      } catch (MalformedURLException e) {
+         throw new InternalServerError(e);
+      }
    }
 
-   static void setRoutes(RouteTable routes) {
-      RedirectImpl.routes = routes;
+   @Override
+   public void setConnectionInfo(ConnectionInfo connection) {
+      this.connection = connection;
+   }
+
+   @Override
+   public String toString() {
+      return String.format("%s [%d]", params.getPath(), status);
    }
 
    static Redirect accepted(String url) {

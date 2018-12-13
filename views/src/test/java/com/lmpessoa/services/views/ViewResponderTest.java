@@ -28,6 +28,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
+import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 
 import org.junit.Before;
@@ -37,95 +38,88 @@ import org.junit.Test;
 import com.lmpessoa.services.ContentType;
 import com.lmpessoa.services.HttpInputStream;
 import com.lmpessoa.services.NotFoundException;
-import com.lmpessoa.services.hosting.HeaderMap;
+import com.lmpessoa.services.hosting.ConnectionInfo;
 import com.lmpessoa.services.hosting.Headers;
 import com.lmpessoa.services.hosting.HttpRequest;
+import com.lmpessoa.services.hosting.ValuesMap;
+import com.lmpessoa.services.routing.HttpMethod;
 import com.lmpessoa.services.routing.RouteMatch;
-import com.lmpessoa.services.views.templating.TemplateParseException;
 
 public class ViewResponderTest {
 
+   private static ConnectionInfo connection;
+
    private ViewResponder responder;
    private HttpRequest request;
-   private HeaderMap headers;
+   private ValuesMap headers;
    private RouteMatch route;
 
    @BeforeClass
    public static void setupClass() {
-      ViewResponder.useEngine("txt", new TestEngine());
+      ViewResponder.useEngine("txt", new TestRenderizationEngine());
+      Socket socket = mock(Socket.class);
+      connection = new ConnectionInfo(socket, "https://lmpessoa.com");
    }
 
    @Before
    public void setup() throws NoSuchMethodException {
-      headers = mock(HeaderMap.class);
+      headers = mock(ValuesMap.class);
+      when(headers.get(Headers.ACCEPT)).thenReturn("text/html; */*");
 
       request = mock(HttpRequest.class);
+      when(request.getMethod()).thenReturn(HttpMethod.GET);
       when(request.getHeaders()).thenReturn(headers);
+      when(request.getForm()).thenReturn(ValuesMap.empty());
+      when(request.getQuery()).thenReturn(ValuesMap.empty());
 
       route = mock(RouteMatch.class);
       when(route.getMethod()).thenReturn(ViewResponderTest.class.getMethod("doTest", int.class));
    }
 
    @Test
-   public void testNoRenderization()
-      throws IOException, TemplateParseException, NoSuchMethodException {
+   public void testNoRenderization() throws IOException, NoSuchMethodException {
+      when(headers.get(Headers.ACCEPT)).thenReturn(null);
       responder = new ViewResponder(() -> doTest(0));
-      Object result = responder.invoke(request, route, null);
+      Object result = responder.invoke(request, route, null, connection, null, null);
       assertTrue(result instanceof String);
       assertEquals("the method #doTest()", result);
    }
 
    @Test
-   public void testRenderization()
-      throws IOException, TemplateParseException, NoSuchMethodException {
-      when(headers.get(Headers.ACCEPT)).thenReturn("text/html; */*");
+   public void testRenderization() throws IOException, NoSuchMethodException {
       responder = new ViewResponder(() -> doTest(0));
-      Object result = responder.invoke(request, route, null);
+      Object result = responder.invoke(request, route, null, connection, null, null);
       assertHttpInputStream("This is a test template file from the method #doTest()", result);
    }
 
    @Test
-   public void testViewAndModelRenderization()
-      throws IOException, TemplateParseException, NoSuchMethodException {
-      when(headers.get(Headers.ACCEPT)).thenReturn("text/html; */*");
+   public void testViewAndModelRenderization() throws IOException, NoSuchMethodException {
       responder = new ViewResponder(() -> doTest(1));
-      Object result = responder.invoke(request, route, null);
+      Object result = responder.invoke(request, route, null, connection, null, null);
       assertHttpInputStream("This is a test template file from the method #doTest()", result);
    }
 
    @Test(expected = NotFoundException.class)
-   public void test404NotRendered() throws IOException, TemplateParseException {
+   public void test404NotRendered() throws IOException {
+      when(headers.get(Headers.ACCEPT)).thenReturn(null);
       route = new NotFoundException();
       responder = new ViewResponder(NotFoundException::new);
-      responder.invoke(request, route, null);
+      responder.invoke(request, route, null, connection, null, null);
    }
 
    @Test
-   public void test404Rendered() throws IOException, TemplateParseException {
+   public void test404Rendered() throws IOException {
       route = new NotFoundException();
-      when(headers.get(Headers.ACCEPT)).thenReturn("text/html; */*");
       responder = new ViewResponder(NotFoundException::new);
-      Object result = responder.invoke(request, route, null);
+      Object result = responder.invoke(request, route, null, connection, null, null);
       assertHttpInputStream("The file was not found", result);
    }
 
    @Test
-   public void testOverrideViewAnnotation() throws IOException, TemplateParseException {
-      when(headers.get(Headers.ACCEPT)).thenReturn("text/html; */*");
+   public void testOverrideViewAnnotation() throws IOException {
       responder = new ViewResponder(() -> doTest(2));
-      Object result = responder.invoke(request, route, null);
-      assertHttpInputStream("The file was not found from the method #doTest()", result);
-   }
-
-   private void assertHttpInputStream(String value, Object obj) throws IOException {
-      assertTrue(obj instanceof HttpInputStream);
-      try (HttpInputStream his = (HttpInputStream) obj) {
-         assertEquals(ContentType.HTML, his.getType());
-         byte[] b = new byte[1024];
-         his.read(b);
-         String hist = new String(b, StandardCharsets.UTF_8).trim();
-         assertEquals(value, hist);
-      }
+      Object result = responder.invoke(request, route, null, connection, null, null);
+      assertHttpInputStream("The file was not found", result);
    }
 
    @View("template")
@@ -139,5 +133,16 @@ public class ViewResponderTest {
             return new ViewAndModel("404", "from the method #doTest()");
       }
       return null;
+   }
+
+   private void assertHttpInputStream(String value, Object obj) throws IOException {
+      assertTrue(obj instanceof HttpInputStream);
+      try (HttpInputStream his = (HttpInputStream) obj) {
+         assertEquals(ContentType.HTML, his.getType());
+         byte[] b = new byte[1024];
+         his.read(b);
+         String hist = new String(b, StandardCharsets.UTF_8).trim();
+         assertEquals(value, hist);
+      }
    }
 }

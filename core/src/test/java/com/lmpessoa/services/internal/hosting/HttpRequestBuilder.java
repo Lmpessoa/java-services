@@ -37,7 +37,6 @@ import com.lmpessoa.services.routing.HttpMethod;
 public final class HttpRequestBuilder {
 
    private Map<String, List<String>> headers = new HashMap<>();
-   private Map<String, String> cookies = new HashMap<>();
    private HttpMethod method = HttpMethod.GET;
    private String version = "1.1";
    private String query = null;
@@ -82,11 +81,6 @@ public final class HttpRequestBuilder {
 
    public HttpRequestBuilder addHeader(String name, String value) {
       this.headers.put(Headers.normalise(name), Arrays.asList(value));
-      return this;
-   }
-
-   public HttpRequestBuilder addCookie(String name, String value) {
-      this.cookies.put(name, value);
       return this;
    }
 

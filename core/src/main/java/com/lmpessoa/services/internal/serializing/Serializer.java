@@ -41,6 +41,7 @@ import com.lmpessoa.services.HttpInputStream;
 import com.lmpessoa.services.NotAcceptableException;
 import com.lmpessoa.services.UnsupportedMediaTypeException;
 import com.lmpessoa.services.hosting.Headers;
+import com.lmpessoa.services.hosting.ValuesMap;
 import com.lmpessoa.services.internal.ClassUtils;
 import com.lmpessoa.services.internal.CoreMessage;
 import com.lmpessoa.services.internal.hosting.InternalServerError;
@@ -108,6 +109,10 @@ public abstract class Serializer {
          result = ContentType.BINARY;
       }
       return result;
+   }
+
+   public static ValuesMap parseHttpForm(String valueSet) {
+      return SimpleFormSerializer.parse(valueSet);
    }
 
    protected <T> T read(byte[] content, Class<T> type, Map<String, String> contentType) {

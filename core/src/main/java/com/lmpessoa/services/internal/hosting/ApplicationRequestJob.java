@@ -25,20 +25,15 @@ package com.lmpessoa.services.internal.hosting;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 import com.lmpessoa.services.HttpInputStream;
 import com.lmpessoa.services.hosting.ConnectionInfo;
 import com.lmpessoa.services.hosting.Headers;
 import com.lmpessoa.services.hosting.HttpRequest;
+import com.lmpessoa.services.hosting.HttpResponse;
 import com.lmpessoa.services.hosting.NextResponder;
+import com.lmpessoa.services.hosting.ValuesMap;
 import com.lmpessoa.services.internal.Wrapper;
 import com.lmpessoa.services.internal.routing.RouteTable;
 import com.lmpessoa.services.internal.services.ServiceMap;
@@ -46,10 +41,10 @@ import com.lmpessoa.services.logging.ILogger;
 import com.lmpessoa.services.routing.IRouteTable;
 import com.lmpessoa.services.routing.RouteMatch;
 import com.lmpessoa.services.security.IIdentity;
+import com.lmpessoa.services.security.ITokenManager;
 
 final class ApplicationRequestJob implements Runnable {
 
-   private static final Map<Integer, String> STATUSES = new HashMap<>();
    private static final String CRLF = "\r\n";
 
    private final ApplicationContext context;
@@ -67,26 +62,26 @@ final class ApplicationRequestJob implements Runnable {
          }
          ConnectionInfo connection = new ConnectionInfo(socket, host);
 
-         HttpResult result = resolveRequest(request, connection);
+         HttpResponse result = resolveRequest(request, connection);
+         result.setConnectionInfo(connection);
 
-         log.info("\"%s\" %s \"%s\"", request, result,
+         log.info("\"%s\" %d %d \"%s\"", request, result.getStatusCode(),
+                  result.getContentBody() != null ? result.getContentBody().available() : 0,
                   request.getHeaders().get(Headers.USER_AGENT));
 
-         int statusCode = result.getStatusCode();
-         StringBuilder response = new StringBuilder();
-         response.append("HTTP/1.1 ");
-         response.append(statusCode);
-         response.append(' ');
-         response.append(STATUSES.get(statusCode));
-         response.append(CRLF);
-         result.getHeaders().stream().forEach(
-                  e -> response.append(String.format("%s: %s%s", e.getKey(), e.getValue(), CRLF)));
-         response.append(CRLF);
+         try (HttpInputStream contentStream = result.getContentBody()) {
+            StringBuilder response = new StringBuilder();
+            response.append("HTTP/1.1 ");
+            response.append(result.getStatusCode());
+            response.append(' ');
+            response.append(result.getStatusLabel());
+            response.append(CRLF);
+            processHeaders(result, contentStream, response);
 
-         try (HttpInputStream contentStream = result.getInputStream()) {
             OutputStream output = socket.getOutputStream();
             output.write(response.toString().getBytes());
             if (contentStream != null && contentStream.available() > 0) {
+               output.write(CRLF.getBytes());
                contentStream.sendTo(output);
             }
             output.flush();
@@ -102,25 +97,7 @@ final class ApplicationRequestJob implements Runnable {
       this.client = client;
    }
 
-   static {
-      try {
-         final URI uri = ApplicationRequestJob.class.getResource("/status.codes").toURI();
-         List<String> statuses = Files.readAllLines(Paths.get(uri));
-         for (String line : statuses) {
-            String[] parts = line.split("=", 2);
-            if (parts.length == 2) {
-               int code = Integer.parseInt(parts[0]);
-               STATUSES.put(code, parts[1]);
-            }
-         }
-      } catch (IOException | URISyntaxException e) {
-         // Any error here is treated as fatal
-         e.printStackTrace();
-         System.exit(1);
-      }
-   }
-
-   private HttpResult resolveRequest(HttpRequest request, ConnectionInfo connection) {
+   private HttpResponse resolveRequest(HttpRequest request, ConnectionInfo connection) {
       final ServiceMap services = context.getServices();
       services.putRequestValue(ConnectionInfo.class, Objects.requireNonNull(connection));
       services.putRequestValue(HttpRequest.class, Wrapper.wrap(request));
@@ -129,16 +106,67 @@ final class ApplicationRequestJob implements Runnable {
       RouteMatch route = routes.matches(request);
       services.putRequestValue(RouteMatch.class, route);
       IIdentity identity = null;
-      if (context.getIdenityProvider() != null) {
-         identity = context.getIdenityProvider().getIdentity(request);
+      ITokenManager tokenManager = services.get(ITokenManager.class);
+      if (tokenManager != null) {
+         identity = tokenManager.get(request);
       }
       services.putRequestValue(IIdentity.class, identity);
       NextResponder chain = context.getFirstResponder();
       Object result = chain.invoke();
-      if (result instanceof HttpResult) {
-         return (HttpResult) result;
+      if (result instanceof HttpResponse) {
+         return (HttpResponse) result;
       } else {
-         throw new InternalServerError("Unrecognised result type");
+         InternalServerError e = new InternalServerError("Unrecognised result type");
+         e.setConnectionInfo(connection);
+         throw e;
+      }
+   }
+
+   private void processHeaders(HttpResponse result, HttpInputStream content, StringBuilder response)
+      throws IOException {
+      final ValuesMap headers = result.getHeaders();
+      if (headers != null) {
+         for (String headerName : headers.keySet()) {
+            switch (headerName) {
+               case Headers.CONTENT_TYPE:
+               case Headers.CONTENT_DISPOSITION:
+               case Headers.CONTENT_ENCODING:
+               case Headers.CONTENT_LENGTH:
+                  continue;
+               default:
+                  String[] headerValues = headers.getAll(headerName);
+                  for (String value : headerValues) {
+                     response.append(String.format("%s: %s%s", headerName, value, CRLF));
+                  }
+                  break;
+            }
+         }
+      }
+      if (content != null) {
+         response.append(Headers.CONTENT_TYPE);
+         response.append(": ");
+         response.append(content.getType());
+         if (content.getEncoding() != null) {
+            response.append("; charset=\"");
+            response.append(content.getEncoding().name().toLowerCase());
+            response.append('"');
+         }
+         response.append(CRLF);
+
+         response.append(Headers.CONTENT_LENGTH);
+         response.append(": ");
+         response.append(content.available());
+         response.append(CRLF);
+
+         if (content.getFilename() != null) {
+            response.append(Headers.CONTENT_DISPOSITION);
+            response.append(": ");
+            response.append(content.isDownloadable() ? "attachment" : "inline");
+            response.append("; filename=\"");
+            response.append(content.getFilename());
+            response.append('"');
+            response.append(CRLF);
+         }
       }
    }
 }
